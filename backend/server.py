@@ -252,6 +252,47 @@ class DailyReportUpdate(BaseModel):
     office_feedback_uk: Optional[str] = None
     photos: Optional[List[str]] = None
 
+# Invoice Models
+class Invoice(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    invoice_number: str  # FACT-2025-001
+    project_id: str
+    quote_id: str
+    milestone: str  # "10_approval", "40_before_start", "40_completion", "10_satisfaction"
+    milestone_percentage: int  # 10, 40, 40, 10
+    
+    # Line items (copied from quote)
+    line_items: List[dict] = []
+    
+    # Totals
+    subtotal_labor: float = 0.0
+    subtotal_material: float = 0.0
+    total_excl_vat: float = 0.0
+    vat_breakdown: dict = {}  # {"6": 123.45, "21": 456.78}
+    total_vat: float = 0.0
+    total_incl_vat: float = 0.0
+    
+    # Payment info
+    payment_status: str = "unpaid"  # unpaid, paid, overdue
+    payment_term_days: int = 7
+    due_date: datetime
+    paid_date: Optional[datetime] = None
+    
+    # Dates
+    invoice_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    user_id: str
+
+class InvoiceCreate(BaseModel):
+    project_id: str
+    milestone: str
+    milestone_percentage: int
+
+class InvoiceUpdate(BaseModel):
+    payment_status: Optional[str] = None
+    paid_date: Optional[datetime] = None
+
 # ============= AUTH DEPENDENCIES =============
 
 async def get_current_user(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)) -> User:
