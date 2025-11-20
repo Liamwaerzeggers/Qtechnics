@@ -487,37 +487,14 @@ export default function ProjectDetailPage() {
                             incl. BTW
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            alert('Button clicked! Index: ' + idx);
-                            
-                            if (!window.confirm(`Factuur "${invoice.filename}" verwijderen? Kosten worden teruggedraaid.`)) {
-                              return;
-                            }
-                            
-                            // Do the actual delete
-                            axios.delete(
-                              `${API}/projects/${projectId}/invoices/${idx}`,
-                              { withCredentials: true }
-                            )
-                            .then(() => {
-                              toast.success('Factuur verwijderd en kosten aangepast');
-                              fetchProjectData();
-                            })
-                            .catch((error) => {
-                              console.error('Delete error:', error);
-                              toast.error('Kon factuur niet verwijderen: ' + (error.response?.data?.detail || error.message));
-                            });
-                          }}
-                          className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-red-100 active:bg-red-200 transition-colors cursor-pointer flex-shrink-0"
-                          style={{color: '#EF4444', fontSize: '20px', zIndex: 10, position: 'relative'}}
-                          title="Verwijder factuur"
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteInvoice(idx, invoice.filename)}
+                          className="hover:bg-red-100 text-red-600 hover:text-red-700"
                         >
-                          🗑️
-                        </button>
+                          <Trash2 size={18} />
+                        </Button>
                       </div>
                     </div>
                   ))}
