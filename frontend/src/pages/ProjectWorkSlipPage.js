@@ -375,13 +375,14 @@ export default function ProjectWorkSlipPage() {
                         </label>
                       </div>
                       {slip.photos && slip.photos.length > 0 ? (
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                           {slip.photos.map((photo, idx) => (
                             <img
                               key={idx}
                               src={`${process.env.REACT_APP_BACKEND_URL}${photo}`}
                               alt={`Foto ${idx + 1}`}
-                              className="w-full h-32 object-cover rounded-lg"
+                              className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90"
+                              onClick={() => window.open(`${process.env.REACT_APP_BACKEND_URL}${photo}`, '_blank')}
                             />
                           ))}
                         </div>
