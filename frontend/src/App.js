@@ -199,6 +199,13 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/dashboard" element={<ProtectedRoute><AuthCallback /></ProtectedRoute>} />
+            <Route path="/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
+            <Route path="/leads/:leadId" element={<ProtectedRoute><LeadDetailPage /></ProtectedRoute>} />
+            <Route path="/quotes" element={<ProtectedRoute><QuotesPage /></ProtectedRoute>} />
+            <Route path="/quotes/:quoteId" element={<ProtectedRoute><QuoteDetailPage /></ProtectedRoute>} />
+            <Route path="/materials" element={<ProtectedRoute><MaterialsPage /></ProtectedRoute>} />
+            <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
+            <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectDetailPage /></ProtectedRoute>} />
           </Routes>
           <Toaster position="top-right" richColors />
         </AuthProvider>
@@ -208,4 +215,4 @@ function App() {
 }
 
 export default App;
-export { useAuth };
+export { useAuth, API };
