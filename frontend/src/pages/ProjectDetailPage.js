@@ -15,6 +15,13 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState(null);
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editingCosts, setEditingCosts] = useState(false);
+  const [costData, setCostData] = useState({
+    labor_cost_per_hour: 0,
+    labor_hours: 0,
+    material_costs: 0,
+    other_costs: 0
+  });
 
   useEffect(() => {
     fetchProjectData();
