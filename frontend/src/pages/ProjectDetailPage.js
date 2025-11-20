@@ -34,9 +34,10 @@ export default function ProjectDetailPage() {
   const fetchInvoices = async () => {
     try {
       const response = await axios.get(`${API}/projects/${projectId}/invoices`, { withCredentials: true });
-      setInvoices(response.data);
+      setInvoices(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to fetch invoices:', error);
+      setInvoices([]);
     }
   };
   
