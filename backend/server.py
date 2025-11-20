@@ -897,8 +897,24 @@ async def update_project(project_id: str, project_update: ProjectUpdate, current
             # Get quote to calculate profit
             quote = await db.quotes.find_one({"id": existing_project["quote_id"]})
             if quote:
-                revenue = quote.get("total_price", 0.0)
-                profit = revenue - total_costs
+                # Use total_incl_vat if available, otherwise fall back to total_price
+                revenue = quote.get("total_incl_vat", quote.get("total_price", 0.0))
+                
+                # Use total_costs_incl_vat for comparison if material_costs_incl_vat exists
+                material_costs_incl_vat = existing_project.get("material_costs_incl_vat", material_costs)
+                if "material_costs" in update_data:
+                    # Assume same VAT ratio if not specified
+                    if material_costs > 0:
+                        vat_ratio = material_costs_incl_vat / material_costs
+                    else:
+                        vat_ratio = 1.21  # Default 21% VAT
+                    material_costs_incl_vat = material_costs * vat_ratio
+                
+                total_costs_incl_vat = total_labor_cost + material_costs_incl_vat + other_costs
+                update_data["total_costs_incl_vat"] = total_costs_incl_vat
+                update_data["material_costs_incl_vat"] = material_costs_incl_vat
+                
+                profit = revenue - total_costs_incl_vat
                 profit_margin = (profit / revenue * 100) if revenue > 0 else 0.0
                 
                 update_data["profit"] = profit
