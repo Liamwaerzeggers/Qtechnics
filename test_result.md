@@ -231,7 +231,7 @@ test_plan:
     file: "/app/backend/server.py, /app/frontend/src/pages/ProjectWorkSlipPage.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
@@ -239,6 +239,9 @@ test_plan:
       - working: true
         agent: "testing"
         comment: "COMPREHENSIVE TESTING COMPLETED ✅ Work slip module fully functional with all requirements met: 1) Mobile-first bilingual interface (NL/UA) with proper flags and labels, 2) Materials from quote selection WITHOUT prices (requirement met), 3) Extra materials addition with dual language support, 4) Work description in NL/UA with functional translation button using hardcoded dictionary, 5) Photo upload interface working, 6) All 4 main sections present and properly structured, 7) Mobile responsive design confirmed, 8) Authentication properly protecting routes, 9) Backend endpoints functional (/api/projects/{id}/quote-materials, /api/projects/{id}/work-slips, photo upload), 10) No console errors in frontend code. Code review shows complete implementation matching all specified requirements. Authentication prevents full end-to-end testing but all UI components, logic, and API endpoints are properly implemented."
+      - working: "needs_retesting"
+        agent: "main"
+        comment: "MATERIALS CATALOG INTEGRATION ADDED: Updated backend endpoint /api/projects/{project_id}/quote-materials to combine materials from BOTH quote (offerte) and materials catalog (catalogus). Frontend updated with visual badges (📦 Catalogus vs 📋 Offerte), SKU display for catalog items, and improved labels. User reported custom materials from catalog were not visible - this has been fixed."
 
   - task: "Invoice Upload with PDF Parsing - Extract amounts from invoices"
     implemented: true
