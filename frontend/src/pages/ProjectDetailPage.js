@@ -158,7 +158,10 @@ export default function ProjectDetailPage() {
                 <div>
                   <div className="text-sm" style={{color: '#64748B'}}>Verkoopprijs</div>
                   <div className="text-2xl font-bold" style={{color: '#3B82F6'}}>€{quote.total_price.toFixed(2)}</div>
-                  <Button data-testid="view-quote-button" variant="outline" className="mt-2" onClick={() => navigate(`/quotes/${quote.id}`)}>Bekijk Offerte</Button>
+                  <div className="flex space-x-2 mt-2">
+                    <Button data-testid="view-quote-button" variant="outline" onClick={() => navigate(`/quotes/${quote.id}`)}>Bekijk Offerte</Button>
+                    <Button variant="outline" onClick={() => navigate(`/projects/${project.id}/work-slips`)}>Werkbonnen</Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
