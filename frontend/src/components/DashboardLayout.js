@@ -7,6 +7,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, testId: 'nav-dashboard' },
