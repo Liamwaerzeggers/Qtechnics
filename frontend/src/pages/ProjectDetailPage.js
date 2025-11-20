@@ -470,35 +470,31 @@ export default function ProjectDetailPage() {
                         </div>
                         <button
                           type="button"
-                          onClick={async (e) => {
+                          onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            
-                            console.log('Delete button clicked for invoice index:', idx);
-                            console.log('Project ID:', projectId);
-                            console.log('API URL:', `${API}/projects/${projectId}/invoices/${idx}`);
+                            alert('Button clicked! Index: ' + idx);
                             
                             if (!window.confirm(`Factuur "${invoice.filename}" verwijderen? Kosten worden teruggedraaid.`)) {
-                              console.log('User cancelled deletion');
                               return;
                             }
                             
-                            try {
-                              console.log('Sending DELETE request...');
-                              const response = await axios.delete(
-                                `${API}/projects/${projectId}/invoices/${idx}`,
-                                { withCredentials: true }
-                              );
-                              console.log('Delete response:', response.data);
+                            // Do the actual delete
+                            axios.delete(
+                              `${API}/projects/${projectId}/invoices/${idx}`,
+                              { withCredentials: true }
+                            )
+                            .then(() => {
                               toast.success('Factuur verwijderd en kosten aangepast');
                               fetchProjectData();
-                            } catch (error) {
+                            })
+                            .catch((error) => {
                               console.error('Delete error:', error);
                               toast.error('Kon factuur niet verwijderen: ' + (error.response?.data?.detail || error.message));
-                            }
+                            });
                           }}
-                          className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-red-100 active:bg-red-200 transition-colors cursor-pointer"
-                          style={{color: '#EF4444', fontSize: '20px'}}
+                          className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-red-100 active:bg-red-200 transition-colors cursor-pointer flex-shrink-0"
+                          style={{color: '#EF4444', fontSize: '20px', zIndex: 10, position: 'relative'}}
                           title="Verwijder factuur"
                         >
                           🗑️
