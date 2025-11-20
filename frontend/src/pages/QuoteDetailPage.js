@@ -72,6 +72,25 @@ export default function QuoteDetailPage() {
     }
   };
 
+  const fetchMaterials = async () => {
+    try {
+      const response = await axios.get(`${API}/materials?limit=1000`, { withCredentials: true });
+      setMaterials(response.data.materials || []);
+    } catch (error) {
+      console.error('Could not fetch materials');
+    }
+  };
+
+  const handleSelectMaterial = (material) => {
+    setFormData({
+      ...formData,
+      description: material.name,
+      unit_price: material.price.toString()
+    });
+    setMaterialSearch(material.name);
+    setShowMaterialDropdown(false);
+  };
+
   const handleAddItem = async (e) => {
     e.preventDefault();
     try {
@@ -84,6 +103,8 @@ export default function QuoteDetailPage() {
       toast.success('Item toegevoegd!');
       setIsDialogOpen(false);
       setFormData({ description: '', quantity: '', unit_price: '', item_type: 'materiaal' });
+      setMaterialSearch('');
+      setUseCustomMaterial(false);
       fetchQuoteData();
     } catch (error) {
       toast.error('Kon item niet toevoegen');
