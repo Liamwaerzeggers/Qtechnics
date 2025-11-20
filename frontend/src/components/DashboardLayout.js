@@ -55,14 +55,15 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
             
             <div className="flex items-center space-x-2 sm:space-x-4">
               {user?.picture && (
-                <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
+                <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full hidden sm:block" />
               )}
-              <span style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}>{user?.name}</span>
+              <span className="hidden md:inline" style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}>{user?.name}</span>
               <button
                 data-testid="logout-button"
                 onClick={handleLogout}
                 className="p-2 rounded-lg hover:bg-gray-100 transition-all"
                 style={{color: '#64748B'}}
+                title="Uitloggen"
               >
                 <LogOut size={20} />
               </button>
