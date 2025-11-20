@@ -28,7 +28,32 @@ export default function ProjectDetailPage() {
 
   useEffect(() => {
     fetchProjectData();
+    fetchInvoices();
   }, [projectId]);
+  
+  const fetchInvoices = async () => {
+    try {
+      const response = await axios.get(`${API}/projects/${projectId}/invoices`, { withCredentials: true });
+      setInvoices(response.data);
+    } catch (error) {
+      console.error('Failed to fetch invoices:', error);
+    }
+  };
+  
+  const createInvoice = async (milestone, percentage) => {
+    try {
+      await axios.post(
+        `${API}/projects/${projectId}/invoices`,
+        { project_id: projectId, milestone, milestone_percentage: percentage },
+        { withCredentials: true }
+      );
+      toast.success('Factuur aangemaakt!');
+      fetchInvoices();
+    } catch (error) {
+      console.error('Failed to create invoice:', error);
+      toast.error('Kon factuur niet aanmaken: ' + (error.response?.data?.detail || error.message));
+    }
+  };
 
   const fetchProjectData = async () => {
     try {
