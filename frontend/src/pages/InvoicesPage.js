@@ -26,7 +26,7 @@ export default function InvoicesPage() {
       let allInvoices = [];
       for (const project of projects) {
         try {
-          const invoicesRes = await axios.get(`${API}/api/projects/${project.id}/invoices`, { withCredentials: true });
+          const invoicesRes = await axios.get(`${API}/api/projects/${project.id}/customer-invoices`, { withCredentials: true });
           const projectInvoices = invoicesRes.data.map(inv => ({
             ...inv,
             projectName: project.name,
