@@ -597,7 +597,7 @@ async def delete_line_item(quote_id: str, item_id: str, current_user: User = Dep
 
 async def recalculate_quote_totals(quote_id: str):
     """Recalculate quote subtotals, VAT breakdown and total price"""
-    items = await db.line_items.find({"quote_id": quote_id}).to_list(1000)
+    items = await db.line_items.find({"quote_id": quote_id}, {"_id": 0}).to_list(1000)
     
     # Calculate subtotals by type (excl VAT)
     subtotal_labor = sum(item.get("total_excl_vat", item.get("total", 0)) for item in items if item["item_type"] == "arbeid")
