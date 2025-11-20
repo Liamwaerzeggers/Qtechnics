@@ -200,19 +200,34 @@ export default function CalendarPage() {
 
         {/* Legend */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="font-semibold mb-3" style={{ color: '#1E3A8A' }}>Legenda</h3>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 rounded" style={{ backgroundColor: '#1E40AF' }}></div>
-              <span style={{ color: '#64748B' }}>Actief</span>
+          <h3 className="font-semibold mb-3" style={{ color: '#1E3A8A' }}>Legenda & Info</h3>
+          <div className="space-y-4">
+            {/* Status Colors */}
+            <div>
+              <h4 className="text-sm font-medium mb-2" style={{ color: '#64748B' }}>Status</h4>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#10B981' }}></div>
+                  <span className="text-sm" style={{ color: '#64748B' }}>Voltooid</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#6B7280' }}></div>
+                  <span className="text-sm" style={{ color: '#64748B' }}>Geannuleerd</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 rounded" style={{ backgroundColor: '#10B981' }}></div>
-              <span style={{ color: '#64748B' }}>Voltooid</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 rounded" style={{ backgroundColor: '#6B7280' }}></div>
-              <span style={{ color: '#64748B' }}>Geannuleerd</span>
+            
+            {/* Project Colors Info */}
+            <div>
+              <h4 className="text-sm font-medium mb-2" style={{ color: '#64748B' }}>Projecten</h4>
+              <div className="flex flex-wrap gap-2">
+                {projectColors.map((color, idx) => (
+                  <div key={idx} className="w-6 h-6 rounded shadow-sm" style={{ backgroundColor: color }}></div>
+                ))}
+              </div>
+              <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>
+                Elk actief project krijgt automatisch een unieke kleur. Overlappende projecten zijn zo makkelijk te onderscheiden.
+              </p>
             </div>
           </div>
         </div>
