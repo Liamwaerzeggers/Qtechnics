@@ -426,6 +426,144 @@ export default function ProjectDetailPage() {
           </CardContent>
         </Card>
 
+        {/* Facturatie Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Facturatie (Klant)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Milestone Buttons */}
+              <div>
+                <h4 className="font-semibold mb-3" style={{color: '#1E3A8A'}}>Deelfacturen Aanmaken</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    onClick={() => createInvoice('10_approval', 10)}
+                    disabled={invoices.some(inv => inv.milestone === '10_approval')}
+                    className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
+                    style={{borderColor: '#CBD5E1'}}
+                  >
+                    <div className="text-left">
+                      <div className="font-semibold" style={{color: '#1E293B'}}>10% Bij Akkoord</div>
+                      <div className="text-sm" style={{color: '#64748B'}}>Akkoord offerte</div>
+                    </div>
+                    {invoices.some(inv => inv.milestone === '10_approval') && (
+                      <span className="text-green-600 font-bold">✓</span>
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={() => createInvoice('40_before_start', 40)}
+                    disabled={invoices.some(inv => inv.milestone === '40_before_start')}
+                    className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
+                    style={{borderColor: '#CBD5E1'}}
+                  >
+                    <div className="text-left">
+                      <div className="font-semibold" style={{color: '#1E293B'}}>40% Voor Start</div>
+                      <div className="text-sm" style={{color: '#64748B'}}>Een week voor aanvang</div>
+                    </div>
+                    {invoices.some(inv => inv.milestone === '40_before_start') && (
+                      <span className="text-green-600 font-bold">✓</span>
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={() => createInvoice('40_completion', 40)}
+                    disabled={invoices.some(inv => inv.milestone === '40_completion')}
+                    className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
+                    style={{borderColor: '#CBD5E1'}}
+                  >
+                    <div className="text-left">
+                      <div className="font-semibold" style={{color: '#1E293B'}}>40% Bij Oplevering</div>
+                      <div className="text-sm" style={{color: '#64748B'}}>Werken afgerond</div>
+                    </div>
+                    {invoices.some(inv => inv.milestone === '40_completion') && (
+                      <span className="text-green-600 font-bold">✓</span>
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={() => createInvoice('10_satisfaction', 10)}
+                    disabled={invoices.some(inv => inv.milestone === '10_satisfaction')}
+                    className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
+                    style={{borderColor: '#CBD5E1'}}
+                  >
+                    <div className="text-left">
+                      <div className="font-semibold" style={{color: '#1E293B'}}>10% Tevredenheid</div>
+                      <div className="text-sm" style={{color: '#64748B'}}>Klant tevreden</div>
+                    </div>
+                    {invoices.some(inv => inv.milestone === '10_satisfaction') && (
+                      <span className="text-green-600 font-bold">✓</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Invoices List */}
+              {invoices.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-3" style={{color: '#1E3A8A'}}>
+                    Uitgegeven Facturen ({invoices.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {invoices.map((invoice) => (
+                      <div key={invoice.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <div className="font-semibold" style={{color: '#1E40AF'}}>
+                            {invoice.invoice_number}
+                          </div>
+                          <div className="text-sm" style={{color: '#64748B'}}>
+                            {new Date(invoice.invoice_date).toLocaleDateString('nl-NL')} • {
+                              invoice.milestone === '10_approval' ? '10% Akkoord' :
+                              invoice.milestone === '40_before_start' ? '40% Voor Start' :
+                              invoice.milestone === '40_completion' ? '40% Oplevering' :
+                              '10% Tevredenheid'
+                            }
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <div className="font-bold" style={{color: '#1E293B'}}>
+                              €{invoice.total_incl_vat.toFixed(2)}
+                            </div>
+                            <div className="text-xs" style={{color: invoice.payment_status === 'paid' ? '#10B981' : '#F59E0B'}}>
+                              {invoice.payment_status === 'paid' ? 'Betaald' : 'Onbetaald'}
+                            </div>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const response = await axios.get(
+                                  `${API}/invoices/${invoice.id}/pdf`,
+                                  { withCredentials: true, responseType: 'blob' }
+                                );
+                                const url = window.URL.createObjectURL(new Blob([response.data]));
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.setAttribute('download', `factuur_${invoice.invoice_number}.pdf`);
+                                document.body.appendChild(link);
+                                link.click();
+                                link.remove();
+                                toast.success('PDF gedownload');
+                              } catch (error) {
+                                toast.error('Kon PDF niet downloaden');
+                              }
+                            }}
+                            className="px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors"
+                            style={{color: '#1E40AF'}}
+                          >
+                            📄 PDF
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Invoice Uploads Card */}
         <Card>
           <CardHeader>
