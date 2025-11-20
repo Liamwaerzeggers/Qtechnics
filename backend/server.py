@@ -878,7 +878,10 @@ async def delete_project(project_id: str, current_user: User = Depends(get_curre
 
 @api_router.get("/quotes/{quote_id}/export/pdf")
 async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_current_user)):
-    """Export quote as PDF"""
+    """Export quote as PDF with logo and VAT details"""
+    from reportlab.lib.utils import ImageReader
+    from reportlab.platypus import Image as ReportLabImage
+    
     # Get quote
     quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
     if not quote:
@@ -892,15 +895,22 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
     
     # Create PDF
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch, leftMargin=0.75*inch, rightMargin=0.75*inch)
     
     story = []
     styles = getSampleStyleSheet()
     
+    # Add logo if exists
+    logo_path = Path(__file__).parent / 'qtechnics_logo.png'
+    if logo_path.exists():
+        logo = ReportLabImage(str(logo_path), width=2.5*inch, height=1.1*inch)
+        story.append(logo)
+        story.append(Spacer(1, 0.2*inch))
+    
     # Title
-    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=24, textColor=colors.HexColor('#1E40AF'))
+    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=20, textColor=colors.HexColor('#1E40AF'))
     story.append(Paragraph(f"Offerte {quote['quote_number']}", title_style))
-    story.append(Spacer(1, 0.3*inch))
+    story.append(Spacer(1, 0.2*inch))
     
     # Lead info
     if lead:
@@ -910,35 +920,57 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
         story.append(Paragraph(f"<b>Adres:</b> {lead['address']}", styles['Normal']))
         story.append(Spacer(1, 0.3*inch))
     
-    # Line items table
-    table_data = [['Omschrijving', 'Aantal', 'Eenheidsprijs', 'Type', 'Totaal']]
+    # Line items table with VAT
+    table_data = [['Omschrijving', 'Aantal', 'Prijs excl.', 'BTW%', 'Totaal excl.', 'Totaal incl.']]
     for item in items:
+        excl_vat = item.get('total_excl_vat', item.get('quantity', 0) * item.get('unit_price', 0))
+        vat_rate = item.get('vat_rate', 21)
+        incl_vat = item.get('total_incl_vat', item.get('total', excl_vat))
+        
         table_data.append([
-            item['description'],
+            item['description'][:40] + ('...' if len(item['description']) > 40 else ''),
             str(item['quantity']),
             f"€{item['unit_price']:.2f}",
-            item['item_type'],
-            f"€{item['total']:.2f}"
+            f"{vat_rate}%",
+            f"€{excl_vat:.2f}",
+            f"€{incl_vat:.2f}"
         ])
     
-    table = Table(table_data, colWidths=[3*inch, 0.8*inch, 1*inch, 1*inch, 1*inch])
+    table = Table(table_data, colWidths=[2.2*inch, 0.6*inch, 0.9*inch, 0.6*inch, 0.9*inch, 0.9*inch])
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1E40AF')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('TOPPADDING', (0, 1), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
         ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey)
     ]))
     story.append(table)
     story.append(Spacer(1, 0.3*inch))
     
-    # Totals
-    story.append(Paragraph(f"<b>Subtotaal Arbeid:</b> €{quote['subtotal_labor']:.2f}", styles['Normal']))
-    story.append(Paragraph(f"<b>Subtotaal Materiaal:</b> €{quote['subtotal_material']:.2f}", styles['Normal']))
-    story.append(Paragraph(f"<b>Totaalprijs:</b> €{quote['total_price']:.2f}", title_style))
+    # Totals with VAT breakdown
+    total_excl = quote.get('total_excl_vat', quote.get('total_price', 0))
+    vat_breakdown = quote.get('vat_breakdown', {})
+    total_vat = quote.get('total_vat', 0)
+    total_incl = quote.get('total_incl_vat', quote.get('total_price', 0))
+    
+    story.append(Paragraph(f"<b>Totaal excl. BTW:</b> €{total_excl:.2f}", styles['Normal']))
+    
+    # Show VAT breakdown
+    if vat_breakdown:
+        story.append(Spacer(1, 0.1*inch))
+        for vat_rate, vat_amount in sorted(vat_breakdown.items()):
+            story.append(Paragraph(f"<b>BTW {vat_rate}%:</b> €{vat_amount:.2f}", styles['Normal']))
+    
+    story.append(Paragraph(f"<b>Totaal BTW:</b> €{total_vat:.2f}", styles['Normal']))
+    story.append(Spacer(1, 0.1*inch))
+    story.append(Paragraph(f"<b>Totaal incl. BTW:</b> €{total_incl:.2f}", title_style))
     
     doc.build(story)
     buffer.seek(0)
