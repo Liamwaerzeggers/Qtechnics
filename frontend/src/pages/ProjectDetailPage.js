@@ -59,6 +59,18 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleSaveCosts = async () => {
+    try {
+      const response = await axios.put(`${API}/projects/${projectId}`, costData, { withCredentials: true });
+      setProject(response.data);
+      setEditingCosts(false);
+      toast.success('Kosten bijgewerkt!');
+      fetchProjectData(); // Refresh to get calculated profit
+    } catch (error) {
+      toast.error('Kon kosten niet bijwerken');
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
