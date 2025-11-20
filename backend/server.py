@@ -1205,6 +1205,45 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
         "recent_quotes": recent_quotes
     }
 
+# ============= CALENDAR ROUTES =============
+
+@api_router.get("/calendar/events")
+async def get_calendar_events(current_user: User = Depends(get_current_user)):
+    """Get all calendar events from projects with start/end dates"""
+    projects = await db.projects.find(
+        {"user_id": current_user.id},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    events = []
+    for project in projects:
+        # Only add to calendar if project has start and/or end date
+        if project.get("start_date") or project.get("end_date"):
+            # Parse dates
+            start = project.get("start_date")
+            end = project.get("end_date")
+            
+            if isinstance(start, str):
+                start = datetime.fromisoformat(start)
+            if isinstance(end, str):
+                end = datetime.fromisoformat(end)
+            
+            # Create event
+            event = {
+                "id": project["id"],
+                "title": project.get("name", "Naamloos Project"),
+                "start": start.isoformat() if start else None,
+                "end": end.isoformat() if end else None,
+                "project_id": project["id"],
+                "status": project.get("status", "actief")
+            }
+            
+            # Only add if we have at least a start date
+            if event["start"]:
+                events.append(event)
+    
+    return events
+
 # Include router
 app.include_router(api_router)
 
