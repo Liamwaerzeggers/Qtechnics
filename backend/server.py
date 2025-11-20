@@ -377,7 +377,7 @@ async def create_lead(lead: LeadCreate, current_user: User = Depends(get_current
 @api_router.get("/leads", response_model=List[Lead])
 async def get_leads(current_user: User = Depends(get_current_user)):
     """Get all leads for current user"""
-    leads = await db.leads.find({"user_id": current_user.id}).to_list(1000)
+    leads = await db.leads.find({"user_id": current_user.id}, {"_id": 0}).to_list(1000)
     
     for lead in leads:
         if isinstance(lead["created_at"], str):
