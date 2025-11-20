@@ -2060,6 +2060,11 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
 # Include router
 app.include_router(api_router)
 
+# Mount static files for uploads
+uploads_dir = ROOT_DIR / "uploads"
+uploads_dir.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
