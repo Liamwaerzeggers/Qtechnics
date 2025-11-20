@@ -122,6 +122,16 @@ export default function QuoteDetailPage() {
     }
   };
 
+  const handleStatusChange = async (newStatus) => {
+    try {
+      await axios.put(`${API}/quotes/${quoteId}`, { status: newStatus }, { withCredentials: true });
+      setQuote({ ...quote, status: newStatus });
+      toast.success('Status bijgewerkt');
+    } catch (error) {
+      toast.error('Kon status niet bijwerken');
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
