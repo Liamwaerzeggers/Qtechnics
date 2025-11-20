@@ -702,6 +702,31 @@ async def update_project(project_id: str, project_update: ProjectUpdate, current
         if "end_date" in update_data:
             update_data["end_date"] = update_data["end_date"].isoformat()
         
+        # Calculate costs if cost-related fields are updated
+        cost_fields_updated = any(k in update_data for k in ["labor_cost_per_hour", "labor_hours", "material_costs", "other_costs"])
+        
+        if cost_fields_updated:
+            # Get current values
+            labor_cost_per_hour = update_data.get("labor_cost_per_hour", existing_project.get("labor_cost_per_hour", 0.0))
+            labor_hours = update_data.get("labor_hours", existing_project.get("labor_hours", 0.0))
+            material_costs = update_data.get("material_costs", existing_project.get("material_costs", 0.0))
+            other_costs = update_data.get("other_costs", existing_project.get("other_costs", 0.0))
+            
+            # Calculate total costs
+            total_labor_cost = labor_cost_per_hour * labor_hours
+            total_costs = total_labor_cost + material_costs + other_costs
+            update_data["total_costs"] = total_costs
+            
+            # Get quote to calculate profit
+            quote = await db.quotes.find_one({"id": existing_project["quote_id"]})
+            if quote:
+                revenue = quote.get("total_price", 0.0)
+                profit = revenue - total_costs
+                profit_margin = (profit / revenue * 100) if revenue > 0 else 0.0
+                
+                update_data["profit"] = profit
+                update_data["profit_margin"] = profit_margin
+        
         await db.projects.update_one({"id": project_id}, {"$set": update_data})
         existing_project.update(update_data)
     
