@@ -208,6 +208,46 @@ class InvoiceUpload(BaseModel):
     vat_amount: float
     notes: Optional[str] = None
 
+# Calendar Models
+class CalendarEvent(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    project_id: str
+    title: str
+    start_date: datetime
+    end_date: datetime
+    description: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    user_id: str
+
+# Werkbon (Daily Report) Models
+class DailyReport(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    project_id: str
+    date: datetime
+    photos: List[str] = []  # URLs or base64
+    notes_nl: str = ""
+    notes_uk: str = ""  # Ukrainian
+    office_feedback_nl: str = ""
+    office_feedback_uk: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    user_id: str
+
+class DailyReportCreate(BaseModel):
+    project_id: str
+    date: datetime
+    notes_nl: Optional[str] = ""
+    notes_uk: Optional[str] = ""
+
+class DailyReportUpdate(BaseModel):
+    notes_nl: Optional[str] = None
+    notes_uk: Optional[str] = None
+    office_feedback_nl: Optional[str] = None
+    office_feedback_uk: Optional[str] = None
+    photos: Optional[List[str]] = None
+
 # ============= AUTH DEPENDENCIES =============
 
 async def get_current_user(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = None) -> User:
