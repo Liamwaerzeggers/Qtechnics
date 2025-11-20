@@ -7,6 +7,36 @@ import axios from 'axios';
 import DashboardLayout from '../components/DashboardLayout';
 import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 
+// Custom CSS for better event display
+const calendarStyles = `
+  .rbc-event {
+    padding: 2px 5px !important;
+    border-radius: 4px !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+  }
+  
+  .rbc-event:hover {
+    opacity: 0.8 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+  }
+  
+  .rbc-event-content {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .rbc-day-slot .rbc-event {
+    border: none !important;
+  }
+  
+  .rbc-selected {
+    background-color: inherit !important;
+  }
+`;
+
 // Configure moment for Dutch locale
 moment.locale('nl', {
   months: 'januari_februari_maart_april_mei_juni_juli_augustus_september_oktober_november_december'.split('_'),
