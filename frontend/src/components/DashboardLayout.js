@@ -161,7 +161,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
           </aside>
 
           {/* Main Content */}
-          <main className="flex-1">
+          <main className="flex-1 min-w-0">
             {children}
           </main>
         </div>
