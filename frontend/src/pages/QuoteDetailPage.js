@@ -570,16 +570,29 @@ export default function QuoteDetailPage() {
         <Card>
           <CardContent className="p-6 space-y-3">
             <div className="flex justify-between text-lg">
-              <span style={{color: '#64748B'}}>Subtotaal Arbeid:</span>
-              <span className="font-semibold" style={{color: '#1E293B'}}>€{quote.subtotal_labor.toFixed(2)}</span>
+              <span style={{color: '#64748B'}}>Totaal excl. BTW:</span>
+              <span className="font-semibold" style={{color: '#1E293B'}}>€{(quote.total_excl_vat || quote.total_price || 0).toFixed(2)}</span>
             </div>
+            
+            {quote.vat_breakdown && Object.keys(quote.vat_breakdown).length > 0 && (
+              <div className="border-t pt-2 pb-2">
+                {Object.entries(quote.vat_breakdown).map(([rate, amount]) => (
+                  <div key={rate} className="flex justify-between text-sm" style={{color: '#64748B'}}>
+                    <span>BTW {rate}%:</span>
+                    <span>€{amount.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            
             <div className="flex justify-between text-lg">
-              <span style={{color: '#64748B'}}>Subtotaal Materiaal:</span>
-              <span className="font-semibold" style={{color: '#1E293B'}}>€{quote.subtotal_material.toFixed(2)}</span>
+              <span style={{color: '#64748B'}}>Totaal BTW:</span>
+              <span className="font-semibold" style={{color: '#1E293B'}}>€{(quote.total_vat || 0).toFixed(2)}</span>
             </div>
+            
             <div className="border-t pt-3 flex justify-between text-2xl">
-              <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Totaalprijs:</span>
-              <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>€{quote.total_price.toFixed(2)}</span>
+              <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Totaal incl. BTW:</span>
+              <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>€{(quote.total_incl_vat || quote.total_price || 0).toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>
