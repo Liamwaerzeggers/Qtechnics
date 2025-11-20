@@ -90,10 +90,15 @@ export default function QuoteDetailPage() {
   const fetchMaterials = async () => {
     try {
       const response = await axios.get(`${API}/materials?limit=15000`, { withCredentials: true });
-      setMaterials(response.data.materials || []);
-      console.log('Loaded materials:', response.data.materials?.length);
+      const materialsList = response.data.materials || [];
+      setMaterials(materialsList);
+      console.log('✓ Loaded materials:', materialsList.length);
+      if (materialsList.length === 0) {
+        console.warn('⚠ No materials found. Please upload CSV in Materials page.');
+      }
     } catch (error) {
-      console.error('Could not fetch materials:', error);
+      console.error('✗ Could not fetch materials:', error);
+      toast.error('Kon materialen niet laden');
     }
   };
 
