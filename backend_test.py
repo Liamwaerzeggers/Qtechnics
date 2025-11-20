@@ -488,6 +488,153 @@ TEST003,Test Boor,12.75,HSS boor 8mm,Gereedschap,TestBrand"""
         
         return success
 
+    def test_invoice_pdf_download(self):
+        """Test invoice PDF download functionality"""
+        print("\n🧾 Testing Invoice PDF Download...")
+        
+        # First, we need a project to create invoices
+        if not self.created_resources['quotes']:
+            print("❌ No quotes available for invoice testing")
+            return False
+            
+        quote_id = self.created_resources['quotes'][0]
+        
+        # Create a project from the quote
+        project_data = {
+            "quote_id": quote_id,
+            "name": "Test Invoice Project",
+            "start_date": "2024-01-15T00:00:00Z",
+            "end_date": "2024-02-15T00:00:00Z",
+            "notes": "Project for invoice testing"
+        }
+        
+        success, response = self.run_test(
+            "Create Project for Invoice",
+            "POST",
+            "projects",
+            200,
+            data=project_data
+        )
+        
+        if not success:
+            print("❌ Failed to create project for invoice testing")
+            return False
+            
+        project_id = response.get('id')
+        print(f"   Created project: {project_id}")
+        
+        # Create a customer invoice
+        invoice_data = {
+            "milestone": "10_approval",
+            "milestone_percentage": 10
+        }
+        
+        success, response = self.run_test(
+            "Create Customer Invoice",
+            "POST",
+            f"projects/{project_id}/invoices/create",
+            200,
+            data=invoice_data
+        )
+        
+        if not success:
+            print("❌ Failed to create customer invoice")
+            return False
+            
+        invoice_id = response.get('id')
+        print(f"   Created invoice: {invoice_id}")
+        
+        # Get all customer invoices for the project to verify
+        success, response = self.run_test(
+            "Get Project Customer Invoices",
+            "GET",
+            f"projects/{project_id}/customer-invoices",
+            200
+        )
+        
+        if success:
+            invoices = response if isinstance(response, list) else []
+            print(f"   Found {len(invoices)} customer invoices")
+            
+            if not invoices:
+                print("❌ No invoices found after creation")
+                return False
+                
+            # Use the first invoice for PDF testing
+            test_invoice = invoices[0]
+            invoice_id = test_invoice.get('id')
+            print(f"   Testing PDF download for invoice: {invoice_id}")
+        else:
+            print("❌ Failed to retrieve customer invoices")
+            return False
+        
+        # Test PDF download with detailed response checking
+        url = f"{self.base_url}/invoices/{invoice_id}/pdf"
+        headers = {}
+        
+        if self.session_token:
+            headers['Authorization'] = f'Bearer {self.session_token}'
+        
+        print(f"🔍 Testing Invoice PDF Download...")
+        print(f"   URL: {url}")
+        
+        try:
+            response = requests.get(url, headers=headers)
+            
+            print(f"   Status Code: {response.status_code}")
+            print(f"   Content-Type: {response.headers.get('content-type', 'Not set')}")
+            print(f"   Content-Disposition: {response.headers.get('content-disposition', 'Not set')}")
+            print(f"   Content Length: {len(response.content)} bytes")
+            
+            # Check if response is successful
+            if response.status_code != 200:
+                print(f"❌ PDF download failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+                return False
+            
+            # Verify content type
+            content_type = response.headers.get('content-type', '')
+            if content_type != 'application/pdf':
+                print(f"❌ Wrong content type - Expected: application/pdf, Got: {content_type}")
+                return False
+            
+            # Verify content disposition header
+            content_disposition = response.headers.get('content-disposition', '')
+            if not content_disposition or 'filename=' not in content_disposition:
+                print(f"❌ Missing or invalid Content-Disposition header: {content_disposition}")
+                return False
+            
+            # Verify PDF content (basic check)
+            if not response.content.startswith(b'%PDF'):
+                print("❌ Response content is not a valid PDF")
+                return False
+            
+            # Extract filename from content-disposition
+            filename = ""
+            if 'filename=' in content_disposition:
+                filename = content_disposition.split('filename=')[1].strip('"')
+            
+            print("✅ Invoice PDF download successful!")
+            print(f"   ✅ Content-Type: {content_type}")
+            print(f"   ✅ Content-Disposition: {content_disposition}")
+            print(f"   ✅ Filename: {filename}")
+            print(f"   ✅ PDF size: {len(response.content)} bytes")
+            print(f"   ✅ Valid PDF format: {response.content[:4] == b'%PDF'}")
+            
+            self.tests_passed += 1
+            return True
+            
+        except Exception as e:
+            print(f"❌ PDF download error: {str(e)}")
+            return False
+        
+        finally:
+            self.tests_run += 1
+
 def main():
     print("🚀 Starting Offerte Dashboard API Tests")
     print("=" * 50)
