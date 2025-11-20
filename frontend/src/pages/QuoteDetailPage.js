@@ -53,16 +53,29 @@ export default function QuoteDetailPage() {
   }, [showMaterialDropdown]);
 
   useEffect(() => {
-    if (materialSearch) {
-      const filtered = materials.filter(m => 
-        m.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
-        m.sku.toLowerCase().includes(materialSearch.toLowerCase()) ||
-        (m.category && m.category.toLowerCase().includes(materialSearch.toLowerCase())) ||
-        (m.brand && m.brand.toLowerCase().includes(materialSearch.toLowerCase()))
-      );
+    if (materialSearch && materialSearch.trim().length > 0) {
+      const searchTerm = materialSearch.toLowerCase().trim();
+      
+      // Filter materials - case insensitive, partial matching
+      const filtered = materials.filter(m => {
+        // Search in name
+        if (m.name && m.name.toLowerCase().includes(searchTerm)) return true;
+        // Search in SKU
+        if (m.sku && m.sku.toLowerCase().includes(searchTerm)) return true;
+        // Search in description
+        if (m.description && m.description.toLowerCase().includes(searchTerm)) return true;
+        // Search in category
+        if (m.category && m.category.toLowerCase().includes(searchTerm)) return true;
+        // Search in brand
+        if (m.brand && m.brand.toLowerCase().includes(searchTerm)) return true;
+        
+        return false;
+      });
+      
+      console.log(`Found ${filtered.length} results for "${materialSearch}"`);
       setFilteredMaterials(filtered.slice(0, 50)); // Limit to 50 results for performance
     } else {
-      setFilteredMaterials([]); // Will show first 50 from materials array in UI
+      setFilteredMaterials([]); // Will show first 50 from materials array in UI when no search term
     }
   }, [materialSearch, materials]);
 
