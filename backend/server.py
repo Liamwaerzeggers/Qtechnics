@@ -198,7 +198,15 @@ class ProjectUpdate(BaseModel):
     labor_cost_per_hour: Optional[float] = None
     labor_hours: Optional[float] = None
     material_costs: Optional[float] = None
+    material_costs_incl_vat: Optional[float] = None
     other_costs: Optional[float] = None
+
+class InvoiceUpload(BaseModel):
+    filename: str
+    total_excl_vat: float
+    total_incl_vat: float
+    vat_amount: float
+    notes: Optional[str] = None
 
 # ============= AUTH DEPENDENCIES =============
 
