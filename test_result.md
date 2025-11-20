@@ -243,6 +243,9 @@ test_plan:
       - working: "needs_retesting"
         agent: "main"
         comment: "MATERIALS CATALOG INTEGRATION ADDED: Updated backend endpoint /api/projects/{project_id}/quote-materials to combine materials from BOTH quote (offerte) and materials catalog (catalogus). Frontend updated with visual badges (📦 Catalogus vs 📋 Offerte), SKU display for catalog items, and improved labels. User reported custom materials from catalog were not visible - this has been fixed."
+      - working: "needs_retesting"
+        agent: "main"
+        comment: "CORRECTED WERKBON MODULE - QUOTE MATERIALS ONLY: User wanted ONLY materials from quote, not full catalog access. Backend endpoint /api/projects/{project_id}/quote-materials now returns ONLY line_items from quote (both catalog and manual entries). Frontend updated: removed badges, section title 'Gebruikte Materialen uit Offerte' with subtitle '(catalogus & handmatig ingevoerd)', no prices visible. Workers can only select materials that were in the original quote."
 
   - task: "Invoice Upload with PDF Parsing - Extract amounts from invoices"
     implemented: true
