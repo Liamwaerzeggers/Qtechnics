@@ -102,7 +102,7 @@ export default function CalendarPage() {
   };
 
   const eventStyleGetter = (event) => {
-    const backgroundColor = getProjectColor(event.resource.project_id, event.resource.status);
+    const backgroundColor = getProjectColor(event);
     
     const style = {
       backgroundColor: backgroundColor,
