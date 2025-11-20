@@ -338,6 +338,32 @@ agent_communication:
       - pypdfium2-5.0.0
       - react-big-calendar + moment
 
+  - agent: "main"
+    message: |
+      MATERIALS CATALOG INTEGRATION FIX COMPLETED:
+      
+      **User Issue:** Custom materials from Materials Catalog were not visible in werkbon module
+      
+      **Changes Made:**
+      1. Backend `/api/projects/{project_id}/quote-materials` endpoint updated:
+         - Now combines materials from BOTH sources: quote (offerte) + materials catalog (catalogus)
+         - Each material has `source` field: "offerte" or "catalogus"
+         - Catalog materials include SKU field
+         - Quote materials show quantity_quoted, catalog materials show 0
+      
+      2. Frontend `ProjectWorkSlipPage.js` updated:
+         - Visual badges: 📦 Catalogus vs 📋 Offerte
+         - SKU display for catalog items
+         - Better section label: "Gebruikte Materialen / Використані матеріали" (not just "uit offerte")
+         - Offerte quantity only shown for quote materials
+      
+      **Testing Required:**
+      - Login with Google OAuth
+      - Navigate to existing project
+      - Open werkbon page
+      - Verify SECTIE 1 shows materials from BOTH sources with proper badges
+      - Test creating werkbon with catalog material
+
   - agent: "testing"
     message: |
       Invoice PDF Download Bug Fix Verified - WORKING ✅
