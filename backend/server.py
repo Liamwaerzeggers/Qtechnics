@@ -1648,13 +1648,13 @@ async def generate_invoice_number():
     
     return f"FACT-{current_year}-{new_num:03d}"
 
-@api_router.post("/projects/{project_id}/invoices")
+@api_router.post("/projects/{project_id}/invoices/create")
 async def create_invoice(
     project_id: str,
     request: dict,
     current_user: User = Depends(get_current_user)
 ):
-    """Create a milestone-based invoice for a project"""
+    """Create a milestone-based customer invoice for a project"""
     logger.info(f"Creating invoice - received data: {request}")
     
     # Validate request data
