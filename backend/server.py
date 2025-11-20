@@ -1533,6 +1533,37 @@ async def delete_project_invoice(
 
 # ============= WERKBON / DAILY REPORT ROUTES =============
 
+@api_router.get("/projects/{project_id}/quote-materials")
+async def get_project_quote_materials(project_id: str, current_user: User = Depends(get_current_user)):
+    """Get materials from project's quote (NO PRICES - for werkbon)"""
+    # Verify project exists
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Get quote
+    quote_id = project.get("quote_id")
+    if not quote_id:
+        return []
+    
+    quote = await db.quotes.find_one({"id": quote_id}, {"_id": 0})
+    if not quote:
+        return []
+    
+    # Get line items (materials only, no prices)
+    materials = []
+    for item in quote.get("line_items", []):
+        if item.get("item_type") == "materiaal":
+            materials.append({
+                "id": item.get("id"),
+                "description_nl": item.get("description", ""),
+                "description_uk": item.get("description", ""),  # Default to NL, can be translated
+                "quantity_quoted": item.get("quantity", 0),
+                "unit": item.get("unit", "stuks")
+            })
+    
+    return materials
+
 @api_router.post("/projects/{project_id}/work-slips", response_model=DailyReport)
 async def create_work_slip(project_id: str, report: DailyReportCreate, current_user: User = Depends(get_current_user)):
     """Create a new daily report (werkbon) for a project"""
