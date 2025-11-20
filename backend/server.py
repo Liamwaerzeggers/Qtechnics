@@ -1244,6 +1244,131 @@ async def get_calendar_events(current_user: User = Depends(get_current_user)):
     
     return events
 
+# ============= WERKBON / DAILY REPORT ROUTES =============
+
+@api_router.post("/projects/{project_id}/work-slips", response_model=DailyReport)
+async def create_work_slip(project_id: str, report: DailyReportCreate, current_user: User = Depends(get_current_user)):
+    """Create a new daily report (werkbon) for a project"""
+    # Verify project exists and belongs to user
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Create report
+    report_obj = DailyReport(**report.model_dump(), user_id=current_user.id)
+    report_doc = report_obj.model_dump()
+    report_doc["date"] = report_doc["date"].isoformat()
+    report_doc["created_at"] = report_doc["created_at"].isoformat()
+    report_doc["updated_at"] = report_doc["updated_at"].isoformat()
+    
+    await db.work_slips.insert_one(report_doc)
+    
+    return report_obj
+
+@api_router.get("/projects/{project_id}/work-slips", response_model=List[DailyReport])
+async def get_work_slips(project_id: str, current_user: User = Depends(get_current_user)):
+    """Get all daily reports for a project"""
+    # Verify project exists
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    reports = await db.work_slips.find({"project_id": project_id}, {"_id": 0}).sort("date", -1).to_list(1000)
+    
+    # Convert date strings back to datetime
+    for report in reports:
+        for field in ["date", "created_at", "updated_at"]:
+            if field in report and isinstance(report[field], str):
+                report[field] = datetime.fromisoformat(report[field])
+    
+    return reports
+
+@api_router.put("/projects/{project_id}/work-slips/{slip_id}", response_model=DailyReport)
+async def update_work_slip(project_id: str, slip_id: str, report_update: DailyReportUpdate, current_user: User = Depends(get_current_user)):
+    """Update a daily report"""
+    # Verify project exists
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Find existing report
+    existing = await db.work_slips.find_one({"id": slip_id, "project_id": project_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Work slip not found")
+    
+    # Update
+    update_data = {k: v for k, v in report_update.model_dump().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.work_slips.update_one(
+        {"id": slip_id, "project_id": project_id},
+        {"$set": update_data}
+    )
+    
+    # Fetch updated report
+    updated = await db.work_slips.find_one({"id": slip_id}, {"_id": 0})
+    
+    # Convert dates
+    for field in ["date", "created_at", "updated_at"]:
+        if field in updated and isinstance(updated[field], str):
+            updated[field] = datetime.fromisoformat(updated[field])
+    
+    return DailyReport(**updated)
+
+@api_router.delete("/projects/{project_id}/work-slips/{slip_id}")
+async def delete_work_slip(project_id: str, slip_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a daily report"""
+    # Verify project exists
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    result = await db.work_slips.delete_one({"id": slip_id, "project_id": project_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Work slip not found")
+    
+    return {"message": "Work slip deleted"}
+
+@api_router.post("/projects/{project_id}/work-slips/{slip_id}/photos")
+async def upload_work_slip_photo(
+    project_id: str, 
+    slip_id: str, 
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload a photo to a work slip"""
+    # Verify project exists
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Verify work slip exists
+    slip = await db.work_slips.find_one({"id": slip_id, "project_id": project_id})
+    if not slip:
+        raise HTTPException(status_code=404, detail="Work slip not found")
+    
+    # Save file to disk
+    upload_dir = Path(__file__).parent / "uploads" / "work_slips" / project_id
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    file_extension = Path(file.filename).suffix
+    unique_filename = f"{slip_id}_{uuid.uuid4().hex[:8]}{file_extension}"
+    file_path = upload_dir / unique_filename
+    
+    with open(file_path, "wb") as f:
+        content = await file.read()
+        f.write(content)
+    
+    # Add to work slip photos array
+    photo_url = f"/uploads/work_slips/{project_id}/{unique_filename}"
+    await db.work_slips.update_one(
+        {"id": slip_id},
+        {"$push": {"photos": photo_url}}
+    )
+    
+    return {"url": photo_url, "filename": unique_filename}
+
 # Include router
 app.include_router(api_router)
 
