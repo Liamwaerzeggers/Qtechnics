@@ -34,7 +34,22 @@ export default function QuoteDetailPage() {
 
   useEffect(() => {
     fetchQuoteData();
+    fetchMaterials();
   }, [quoteId]);
+
+  useEffect(() => {
+    if (materialSearch) {
+      const filtered = materials.filter(m => 
+        m.name.toLowerCase().includes(materialSearch.toLowerCase()) ||
+        m.sku.toLowerCase().includes(materialSearch.toLowerCase()) ||
+        (m.category && m.category.toLowerCase().includes(materialSearch.toLowerCase())) ||
+        (m.brand && m.brand.toLowerCase().includes(materialSearch.toLowerCase()))
+      );
+      setFilteredMaterials(filtered.slice(0, 20)); // Limit to 20 results
+    } else {
+      setFilteredMaterials([]);
+    }
+  }, [materialSearch, materials]);
 
   const fetchQuoteData = async () => {
     try {
