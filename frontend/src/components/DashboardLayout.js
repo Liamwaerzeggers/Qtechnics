@@ -27,7 +27,11 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
       <header className="sticky top-0 z-50 w-full border-b" style={{backgroundColor: 'white', borderColor: '#E2E8F0'}}>
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div 
+              className="flex items-center space-x-4 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => navigate('/dashboard')}
+              data-testid="dashboard-logo"
+            >
               <FileSpreadsheet size={32} style={{color: '#1E40AF'}} />
               <span className="text-xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
                 Offerte Dashboard
