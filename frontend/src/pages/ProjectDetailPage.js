@@ -52,7 +52,20 @@ export default function ProjectDetailPage() {
       fetchInvoices();
     } catch (error) {
       console.error('Failed to create invoice:', error);
-      toast.error('Kon factuur niet aanmaken: ' + (error.response?.data?.detail || error.message));
+      console.error('Error response:', error.response?.data);
+      
+      // Better error display
+      let errorMsg = 'Kon factuur niet aanmaken';
+      if (error.response?.data?.detail) {
+        if (Array.isArray(error.response.data.detail)) {
+          errorMsg += ': ' + error.response.data.detail.map(e => e.msg || e).join(', ');
+        } else {
+          errorMsg += ': ' + error.response.data.detail;
+        }
+      } else if (error.message) {
+        errorMsg += ': ' + error.message;
+      }
+      toast.error(errorMsg);
     }
   };
 
