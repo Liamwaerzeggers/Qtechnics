@@ -487,22 +487,31 @@ export default function ProjectDetailPage() {
                             incl. BTW
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteInvoice(idx, invoice.filename)}
-                          onTouchEnd={(e) => {
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             handleDeleteInvoice(idx, invoice.filename);
                           }}
-                          className="hover:bg-red-100 text-red-600 hover:text-red-700 min-w-[44px] min-h-[44px] touch-manipulation"
-                          style={{
-                            WebkitTapHighlightColor: 'transparent'
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleDeleteInvoice(idx, invoice.filename);
+                            }
                           }}
+                          className="flex items-center justify-center hover:bg-red-100 text-red-600 hover:text-red-700 min-w-[48px] min-h-[48px] rounded-md cursor-pointer select-none active:scale-95 transition-all"
+                          style={{
+                            WebkitTapHighlightColor: 'rgba(239, 68, 68, 0.3)',
+                            touchAction: 'manipulation',
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none'
+                          }}
+                          aria-label={`Verwijder factuur ${invoice.filename}`}
                         >
-                          <Trash2 size={20} />
-                        </Button>
+                          <Trash2 size={22} />
+                        </div>
                       </div>
                     </div>
                   ))}
