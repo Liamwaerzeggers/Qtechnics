@@ -171,6 +171,18 @@ backend:
         agent: "main"
         comment: "recalculate_quote_totals function (lines 598-634) correctly aggregates subtotals by item_type, creates vat_breakdown dict by rate, and calculates grand totals. Tested with 3 labor + 3 material items - all correct to the cent."
 
+  - task: "Invoice PDF Download - Generate and download customer invoice PDFs"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Tested GET /api/invoices/{invoice_id}/pdf endpoint. Successfully created test invoice via POST /api/projects/{project_id}/invoices/create, then downloaded PDF. Verified: Content-Type: application/pdf, Content-Disposition header with filename (factuur_FACT-2025-002.pdf), valid PDF format (101,634 bytes), proper reportlab Image import working. All requirements met."
+
 frontend:
   - task: "Q Technics Logo Display - Show company logo in header"
     implemented: true
