@@ -833,7 +833,7 @@ async def create_project(project_create: ProjectCreate, current_user: User = Dep
 @api_router.get("/projects", response_model=List[Project])
 async def get_projects(current_user: User = Depends(get_current_user)):
     """Get all projects for current user"""
-    projects = await db.projects.find({"user_id": current_user.id}).to_list(1000)
+    projects = await db.projects.find({"user_id": current_user.id}, {"_id": 0}).to_list(1000)
     
     for project in projects:
         if isinstance(project["created_at"], str):
