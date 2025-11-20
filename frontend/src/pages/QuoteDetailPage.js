@@ -319,44 +319,103 @@ export default function QuoteDetailPage() {
 
                     {!useCustomMaterial && formData.item_type === 'materiaal' ? (
                       <div>
-                        <Label>Zoek Materiaal</Label>
+                        <Label>Selecteer Materiaal</Label>
                         <div className="relative">
-                          <Input 
-                            data-testid="material-search-input"
-                            placeholder="Zoek op naam, SKU, categorie, merk..."
-                            value={materialSearch} 
-                            onChange={(e) => {
-                              setMaterialSearch(e.target.value);
-                              setShowMaterialDropdown(true);
-                            }}
-                            onFocus={() => materialSearch && setShowMaterialDropdown(true)}
-                          />
-                          {showMaterialDropdown && filteredMaterials.length > 0 && (
+                          <div className="relative">
+                            <Input 
+                              data-testid="material-search-input"
+                              placeholder="Typ om te zoeken of klik voor volledige lijst..."
+                              value={materialSearch} 
+                              onChange={(e) => {
+                                setMaterialSearch(e.target.value);
+                                setShowMaterialDropdown(true);
+                              }}
+                              onFocus={() => setShowMaterialDropdown(true)}
+                            />
+                            <button
+                              type="button"
+                              className="absolute right-2 top-2.5"
+                              onClick={() => {
+                                setShowMaterialDropdown(!showMaterialDropdown);
+                                if (!showMaterialDropdown) {
+                                  setMaterialSearch('');
+                                }
+                              }}
+                            >
+                              <svg className="w-5 h-5" style={{color: '#64748B'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                          </div>
+                          {showMaterialDropdown && (
                             <div 
-                              className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-64 overflow-y-auto"
+                              className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-80 overflow-y-auto"
                               style={{borderColor: '#E2E8F0'}}
                             >
-                              {filteredMaterials.map((material) => (
-                                <div
-                                  key={material.id}
-                                  data-testid={`material-option-${material.id}`}
-                                  className="p-3 hover:bg-gray-50 cursor-pointer border-b"
-                                  onClick={() => handleSelectMaterial(material)}
-                                  style={{borderColor: '#F1F5F9'}}
-                                >
-                                  <div className="font-semibold" style={{color: '#1E293B'}}>{material.name}</div>
-                                  <div className="text-sm" style={{color: '#64748B'}}>
-                                    SKU: {material.sku} | €{material.price.toFixed(2)}
-                                    {material.brand && ` | ${material.brand}`}
+                              {filteredMaterials.length > 0 ? (
+                                <>
+                                  <div className="sticky top-0 bg-gray-100 px-3 py-2 text-sm font-semibold" style={{color: '#64748B'}}>
+                                    {filteredMaterials.length} resultaten {materialSearch && `voor "${materialSearch}"`}
                                   </div>
+                                  {filteredMaterials.map((material) => (
+                                    <div
+                                      key={material.id}
+                                      data-testid={`material-option-${material.id}`}
+                                      className="p-3 hover:bg-blue-50 cursor-pointer border-b transition-colors"
+                                      onClick={() => handleSelectMaterial(material)}
+                                      style={{borderColor: '#F1F5F9'}}
+                                    >
+                                      <div className="font-semibold" style={{color: '#1E293B'}}>{material.name}</div>
+                                      <div className="text-sm flex justify-between" style={{color: '#64748B'}}>
+                                        <span>SKU: {material.sku}</span>
+                                        <span className="font-bold" style={{color: '#3B82F6'}}>€{material.price.toFixed(2)}</span>
+                                      </div>
+                                      {material.brand && (
+                                        <div className="text-xs mt-1" style={{color: '#94A3B8'}}>Merk: {material.brand}</div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </>
+                              ) : materialSearch ? (
+                                <div className="p-4 text-center" style={{color: '#94A3B8'}}>
+                                  Geen materialen gevonden voor "{materialSearch}"
                                 </div>
-                              ))}
+                              ) : (
+                                <>
+                                  <div className="sticky top-0 bg-gray-100 px-3 py-2 text-sm font-semibold" style={{color: '#64748B'}}>
+                                    Alle materialen ({materials.length})
+                                  </div>
+                                  {materials.slice(0, 50).map((material) => (
+                                    <div
+                                      key={material.id}
+                                      data-testid={`material-option-${material.id}`}
+                                      className="p-3 hover:bg-blue-50 cursor-pointer border-b transition-colors"
+                                      onClick={() => handleSelectMaterial(material)}
+                                      style={{borderColor: '#F1F5F9'}}
+                                    >
+                                      <div className="font-semibold" style={{color: '#1E293B'}}>{material.name}</div>
+                                      <div className="text-sm flex justify-between" style={{color: '#64748B'}}>
+                                        <span>SKU: {material.sku}</span>
+                                        <span className="font-bold" style={{color: '#3B82F6'}}>€{material.price.toFixed(2)}</span>
+                                      </div>
+                                      {material.brand && (
+                                        <div className="text-xs mt-1" style={{color: '#94A3B8'}}>Merk: {material.brand}</div>
+                                      )}
+                                    </div>
+                                  ))}
+                                  {materials.length > 50 && (
+                                    <div className="p-3 text-center text-sm" style={{color: '#64748B'}}>
+                                      Typ om door {materials.length} materialen te zoeken...
+                                    </div>
+                                  )}
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
-                        {materialSearch && filteredMaterials.length === 0 && (
-                          <p className="text-sm mt-1" style={{color: '#64748B'}}>Geen materialen gevonden</p>
-                        )}
+                        <p className="text-xs mt-1" style={{color: '#64748B'}}>
+                          {materials.length} materialen beschikbaar - typ om te zoeken
+                        </p>
                       </div>
                     ) : null}
 
