@@ -902,9 +902,9 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
     total_projects = await db.projects.count_documents({"user_id": current_user.id})
     total_materials = await db.materials.count_documents({"user_id": current_user.id})
     
-    # Get recent items
-    recent_leads = await db.leads.find({"user_id": current_user.id}).sort("created_at", -1).limit(5).to_list(5)
-    recent_quotes = await db.quotes.find({"user_id": current_user.id}).sort("created_at", -1).limit(5).to_list(5)
+    # Get recent items - exclude MongoDB _id field
+    recent_leads = await db.leads.find({"user_id": current_user.id}, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
+    recent_quotes = await db.quotes.find({"user_id": current_user.id}, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
     
     return {
         "total_leads": total_leads,
