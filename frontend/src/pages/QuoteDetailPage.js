@@ -174,6 +174,29 @@ export default function QuoteDetailPage() {
           </div>
         </div>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>Offerte Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <Label>Status:</Label>
+              <Select value={quote.status} onValueChange={handleStatusChange}>
+                <SelectTrigger data-testid="quote-status-select" className="w-64">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="concept">Concept</SelectItem>
+                  <SelectItem value="klaar">Klaar</SelectItem>
+                  <SelectItem value="verzonden">Verzonden</SelectItem>
+                  <SelectItem value="goedgekeurd">Goedgekeurd</SelectItem>
+                  <SelectItem value="afgewezen">Afgewezen</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
         {lead && (
           <Card>
             <CardHeader>
