@@ -207,6 +207,7 @@ metadata:
 
 test_plan:
   current_focus:
+    - "Test Materials Catalog integration in Work Slips - verify both quote and catalog materials are visible with proper badges"
     - "Verify logo displays correctly in frontend header"
     - "End-to-end test: Create quote with mixed items, verify PDF output"
   stuck_tasks: []
