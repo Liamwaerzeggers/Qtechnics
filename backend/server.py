@@ -1390,6 +1390,75 @@ async def get_project_invoices(
     invoices = project.get("invoice_uploads", [])
     return {"invoices": invoices}
 
+@api_router.delete("/projects/{project_id}/invoices/{invoice_index}")
+async def delete_project_invoice(
+    project_id: str,
+    invoice_index: int,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete an invoice and revert the cost changes."""
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    invoices = project.get("invoice_uploads", [])
+    if invoice_index < 0 or invoice_index >= len(invoices):
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    # Get the invoice to delete
+    invoice_to_delete = invoices[invoice_index]
+    invoice_excl_vat = invoice_to_delete.get("total_excl_vat", 0)
+    invoice_incl_vat = invoice_to_delete.get("total_incl_vat", 0)
+    
+    # Remove invoice from list
+    invoices.pop(invoice_index)
+    
+    # Recalculate costs (subtract the invoice amounts)
+    current_material_costs = project.get("material_costs", 0)
+    current_material_costs_incl_vat = project.get("material_costs_incl_vat", 0)
+    current_labor_costs = project.get("labor_hours", 0) * project.get("labor_cost_per_hour", 0)
+    current_other_costs = project.get("other_costs", 0)
+    
+    new_material_costs = max(0, current_material_costs - invoice_excl_vat)
+    new_material_costs_incl_vat = max(0, current_material_costs_incl_vat - invoice_incl_vat)
+    new_total_costs = current_labor_costs + new_material_costs + current_other_costs
+    new_total_costs_incl_vat = current_labor_costs + new_material_costs_incl_vat + current_other_costs
+    
+    # Update project
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {
+            "invoice_uploads": invoices,
+            "material_costs": new_material_costs,
+            "material_costs_incl_vat": new_material_costs_incl_vat,
+            "total_costs": new_total_costs,
+            "total_costs_incl_vat": new_total_costs_incl_vat
+        }}
+    )
+    
+    # Recalculate profit
+    quote = await db.quotes.find_one({"id": project["quote_id"]})
+    if quote:
+        revenue = quote.get("total_incl_vat", quote.get("total_price", 0))
+        profit = revenue - new_total_costs_incl_vat
+        margin = (profit / revenue * 100) if revenue > 0 else 0
+        
+        await db.projects.update_one(
+            {"id": project_id},
+            {"$set": {
+                "profit": profit,
+                "profit_margin": margin
+            }}
+        )
+    
+    logger.info(f"Invoice {invoice_index} deleted from project {project_id}")
+    
+    return {
+        "success": True,
+        "message": "Invoice deleted and costs adjusted",
+        "deleted_invoice": invoice_to_delete
+    }
+
 # ============= WERKBON / DAILY REPORT ROUTES =============
 
 @api_router.post("/projects/{project_id}/work-slips", response_model=DailyReport)
