@@ -101,7 +101,11 @@ class Quote(BaseModel):
     status: str = "concept"
     subtotal_labor: float = 0.0
     subtotal_material: float = 0.0
-    total_price: float = 0.0
+    total_excl_vat: float = 0.0
+    vat_breakdown: dict = {}  # {"21": 100.50, "6": 25.30}
+    total_vat: float = 0.0
+    total_incl_vat: float = 0.0
+    total_price: float = 0.0  # Backwards compatibility
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
 
