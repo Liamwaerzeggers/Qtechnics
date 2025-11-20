@@ -538,7 +538,7 @@ async def get_line_items(quote_id: str, current_user: User = Depends(get_current
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
     
-    items = await db.line_items.find({"quote_id": quote_id}).to_list(1000)
+    items = await db.line_items.find({"quote_id": quote_id}, {"_id": 0}).to_list(1000)
     
     for item in items:
         if isinstance(item["created_at"], str):
