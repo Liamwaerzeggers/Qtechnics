@@ -1255,7 +1255,8 @@ async def get_calendar_events(current_user: User = Depends(get_current_user)):
                 "start": start.isoformat() if start else None,
                 "end": end.isoformat() if end else None,
                 "project_id": project["id"],
-                "status": project.get("status", "actief")
+                "status": project.get("status", "actief"),
+                "color": project.get("color", "#1E40AF")
             }
             
             # Only add if we have at least a start date
