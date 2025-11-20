@@ -72,6 +72,52 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
         </div>
       </header>
 
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-40 bg-black bg-opacity-50" onClick={() => setMobileMenuOpen(false)}>
+          <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b">
+              <div className="flex items-center space-x-3">
+                {user?.picture && (
+                  <img src={user.picture} alt={user.name} className="w-10 h-10 rounded-full" />
+                )}
+                <div>
+                  <div className="font-semibold" style={{color: '#1E3A8A'}}>{user?.name}</div>
+                  <div className="text-xs" style={{color: '#64748B'}}>{user?.email}</div>
+                </div>
+              </div>
+            </div>
+            <nav className="p-4 space-y-2">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
+                return (
+                  <button
+                    key={item.path}
+                    data-testid={item.testId}
+                    onClick={() => {
+                      navigate(item.path);
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all text-left"
+                    style={isActive ? {
+                      backgroundColor: '#DBEAFE',
+                      color: '#1E40AF',
+                      fontWeight: '600'
+                    } : {
+                      color: '#64748B'
+                    }}
+                  >
+                    <Icon size={20} />
+                    <span>{item.name}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+      )}
+
       <div className="container mx-auto px-4 py-8">
         <div className="flex gap-8">
           {/* Sidebar */}
