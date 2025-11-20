@@ -207,9 +207,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Test Materials Catalog integration in Work Slips - verify both quote and catalog materials are visible with proper badges"
-    - "Verify logo displays correctly in frontend header"
-    - "End-to-end test: Create quote with mixed items, verify PDF output"
+    - "Test corrected Werkbon module - verify ONLY quote materials are visible (no full catalog access)"
+    - "Verify no badges shown, no prices visible, proper section titles"
+    - "Test with quote containing both catalog and manual materials"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
