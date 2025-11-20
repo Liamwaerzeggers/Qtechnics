@@ -1655,6 +1655,15 @@ async def create_invoice(
     current_user: User = Depends(get_current_user)
 ):
     """Create a milestone-based invoice for a project"""
+    logger.info(f"Creating invoice - received data: {request}")
+    
+    # Validate request data
+    try:
+        invoice_data = InvoiceCreate(**request)
+    except Exception as e:
+        logger.error(f"Validation error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    
     logger.info(f"Creating invoice for project {project_id}, milestone: {invoice_data.milestone}, percentage: {invoice_data.milestone_percentage}")
     
     # Verify project exists
