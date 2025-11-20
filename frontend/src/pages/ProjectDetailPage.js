@@ -440,7 +440,7 @@ export default function ProjectDetailPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     onClick={() => createInvoice('10_approval', 10)}
-                    disabled={invoices.some(inv => inv.milestone === '10_approval')}
+                    disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '10_approval')}
                     className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
                     style={{borderColor: '#CBD5E1'}}
                   >
@@ -448,7 +448,7 @@ export default function ProjectDetailPage() {
                       <div className="font-semibold" style={{color: '#1E293B'}}>10% Bij Akkoord</div>
                       <div className="text-sm" style={{color: '#64748B'}}>Akkoord offerte</div>
                     </div>
-                    {invoices.some(inv => inv.milestone === '10_approval') && (
+                    {Array.isArray(invoices) && invoices.some(inv => inv.milestone === '10_approval') && (
                       <span className="text-green-600 font-bold">✓</span>
                     )}
                   </button>
