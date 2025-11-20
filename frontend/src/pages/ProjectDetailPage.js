@@ -474,18 +474,27 @@ export default function ProjectDetailPage() {
                             e.preventDefault();
                             e.stopPropagation();
                             
-                            if (!window.confirm(`Factuur "${invoice.filename}" verwijderen? Kosten worden teruggedraaid.`)) return;
+                            console.log('Delete button clicked for invoice index:', idx);
+                            console.log('Project ID:', projectId);
+                            console.log('API URL:', `${API}/projects/${projectId}/invoices/${idx}`);
+                            
+                            if (!window.confirm(`Factuur "${invoice.filename}" verwijderen? Kosten worden teruggedraaid.`)) {
+                              console.log('User cancelled deletion');
+                              return;
+                            }
                             
                             try {
-                              await axios.delete(
+                              console.log('Sending DELETE request...');
+                              const response = await axios.delete(
                                 `${API}/projects/${projectId}/invoices/${idx}`,
                                 { withCredentials: true }
                               );
+                              console.log('Delete response:', response.data);
                               toast.success('Factuur verwijderd en kosten aangepast');
                               fetchProjectData();
                             } catch (error) {
-                              toast.error('Kon factuur niet verwijderen');
-                              console.error(error);
+                              console.error('Delete error:', error);
+                              toast.error('Kon factuur niet verwijderen: ' + (error.response?.data?.detail || error.message));
                             }
                           }}
                           className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-red-100 active:bg-red-200 transition-colors cursor-pointer"
