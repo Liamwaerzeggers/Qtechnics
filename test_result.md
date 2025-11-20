@@ -201,21 +201,120 @@ test_plan:
   test_all: false
   test_priority: "high_first"
 
+  - task: "Calendar Feature - Project events with date visualization"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py, /app/frontend/src/pages/CalendarPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Calendar fully implemented: Backend endpoint (/api/calendar/events) returns project events. Frontend page with react-big-calendar, Dutch localization, color-coded by status. Navigation added. Mobile responsive."
+
+  - task: "Work Slips (Werkbonnen) - Daily reports with photos and dual language"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py, /app/frontend/src/pages/ProjectWorkSlipPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Full CRUD implementation: Create, read, update, delete work slips. Photo upload with file storage. Dual language (NL/UK) for notes and feedback. Real-time updates. Mobile responsive. Link added from ProjectDetailPage."
+
+  - task: "Invoice Upload with PDF Parsing - Extract amounts from invoices"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py, /app/backend/invoice_parser.py, /app/frontend/src/pages/ProjectDetailPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Invoice parser using pdfplumber. Extracts total_excl_vat, total_incl_vat, vat_amount from Dutch invoices. Auto-updates project costs. Upload UI in ProjectDetailPage with extracted amounts display. Supports PDF only."
+
+  - task: "Mobile Compatibility - Responsive design for all pages"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/DashboardLayout.js, CalendarPage.js, ProjectWorkSlipPage.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Mobile hamburger menu added to DashboardLayout. All grids responsive (grid-cols-1 sm:grid-cols-2 lg:grid-cols-4). Headers and buttons stack on mobile. Calendar height adapts. Photos grid responsive. User name hidden on small screens."
+
+  - task: "Translation Helper - Dual language support for work slips"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/ProjectWorkSlipPage.js"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Client-side translation helper with copy buttons (NL↔UK). Visual indicators (flags 🇳🇱🇺🇦). Tooltip suggests using Google Translate. All work slip fields support dual language."
+
 agent_communication:
   - agent: "main"
     message: |
-      Session 1 Complete:
-      ✅ Labor bundling on PDF - WORKING
-      ✅ VAT breakdown on PDF - WORKING  
-      ✅ Systemic ObjectId fix - WORKING (prevents recurring serialization errors)
-      ✅ Q Technics logo - IMPLEMENTED (needs visual verification)
+      Session 2 Complete - Fase 2 Fully Implemented:
       
-      Backend testing: Automated test script created (/app/test_labor_bundling.py) and passed.
-      Test PDF generated: /app/test_quote_OFF-2025-8F6185.pdf (verified with extract_file_tool)
+      ✅ **FASE 1** (from session 1):
+      - Labor bundling on PDF - WORKING
+      - VAT breakdown on PDF - WORKING  
+      - Systemic ObjectId fix - WORKING
+      - Q Technics logo - IMPLEMENTED
       
-      Frontend testing: Logo implementation done but not visually verified due to auth complexity.
+      ✅ **FASE 2** (NEW):
+      1. Calendar Tab - IMPLEMENTED
+         - Backend: GET /api/calendar/events
+         - Frontend: CalendarPage with react-big-calendar
+         - Dutch localization, color-coded events
+         - Click event → navigate to project
+         - Mobile responsive
       
-      Next steps: 
-      1. Test logo display via testing agent
-      2. Implement upcoming features (Calendar, Work Slips)
-      3. Handle Invoice PDF uploads with parsing
+      2. Werkbonnen (Work Slips) - IMPLEMENTED
+         - Full CRUD: POST/GET/PUT/DELETE endpoints
+         - Photo upload: POST /api/projects/{id}/work-slips/{slip_id}/photos
+         - Dual language: notes_nl, notes_uk, office_feedback_nl, office_feedback_uk
+         - Real-time updates
+         - Mobile responsive with photo grid
+      
+      3. Invoice Upload with PDF Parsing - IMPLEMENTED
+         - pdfplumber parser for Dutch invoices
+         - Extracts: total_excl_vat, total_incl_vat, vat_amount
+         - Auto-updates project costs and profit
+         - Upload UI in ProjectDetailPage
+         - Shows extracted amounts after upload
+      
+      4. Translation Helper - IMPLEMENTED (client-side)
+         - Copy buttons for NL↔UK translation
+         - Visual language indicators (flags)
+         - Tooltip suggests Google Translate
+         - All work slip fields dual language ready
+      
+      5. Mobile Compatibility - IMPLEMENTED
+         - Hamburger menu with overlay
+         - All grids responsive
+         - Headers stack on mobile
+         - Calendar height adapts
+         - Photo grids responsive
+      
+      **Testing Needed:**
+      - Calendar: Add project with dates, verify event shows
+      - Work Slips: Create slip, add photos, test dual language
+      - Invoice Upload: Upload Dutch PDF, verify extraction
+      - Mobile: Test all pages on mobile viewport
+      
+      **Dependencies Installed:**
+      - pdfplumber==0.11.0
+      - pdfminer.six-20231228
+      - pypdfium2-5.0.0
+      - react-big-calendar + moment
