@@ -554,46 +554,88 @@ async def recalculate_quote_totals(quote_id: str):
 @api_router.post("/materials/upload")
 async def upload_materials_csv(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
     """Upload materials CSV and replace existing catalog"""
+    logger.info(f"Uploading materials CSV: {file.filename} for user {current_user.id}")
+    
     if not file.filename.endswith('.csv'):
-        raise HTTPException(status_code=400, detail="Only CSV files are allowed")
+        raise HTTPException(status_code=400, detail="Alleen CSV bestanden zijn toegestaan")
     
     try:
         # Read CSV
         content = await file.read()
+        logger.info(f"CSV file size: {len(content)} bytes")
+        
         df = pd.read_csv(io.BytesIO(content))
+        logger.info(f"CSV loaded with {len(df)} rows and columns: {list(df.columns)}")
         
         # Validate required columns
         required_columns = ['sku', 'name', 'price']
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
-            raise HTTPException(status_code=400, detail=f"Missing required columns: {missing_columns}")
+            error_msg = f"Ontbrekende kolommen: {missing_columns}. Vereiste kolommen: sku, name, price"
+            logger.error(error_msg)
+            raise HTTPException(status_code=400, detail=error_msg)
         
         # Delete existing materials for this user
-        await db.materials.delete_many({"user_id": current_user.id})
+        delete_result = await db.materials.delete_many({"user_id": current_user.id})
+        logger.info(f"Deleted {delete_result.deleted_count} existing materials")
         
-        # Insert new materials
+        # Insert new materials in batches for better performance
         materials = []
-        for _, row in df.iterrows():
-            material = Material(
-                sku=str(row['sku']),
-                name=str(row['name']),
-                description=str(row.get('description', '')) if pd.notna(row.get('description')) else None,
-                category=str(row.get('category', '')) if pd.notna(row.get('category')) else None,
-                brand=str(row.get('brand', '')) if pd.notna(row.get('brand')) else None,
-                price=float(row['price']),
-                user_id=current_user.id
-            )
-            material_doc = material.model_dump()
-            material_doc["created_at"] = material_doc["created_at"].isoformat()
-            materials.append(material_doc)
+        skipped = 0
         
+        for idx, row in df.iterrows():
+            try:
+                # Validate price
+                price = float(row['price'])
+                if price < 0:
+                    logger.warning(f"Skipping row {idx}: negative price")
+                    skipped += 1
+                    continue
+                
+                material = Material(
+                    sku=str(row['sku']).strip(),
+                    name=str(row['name']).strip(),
+                    description=str(row.get('description', '')).strip() if pd.notna(row.get('description')) else '',
+                    category=str(row.get('category', '')).strip() if pd.notna(row.get('category')) else '',
+                    brand=str(row.get('brand', '')).strip() if pd.notna(row.get('brand')) else '',
+                    price=price,
+                    user_id=current_user.id
+                )
+                material_doc = material.model_dump()
+                material_doc["created_at"] = material_doc["created_at"].isoformat()
+                materials.append(material_doc)
+                
+                # Insert in batches of 1000
+                if len(materials) >= 1000:
+                    await db.materials.insert_many(materials)
+                    logger.info(f"Inserted batch of {len(materials)} materials")
+                    materials = []
+                    
+            except Exception as e:
+                logger.warning(f"Skipping row {idx}: {str(e)}")
+                skipped += 1
+                continue
+        
+        # Insert remaining materials
         if materials:
             await db.materials.insert_many(materials)
+            logger.info(f"Inserted final batch of {len(materials)} materials")
         
-        return {"message": f"Successfully uploaded {len(materials)} materials", "count": len(materials)}
+        total_inserted = len(df) - skipped
+        logger.info(f"Upload complete: {total_inserted} materials inserted, {skipped} skipped")
+        
+        return {
+            "message": f"Succesvol {total_inserted} materialen geüpload", 
+            "count": total_inserted,
+            "skipped": skipped
+        }
     
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error processing CSV: {str(e)}")
+        error_msg = f"Fout bij verwerken CSV: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=400, detail=error_msg)
 
 @api_router.get("/materials/search")
 async def search_materials(q: str, current_user: User = Depends(get_current_user)):
