@@ -29,19 +29,31 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
       <header className="sticky top-0 z-50 w-full border-b" style={{backgroundColor: 'white', borderColor: '#E2E8F0'}}>
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
-            <div 
-              className="flex items-center space-x-4 cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => navigate('/dashboard')}
-              data-testid="dashboard-logo"
-            >
-              <img 
-                src="/qtechnics_logo.png" 
-                alt="Q Technics Logo" 
-                className="h-12 w-auto"
-              />
+            <div className="flex items-center space-x-4">
+              {/* Mobile Menu Button */}
+              <button
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                style={{color: '#1E40AF'}}
+              >
+                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+              
+              {/* Logo */}
+              <div 
+                className="cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => navigate('/dashboard')}
+                data-testid="dashboard-logo"
+              >
+                <img 
+                  src="/qtechnics_logo.png" 
+                  alt="Q Technics Logo" 
+                  className="h-10 sm:h-12 w-auto"
+                />
+              </div>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               {user?.picture && (
                 <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
               )}
