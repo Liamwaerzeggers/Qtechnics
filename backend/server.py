@@ -1628,6 +1628,354 @@ async def upload_work_slip_photo(
     
     return {"url": photo_url, "filename": unique_filename}
 
+# ============= INVOICE / FACTUUR ROUTES =============
+
+async def generate_invoice_number():
+    """Generate next invoice number in format FACT-2025-001"""
+    current_year = datetime.now(timezone.utc).year
+    
+    # Find last invoice of current year
+    last_invoice = await db.invoices.find_one(
+        {"invoice_number": {"$regex": f"^FACT-{current_year}-"}},
+        sort=[("invoice_number", -1)]
+    )
+    
+    if last_invoice:
+        # Extract number and increment
+        last_num = int(last_invoice["invoice_number"].split("-")[-1])
+        new_num = last_num + 1
+    else:
+        new_num = 1
+    
+    return f"FACT-{current_year}-{new_num:03d}"
+
+@api_router.post("/projects/{project_id}/invoices", response_model=Invoice)
+async def create_invoice(
+    project_id: str,
+    invoice_data: InvoiceCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a milestone-based invoice for a project"""
+    # Verify project exists
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Get quote
+    quote = await db.quotes.find_one({"id": project["quote_id"]})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    # Get line items
+    line_items = await db.line_items.find({"quote_id": quote["id"]}, {"_id": 0}).to_list(1000)
+    
+    # Calculate invoice amount based on milestone percentage
+    percentage = invoice_data.milestone_percentage / 100.0
+    
+    invoice_subtotal_labor = quote.get("subtotal_labor", 0) * percentage
+    invoice_subtotal_material = quote.get("subtotal_material", 0) * percentage
+    invoice_total_excl_vat = quote.get("total_excl_vat", 0) * percentage
+    invoice_total_vat = quote.get("total_vat", 0) * percentage
+    invoice_total_incl_vat = quote.get("total_incl_vat", 0) * percentage
+    
+    # Calculate VAT breakdown
+    vat_breakdown = {}
+    for vat_rate, amount in quote.get("vat_breakdown", {}).items():
+        vat_breakdown[str(vat_rate)] = amount * percentage
+    
+    # Generate invoice number
+    invoice_number = await generate_invoice_number()
+    
+    # Calculate due date (7 days from now)
+    due_date = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    # Create invoice
+    invoice = Invoice(
+        invoice_number=invoice_number,
+        project_id=project_id,
+        quote_id=quote["id"],
+        milestone=invoice_data.milestone,
+        milestone_percentage=invoice_data.milestone_percentage,
+        line_items=line_items,
+        subtotal_labor=invoice_subtotal_labor,
+        subtotal_material=invoice_subtotal_material,
+        total_excl_vat=invoice_total_excl_vat,
+        vat_breakdown=vat_breakdown,
+        total_vat=invoice_total_vat,
+        total_incl_vat=invoice_total_incl_vat,
+        payment_status="unpaid",
+        payment_term_days=7,
+        due_date=due_date,
+        user_id=current_user.id
+    )
+    
+    # Save to database
+    invoice_doc = invoice.model_dump()
+    invoice_doc["invoice_date"] = invoice_doc["invoice_date"].isoformat()
+    invoice_doc["created_at"] = invoice_doc["created_at"].isoformat()
+    invoice_doc["due_date"] = invoice_doc["due_date"].isoformat()
+    
+    await db.invoices.insert_one(invoice_doc)
+    
+    logger.info(f"Invoice {invoice_number} created for project {project_id}, milestone: {invoice_data.milestone}")
+    
+    return invoice
+
+@api_router.get("/projects/{project_id}/invoices", response_model=List[Invoice])
+async def get_project_invoices(
+    project_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all invoices for a project"""
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    invoices = await db.invoices.find({"project_id": project_id}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Convert dates
+    for invoice in invoices:
+        for field in ["invoice_date", "created_at", "due_date"]:
+            if field in invoice and isinstance(invoice[field], str):
+                invoice[field] = datetime.fromisoformat(invoice[field])
+        if "paid_date" in invoice and invoice["paid_date"] and isinstance(invoice["paid_date"], str):
+            invoice["paid_date"] = datetime.fromisoformat(invoice["paid_date"])
+    
+    return invoices
+
+@api_router.put("/invoices/{invoice_id}", response_model=Invoice)
+async def update_invoice(
+    invoice_id: str,
+    invoice_update: InvoiceUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Update invoice payment status"""
+    invoice = await db.invoices.find_one({"id": invoice_id})
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    # Verify user owns the project
+    project = await db.projects.find_one({"id": invoice["project_id"], "user_id": current_user.id})
+    if not project:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    update_data = {k: v for k, v in invoice_update.model_dump().items() if v is not None}
+    
+    if "paid_date" in update_data:
+        update_data["paid_date"] = update_data["paid_date"].isoformat()
+    
+    await db.invoices.update_one(
+        {"id": invoice_id},
+        {"$set": update_data}
+    )
+    
+    updated_invoice = await db.invoices.find_one({"id": invoice_id}, {"_id": 0})
+    
+    # Convert dates
+    for field in ["invoice_date", "created_at", "due_date"]:
+        if field in updated_invoice and isinstance(updated_invoice[field], str):
+            updated_invoice[field] = datetime.fromisoformat(updated_invoice[field])
+    if "paid_date" in updated_invoice and updated_invoice["paid_date"]:
+        updated_invoice["paid_date"] = datetime.fromisoformat(updated_invoice["paid_date"])
+    
+    return Invoice(**updated_invoice)
+
+@api_router.get("/invoices/{invoice_id}/pdf")
+async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_current_user)):
+    """Generate and download invoice PDF"""
+    # Get invoice
+    invoice = await db.invoices.find_one({"id": invoice_id})
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    # Verify user owns the project
+    project = await db.projects.find_one({"id": invoice["project_id"], "user_id": current_user.id})
+    if not project:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get quote and lead for customer info
+    quote = await db.quotes.find_one({"id": invoice["quote_id"]})
+    lead = await db.leads.find_one({"id": quote["lead_id"], "user_id": current_user.id})
+    
+    # Create PDF
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    elements = []
+    
+    styles = getSampleStyleSheet()
+    
+    # Logo
+    logo_path = ROOT_DIR / "qtechnics_logo.png"
+    if logo_path.exists():
+        img = Image(str(logo_path), width=100, height=50)
+        elements.append(img)
+        elements.append(Spacer(1, 12))
+    
+    # Title
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#1E40AF'),
+        spaceAfter=30
+    )
+    elements.append(Paragraph(f"<b>FACTUUR {invoice['invoice_number']}</b>", title_style))
+    elements.append(Spacer(1, 20))
+    
+    # Invoice info table
+    invoice_date_str = datetime.fromisoformat(invoice["invoice_date"]).strftime('%d-%m-%Y') if isinstance(invoice["invoice_date"], str) else invoice["invoice_date"].strftime('%d-%m-%Y')
+    due_date_str = datetime.fromisoformat(invoice["due_date"]).strftime('%d-%m-%Y') if isinstance(invoice["due_date"], str) else invoice["due_date"].strftime('%d-%m-%Y')
+    
+    info_data = [
+        ['Factuurdatum:', invoice_date_str],
+        ['Vervaldatum:', due_date_str],
+        ['Betaaltermijn:', f"{invoice['payment_term_days']} dagen"],
+        ['Status:', 'BETAALD' if invoice['payment_status'] == 'paid' else 'ONBETAALD']
+    ]
+    
+    info_table = Table(info_data, colWidths=[100, 150])
+    info_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    elements.append(info_table)
+    elements.append(Spacer(1, 20))
+    
+    # Customer info
+    elements.append(Paragraph("<b>Factuur aan:</b>", styles['Heading2']))
+    customer_info = f"""
+    {lead.get('name', 'N/A')}<br/>
+    {lead.get('address', 'N/A')}<br/>
+    {lead.get('email', 'N/A')}<br/>
+    {lead.get('phone', 'N/A')}
+    """
+    elements.append(Paragraph(customer_info, styles['Normal']))
+    elements.append(Spacer(1, 20))
+    
+    # Milestone info
+    milestone_names = {
+        "10_approval": "10% bij akkoord offerte",
+        "40_before_start": "40% een week voor start werken",
+        "40_completion": "40% bij oplevering",
+        "10_satisfaction": "10% bij tevredenheid klant"
+    }
+    milestone_text = milestone_names.get(invoice["milestone"], invoice["milestone"])
+    elements.append(Paragraph(f"<b>Deelfactuur:</b> {milestone_text} ({invoice['milestone_percentage']}%)", styles['Normal']))
+    elements.append(Spacer(1, 20))
+    
+    # Line items with VAT - Bundle labor items
+    elements.append(Paragraph("<b>Specificatie</b>", styles['Heading2']))
+    elements.append(Spacer(1, 10))
+    
+    # Adjust amounts based on milestone percentage
+    percentage = invoice["milestone_percentage"] / 100.0
+    
+    # Bundle all labor items
+    labor_items = [item for item in invoice["line_items"] if item.get("item_type") == "arbeid"]
+    material_items = [item for item in invoice["line_items"] if item.get("item_type") == "materiaal"]
+    
+    table_data = [['Omschrijving', 'Aantal', 'Prijs excl.', 'BTW%', 'Totaal excl.', 'Totaal incl.']]
+    
+    if labor_items:
+        labor_total_excl = sum(item.get("total_excl_vat", 0) for item in labor_items) * percentage
+        labor_total_incl = sum(item.get("total_incl_vat", 0) for item in labor_items) * percentage
+        labor_vat_rate = labor_items[0].get("vat_rate", 6) if labor_items else 6
+        
+        table_data.append([
+            'Arbeid totaal',
+            '',
+            '',
+            f'{labor_vat_rate}%',
+            f'€{labor_total_excl:.2f}',
+            f'€{labor_total_incl:.2f}'
+        ])
+    
+    # Individual material items
+    for item in material_items:
+        qty = item.get("quantity", 0)
+        price = item.get("unit_price", 0)
+        vat_rate = item.get("vat_rate", 21)
+        total_excl = item.get("total_excl_vat", 0) * percentage
+        total_incl = item.get("total_incl_vat", 0) * percentage
+        
+        table_data.append([
+            item.get("description", ""),
+            str(int(qty * percentage)),
+            f'€{price:.2f}',
+            f'{vat_rate}%',
+            f'€{total_excl:.2f}',
+            f'€{total_incl:.2f}'
+        ])
+    
+    table = Table(table_data, colWidths=[180, 40, 60, 40, 70, 70])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+    ]))
+    elements.append(table)
+    elements.append(Spacer(1, 20))
+    
+    # Totals with VAT breakdown
+    elements.append(Paragraph("<b>Totalen</b>", styles['Heading2']))
+    elements.append(Spacer(1, 10))
+    
+    story = []
+    story.append(Paragraph(f"<b>Totaal excl. BTW:</b> €{invoice['total_excl_vat']:.2f}", styles['Normal']))
+    
+    # VAT breakdown by rate
+    for vat_rate, vat_amount in invoice.get("vat_breakdown", {}).items():
+        story.append(Paragraph(f"<b>BTW {vat_rate}%:</b> €{vat_amount:.2f}", styles['Normal']))
+    
+    story.append(Paragraph(f"<b>Totaal BTW:</b> €{invoice['total_vat']:.2f}", styles['Normal']))
+    story.append(Spacer(1, 10))
+    
+    total_style = ParagraphStyle(
+        'TotalStyle',
+        parent=styles['Normal'],
+        fontSize=14,
+        textColor=colors.HexColor('#1E40AF'),
+        spaceAfter=6
+    )
+    story.append(Paragraph(f"<b>TE BETALEN: €{invoice['total_incl_vat']:.2f}</b>", total_style))
+    
+    for item in story:
+        elements.append(item)
+    
+    elements.append(Spacer(1, 30))
+    
+    # Payment info
+    elements.append(Paragraph("<b>Betalingsinformatie</b>", styles['Heading2']))
+    payment_info = f"""
+    Gelieve het bedrag van €{invoice['total_incl_vat']:.2f} over te maken binnen {invoice['payment_term_days']} dagen.<br/>
+    Referentie: {invoice['invoice_number']}<br/>
+    <br/>
+    <b>Bankgegevens:</b><br/>
+    [IBAN nummer hier invoeren]<br/>
+    [Bank naam]
+    """
+    elements.append(Paragraph(payment_info, styles['Normal']))
+    
+    doc.build(elements)
+    buffer.seek(0)
+    
+    return Response(
+        content=buffer.getvalue(),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=factuur_{invoice['invoice_number']}.pdf"
+        }
+    )
+
 # Include router
 app.include_router(api_router)
 
