@@ -14,6 +14,7 @@ import QuoteDetailPage from './pages/QuoteDetailPage';
 import MaterialsPage from './pages/MaterialsPage';
 import ProjectsPage from './pages/ProjectsPage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
+import ProjectWorkSlipPage from './pages/ProjectWorkSlipPage';
 import CalendarPage from './pages/CalendarPage';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
