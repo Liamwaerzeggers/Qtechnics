@@ -491,7 +491,7 @@ export default function QuoteDetailPage() {
                       />
                     </div>
                     <div>
-                      <Label>Eenheidsprijs (&euro;)</Label>
+                      <Label>Eenheidsprijs (€ excl. BTW)</Label>
                       <Input 
                         data-testid="item-unitprice-input"
                         type="number" 
@@ -500,6 +500,23 @@ export default function QuoteDetailPage() {
                         onChange={(e) => setFormData({...formData, unit_price: e.target.value})} 
                         required 
                       />
+                    </div>
+                    <div>
+                      <Label>BTW Tarief</Label>
+                      <Select 
+                        value={formData.vat_rate.toString()} 
+                        onValueChange={(value) => setFormData({...formData, vat_rate: parseFloat(value)})}
+                      >
+                        <SelectTrigger data-testid="item-vat-select">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">0% (Vrijgesteld)</SelectItem>
+                          <SelectItem value="6">6% (Laag tarief)</SelectItem>
+                          <SelectItem value="9">9% (Verlaagd tarief)</SelectItem>
+                          <SelectItem value="21">21% (Hoog tarief)</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <Button data-testid="submit-item-button" type="submit" className="w-full" style={{backgroundColor: '#1E40AF'}}>
                       Toevoegen
