@@ -1000,7 +1000,7 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
     lead = await db.leads.find_one({"id": quote["lead_id"], "user_id": current_user.id})
     
     # Get line items
-    items = await db.line_items.find({"quote_id": quote_id}).to_list(1000)
+    items = await db.line_items.find({"quote_id": quote_id}, {"_id": 0}).to_list(1000)
     
     # Create PDF
     buffer = io.BytesIO()
@@ -1125,7 +1125,7 @@ async def export_quote_excel(quote_id: str, current_user: User = Depends(get_cur
     lead = await db.leads.find_one({"id": quote["lead_id"], "user_id": current_user.id})
     
     # Get line items
-    items = await db.line_items.find({"quote_id": quote_id}).to_list(1000)
+    items = await db.line_items.find({"quote_id": quote_id}, {"_id": 0}).to_list(1000)
     
     # Create Excel
     wb = Workbook()
