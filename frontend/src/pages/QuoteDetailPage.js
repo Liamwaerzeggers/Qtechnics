@@ -138,7 +138,7 @@ export default function QuoteDetailPage() {
       
       toast.success('Item toegevoegd!');
       setIsDialogOpen(false);
-      setFormData({ description: '', quantity: '', unit_price: '', item_type: 'materiaal' });
+      setFormData({ description: '', quantity: '', unit_price: '', item_type: 'materiaal', vat_rate: 21 });
       setMaterialSearch('');
       setUseCustomMaterial(false);
       fetchQuoteData();
