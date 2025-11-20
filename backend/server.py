@@ -158,6 +158,14 @@ class Project(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     notes: Optional[str] = None
+    # Cost tracking
+    labor_cost_per_hour: float = 0.0
+    labor_hours: float = 0.0
+    material_costs: float = 0.0
+    other_costs: float = 0.0
+    total_costs: float = 0.0
+    profit: float = 0.0
+    profit_margin: float = 0.0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
 
@@ -174,6 +182,10 @@ class ProjectUpdate(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     notes: Optional[str] = None
+    labor_cost_per_hour: Optional[float] = None
+    labor_hours: Optional[float] = None
+    material_costs: Optional[float] = None
+    other_costs: Optional[float] = None
 
 # ============= AUTH DEPENDENCIES =============
 
