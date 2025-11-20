@@ -120,7 +120,11 @@ class LineItem(BaseModel):
     quantity: float
     unit_price: float
     item_type: str  # "arbeid", "materiaal", "overig"
-    total: float = 0.0
+    vat_rate: float = 21.0  # BTW percentage (0, 6, 9, 21)
+    total_excl_vat: float = 0.0
+    vat_amount: float = 0.0
+    total_incl_vat: float = 0.0
+    total: float = 0.0  # For backwards compatibility
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class LineItemCreate(BaseModel):
@@ -128,12 +132,14 @@ class LineItemCreate(BaseModel):
     quantity: float
     unit_price: float
     item_type: str
+    vat_rate: float = 21.0
 
 class LineItemUpdate(BaseModel):
     description: Optional[str] = None
     quantity: Optional[float] = None
     unit_price: Optional[float] = None
     item_type: Optional[str] = None
+    vat_rate: Optional[float] = None
 
 # Material Models
 class Material(BaseModel):
