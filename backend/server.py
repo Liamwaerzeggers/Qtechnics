@@ -464,9 +464,12 @@ async def add_line_item(quote_id: str, item: LineItemCreate, current_user: User 
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
     
-    # Create line item
+    # Create line item with VAT calculations
     item_obj = LineItem(**item.model_dump(), quote_id=quote_id)
-    item_obj.total = item_obj.quantity * item_obj.unit_price
+    item_obj.total_excl_vat = item_obj.quantity * item_obj.unit_price
+    item_obj.vat_amount = item_obj.total_excl_vat * (item_obj.vat_rate / 100)
+    item_obj.total_incl_vat = item_obj.total_excl_vat + item_obj.vat_amount
+    item_obj.total = item_obj.total_incl_vat  # Backwards compatibility
     
     item_doc = item_obj.model_dump()
     item_doc["created_at"] = item_doc["created_at"].isoformat()
