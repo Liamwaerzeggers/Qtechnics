@@ -225,32 +225,61 @@ class CalendarEvent(BaseModel):
     user_id: str
 
 # Werkbon (Daily Report) Models
+class MaterialUsed(BaseModel):
+    """Material from quote that was used"""
+    material_id: str  # Line item ID from quote
+    description_nl: str
+    description_uk: str
+    quantity_used: Optional[float] = None
+    notes: Optional[str] = None
+
+class ExtraMaterial(BaseModel):
+    """Extra material not in original quote"""
+    description_nl: str
+    description_uk: str
+    quantity: Optional[str] = None
+    photo_url: Optional[str] = None
+
 class DailyReport(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     project_id: str
-    date: datetime
-    photos: List[str] = []  # URLs or base64
-    notes_nl: str = ""
-    notes_uk: str = ""  # Ukrainian
-    office_feedback_nl: str = ""
-    office_feedback_uk: str = ""
+    date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    
+    # Materials tracking (NO PRICES)
+    materials_used: List[MaterialUsed] = []  # From quote
+    extra_materials: List[ExtraMaterial] = []  # Added by workers
+    
+    # Work description (bilingual)
+    work_description_nl: Optional[str] = None
+    work_description_uk: Optional[str] = None
+    
+    # Office feedback (only visible to office)
+    office_feedback_nl: Optional[str] = None
+    office_feedback_uk: Optional[str] = None
+    
+    # Photos
+    photos: List[str] = []
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
 
 class DailyReportCreate(BaseModel):
     project_id: str
-    date: datetime
-    notes_nl: Optional[str] = ""
-    notes_uk: Optional[str] = ""
+    date: Optional[datetime] = None
+    materials_used: Optional[List[MaterialUsed]] = []
+    extra_materials: Optional[List[ExtraMaterial]] = []
+    work_description_nl: Optional[str] = None
+    work_description_uk: Optional[str] = None
 
 class DailyReportUpdate(BaseModel):
-    notes_nl: Optional[str] = None
-    notes_uk: Optional[str] = None
+    materials_used: Optional[List[MaterialUsed]] = None
+    extra_materials: Optional[List[ExtraMaterial]] = None
+    work_description_nl: Optional[str] = None
+    work_description_uk: Optional[str] = None
     office_feedback_nl: Optional[str] = None
     office_feedback_uk: Optional[str] = None
-    photos: Optional[List[str]] = None
 
 # Invoice Models
 class Invoice(BaseModel):
