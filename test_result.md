@@ -248,6 +248,9 @@ test_plan:
       - working: true
         agent: "testing"
         comment: "CORRECTED WERKBON MODULE VERIFIED ✅ Code review confirms all requirements met: 1) Backend endpoint /api/projects/{project_id}/quote-materials ONLY returns line_items from quote (lines 1557-1569), filters by item_type='materiaal', NO catalog access, 2) Frontend section title correct: 'Gebruikte Materialen uit Offerte' with subtitle '(catalogus & handmatig ingevoerd)' (lines 416, 419), 3) All badges removed - no 📦 Catalogus or 📋 Offerte badges found in code, 4) NO prices visible - no price/prijs/€/cost fields in API response or frontend display, 5) Both catalog and manual materials from quote shown (comment line 1556), 6) quantity_quoted displayed instead of prices (line 1565). Authentication prevents full UI testing but code analysis confirms complete compliance with user requirements."
+      - working: true
+        agent: "testing"
+        comment: "WERKBON DATE VALIDATION FIX VERIFIED ✅ Successfully tested werkbon creation via API - when date=null, backend automatically assigns datetime.now(timezone.utc) preventing Pydantic ValidationError. Created test werkbon with materials from quote, no validation errors occurred. Issue 1 RESOLVED."
 
   - task: "Invoice Upload with PDF Parsing - Extract amounts from invoices"
     implemented: true
