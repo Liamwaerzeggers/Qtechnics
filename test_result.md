@@ -215,15 +215,18 @@ test_plan:
 
   - task: "Calendar Feature - Project events with date visualization"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py, /app/frontend/src/pages/CalendarPage.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Calendar fully implemented: Backend endpoint (/api/calendar/events) returns project events. Frontend page with react-big-calendar, Dutch localization, color-coded by status. Navigation added. Mobile responsive."
+      - working: true
+        agent: "testing"
+        comment: "CALENDAR INTEGRATION WITH WERKBONNEN VERIFIED ✅ Backend GET /api/calendar/events now returns BOTH project events AND workslip events. Workslip events have type='workslip', 📋 prefix in title, and inherit project color. Frontend calendar displays 2 project events + 19 workslip events correctly. Fixed navigation route from /work-slip to /work-slips in CalendarPage.js line 103. Issue 2 RESOLVED - werkbonnen now appear in calendar as clickable events."
 
   - task: "Work Slips (Werkbonnen) - Daily reports with photos and dual language"
     implemented: true
