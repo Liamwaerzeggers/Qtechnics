@@ -330,3 +330,25 @@ agent_communication:
       - pdfminer.six-20231228
       - pypdfium2-5.0.0
       - react-big-calendar + moment
+
+  - agent: "testing"
+    message: |
+      Invoice PDF Download Bug Fix Verified - WORKING ✅
+      
+      **Test Results:**
+      - Successfully tested GET /api/invoices/{invoice_id}/pdf endpoint
+      - Created test project and customer invoice (10% milestone)
+      - PDF download working perfectly:
+        * Content-Type: application/pdf ✅
+        * Content-Disposition: attachment; filename=factuur_FACT-2025-002.pdf ✅
+        * Valid PDF format (101,634 bytes) ✅
+        * reportlab Image import working (no missing import error) ✅
+      
+      **Bug Status:** RESOLVED
+      The missing Image import from reportlab has been fixed and PDF generation is working correctly.
+      
+      **Full Test Suite:** All 23 backend tests passed including:
+      - Authentication, Dashboard Stats, Leads CRUD
+      - Quotes & Line Items with VAT calculations
+      - Materials Catalog, Projects, Export functionality
+      - Invoice PDF Download (NEW TEST)
