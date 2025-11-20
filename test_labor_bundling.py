@@ -68,8 +68,8 @@ def test_quote_flow():
     print("="*60 + "\n")
     
     # Create test user and get session
-    session_id = create_test_user()
-    headers = {"Cookie": f"session_id={session_id}"}
+    session_token = create_test_user()
+    headers = {"Cookie": f"session_token={session_token}"}
     
     # Step 1: Create a lead
     print("📋 Step 1: Creating test lead...")
