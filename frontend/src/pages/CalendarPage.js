@@ -97,8 +97,14 @@ export default function CalendarPage() {
   };
 
   const handleSelectEvent = (event) => {
-    // Navigate to project detail page
-    navigate(`/projects/${event.resource.project_id}`);
+    // Navigate based on event type
+    if (event.resource.type === 'workslip') {
+      // Navigate to work slip page
+      navigate(`/projects/${event.resource.project_id}/work-slip`);
+    } else {
+      // Navigate to project detail page
+      navigate(`/projects/${event.resource.project_id}`);
+    }
   };
 
   const eventStyleGetter = (event) => {
