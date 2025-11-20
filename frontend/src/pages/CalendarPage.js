@@ -100,7 +100,7 @@ export default function CalendarPage() {
     // Navigate based on event type
     if (event.resource.type === 'workslip') {
       // Navigate to work slip page
-      navigate(`/projects/${event.resource.project_id}/work-slip`);
+      navigate(`/projects/${event.resource.project_id}/work-slips`);
     } else {
       // Navigate to project detail page
       navigate(`/projects/${event.resource.project_id}`);
