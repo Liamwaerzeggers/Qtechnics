@@ -882,6 +882,66 @@ async def delete_project(project_id: str, current_user: User = Depends(get_curre
     
     return {"message": "Project deleted successfully"}
 
+@api_router.post("/projects/{project_id}/invoices")
+async def add_invoice_to_project(project_id: str, invoice: InvoiceUpload, current_user: User = Depends(get_current_user)):
+    """Add an invoice to project costs"""
+    existing_project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if not existing_project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Add invoice to list
+    invoice_doc = invoice.model_dump()
+    invoice_doc["upload_date"] = datetime.now(timezone.utc).isoformat()
+    
+    invoices = existing_project.get("invoice_uploads", [])
+    invoices.append(invoice_doc)
+    
+    # Update material costs with invoice totals
+    material_costs_excl = existing_project.get("material_costs", 0) + invoice.total_excl_vat
+    material_costs_incl = existing_project.get("material_costs_incl_vat", 0) + invoice.total_incl_vat
+    
+    # Recalculate total costs
+    labor_costs = existing_project.get("labor_cost_per_hour", 0) * existing_project.get("labor_hours", 0)
+    other_costs = existing_project.get("other_costs", 0)
+    
+    total_costs_excl = labor_costs + material_costs_excl + other_costs
+    total_costs_incl = labor_costs + material_costs_incl + other_costs
+    
+    # Get quote to calculate profit
+    quote = await db.quotes.find_one({"id": existing_project["quote_id"]})
+    if quote:
+        revenue = quote.get("total_incl_vat", quote.get("total_price", 0))
+        profit = revenue - total_costs_incl
+        profit_margin = (profit / revenue * 100) if revenue > 0 else 0.0
+    else:
+        profit = 0
+        profit_margin = 0
+    
+    # Update project
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {
+            "invoice_uploads": invoices,
+            "material_costs": material_costs_excl,
+            "material_costs_incl_vat": material_costs_incl,
+            "total_costs": total_costs_incl,
+            "total_costs_incl_vat": total_costs_incl,
+            "profit": profit,
+            "profit_margin": profit_margin
+        }}
+    )
+    
+    return {"message": "Invoice added successfully", "total_invoices": len(invoices)}
+
+@api_router.get("/projects/{project_id}/invoices")
+async def get_project_invoices(project_id: str, current_user: User = Depends(get_current_user)):
+    """Get all invoices for a project"""
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    return {"invoices": project.get("invoice_uploads", [])}
+
 # ============= EXPORT ROUTES =============
 
 @api_router.get("/quotes/{quote_id}/export/pdf")
