@@ -13,7 +13,8 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
     { name: 'Leads', path: '/leads', icon: Users, testId: 'nav-leads' },
     { name: 'Offertes', path: '/quotes', icon: FileText, testId: 'nav-quotes' },
     { name: 'Materialen', path: '/materials', icon: Package, testId: 'nav-materials' },
-    { name: 'Projecten', path: '/projects', icon: Calendar, testId: 'nav-projects' },
+    { name: 'Projecten', path: '/projects', icon: FileSpreadsheet, testId: 'nav-projects' },
+    { name: 'Kalender', path: '/calendar', icon: Calendar, testId: 'nav-calendar' },
   ];
 
   const handleLogout = async () => {
