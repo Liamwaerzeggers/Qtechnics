@@ -17,6 +17,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchStats();
+    // Poll for updates every 3 seconds when on dashboard
+    const interval = setInterval(fetchStats, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchStats = async () => {
