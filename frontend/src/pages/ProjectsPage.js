@@ -88,7 +88,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout showBackToDashboard={true}>
       <div data-testid="projects-page" className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Projecten</h1>
