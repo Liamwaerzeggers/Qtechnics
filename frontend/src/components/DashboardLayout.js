@@ -57,6 +57,21 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
           {/* Sidebar */}
           <aside className="w-64 hidden lg:block">
             <nav className="space-y-2 sticky top-24">
+              {showBackToDashboard && location.pathname !== '/dashboard' && (
+                <button
+                  data-testid="back-to-dashboard-btn"
+                  onClick={() => navigate('/dashboard')}
+                  className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg mb-4 transition-all"
+                  style={{
+                    backgroundColor: '#DBEAFE',
+                    color: '#1E40AF',
+                    border: '2px solid #3B82F6'
+                  }}
+                >
+                  <LayoutDashboard size={20} />
+                  <span className="font-semibold">← Terug naar Dashboard</span>
+                </button>
+              )}
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
