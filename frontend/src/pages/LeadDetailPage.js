@@ -13,6 +13,15 @@ export default function LeadDetailPage() {
   const navigate = useNavigate();
   const [lead, setLead] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    project_type: '',
+    description: ''
+  });
 
   useEffect(() => {
     fetchLead();
