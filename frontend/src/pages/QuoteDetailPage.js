@@ -280,6 +280,60 @@ export default function QuoteDetailPage() {
                   </DialogHeader>
                   <form onSubmit={handleAddItem} className="space-y-4" data-testid="add-item-form">
                     <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <Label>Type Item</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setUseCustomMaterial(!useCustomMaterial)}
+                        >
+                          {useCustomMaterial ? 'Gebruik Materialen Lijst' : 'Custom Item'}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {!useCustomMaterial && formData.item_type === 'materiaal' ? (
+                      <div>
+                        <Label>Zoek Materiaal</Label>
+                        <div className="relative">
+                          <Input 
+                            data-testid="material-search-input"
+                            placeholder="Zoek op naam, SKU, categorie, merk..."
+                            value={materialSearch} 
+                            onChange={(e) => {
+                              setMaterialSearch(e.target.value);
+                              setShowMaterialDropdown(true);
+                            }}
+                            onFocus={() => setShowMaterialDropdown(true)}
+                          />
+                          {showMaterialDropdown && filteredMaterials.length > 0 && (
+                            <div 
+                              className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-64 overflow-y-auto"
+                              style={{borderColor: '#E2E8F0'}}
+                            >
+                              {filteredMaterials.map((material) => (
+                                <div
+                                  key={material.id}
+                                  data-testid={`material-option-${material.id}`}
+                                  className="p-3 hover:bg-gray-50 cursor-pointer border-b"
+                                  onClick={() => handleSelectMaterial(material)}
+                                  style={{borderColor: '#F1F5F9'}}
+                                >
+                                  <div className="font-semibold" style={{color: '#1E293B'}}>{material.name}</div>
+                                  <div className="text-sm" style={{color: '#64748B'}}>
+                                    SKU: {material.sku} | €{material.price.toFixed(2)}
+                                    {material.brand && ` | ${material.brand}`}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div>
                       <Label>Omschrijving</Label>
                       <Input 
                         data-testid="item-description-input"
