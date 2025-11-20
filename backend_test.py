@@ -44,8 +44,8 @@ class OfferteAPITester:
         db.user_sessions.insertOne({{
             user_id: userEmail,
             session_token: sessionToken,
-            expires_at: new Date(Date.now() + 7*24*60*60*1000).toISOString(),
-            created_at: new Date().toISOString()
+            expires_at: new Date(Date.now() + 7*24*60*60*1000),
+            created_at: new Date()
         }});
         print('Setup complete');
         """
