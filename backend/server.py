@@ -624,7 +624,7 @@ async def search_materials(q: str, current_user: User = Depends(get_current_user
 @api_router.get("/materials")
 async def get_materials(skip: int = 0, limit: int = 100, current_user: User = Depends(get_current_user)):
     """Get all materials with pagination"""
-    materials = await db.materials.find({"user_id": current_user.id}).skip(skip).limit(limit).to_list(limit)
+    materials = await db.materials.find({"user_id": current_user.id}, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
     total = await db.materials.count_documents({"user_id": current_user.id})
     
     for material in materials:
