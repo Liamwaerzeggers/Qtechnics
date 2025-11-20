@@ -26,6 +26,18 @@ export default function MaterialsPage() {
       return;
     }
 
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Bestand te groot (max 10MB)');
+      return;
+    }
+
+    // Check file type
+    if (!file.name.endsWith('.csv')) {
+      toast.error('Alleen CSV bestanden zijn toegestaan');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', file);
 
@@ -33,13 +45,18 @@ export default function MaterialsPage() {
     try {
       const response = await axios.post(`${API}/materials/upload`, formData, {
         withCredentials: true,
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000 // 60 second timeout for large files
       });
       toast.success(`${response.data.count} materialen geüpload!`);
       setFile(null);
-      document.getElementById('csv-upload').value = '';
+      if (document.getElementById('csv-upload')) {
+        document.getElementById('csv-upload').value = '';
+      }
     } catch (error) {
-      toast.error('Kon CSV niet uploaden');
+      console.error('Upload error:', error);
+      const errorMsg = error.response?.data?.detail || error.message || 'Kon CSV niet uploaden';
+      toast.error(errorMsg);
     } finally {
       setUploading(false);
     }
