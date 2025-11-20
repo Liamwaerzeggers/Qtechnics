@@ -141,6 +141,102 @@ export default function ProjectDetailPage() {
                 <div style={{color: '#1E293B'}}>{project.notes}</div>
               </div>
             )}
+            
+            {/* Project Color Selector */}
+            <div>
+              <div className="text-sm font-semibold mb-2" style={{color: '#64748B'}}>Kalender Kleur</div>
+              <Select 
+                value={project.color || '#1E40AF'}
+                onValueChange={async (newColor) => {
+                  try {
+                    await axios.put(
+                      `${API}/projects/${projectId}`, 
+                      { color: newColor },
+                      { withCredentials: true }
+                    );
+                    setProject({ ...project, color: newColor });
+                    toast.success('Kleur bijgewerkt');
+                  } catch (error) {
+                    toast.error('Kon kleur niet bijwerken');
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <div className="flex items-center space-x-2">
+                    <div 
+                      className="w-6 h-6 rounded border-2 border-gray-300"
+                      style={{backgroundColor: project.color || '#1E40AF'}}
+                    ></div>
+                    <span>Projectkleur</span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="#1E40AF">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 rounded" style={{backgroundColor: '#1E40AF'}}></div>
+                      <span>Blauw</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="#7C3AED">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 rounded" style={{backgroundColor: '#7C3AED'}}></div>
+                      <span>Paars</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="#DC2626">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 rounded" style={{backgroundColor: '#DC2626'}}></div>
+                      <span>Rood</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="#EA580C">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 rounded" style={{backgroundColor: '#EA580C'}}></div>
+                      <span>Oranje</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="#CA8A04">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 rounded" style={{backgroundColor: '#CA8A04'}}></div>
+                      <span>Goud</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="#16A34A">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 rounded" style={{backgroundColor: '#16A34A'}}></div>
+                      <span>Groen</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="#0891B2">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 rounded" style={{backgroundColor: '#0891B2'}}></div>
+                      <span>Cyaan</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="#DB2777">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 rounded" style={{backgroundColor: '#DB2777'}}></div>
+                      <span>Roze</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="#9333EA">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 rounded" style={{backgroundColor: '#9333EA'}}></div>
+                      <span>Violet</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="#0D9488">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 rounded" style={{backgroundColor: '#0D9488'}}></div>
+                      <span>Turquoise</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs mt-1" style={{color: '#94A3B8'}}>
+                Deze kleur wordt gebruikt in de kalender
+              </p>
+            </div>
           </CardContent>
         </Card>
 
