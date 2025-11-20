@@ -107,29 +107,72 @@ export default function LeadDetailPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Lead Informatie</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle>Lead Informatie</CardTitle>
+              {!editing ? (
+                <Button data-testid="edit-lead-button" onClick={() => setEditing(true)} variant="outline">
+                  <Edit className="mr-2" size={18} /> Bewerken
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button onClick={() => { setEditing(false); fetchLead(); }} variant="outline">Annuleren</Button>
+                  <Button data-testid="save-lead-button" onClick={handleSave} style={{backgroundColor: '#1E40AF'}}>Opslaan</Button>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <div className="text-sm font-semibold" style={{color: '#64748B'}}>Email</div>
-              <div style={{color: '#1E293B'}}>{lead.email}</div>
-            </div>
-            <div>
-              <div className="text-sm font-semibold" style={{color: '#64748B'}}>Telefoon</div>
-              <div style={{color: '#1E293B'}}>{lead.phone}</div>
-            </div>
-            <div>
-              <div className="text-sm font-semibold" style={{color: '#64748B'}}>Adres</div>
-              <div style={{color: '#1E293B'}}>{lead.address}</div>
-            </div>
-            <div>
-              <div className="text-sm font-semibold" style={{color: '#64748B'}}>Project Type</div>
-              <div style={{color: '#1E293B'}}>{lead.project_type}</div>
-            </div>
-            <div>
-              <div className="text-sm font-semibold" style={{color: '#64748B'}}>Beschrijving</div>
-              <div style={{color: '#1E293B'}}>{lead.description}</div>
-            </div>
+            {editing ? (
+              <>
+                <div>
+                  <Label>Naam</Label>
+                  <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
+                </div>
+                <div>
+                  <Label>Email</Label>
+                  <Input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                </div>
+                <div>
+                  <Label>Telefoon</Label>
+                  <Input value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
+                </div>
+                <div>
+                  <Label>Adres</Label>
+                  <Input value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
+                </div>
+                <div>
+                  <Label>Project Type</Label>
+                  <Input value={formData.project_type} onChange={(e) => setFormData({...formData, project_type: e.target.value})} />
+                </div>
+                <div>
+                  <Label>Beschrijving</Label>
+                  <Textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={4} />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <div className="text-sm font-semibold" style={{color: '#64748B'}}>Email</div>
+                  <div style={{color: '#1E293B'}}>{lead.email}</div>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold" style={{color: '#64748B'}}>Telefoon</div>
+                  <div style={{color: '#1E293B'}}>{lead.phone}</div>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold" style={{color: '#64748B'}}>Adres</div>
+                  <div style={{color: '#1E293B'}}>{lead.address}</div>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold" style={{color: '#64748B'}}>Project Type</div>
+                  <div style={{color: '#1E293B'}}>{lead.project_type}</div>
+                </div>
+                <div>
+                  <div className="text-sm font-semibold" style={{color: '#64748B'}}>Beschrijving</div>
+                  <div style={{color: '#1E293B'}}>{lead.description}</div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
