@@ -1741,12 +1741,12 @@ async def create_invoice(
     
     return invoice
 
-@api_router.get("/projects/{project_id}/invoices", response_model=List[Invoice])
-async def get_project_invoices(
+@api_router.get("/projects/{project_id}/customer-invoices", response_model=List[Invoice])
+async def get_project_customer_invoices(
     project_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Get all invoices for a project"""
+    """Get all customer invoices for a project"""
     project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
