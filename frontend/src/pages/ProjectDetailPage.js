@@ -24,6 +24,7 @@ export default function ProjectDetailPage() {
     material_costs: 0,
     other_costs: 0
   });
+  const [invoices, setInvoices] = useState([]);
 
   useEffect(() => {
     fetchProjectData();
