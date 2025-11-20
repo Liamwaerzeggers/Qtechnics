@@ -83,33 +83,17 @@ export default function CalendarPage() {
     }
   };
 
-  // Color palette for different projects
-  const projectColors = [
-    '#1E40AF', // Blue
-    '#7C3AED', // Purple
-    '#DC2626', // Red
-    '#EA580C', // Orange
-    '#CA8A04', // Yellow
-    '#16A34A', // Green
-    '#0891B2', // Cyan
-    '#DB2777', // Pink
-    '#9333EA', // Violet
-    '#0D9488', // Teal
-  ];
-
-  // Get consistent color for each project
-  const getProjectColor = (projectId, status) => {
+  // Get project color (use custom color or status-based)
+  const getProjectColor = (event) => {
+    const status = event.resource.status;
+    const customColor = event.resource.color;
+    
     // Special colors for status
     if (status === 'voltooid') return '#10B981'; // Green for completed
     if (status === 'geannuleerd') return '#6B7280'; // Gray for cancelled
     
-    // Hash project ID to get consistent color
-    let hash = 0;
-    for (let i = 0; i < projectId.length; i++) {
-      hash = projectId.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const colorIndex = Math.abs(hash) % projectColors.length;
-    return projectColors[colorIndex];
+    // Use custom project color
+    return customColor || '#1E40AF'; // Default blue
   };
 
   const handleSelectEvent = (event) => {
