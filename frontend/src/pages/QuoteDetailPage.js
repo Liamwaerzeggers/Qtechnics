@@ -447,9 +447,25 @@ export default function QuoteDetailPage() {
                             </div>
                           )}
                         </div>
-                        <p className="text-xs mt-1" style={{color: '#64748B'}}>
-                          {materials.length} materialen beschikbaar - typ om te zoeken
-                        </p>
+                        <div className="flex justify-between items-center mt-1">
+                          <p className="text-xs" style={{color: '#64748B'}}>
+                            {materials.length > 0 ? (
+                              `${materials.length} materialen beschikbaar - typ om te zoeken`
+                            ) : (
+                              'Geen materialen gevonden - upload eerst een CSV in de Materialen pagina'
+                            )}
+                          </p>
+                          {materials.length === 0 && (
+                            <button
+                              type="button"
+                              onClick={() => window.location.href = '/materials'}
+                              className="text-xs px-2 py-1 rounded"
+                              style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}
+                            >
+                              Naar Materialen →
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ) : null}
 
