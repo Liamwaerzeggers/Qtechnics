@@ -567,11 +567,59 @@ async def upload_materials_csv(file: UploadFile = File(...), current_user: User 
         df = pd.read_csv(io.BytesIO(content))
         logger.info(f"CSV loaded with {len(df)} rows and columns: {list(df.columns)}")
         
-        # Validate required columns
+        # Map common CSV column names to expected format
+        column_mapping = {
+            # ECK format
+            'Artikelcode': 'sku',
+            'artikelcode': 'sku',
+            'ARTIKELCODE': 'sku',
+            'artikelomschrijving': 'name',
+            'Artikelomschrijving': 'name',
+            'ARTIKELOMSCHRIJVING': 'name',
+            'Tariefprijs': 'price',
+            'tariefprijs': 'price',
+            'TARIEFPRIJS': 'price',
+            'Prijs': 'price',
+            'prijs': 'price',
+            'PRIJS': 'price',
+            # Standard format
+            'sku': 'sku',
+            'SKU': 'sku',
+            'name': 'name',
+            'Name': 'name',
+            'NAME': 'name',
+            'naam': 'name',
+            'Naam': 'name',
+            'NAAM': 'name',
+            'price': 'price',
+            'Price': 'price',
+            'PRICE': 'price',
+            # Optional fields
+            'EAN': 'ean',
+            'ean': 'ean',
+            'description': 'description',
+            'Description': 'description',
+            'beschrijving': 'description',
+            'Beschrijving': 'description',
+            'category': 'category',
+            'Category': 'category',
+            'categorie': 'category',
+            'Categorie': 'category',
+            'brand': 'brand',
+            'Brand': 'brand',
+            'merk': 'brand',
+            'Merk': 'brand'
+        }
+        
+        # Rename columns
+        df = df.rename(columns=column_mapping)
+        logger.info(f"Columns after mapping: {list(df.columns)}")
+        
+        # Validate required columns after mapping
         required_columns = ['sku', 'name', 'price']
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
-            error_msg = f"Ontbrekende kolommen: {missing_columns}. Vereiste kolommen: sku, name, price"
+            error_msg = f"Ontbrekende kolommen in CSV. Gevonden kolommen: {list(df.columns)}. Vereiste: artikelcode/sku, artikelomschrijving/name, tariefprijs/price"
             logger.error(error_msg)
             raise HTTPException(status_code=400, detail=error_msg)
         
