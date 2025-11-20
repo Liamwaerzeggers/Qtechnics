@@ -32,10 +32,11 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
               onClick={() => navigate('/dashboard')}
               data-testid="dashboard-logo"
             >
-              <FileSpreadsheet size={32} style={{color: '#1E40AF'}} />
-              <span className="text-xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
-                Offerte Dashboard
-              </span>
+              <img 
+                src="/qtechnics_logo.png" 
+                alt="Q Technics Logo" 
+                className="h-12 w-auto"
+              />
             </div>
             
             <div className="flex items-center space-x-4">
