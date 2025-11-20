@@ -26,6 +26,11 @@ export default function QuoteDetailPage() {
     unit_price: '',
     item_type: 'materiaal'
   });
+  const [materials, setMaterials] = useState([]);
+  const [materialSearch, setMaterialSearch] = useState('');
+  const [filteredMaterials, setFilteredMaterials] = useState([]);
+  const [showMaterialDropdown, setShowMaterialDropdown] = useState(false);
+  const [useCustomMaterial, setUseCustomMaterial] = useState(false);
 
   useEffect(() => {
     fetchQuoteData();
