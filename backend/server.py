@@ -1576,8 +1576,13 @@ async def create_work_slip(project_id: str, report: DailyReportCreate, current_u
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
+    # Set date to now if not provided
+    report_data = report.model_dump()
+    if report_data.get("date") is None:
+        report_data["date"] = datetime.now(timezone.utc)
+    
     # Create report
-    report_obj = DailyReport(**report.model_dump(), user_id=current_user.id)
+    report_obj = DailyReport(**report_data, user_id=current_user.id)
     report_doc = report_obj.model_dump()
     report_doc["date"] = report_doc["date"].isoformat()
     report_doc["created_at"] = report_doc["created_at"].isoformat()
