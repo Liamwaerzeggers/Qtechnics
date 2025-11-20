@@ -78,7 +78,7 @@ function AuthCallback() {
           const response = await axios.post(`${API}/auth/session`, { session_id: sessionId }, { withCredentials: true });
           setUser(response.data.user);
           window.history.replaceState({}, document.title, '/dashboard');
-          navigate('/dashboard', { replace: true });
+          setProcessing(false);
           toast.success('Welkom!');
         } catch (error) {
           console.error('Session error:', error);
@@ -87,9 +87,8 @@ function AuthCallback() {
         }
       } else {
         await checkAuth();
-        navigate('/dashboard', { replace: true });
+        setProcessing(false);
       }
-      setProcessing(false);
     };
 
     processSession();
@@ -106,7 +105,7 @@ function AuthCallback() {
     );
   }
 
-  return null;
+  return <Dashboard />;
 }
 
 // Landing Page
