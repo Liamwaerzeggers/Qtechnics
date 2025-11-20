@@ -355,7 +355,7 @@ export default function ProjectDetailPage() {
                   </h4>
                   {project.invoice_uploads.map((invoice, idx) => (
                     <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                      <div>
+                      <div className="flex-1">
                         <div className="font-medium" style={{color: '#1E293B'}}>
                           {invoice.filename}
                         </div>
@@ -363,13 +363,37 @@ export default function ProjectDetailPage() {
                           {new Date(invoice.upload_date).toLocaleDateString('nl-NL')}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-bold" style={{color: '#EF4444'}}>
-                          €{invoice.total_incl_vat.toFixed(2)}
+                      <div className="flex items-center space-x-3">
+                        <div className="text-right">
+                          <div className="font-bold" style={{color: '#EF4444'}}>
+                            €{invoice.total_incl_vat.toFixed(2)}
+                          </div>
+                          <div className="text-xs" style={{color: '#64748B'}}>
+                            incl. BTW
+                          </div>
                         </div>
-                        <div className="text-xs" style={{color: '#64748B'}}>
-                          incl. BTW
-                        </div>
+                        <button
+                          onClick={async () => {
+                            if (!window.confirm(`Factuur "${invoice.filename}" verwijderen? Kosten worden teruggedraaid.`)) return;
+                            
+                            try {
+                              await axios.delete(
+                                `${API}/projects/${projectId}/invoices/${idx}`,
+                                { withCredentials: true }
+                              );
+                              toast.success('Factuur verwijderd en kosten aangepast');
+                              fetchProjectData();
+                            } catch (error) {
+                              toast.error('Kon factuur niet verwijderen');
+                              console.error(error);
+                            }
+                          }}
+                          className="p-2 rounded-lg hover:bg-red-100 transition-colors"
+                          style={{color: '#EF4444'}}
+                          title="Verwijder factuur"
+                        >
+                          🗑️
+                        </button>
                       </div>
                     </div>
                   ))}
