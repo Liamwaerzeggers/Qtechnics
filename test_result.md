@@ -232,7 +232,7 @@ test_plan:
     file: "/app/backend/server.py, /app/frontend/src/pages/ProjectWorkSlipPage.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
