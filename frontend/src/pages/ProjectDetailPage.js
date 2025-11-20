@@ -450,16 +450,16 @@ export default function ProjectDetailPage() {
                     Geüploade Facturen ({project.invoice_uploads.length})
                   </h4>
                   {project.invoice_uploads.map((invoice, idx) => (
-                    <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                      <div className="flex-1">
-                        <div className="font-medium" style={{color: '#1E293B'}}>
+                    <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium break-words" style={{color: '#1E293B'}}>
                           {invoice.filename}
                         </div>
                         <div className="text-sm" style={{color: '#64748B'}}>
                           {new Date(invoice.upload_date).toLocaleDateString('nl-NL')}
                         </div>
                       </div>
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center justify-between sm:justify-end gap-3">
                         <div className="text-right">
                           <div className="font-bold" style={{color: '#EF4444'}}>
                             €{invoice.total_incl_vat.toFixed(2)}
@@ -469,7 +469,11 @@ export default function ProjectDetailPage() {
                           </div>
                         </div>
                         <button
-                          onClick={async () => {
+                          type="button"
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
                             if (!window.confirm(`Factuur "${invoice.filename}" verwijderen? Kosten worden teruggedraaid.`)) return;
                             
                             try {
@@ -484,8 +488,8 @@ export default function ProjectDetailPage() {
                               console.error(error);
                             }
                           }}
-                          className="p-2 rounded-lg hover:bg-red-100 transition-colors"
-                          style={{color: '#EF4444'}}
+                          className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-red-100 active:bg-red-200 transition-colors cursor-pointer"
+                          style={{color: '#EF4444', fontSize: '20px'}}
                           title="Verwijder factuur"
                         >
                           🗑️
