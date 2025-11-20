@@ -198,6 +198,7 @@ class ProjectUpdate(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     notes: Optional[str] = None
+    color: Optional[str] = None
     labor_cost_per_hour: Optional[float] = None
     labor_hours: Optional[float] = None
     material_costs: Optional[float] = None
