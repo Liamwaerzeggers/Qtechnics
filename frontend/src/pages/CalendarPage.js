@@ -114,6 +114,8 @@ export default function CalendarPage() {
                 startAccessor="start"
                 endAccessor="end"
                 style={{ height: '100%' }}
+                date={currentDate}
+                onNavigate={(newDate) => setCurrentDate(newDate)}
                 onSelectEvent={handleSelectEvent}
                 eventPropGetter={eventStyleGetter}
                 views={['month', 'week', 'day', 'agenda']}
