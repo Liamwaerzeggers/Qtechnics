@@ -332,21 +332,21 @@ export default function ProjectWorkSlipPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <h4 className="font-semibold text-sm mb-1" style={{ color: '#64748B' }}>Notities (NL)</h4>
+                        <h4 className="font-semibold text-sm mb-1" style={{ color: '#64748B' }}>Notities (NL) 🇳🇱</h4>
                         <p className="text-sm" style={{ color: '#334155' }}>{slip.notes_nl || '-'}</p>
                       </div>
                       <div>
-                        <h4 className="font-semibold text-sm mb-1" style={{ color: '#64748B' }}>Notities (UK)</h4>
+                        <h4 className="font-semibold text-sm mb-1" style={{ color: '#64748B' }}>Notities (UK) 🇺🇦</h4>
                         <p className="text-sm" style={{ color: '#334155' }}>{slip.notes_uk || '-'}</p>
                       </div>
                       <div>
-                        <h4 className="font-semibold text-sm mb-1" style={{ color: '#64748B' }}>Kantoor Feedback (NL)</h4>
+                        <h4 className="font-semibold text-sm mb-1" style={{ color: '#64748B' }}>Kantoor Feedback (NL) 🇳🇱</h4>
                         <p className="text-sm" style={{ color: '#334155' }}>{slip.office_feedback_nl || '-'}</p>
                       </div>
                       <div>
-                        <h4 className="font-semibold text-sm mb-1" style={{ color: '#64748B' }}>Kantoor Feedback (UK)</h4>
+                        <h4 className="font-semibold text-sm mb-1" style={{ color: '#64748B' }}>Kantoor Feedback (UK) 🇺🇦</h4>
                         <p className="text-sm" style={{ color: '#334155' }}>{slip.office_feedback_uk || '-'}</p>
                       </div>
                     </div>
