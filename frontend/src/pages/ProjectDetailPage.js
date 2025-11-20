@@ -491,9 +491,17 @@ export default function ProjectDetailPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteInvoice(idx, invoice.filename)}
-                          className="hover:bg-red-100 text-red-600 hover:text-red-700"
+                          onTouchEnd={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteInvoice(idx, invoice.filename);
+                          }}
+                          className="hover:bg-red-100 text-red-600 hover:text-red-700 min-w-[44px] min-h-[44px] touch-manipulation"
+                          style={{
+                            WebkitTapHighlightColor: 'transparent'
+                          }}
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={20} />
                         </Button>
                       </div>
                     </div>
