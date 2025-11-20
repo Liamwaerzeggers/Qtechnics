@@ -64,7 +64,7 @@ export default function MaterialsPage() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout showBackToDashboard={true}>
       <div data-testid="materials-page" className="space-y-6">
         <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Materialen Catalogus</h1>
 
