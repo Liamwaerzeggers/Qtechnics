@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../App';
 import { FileText, FileSpreadsheet, Calendar, Package, Users, LogOut, LayoutDashboard } from 'lucide-react';
 
-export default function DashboardLayout({ children }) {
+export default function DashboardLayout({ children, showBackToDashboard = false }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
