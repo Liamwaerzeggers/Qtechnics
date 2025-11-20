@@ -1655,6 +1655,8 @@ async def create_invoice(
     current_user: User = Depends(get_current_user)
 ):
     """Create a milestone-based invoice for a project"""
+    logger.info(f"Creating invoice for project {project_id}, milestone: {invoice_data.milestone}, percentage: {invoice_data.milestone_percentage}")
+    
     # Verify project exists
     project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
     if not project:
