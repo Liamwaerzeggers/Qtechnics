@@ -1295,14 +1295,28 @@ async def upload_invoice(
             {"$push": {"invoice_uploads": invoice_data}}
         )
         
-        # Update project costs
-        new_material_costs_incl_vat = project.get("material_costs_incl_vat", 0) + float(amounts['total_incl_vat'])
-        new_total_costs_incl_vat = project.get("total_costs_incl_vat", 0) + float(amounts['total_incl_vat'])
+        # Update project costs (both excl and incl VAT)
+        invoice_excl_vat = float(amounts['total_excl_vat'])
+        invoice_incl_vat = float(amounts['total_incl_vat'])
+        
+        # Get current costs
+        current_material_costs = project.get("material_costs", 0)
+        current_material_costs_incl_vat = project.get("material_costs_incl_vat", 0)
+        current_labor_costs = project.get("labor_hours", 0) * project.get("labor_cost_per_hour", 0)
+        current_other_costs = project.get("other_costs", 0)
+        
+        # Calculate new costs
+        new_material_costs = current_material_costs + invoice_excl_vat
+        new_material_costs_incl_vat = current_material_costs_incl_vat + invoice_incl_vat
+        new_total_costs = current_labor_costs + new_material_costs + current_other_costs
+        new_total_costs_incl_vat = current_labor_costs + new_material_costs_incl_vat + current_other_costs
         
         await db.projects.update_one(
             {"id": project_id},
             {"$set": {
+                "material_costs": new_material_costs,
                 "material_costs_incl_vat": new_material_costs_incl_vat,
+                "total_costs": new_total_costs,
                 "total_costs_incl_vat": new_total_costs_incl_vat
             }}
         )
