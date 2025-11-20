@@ -37,6 +37,21 @@ export default function QuoteDetailPage() {
     fetchMaterials();
   }, [quoteId]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMaterialDropdown && !event.target.closest('[data-testid="material-search-input"]')) {
+        const dropdown = event.target.closest('.absolute.z-50');
+        if (!dropdown) {
+          setShowMaterialDropdown(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMaterialDropdown]);
+
   useEffect(() => {
     if (materialSearch) {
       const filtered = materials.filter(m => 
