@@ -1536,7 +1536,7 @@ async def delete_project_invoice(
 
 @api_router.get("/projects/{project_id}/quote-materials")
 async def get_project_quote_materials(project_id: str, current_user: User = Depends(get_current_user)):
-    """Get materials from project's quote AND materials catalog (NO PRICES - for werkbon)"""
+    """Get materials from project's quote ONLY (NO PRICES - for werkbon)"""
     # Verify project exists
     project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
     if not project:
@@ -1544,34 +1544,27 @@ async def get_project_quote_materials(project_id: str, current_user: User = Depe
     
     materials = []
     
-    # 1. Get materials from quote (if exists)
+    # Get quote
     quote_id = project.get("quote_id")
-    if quote_id:
-        quote = await db.quotes.find_one({"id": quote_id}, {"_id": 0})
-        if quote:
-            for item in quote.get("line_items", []):
-                if item.get("item_type") == "materiaal":
-                    materials.append({
-                        "id": item.get("id"),
-                        "source": "offerte",
-                        "description_nl": item.get("description", ""),
-                        "description_uk": item.get("description", ""),
-                        "quantity_quoted": item.get("quantity", 0),
-                        "unit": item.get("unit", "stuks")
-                    })
+    if not quote_id:
+        return materials
     
-    # 2. Get materials from catalog (custom materials)
-    catalog_materials = await db.materials.find({"user_id": current_user.id}, {"_id": 0}).to_list(1000)
-    for cat_mat in catalog_materials:
-        materials.append({
-            "id": cat_mat.get("id"),
-            "source": "catalogus",
-            "description_nl": cat_mat.get("name", ""),
-            "description_uk": cat_mat.get("name", ""),
-            "quantity_quoted": 0,  # No quoted quantity for catalog items
-            "unit": "stuks",
-            "sku": cat_mat.get("sku", "")
-        })
+    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id}, {"_id": 0})
+    if not quote:
+        return materials
+    
+    # Get line items from quote (both from catalog and manually entered)
+    line_items = await db.line_items.find({"quote_id": quote_id}, {"_id": 0}).to_list(1000)
+    
+    for item in line_items:
+        if item.get("item_type") == "materiaal":
+            materials.append({
+                "id": item.get("id"),
+                "description_nl": item.get("description", ""),
+                "description_uk": item.get("description", ""),
+                "quantity_quoted": item.get("quantity", 0),
+                "unit": "stuks"
+            })
     
     return materials
 
