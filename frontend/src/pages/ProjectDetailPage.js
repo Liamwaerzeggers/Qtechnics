@@ -33,7 +33,7 @@ export default function ProjectDetailPage() {
   
   const fetchInvoices = async () => {
     try {
-      const response = await axios.get(`${API}/projects/${projectId}/invoices`, { withCredentials: true });
+      const response = await axios.get(`${API}/projects/${projectId}/customer-invoices`, { withCredentials: true });
       setInvoices(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to fetch invoices:', error);
@@ -44,7 +44,7 @@ export default function ProjectDetailPage() {
   const createInvoice = async (milestone, percentage) => {
     try {
       await axios.post(
-        `${API}/projects/${projectId}/invoices`,
+        `${API}/projects/${projectId}/invoices/create`,
         { 
           milestone: milestone, 
           milestone_percentage: percentage 
