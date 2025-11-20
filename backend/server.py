@@ -1673,14 +1673,24 @@ async def create_invoice(
     
     invoice_subtotal_labor = quote.get("subtotal_labor", 0) * percentage
     invoice_subtotal_material = quote.get("subtotal_material", 0) * percentage
-    invoice_total_excl_vat = quote.get("total_excl_vat", 0) * percentage
-    invoice_total_vat = quote.get("total_vat", 0) * percentage
-    invoice_total_incl_vat = quote.get("total_incl_vat", 0) * percentage
     
-    # Calculate VAT breakdown
-    vat_breakdown = {}
-    for vat_rate, amount in quote.get("vat_breakdown", {}).items():
-        vat_breakdown[str(vat_rate)] = amount * percentage
+    # Support both old and new quote formats
+    if "total_excl_vat" in quote:
+        # New format with VAT breakdown
+        invoice_total_excl_vat = quote.get("total_excl_vat", 0) * percentage
+        invoice_total_vat = quote.get("total_vat", 0) * percentage
+        invoice_total_incl_vat = quote.get("total_incl_vat", 0) * percentage
+        
+        # Calculate VAT breakdown
+        vat_breakdown = {}
+        for vat_rate, amount in quote.get("vat_breakdown", {}).items():
+            vat_breakdown[str(vat_rate)] = amount * percentage
+    else:
+        # Old format - use total_price and calculate basic VAT
+        invoice_total_excl_vat = quote.get("total_price", 0) * percentage / 1.21  # Assume 21% VAT
+        invoice_total_incl_vat = quote.get("total_price", 0) * percentage
+        invoice_total_vat = invoice_total_incl_vat - invoice_total_excl_vat
+        vat_breakdown = {"21": invoice_total_vat}  # Default to 21% for old quotes
     
     # Generate invoice number
     invoice_number = await generate_invoice_number()
