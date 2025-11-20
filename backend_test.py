@@ -55,8 +55,8 @@ class OfferteAPITester:
                                   capture_output=True, text=True, timeout=30)
             if result.returncode == 0:
                 self.session_token = session_token
-                self.user_id = user_id
-                print(f"✅ Test user created: {user_id}")
+                self.user_id = user_email
+                print(f"✅ Test user created: {user_email}")
                 print(f"✅ Session token: {session_token}")
                 return True
             else:
