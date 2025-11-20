@@ -53,29 +53,57 @@ export default function CalendarPage() {
     }
   };
 
+  // Color palette for different projects
+  const projectColors = [
+    '#1E40AF', // Blue
+    '#7C3AED', // Purple
+    '#DC2626', // Red
+    '#EA580C', // Orange
+    '#CA8A04', // Yellow
+    '#16A34A', // Green
+    '#0891B2', // Cyan
+    '#DB2777', // Pink
+    '#9333EA', // Violet
+    '#0D9488', // Teal
+  ];
+
+  // Get consistent color for each project
+  const getProjectColor = (projectId, status) => {
+    // Special colors for status
+    if (status === 'voltooid') return '#10B981'; // Green for completed
+    if (status === 'geannuleerd') return '#6B7280'; // Gray for cancelled
+    
+    // Hash project ID to get consistent color
+    let hash = 0;
+    for (let i = 0; i < projectId.length; i++) {
+      hash = projectId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const colorIndex = Math.abs(hash) % projectColors.length;
+    return projectColors[colorIndex];
+  };
+
   const handleSelectEvent = (event) => {
     // Navigate to project detail page
     navigate(`/projects/${event.resource.project_id}`);
   };
 
   const eventStyleGetter = (event) => {
+    const backgroundColor = getProjectColor(event.resource.project_id, event.resource.status);
+    
     const style = {
-      backgroundColor: '#1E40AF',
+      backgroundColor: backgroundColor,
       borderRadius: '6px',
-      opacity: 0.8,
+      opacity: 0.9,
       color: 'white',
       border: '0px',
       display: 'block',
-      fontSize: '13px',
-      padding: '4px 8px',
+      fontSize: '12px',
+      padding: '2px 6px',
+      fontWeight: '600',
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
     };
-    
-    // Different color for completed projects
-    if (event.resource.status === 'voltooid') {
-      style.backgroundColor = '#10B981';
-    } else if (event.resource.status === 'geannuleerd') {
-      style.backgroundColor = '#6B7280';
-    }
     
     return { style };
   };
