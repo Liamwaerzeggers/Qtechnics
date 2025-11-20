@@ -118,8 +118,8 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
         </div>
       )}
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-8">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        <div className="flex gap-4 lg:gap-8">
           {/* Sidebar */}
           <aside className="w-64 hidden lg:block">
             <nav className="space-y-2 sticky top-24">
