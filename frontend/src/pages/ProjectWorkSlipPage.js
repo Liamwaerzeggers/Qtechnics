@@ -139,21 +139,21 @@ export default function ProjectWorkSlipPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <div className="p-3 rounded-xl" style={{ backgroundColor: '#DBEAFE' }}>
-              <FileText size={28} style={{ color: '#1E40AF' }} />
+            <div className="p-2 sm:p-3 rounded-xl" style={{ backgroundColor: '#DBEAFE' }}>
+              <FileText size={24} className="sm:w-7 sm:h-7" style={{ color: '#1E40AF' }} />
             </div>
             <div>
-              <h1 className="text-3xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif', color: '#1E3A8A' }}>
+              <h1 className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif', color: '#1E3A8A' }}>
                 Werkbonnen
               </h1>
-              <p style={{ color: '#64748B', fontFamily: 'Inter, sans-serif' }}>
+              <p className="text-sm" style={{ color: '#64748B', fontFamily: 'Inter, sans-serif' }}>
                 {project ? project.name : 'Laden...'}
               </p>
             </div>
           </div>
-          <div className="flex space-x-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:space-x-3">
             <Button 
               variant="outline" 
               onClick={() => navigate(`/projects/${projectId}`)}
