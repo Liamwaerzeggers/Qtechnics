@@ -5,7 +5,10 @@ import { API } from '../App';
 import DashboardLayout from '../components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, FileText, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function LeadDetailPage() {
