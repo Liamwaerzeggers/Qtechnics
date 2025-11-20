@@ -74,10 +74,11 @@ export default function QuoteDetailPage() {
 
   const fetchMaterials = async () => {
     try {
-      const response = await axios.get(`${API}/materials?limit=1000`, { withCredentials: true });
+      const response = await axios.get(`${API}/materials?limit=15000`, { withCredentials: true });
       setMaterials(response.data.materials || []);
+      console.log('Loaded materials:', response.data.materials?.length);
     } catch (error) {
-      console.error('Could not fetch materials');
+      console.error('Could not fetch materials:', error);
     }
   };
 
