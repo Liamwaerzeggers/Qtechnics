@@ -264,6 +264,7 @@ async def get_current_user(session_token: Optional[str] = Cookie(None), authoriz
     
     # Find session
     session = await db.user_sessions.find_one({"session_token": token})
+    logger.info(f"Looking for session with token: {token[:10]}... Found: {session is not None}")
     if not session:
         raise HTTPException(status_code=401, detail="Invalid session")
     
