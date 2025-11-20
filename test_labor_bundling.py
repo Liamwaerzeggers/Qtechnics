@@ -19,13 +19,17 @@ def create_test_user():
     """Create a test user directly in DB"""
     import asyncio
     from motor.motor_asyncio import AsyncIOMotorClient
+    from bson import ObjectId
     import os
     
     async def create():
         client = AsyncIOMotorClient(os.getenv('MONGO_URL'))
         db = client.qtechnics
         
+        # Create user with ObjectId as _id
+        user_id = str(ObjectId())
         user = {
+            "_id": user_id,
             "id": "test-user-001",
             "email": "test@qtechnics.nl",
             "name": "Test User",
@@ -34,23 +38,26 @@ def create_test_user():
         
         # Check if user exists
         existing = await db.users.find_one({"id": user["id"]})
-        if not existing:
-            await db.users.insert_one(user)
-            print(f"✅ Test user created: {user['email']}")
-        else:
-            print(f"ℹ️  Test user already exists: {user['email']}")
+        if existing:
+            # Delete old user and sessions
+            await db.users.delete_one({"id": user["id"]})
+            await db.user_sessions.delete_many({"user_id": existing["_id"]})
+        
+        await db.users.insert_one(user)
+        print(f"✅ Test user created: {user['email']}")
         
         # Create session
+        session_token = "test-session-token-001"
         session = {
-            "session_id": "test-session-001",
-            "user_id": user["id"],
-            "expires_at": datetime(2025, 12, 31).isoformat()
+            "session_token": session_token,
+            "user_id": user_id,
+            "expires_at": datetime(2025, 12, 31)
         }
-        await db.sessions.delete_many({"user_id": user["id"]})
-        await db.sessions.insert_one(session)
+        await db.user_sessions.delete_many({"user_id": user_id})
+        await db.user_sessions.insert_one(session)
         print(f"✅ Test session created")
         
-        return session["session_id"]
+        return session_token
     
     return asyncio.run(create())
 
