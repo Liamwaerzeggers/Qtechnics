@@ -106,7 +106,7 @@ export default function CalendarPage() {
               <Loader2 className="animate-spin" size={32} style={{ color: '#1E40AF' }} />
             </div>
           ) : (
-            <div style={{ height: '700px' }}>
+            <div style={{ height: '500px' }} className="sm:h-[600px] lg:h-[700px]">
               <Calendar
                 localizer={localizer}
                 events={events}
