@@ -31,10 +31,29 @@ export default function LeadDetailPage() {
     try {
       const response = await axios.get(`${API}/leads/${leadId}`, { withCredentials: true });
       setLead(response.data);
+      setFormData({
+        name: response.data.name,
+        email: response.data.email,
+        phone: response.data.phone,
+        address: response.data.address,
+        project_type: response.data.project_type,
+        description: response.data.description
+      });
     } catch (error) {
       toast.error('Kon lead niet ophalen');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      const response = await axios.put(`${API}/leads/${leadId}`, formData, { withCredentials: true });
+      setLead(response.data);
+      setEditing(false);
+      toast.success('Lead bijgewerkt!');
+    } catch (error) {
+      toast.error('Kon lead niet bijwerken');
     }
   };
 
