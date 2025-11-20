@@ -45,9 +45,9 @@ export default function QuoteDetailPage() {
         (m.category && m.category.toLowerCase().includes(materialSearch.toLowerCase())) ||
         (m.brand && m.brand.toLowerCase().includes(materialSearch.toLowerCase()))
       );
-      setFilteredMaterials(filtered.slice(0, 20)); // Limit to 20 results
+      setFilteredMaterials(filtered.slice(0, 50)); // Limit to 50 results for performance
     } else {
-      setFilteredMaterials([]);
+      setFilteredMaterials([]); // Will show first 50 from materials array in UI
     }
   }, [materialSearch, materials]);
 
