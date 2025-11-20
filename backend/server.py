@@ -1246,6 +1246,120 @@ async def get_calendar_events(current_user: User = Depends(get_current_user)):
     
     return events
 
+# ============= INVOICE UPLOAD ROUTES =============
+
+@api_router.post("/projects/{project_id}/invoices/upload")
+async def upload_invoice(
+    project_id: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Upload and parse a purchase invoice PDF for a project.
+    Automatically extracts total amounts and adds to project costs.
+    """
+    # Verify project exists
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Validate file type
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    
+    # Save file temporarily
+    temp_file = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
+            temp_file = tmp.name
+            content = await file.read()
+            tmp.write(content)
+        
+        # Parse invoice
+        parser = InvoiceParser()
+        amounts = parser.parse_invoice(temp_file)
+        
+        # Store invoice data
+        invoice_data = {
+            "filename": file.filename,
+            "total_excl_vat": float(amounts['total_excl_vat']),
+            "total_incl_vat": float(amounts['total_incl_vat']),
+            "vat_amount": float(amounts['vat_amount']),
+            "upload_date": datetime.now(timezone.utc).isoformat(),
+            "uploaded_by": current_user.id
+        }
+        
+        # Add to project's invoice list
+        await db.projects.update_one(
+            {"id": project_id},
+            {"$push": {"invoice_uploads": invoice_data}}
+        )
+        
+        # Update project costs
+        new_material_costs_incl_vat = project.get("material_costs_incl_vat", 0) + float(amounts['total_incl_vat'])
+        new_total_costs_incl_vat = project.get("total_costs_incl_vat", 0) + float(amounts['total_incl_vat'])
+        
+        await db.projects.update_one(
+            {"id": project_id},
+            {"$set": {
+                "material_costs_incl_vat": new_material_costs_incl_vat,
+                "total_costs_incl_vat": new_total_costs_incl_vat
+            }}
+        )
+        
+        # Recalculate profit
+        quote = await db.quotes.find_one({"id": project["quote_id"]})
+        if quote:
+            revenue = quote.get("total_incl_vat", quote.get("total_price", 0))
+            profit = revenue - new_total_costs_incl_vat
+            margin = (profit / revenue * 100) if revenue > 0 else 0
+            
+            await db.projects.update_one(
+                {"id": project_id},
+                {"$set": {
+                    "profit": profit,
+                    "profit_margin": margin
+                }}
+            )
+        
+        logger.info(f"Invoice uploaded for project {project_id}: {file.filename}")
+        
+        return {
+            "success": True,
+            "invoice": invoice_data,
+            "extracted_amounts": {
+                "total_excl_vat": float(amounts['total_excl_vat']),
+                "total_incl_vat": float(amounts['total_incl_vat']),
+                "vat_amount": float(amounts['vat_amount'])
+            },
+            "project_updated": True
+        }
+        
+    except Exception as e:
+        logger.error(f"Error processing invoice: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to process invoice: {str(e)}"
+        )
+    
+    finally:
+        # Clean up temp file
+        if temp_file and os.path.exists(temp_file):
+            os.unlink(temp_file)
+
+@api_router.get("/projects/{project_id}/invoices")
+async def get_project_invoices(
+    project_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all uploaded invoices for a project."""
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    invoices = project.get("invoice_uploads", [])
+    return {"invoices": invoices}
+
 # ============= WERKBON / DAILY REPORT ROUTES =============
 
 @api_router.post("/projects/{project_id}/work-slips", response_model=DailyReport)
