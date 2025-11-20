@@ -1,0 +1,90 @@
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../App';
+import { FileText, FileSpreadsheet, Calendar, Package, Users, LogOut, LayoutDashboard } from 'lucide-react';
+
+export default function DashboardLayout({ children }) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const navItems = [
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, testId: 'nav-dashboard' },
+    { name: 'Leads', path: '/leads', icon: Users, testId: 'nav-leads' },
+    { name: 'Offertes', path: '/quotes', icon: FileText, testId: 'nav-quotes' },
+    { name: 'Materialen', path: '/materials', icon: Package, testId: 'nav-materials' },
+    { name: 'Projecten', path: '/projects', icon: Calendar, testId: 'nav-projects' },
+  ];
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+
+  return (
+    <div className="min-h-screen" style={{backgroundColor: '#F8FAFC'}}>
+      {/* Header */}
+      <header className="sticky top-0 z-50 w-full border-b" style={{backgroundColor: 'white', borderColor: '#E2E8F0'}}>
+        <div className="container mx-auto px-4">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <FileSpreadsheet size={32} style={{color: '#1E40AF'}} />
+              <span className="text-xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+                Offerte Dashboard
+              </span>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              {user?.picture && (
+                <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
+              )}
+              <span style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}>{user?.name}</span>
+              <button
+                data-testid="logout-button"
+                onClick={handleLogout}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-all"
+                style={{color: '#64748B'}}
+              >
+                <LogOut size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex gap-8">
+          {/* Sidebar */}
+          <aside className="w-64 hidden lg:block">
+            <nav className="space-y-2 sticky top-24">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path;
+                return (
+                  <button
+                    key={item.path}
+                    data-testid={item.testId}
+                    onClick={() => navigate(item.path)}
+                    className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all"
+                    style={{
+                      backgroundColor: isActive ? '#1E40AF' : 'transparent',
+                      color: isActive ? 'white' : '#64748B',
+                    }}
+                  >
+                    <Icon size={20} />
+                    <span className="font-medium">{item.name}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
+
+          {/* Main Content */}
+          <main className="flex-1">
+            {children}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
