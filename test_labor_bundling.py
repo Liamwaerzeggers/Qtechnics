@@ -47,11 +47,12 @@ def create_test_user():
         print(f"✅ Test user created: {user['email']}")
         
         # Create session
+        from datetime import timezone as tz
         session_token = "test-session-token-001"
         session = {
             "session_token": session_token,
             "user_id": user_id,
-            "expires_at": datetime(2025, 12, 31)
+            "expires_at": datetime(2025, 12, 31, tzinfo=tz.utc)
         }
         await db.user_sessions.delete_many({"user_id": user_id})
         await db.user_sessions.insert_one(session)
