@@ -320,7 +320,10 @@ export default function QuoteDetailPage() {
                         data-testid={`delete-item-${item.id}`}
                         variant="ghost" 
                         size="sm"
-                        onClick={() => handleDeleteItem(item.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteItem(item.id);
+                        }}
                       >
                         <Trash2 size={18} style={{color: '#EF4444'}} />
                       </Button>
