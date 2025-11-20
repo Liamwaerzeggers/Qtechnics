@@ -25,23 +25,24 @@ class OfferteAPITester:
         
         # Generate unique identifiers
         timestamp = str(int(datetime.now().timestamp()))
-        user_id = f"test-user-{timestamp}"
+        user_email = f"test.user.{timestamp}@example.com"
         session_token = f"test_session_{timestamp}"
         
         # MongoDB commands to create test user and session
+        # Note: Backend uses email as _id for users
         mongo_commands = f"""
         use('test_database');
-        var userId = '{user_id}';
+        var userEmail = '{user_email}';
         var sessionToken = '{session_token}';
         db.users.insertOne({{
-            _id: userId,
-            email: 'test.user.{timestamp}@example.com',
+            _id: userEmail,
+            email: userEmail,
             name: 'Test User {timestamp}',
             picture: 'https://via.placeholder.com/150',
             created_at: new Date().toISOString()
         }});
         db.user_sessions.insertOne({{
-            user_id: userId,
+            user_id: userEmail,
             session_token: sessionToken,
             expires_at: new Date(Date.now() + 7*24*60*60*1000).toISOString(),
             created_at: new Date().toISOString()
