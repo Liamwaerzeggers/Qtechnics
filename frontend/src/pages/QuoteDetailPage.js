@@ -293,6 +293,29 @@ export default function QuoteDetailPage() {
                       </div>
                     </div>
 
+                    <div>
+                      <Label>Type</Label>
+                      <Select 
+                        value={formData.item_type} 
+                        onValueChange={(value) => {
+                          setFormData({...formData, item_type: value});
+                          if (value !== 'materiaal') {
+                            setMaterialSearch('');
+                            setShowMaterialDropdown(false);
+                          }
+                        }}
+                      >
+                        <SelectTrigger data-testid="item-type-select">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="arbeid">Arbeid</SelectItem>
+                          <SelectItem value="materiaal">Materiaal</SelectItem>
+                          <SelectItem value="overig">Overig</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     {!useCustomMaterial && formData.item_type === 'materiaal' ? (
                       <div>
                         <Label>Zoek Materiaal</Label>
@@ -305,7 +328,7 @@ export default function QuoteDetailPage() {
                               setMaterialSearch(e.target.value);
                               setShowMaterialDropdown(true);
                             }}
-                            onFocus={() => setShowMaterialDropdown(true)}
+                            onFocus={() => materialSearch && setShowMaterialDropdown(true)}
                           />
                           {showMaterialDropdown && filteredMaterials.length > 0 && (
                             <div 
@@ -330,6 +353,9 @@ export default function QuoteDetailPage() {
                             </div>
                           )}
                         </div>
+                        {materialSearch && filteredMaterials.length === 0 && (
+                          <p className="text-sm mt-1" style={{color: '#64748B'}}>Geen materialen gevonden</p>
+                        )}
                       </div>
                     ) : null}
 
