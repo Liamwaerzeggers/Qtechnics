@@ -61,9 +61,9 @@ function AuthProvider({ children }) {
 
 const useAuth = () => React.useContext(AuthContext);
 
-// Auth Callback Handler
-function AuthCallback() {
-  const { setUser, checkAuth } = useAuth();
+// Auth Callback Handler - processes Google OAuth callback
+function AuthCallbackHandler() {
+  const { setUser } = useAuth();
   const navigate = useNavigate();
   const [processing, setProcessing] = useState(true);
 
@@ -78,34 +78,30 @@ function AuthCallback() {
           const response = await axios.post(`${API}/auth/session`, { session_id: sessionId }, { withCredentials: true });
           setUser(response.data.user);
           window.history.replaceState({}, document.title, '/dashboard');
-          setProcessing(false);
-          toast.success('Welkom!');
+          toast.success('Welkom terug!');
+          navigate('/dashboard', { replace: true });
         } catch (error) {
           console.error('Session error:', error);
           toast.error('Authenticatie mislukt');
           navigate('/', { replace: true });
         }
       } else {
-        await checkAuth();
-        setProcessing(false);
+        // No session_id, redirect back to home
+        navigate('/', { replace: true });
       }
     };
 
     processSession();
   }, []);
 
-  if (processing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#F8FAFC'}}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto mb-4"></div>
-          <p className="text-lg" style={{color: '#1E293B'}}>Authenticeren...</p>
-        </div>
+  return (
+    <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#F8FAFC'}}>
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto mb-4"></div>
+        <p className="text-lg" style={{color: '#1E293B'}}>Authenticeren...</p>
       </div>
-    );
-  }
-
-  return <Dashboard />;
+    </div>
+  );
 }
 
 // Landing Page
