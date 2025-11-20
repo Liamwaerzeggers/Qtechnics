@@ -988,9 +988,32 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
         story.append(Paragraph(f"<b>Adres:</b> {lead['address']}", styles['Normal']))
         story.append(Spacer(1, 0.3*inch))
     
-    # Line items table with VAT
+    # Separate labor and material items
+    labor_items = [item for item in items if item['item_type'] == 'arbeid']
+    material_items = [item for item in items if item['item_type'] != 'arbeid']
+    
+    # Calculate bundled labor total
+    labor_total_excl = sum(item.get('total_excl_vat', item.get('quantity', 0) * item.get('unit_price', 0)) for item in labor_items)
+    labor_vat_rate = 6  # Renovatie tarief
+    labor_vat = labor_total_excl * (labor_vat_rate / 100)
+    labor_total_incl = labor_total_excl + labor_vat
+    
+    # Line items table with VAT - Bundle labor, show materials individually
     table_data = [['Omschrijving', 'Aantal', 'Prijs excl.', 'BTW%', 'Totaal excl.', 'Totaal incl.']]
-    for item in items:
+    
+    # Add bundled labor if exists
+    if labor_items:
+        table_data.append([
+            'Arbeid totaal',
+            '-',
+            '-',
+            f"{labor_vat_rate}%",
+            f"€{labor_total_excl:.2f}",
+            f"€{labor_total_incl:.2f}"
+        ])
+    
+    # Add individual material items
+    for item in material_items:
         excl_vat = item.get('total_excl_vat', item.get('quantity', 0) * item.get('unit_price', 0))
         vat_rate = item.get('vat_rate', 21)
         incl_vat = item.get('total_incl_vat', item.get('total', excl_vat))
