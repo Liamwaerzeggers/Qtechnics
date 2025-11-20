@@ -78,7 +78,7 @@ class OfferteAPITester:
         db.user_sessions.deleteMany({{user_id: '{self.user_id}'}});
         db.leads.deleteMany({{user_id: '{self.user_id}'}});
         db.quotes.deleteMany({{user_id: '{self.user_id}'}});
-        db.line_items.deleteMany({{quote_id: {{$in: {json.dumps(self.created_resources['quotes'])}}}}});
+        db.line_items.deleteMany({{quote_id: {{$in: {json.dumps(self.created_resources['quotes']) if self.created_resources['quotes'] else []}}}}});
         db.projects.deleteMany({{user_id: '{self.user_id}'}});
         db.materials.deleteMany({{user_id: '{self.user_id}'}});
         print('Cleanup complete');
