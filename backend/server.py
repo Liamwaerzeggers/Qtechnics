@@ -1,4 +1,5 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, UploadFile, File, Response, Cookie
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,10 +7,18 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from typing import List, Optional
 import uuid
-from datetime import datetime, timezone
-
+from datetime import datetime, timezone, timedelta
+import pandas as pd
+import io
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib import colors
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from openpyxl import Workbook
+import httpx
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -19,54 +28,849 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
+# Create the main app
 app = FastAPI()
-
-# Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# ============= MODELS =============
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
+# Auth Models
+class User(BaseModel):
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    id: str = Field(alias="_id")
+    email: str
+    name: str
+    picture: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class UserCreate(BaseModel):
+    email: str
+    name: str
+    picture: Optional[str] = None
+
+class UserSession(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    user_id: str
+    session_token: str
+    expires_at: datetime
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SessionRequest(BaseModel):
+    session_id: str
+
+class SessionResponse(BaseModel):
+    user: User
+    session_token: str
+
+# Lead Models
+class Lead(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"LEAD-{str(uuid.uuid4())[:8].upper()}")
+    name: str
+    email: str
+    phone: str
+    address: str
+    project_type: str
+    description: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    user_id: str
+
+class LeadCreate(BaseModel):
+    name: str
+    email: str
+    phone: str
+    address: str
+    project_type: str
+    description: str
+
+class LeadUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    project_type: Optional[str] = None
+    description: Optional[str] = None
+
+# Quote Models
+class Quote(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"OFF-{datetime.now(timezone.utc).year}-{str(uuid.uuid4())[:6].upper()}")
+    lead_id: str
+    quote_number: str = ""
+    date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    status: str = "concept"
+    subtotal_labor: float = 0.0
+    subtotal_material: float = 0.0
+    total_price: float = 0.0
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    user_id: str
+
+class QuoteCreate(BaseModel):
+    lead_id: str
+
+class QuoteUpdate(BaseModel):
+    status: Optional[str] = None
+
+# Line Item Models
+class LineItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    quote_id: str
+    description: str
+    quantity: float
+    unit_price: float
+    item_type: str  # "arbeid", "materiaal", "overig"
+    total: float = 0.0
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+class LineItemCreate(BaseModel):
+    description: str
+    quantity: float
+    unit_price: float
+    item_type: str
 
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
+class LineItemUpdate(BaseModel):
+    description: Optional[str] = None
+    quantity: Optional[float] = None
+    unit_price: Optional[float] = None
+    item_type: Optional[str] = None
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
+# Material Models
+class Material(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    sku: str
+    name: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+    brand: Optional[str] = None
+    price: float
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    user_id: str
+
+# Project Models
+class Project(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"PROJ-{str(uuid.uuid4())[:8].upper()}")
+    quote_id: str
+    name: str
+    status: str = "gepland"  # gepland, in uitvoering, voltooid
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    user_id: str
+
+class ProjectCreate(BaseModel):
+    quote_id: str
+    name: str
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    notes: Optional[str] = None
+
+class ProjectUpdate(BaseModel):
+    name: Optional[str] = None
+    status: Optional[str] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    notes: Optional[str] = None
+
+# ============= AUTH DEPENDENCIES =============
+
+async def get_current_user(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = None) -> User:
+    """Get current user from session token (cookie or header)"""
+    token = session_token
     
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
+    if not token and authorization:
+        parts = authorization.split()
+        if len(parts) == 2 and parts[0].lower() == "bearer":
+            token = parts[1]
     
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Find session
+    session = await db.user_sessions.find_one({"session_token": token})
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid session")
+    
+    # Check expiry
+    if session["expires_at"] < datetime.now(timezone.utc):
+        await db.user_sessions.delete_one({"session_token": token})
+        raise HTTPException(status_code=401, detail="Session expired")
+    
+    # Find user
+    user_doc = await db.users.find_one({"_id": session["user_id"]})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return User(**user_doc)
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
+# ============= AUTH ROUTES =============
 
-# Include the router in the main app
+@api_router.post("/auth/session", response_model=SessionResponse)
+async def create_session(request: SessionRequest, response: Response):
+    """Process session_id from Emergent Auth and create user session"""
+    
+    # Call Emergent Auth API to get user data
+    async with httpx.AsyncClient() as client:
+        try:
+            auth_response = await client.get(
+                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                headers={"X-Session-ID": request.session_id}
+            )
+            auth_response.raise_for_status()
+            user_data = auth_response.json()
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to validate session: {str(e)}")
+    
+    # Check if user exists
+    existing_user = await db.users.find_one({"_id": user_data["email"]})
+    
+    if not existing_user:
+        # Create new user
+        user_doc = {
+            "_id": user_data["email"],
+            "email": user_data["email"],
+            "name": user_data.get("name", ""),
+            "picture": user_data.get("picture", ""),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.users.insert_one(user_doc)
+        user = User(**user_doc)
+    else:
+        user = User(**existing_user)
+    
+    # Create session
+    session_token = user_data.get("session_token") or str(uuid.uuid4())
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    session_doc = {
+        "user_id": user.id,
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.user_sessions.insert_one(session_doc)
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=7*24*60*60,
+        path="/"
+    )
+    
+    return SessionResponse(user=user, session_token=session_token)
+
+@api_router.get("/auth/me", response_model=User)
+async def get_me(current_user: User = Depends(get_current_user)):
+    """Get current authenticated user"""
+    return current_user
+
+@api_router.post("/auth/logout")
+async def logout(response: Response, current_user: User = Depends(get_current_user), session_token: Optional[str] = Cookie(None)):
+    """Logout user and delete session"""
+    if session_token:
+        await db.user_sessions.delete_one({"session_token": session_token})
+    
+    response.delete_cookie(key="session_token", path="/")
+    return {"message": "Logged out successfully"}
+
+# ============= LEAD ROUTES =============
+
+@api_router.post("/leads", response_model=Lead)
+async def create_lead(lead: LeadCreate, current_user: User = Depends(get_current_user)):
+    """Create a new lead"""
+    lead_obj = Lead(**lead.model_dump(), user_id=current_user.id)
+    lead_doc = lead_obj.model_dump()
+    lead_doc["created_at"] = lead_doc["created_at"].isoformat()
+    
+    await db.leads.insert_one(lead_doc)
+    return lead_obj
+
+@api_router.get("/leads", response_model=List[Lead])
+async def get_leads(current_user: User = Depends(get_current_user)):
+    """Get all leads for current user"""
+    leads = await db.leads.find({"user_id": current_user.id}).to_list(1000)
+    
+    for lead in leads:
+        if isinstance(lead["created_at"], str):
+            lead["created_at"] = datetime.fromisoformat(lead["created_at"])
+    
+    return leads
+
+@api_router.get("/leads/{lead_id}", response_model=Lead)
+async def get_lead(lead_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific lead"""
+    lead = await db.leads.find_one({"id": lead_id, "user_id": current_user.id})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    if isinstance(lead["created_at"], str):
+        lead["created_at"] = datetime.fromisoformat(lead["created_at"])
+    
+    return Lead(**lead)
+
+@api_router.put("/leads/{lead_id}", response_model=Lead)
+async def update_lead(lead_id: str, lead_update: LeadUpdate, current_user: User = Depends(get_current_user)):
+    """Update a lead"""
+    existing_lead = await db.leads.find_one({"id": lead_id, "user_id": current_user.id})
+    if not existing_lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    update_data = {k: v for k, v in lead_update.model_dump().items() if v is not None}
+    
+    if update_data:
+        await db.leads.update_one({"id": lead_id}, {"$set": update_data})
+        existing_lead.update(update_data)
+    
+    if isinstance(existing_lead["created_at"], str):
+        existing_lead["created_at"] = datetime.fromisoformat(existing_lead["created_at"])
+    
+    return Lead(**existing_lead)
+
+@api_router.delete("/leads/{lead_id}")
+async def delete_lead(lead_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a lead"""
+    result = await db.leads.delete_one({"id": lead_id, "user_id": current_user.id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    return {"message": "Lead deleted successfully"}
+
+# ============= QUOTE ROUTES =============
+
+@api_router.post("/quotes", response_model=Quote)
+async def create_quote(quote_create: QuoteCreate, current_user: User = Depends(get_current_user)):
+    """Create a new quote from a lead"""
+    # Verify lead exists
+    lead = await db.leads.find_one({"id": quote_create.lead_id, "user_id": current_user.id})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    quote_obj = Quote(**quote_create.model_dump(), user_id=current_user.id)
+    quote_obj.quote_number = quote_obj.id
+    
+    quote_doc = quote_obj.model_dump()
+    quote_doc["date"] = quote_doc["date"].isoformat()
+    quote_doc["created_at"] = quote_doc["created_at"].isoformat()
+    
+    await db.quotes.insert_one(quote_doc)
+    return quote_obj
+
+@api_router.get("/quotes", response_model=List[Quote])
+async def get_quotes(current_user: User = Depends(get_current_user)):
+    """Get all quotes for current user"""
+    quotes = await db.quotes.find({"user_id": current_user.id}).to_list(1000)
+    
+    for quote in quotes:
+        if isinstance(quote["date"], str):
+            quote["date"] = datetime.fromisoformat(quote["date"])
+        if isinstance(quote["created_at"], str):
+            quote["created_at"] = datetime.fromisoformat(quote["created_at"])
+    
+    return quotes
+
+@api_router.get("/quotes/{quote_id}", response_model=Quote)
+async def get_quote(quote_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific quote"""
+    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    if isinstance(quote["date"], str):
+        quote["date"] = datetime.fromisoformat(quote["date"])
+    if isinstance(quote["created_at"], str):
+        quote["created_at"] = datetime.fromisoformat(quote["created_at"])
+    
+    return Quote(**quote)
+
+@api_router.put("/quotes/{quote_id}", response_model=Quote)
+async def update_quote(quote_id: str, quote_update: QuoteUpdate, current_user: User = Depends(get_current_user)):
+    """Update a quote"""
+    existing_quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
+    if not existing_quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    update_data = {k: v for k, v in quote_update.model_dump().items() if v is not None}
+    
+    if update_data:
+        await db.quotes.update_one({"id": quote_id}, {"$set": update_data})
+        existing_quote.update(update_data)
+    
+    if isinstance(existing_quote["date"], str):
+        existing_quote["date"] = datetime.fromisoformat(existing_quote["date"])
+    if isinstance(existing_quote["created_at"], str):
+        existing_quote["created_at"] = datetime.fromisoformat(existing_quote["created_at"])
+    
+    return Quote(**existing_quote)
+
+@api_router.delete("/quotes/{quote_id}")
+async def delete_quote(quote_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a quote"""
+    result = await db.quotes.delete_one({"id": quote_id, "user_id": current_user.id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    # Also delete associated line items
+    await db.line_items.delete_many({"quote_id": quote_id})
+    
+    return {"message": "Quote deleted successfully"}
+
+# ============= LINE ITEM ROUTES =============
+
+@api_router.post("/quotes/{quote_id}/items", response_model=LineItem)
+async def add_line_item(quote_id: str, item: LineItemCreate, current_user: User = Depends(get_current_user)):
+    """Add a line item to a quote"""
+    # Verify quote exists
+    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    # Create line item
+    item_obj = LineItem(**item.model_dump(), quote_id=quote_id)
+    item_obj.total = item_obj.quantity * item_obj.unit_price
+    
+    item_doc = item_obj.model_dump()
+    item_doc["created_at"] = item_doc["created_at"].isoformat()
+    
+    await db.line_items.insert_one(item_doc)
+    
+    # Recalculate quote totals
+    await recalculate_quote_totals(quote_id)
+    
+    return item_obj
+
+@api_router.get("/quotes/{quote_id}/items", response_model=List[LineItem])
+async def get_line_items(quote_id: str, current_user: User = Depends(get_current_user)):
+    """Get all line items for a quote"""
+    # Verify quote exists
+    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    items = await db.line_items.find({"quote_id": quote_id}).to_list(1000)
+    
+    for item in items:
+        if isinstance(item["created_at"], str):
+            item["created_at"] = datetime.fromisoformat(item["created_at"])
+    
+    return items
+
+@api_router.put("/quotes/{quote_id}/items/{item_id}", response_model=LineItem)
+async def update_line_item(quote_id: str, item_id: str, item_update: LineItemUpdate, current_user: User = Depends(get_current_user)):
+    """Update a line item"""
+    # Verify quote exists
+    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    existing_item = await db.line_items.find_one({"id": item_id, "quote_id": quote_id})
+    if not existing_item:
+        raise HTTPException(status_code=404, detail="Line item not found")
+    
+    update_data = {k: v for k, v in item_update.model_dump().items() if v is not None}
+    
+    if update_data:
+        # Recalculate total if quantity or price changed
+        if "quantity" in update_data or "unit_price" in update_data:
+            quantity = update_data.get("quantity", existing_item["quantity"])
+            unit_price = update_data.get("unit_price", existing_item["unit_price"])
+            update_data["total"] = quantity * unit_price
+        
+        await db.line_items.update_one({"id": item_id}, {"$set": update_data})
+        existing_item.update(update_data)
+        
+        # Recalculate quote totals
+        await recalculate_quote_totals(quote_id)
+    
+    if isinstance(existing_item["created_at"], str):
+        existing_item["created_at"] = datetime.fromisoformat(existing_item["created_at"])
+    
+    return LineItem(**existing_item)
+
+@api_router.delete("/quotes/{quote_id}/items/{item_id}")
+async def delete_line_item(quote_id: str, item_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a line item"""
+    # Verify quote exists
+    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    result = await db.line_items.delete_one({"id": item_id, "quote_id": quote_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Line item not found")
+    
+    # Recalculate quote totals
+    await recalculate_quote_totals(quote_id)
+    
+    return {"message": "Line item deleted successfully"}
+
+async def recalculate_quote_totals(quote_id: str):
+    """Recalculate quote subtotals and total price"""
+    items = await db.line_items.find({"quote_id": quote_id}).to_list(1000)
+    
+    subtotal_labor = sum(item["total"] for item in items if item["item_type"] == "arbeid")
+    subtotal_material = sum(item["total"] for item in items if item["item_type"] == "materiaal")
+    other_total = sum(item["total"] for item in items if item["item_type"] == "overig")
+    
+    total_price = subtotal_labor + subtotal_material + other_total
+    
+    await db.quotes.update_one(
+        {"id": quote_id},
+        {"$set": {
+            "subtotal_labor": subtotal_labor,
+            "subtotal_material": subtotal_material,
+            "total_price": total_price
+        }}
+    )
+
+# ============= MATERIAL ROUTES =============
+
+@api_router.post("/materials/upload")
+async def upload_materials_csv(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    """Upload materials CSV and replace existing catalog"""
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Only CSV files are allowed")
+    
+    try:
+        # Read CSV
+        content = await file.read()
+        df = pd.read_csv(io.BytesIO(content))
+        
+        # Validate required columns
+        required_columns = ['sku', 'name', 'price']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise HTTPException(status_code=400, detail=f"Missing required columns: {missing_columns}")
+        
+        # Delete existing materials for this user
+        await db.materials.delete_many({"user_id": current_user.id})
+        
+        # Insert new materials
+        materials = []
+        for _, row in df.iterrows():
+            material = Material(
+                sku=str(row['sku']),
+                name=str(row['name']),
+                description=str(row.get('description', '')) if pd.notna(row.get('description')) else None,
+                category=str(row.get('category', '')) if pd.notna(row.get('category')) else None,
+                brand=str(row.get('brand', '')) if pd.notna(row.get('brand')) else None,
+                price=float(row['price']),
+                user_id=current_user.id
+            )
+            material_doc = material.model_dump()
+            material_doc["created_at"] = material_doc["created_at"].isoformat()
+            materials.append(material_doc)
+        
+        if materials:
+            await db.materials.insert_many(materials)
+        
+        return {"message": f"Successfully uploaded {len(materials)} materials", "count": len(materials)}
+    
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error processing CSV: {str(e)}")
+
+@api_router.get("/materials/search")
+async def search_materials(q: str, current_user: User = Depends(get_current_user)):
+    """Search materials by text query"""
+    if not q:
+        return {"results": [], "count": 0}
+    
+    # Case-insensitive search on multiple fields
+    query = {
+        "user_id": current_user.id,
+        "$or": [
+            {"sku": {"$regex": q, "$options": "i"}},
+            {"name": {"$regex": q, "$options": "i"}},
+            {"description": {"$regex": q, "$options": "i"}},
+            {"category": {"$regex": q, "$options": "i"}},
+            {"brand": {"$regex": q, "$options": "i"}}
+        ]
+    }
+    
+    materials = await db.materials.find(query).limit(50).to_list(50)
+    
+    for material in materials:
+        if isinstance(material["created_at"], str):
+            material["created_at"] = datetime.fromisoformat(material["created_at"])
+    
+    return {"results": materials, "count": len(materials)}
+
+@api_router.get("/materials")
+async def get_materials(skip: int = 0, limit: int = 100, current_user: User = Depends(get_current_user)):
+    """Get all materials with pagination"""
+    materials = await db.materials.find({"user_id": current_user.id}).skip(skip).limit(limit).to_list(limit)
+    total = await db.materials.count_documents({"user_id": current_user.id})
+    
+    for material in materials:
+        if isinstance(material["created_at"], str):
+            material["created_at"] = datetime.fromisoformat(material["created_at"])
+    
+    return {"materials": materials, "total": total}
+
+# ============= PROJECT ROUTES =============
+
+@api_router.post("/projects", response_model=Project)
+async def create_project(project_create: ProjectCreate, current_user: User = Depends(get_current_user)):
+    """Create a new project from an approved quote"""
+    # Verify quote exists
+    quote = await db.quotes.find_one({"id": project_create.quote_id, "user_id": current_user.id})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    project_obj = Project(**project_create.model_dump(), user_id=current_user.id)
+    
+    project_doc = project_obj.model_dump()
+    project_doc["created_at"] = project_doc["created_at"].isoformat()
+    if project_doc.get("start_date"):
+        project_doc["start_date"] = project_doc["start_date"].isoformat()
+    if project_doc.get("end_date"):
+        project_doc["end_date"] = project_doc["end_date"].isoformat()
+    
+    await db.projects.insert_one(project_doc)
+    return project_obj
+
+@api_router.get("/projects", response_model=List[Project])
+async def get_projects(current_user: User = Depends(get_current_user)):
+    """Get all projects for current user"""
+    projects = await db.projects.find({"user_id": current_user.id}).to_list(1000)
+    
+    for project in projects:
+        if isinstance(project["created_at"], str):
+            project["created_at"] = datetime.fromisoformat(project["created_at"])
+        if project.get("start_date") and isinstance(project["start_date"], str):
+            project["start_date"] = datetime.fromisoformat(project["start_date"])
+        if project.get("end_date") and isinstance(project["end_date"], str):
+            project["end_date"] = datetime.fromisoformat(project["end_date"])
+    
+    return projects
+
+@api_router.get("/projects/{project_id}", response_model=Project)
+async def get_project(project_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific project"""
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    if isinstance(project["created_at"], str):
+        project["created_at"] = datetime.fromisoformat(project["created_at"])
+    if project.get("start_date") and isinstance(project["start_date"], str):
+        project["start_date"] = datetime.fromisoformat(project["start_date"])
+    if project.get("end_date") and isinstance(project["end_date"], str):
+        project["end_date"] = datetime.fromisoformat(project["end_date"])
+    
+    return Project(**project)
+
+@api_router.put("/projects/{project_id}", response_model=Project)
+async def update_project(project_id: str, project_update: ProjectUpdate, current_user: User = Depends(get_current_user)):
+    """Update a project"""
+    existing_project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if not existing_project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    update_data = {k: v for k, v in project_update.model_dump().items() if v is not None}
+    
+    if update_data:
+        # Convert datetime fields to ISO strings
+        if "start_date" in update_data:
+            update_data["start_date"] = update_data["start_date"].isoformat()
+        if "end_date" in update_data:
+            update_data["end_date"] = update_data["end_date"].isoformat()
+        
+        await db.projects.update_one({"id": project_id}, {"$set": update_data})
+        existing_project.update(update_data)
+    
+    if isinstance(existing_project["created_at"], str):
+        existing_project["created_at"] = datetime.fromisoformat(existing_project["created_at"])
+    if existing_project.get("start_date") and isinstance(existing_project["start_date"], str):
+        existing_project["start_date"] = datetime.fromisoformat(existing_project["start_date"])
+    if existing_project.get("end_date") and isinstance(existing_project["end_date"], str):
+        existing_project["end_date"] = datetime.fromisoformat(existing_project["end_date"])
+    
+    return Project(**existing_project)
+
+@api_router.delete("/projects/{project_id}")
+async def delete_project(project_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a project"""
+    result = await db.projects.delete_one({"id": project_id, "user_id": current_user.id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    return {"message": "Project deleted successfully"}
+
+# ============= EXPORT ROUTES =============
+
+@api_router.get("/quotes/{quote_id}/export/pdf")
+async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_current_user)):
+    """Export quote as PDF"""
+    # Get quote
+    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    # Get lead
+    lead = await db.leads.find_one({"id": quote["lead_id"], "user_id": current_user.id})
+    
+    # Get line items
+    items = await db.line_items.find({"quote_id": quote_id}).to_list(1000)
+    
+    # Create PDF
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    
+    story = []
+    styles = getSampleStyleSheet()
+    
+    # Title
+    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=24, textColor=colors.HexColor('#1E40AF'))
+    story.append(Paragraph(f"Offerte {quote['quote_number']}", title_style))
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Lead info
+    if lead:
+        story.append(Paragraph(f"<b>Klant:</b> {lead['name']}", styles['Normal']))
+        story.append(Paragraph(f"<b>Email:</b> {lead['email']}", styles['Normal']))
+        story.append(Paragraph(f"<b>Telefoon:</b> {lead['phone']}", styles['Normal']))
+        story.append(Paragraph(f"<b>Adres:</b> {lead['address']}", styles['Normal']))
+        story.append(Spacer(1, 0.3*inch))
+    
+    # Line items table
+    table_data = [['Omschrijving', 'Aantal', 'Eenheidsprijs', 'Type', 'Totaal']]
+    for item in items:
+        table_data.append([
+            item['description'],
+            str(item['quantity']),
+            f"€{item['unit_price']:.2f}",
+            item['item_type'],
+            f"€{item['total']:.2f}"
+        ])
+    
+    table = Table(table_data, colWidths=[3*inch, 0.8*inch, 1*inch, 1*inch, 1*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1E40AF')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    story.append(table)
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Totals
+    story.append(Paragraph(f"<b>Subtotaal Arbeid:</b> €{quote['subtotal_labor']:.2f}", styles['Normal']))
+    story.append(Paragraph(f"<b>Subtotaal Materiaal:</b> €{quote['subtotal_material']:.2f}", styles['Normal']))
+    story.append(Paragraph(f"<b>Totaalprijs:</b> €{quote['total_price']:.2f}", title_style))
+    
+    doc.build(story)
+    buffer.seek(0)
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=offerte_{quote['quote_number']}.pdf"}
+    )
+
+@api_router.get("/quotes/{quote_id}/export/excel")
+async def export_quote_excel(quote_id: str, current_user: User = Depends(get_current_user)):
+    """Export quote as Excel"""
+    # Get quote
+    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    # Get lead
+    lead = await db.leads.find_one({"id": quote["lead_id"], "user_id": current_user.id})
+    
+    # Get line items
+    items = await db.line_items.find({"quote_id": quote_id}).to_list(1000)
+    
+    # Create Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Offerte"
+    
+    # Header
+    ws['A1'] = f"Offerte {quote['quote_number']}"
+    ws['A1'].font = ws['A1'].font.copy(bold=True, size=16)
+    
+    # Lead info
+    if lead:
+        ws['A3'] = 'Klant:'
+        ws['B3'] = lead['name']
+        ws['A4'] = 'Email:'
+        ws['B4'] = lead['email']
+        ws['A5'] = 'Telefoon:'
+        ws['B5'] = lead['phone']
+        ws['A6'] = 'Adres:'
+        ws['B6'] = lead['address']
+    
+    # Line items
+    ws['A8'] = 'Omschrijving'
+    ws['B8'] = 'Aantal'
+    ws['C8'] = 'Eenheidsprijs'
+    ws['D8'] = 'Type'
+    ws['E8'] = 'Totaal'
+    
+    for i, item in enumerate(items, start=9):
+        ws[f'A{i}'] = item['description']
+        ws[f'B{i}'] = item['quantity']
+        ws[f'C{i}'] = item['unit_price']
+        ws[f'D{i}'] = item['item_type']
+        ws[f'E{i}'] = item['total']
+    
+    # Totals
+    row = len(items) + 10
+    ws[f'A{row}'] = 'Subtotaal Arbeid:'
+    ws[f'E{row}'] = quote['subtotal_labor']
+    ws[f'A{row+1}'] = 'Subtotaal Materiaal:'
+    ws[f'E{row+1}'] = quote['subtotal_material']
+    ws[f'A{row+2}'] = 'Totaalprijs:'
+    ws[f'E{row+2}'] = quote['total_price']
+    ws[f'A{row+2}'].font = ws[f'A{row+2}'].font.copy(bold=True)
+    
+    # Save to buffer
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=offerte_{quote['quote_number']}.xlsx"}
+    )
+
+# ============= DASHBOARD STATS =============
+
+@api_router.get("/dashboard/stats")
+async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
+    """Get dashboard statistics"""
+    total_leads = await db.leads.count_documents({"user_id": current_user.id})
+    total_quotes = await db.quotes.count_documents({"user_id": current_user.id})
+    total_projects = await db.projects.count_documents({"user_id": current_user.id})
+    total_materials = await db.materials.count_documents({"user_id": current_user.id})
+    
+    # Get recent items
+    recent_leads = await db.leads.find({"user_id": current_user.id}).sort("created_at", -1).limit(5).to_list(5)
+    recent_quotes = await db.quotes.find({"user_id": current_user.id}).sort("created_at", -1).limit(5).to_list(5)
+    
+    return {
+        "total_leads": total_leads,
+        "total_quotes": total_quotes,
+        "total_projects": total_projects,
+        "total_materials": total_materials,
+        "recent_leads": recent_leads,
+        "recent_quotes": recent_quotes
+    }
+
+# Include router
 app.include_router(api_router)
 
 app.add_middleware(
@@ -77,7 +881,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
