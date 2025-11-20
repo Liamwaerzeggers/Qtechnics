@@ -284,6 +284,100 @@ export default function ProjectDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Invoice Uploads Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Inkoop Facturen</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Upload Section */}
+              <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                <input
+                  type="file"
+                  accept=".pdf"
+                  id="invoice-upload"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    try {
+                      toast.loading('Factuur wordt verwerkt...');
+                      const response = await axios.post(
+                        `${API}/projects/${projectId}/invoices/upload`,
+                        formData,
+                        { 
+                          withCredentials: true,
+                          headers: { 'Content-Type': 'multipart/form-data' }
+                        }
+                      );
+                      
+                      toast.dismiss();
+                      toast.success('Factuur succesvol geüpload en verwerkt!');
+                      fetchProjectData();
+                      
+                      // Show extracted amounts
+                      const amounts = response.data.extracted_amounts;
+                      toast.info(
+                        `Geëxtraheerd: €${amounts.total_incl_vat.toFixed(2)} incl. BTW`
+                      );
+                    } catch (error) {
+                      toast.dismiss();
+                      toast.error('Fout bij uploaden factuur');
+                      console.error(error);
+                    }
+                    
+                    e.target.value = null;
+                  }}
+                />
+                <label 
+                  htmlFor="invoice-upload" 
+                  className="cursor-pointer inline-block px-6 py-3 rounded-lg text-white font-semibold transition-all hover:opacity-90"
+                  style={{backgroundColor: '#1E40AF'}}
+                >
+                  📄 Upload Factuur PDF
+                </label>
+                <p className="text-sm mt-2" style={{color: '#64748B'}}>
+                  Upload een inkoop factuur PDF. Bedragen worden automatisch geëxtraheerd.
+                </p>
+              </div>
+
+              {/* Uploaded Invoices List */}
+              {project?.invoice_uploads && project.invoice_uploads.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold" style={{color: '#1E3A8A'}}>
+                    Geüploade Facturen ({project.invoice_uploads.length})
+                  </h4>
+                  {project.invoice_uploads.map((invoice, idx) => (
+                    <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <div className="font-medium" style={{color: '#1E293B'}}>
+                          {invoice.filename}
+                        </div>
+                        <div className="text-sm" style={{color: '#64748B'}}>
+                          {new Date(invoice.upload_date).toLocaleDateString('nl-NL')}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold" style={{color: '#EF4444'}}>
+                          €{invoice.total_incl_vat.toFixed(2)}
+                        </div>
+                        <div className="text-xs" style={{color: '#64748B'}}>
+                          incl. BTW
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );
