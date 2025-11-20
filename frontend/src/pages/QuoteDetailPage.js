@@ -390,23 +390,6 @@ export default function QuoteDetailPage() {
                         required 
                       />
                     </div>
-                    <div>
-                      <Label>Type</Label>
-                      <Select 
-                        data-testid="item-type-select"
-                        value={formData.item_type} 
-                        onValueChange={(value) => setFormData({...formData, item_type: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="arbeid">Arbeid</SelectItem>
-                          <SelectItem value="materiaal">Materiaal</SelectItem>
-                          <SelectItem value="overig">Overig</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
                     <Button data-testid="submit-item-button" type="submit" className="w-full" style={{backgroundColor: '#1E40AF'}}>
                       Toevoegen
                     </Button>
