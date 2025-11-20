@@ -447,7 +447,7 @@ async def create_quote(quote_create: QuoteCreate, current_user: User = Depends(g
 @api_router.get("/quotes", response_model=List[Quote])
 async def get_quotes(current_user: User = Depends(get_current_user)):
     """Get all quotes for current user"""
-    quotes = await db.quotes.find({"user_id": current_user.id}).to_list(1000)
+    quotes = await db.quotes.find({"user_id": current_user.id}, {"_id": 0}).to_list(1000)
     
     for quote in quotes:
         if isinstance(quote["date"], str):
