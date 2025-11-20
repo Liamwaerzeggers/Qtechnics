@@ -613,7 +613,7 @@ async def search_materials(q: str, current_user: User = Depends(get_current_user
         ]
     }
     
-    materials = await db.materials.find(query).limit(50).to_list(50)
+    materials = await db.materials.find(query, {"_id": 0}).limit(50).to_list(50)
     
     for material in materials:
         if isinstance(material["created_at"], str):
