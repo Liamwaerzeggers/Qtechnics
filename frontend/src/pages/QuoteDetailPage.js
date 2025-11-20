@@ -88,8 +88,9 @@ export default function QuoteDetailPage() {
       description: material.name,
       unit_price: material.price.toString()
     });
-    setMaterialSearch(material.name);
+    setMaterialSearch('');
     setShowMaterialDropdown(false);
+    toast.success(`${material.name} geselecteerd`);
   };
 
   const handleAddItem = async (e) => {
