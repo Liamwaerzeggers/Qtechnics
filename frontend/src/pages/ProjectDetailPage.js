@@ -501,7 +501,7 @@ export default function ProjectDetailPage() {
               </div>
 
               {/* Invoices List */}
-              {invoices.length > 0 && (
+              {Array.isArray(invoices) && invoices.length > 0 && (
                 <div>
                   <h4 className="font-semibold mb-3" style={{color: '#1E3A8A'}}>
                     Uitgegeven Facturen ({invoices.length})
