@@ -203,14 +203,9 @@ export default function CalendarPage() {
             
             {/* Project Colors Info */}
             <div>
-              <h4 className="text-sm font-medium mb-2" style={{ color: '#64748B' }}>Projecten</h4>
-              <div className="flex flex-wrap gap-2">
-                {projectColors.map((color, idx) => (
-                  <div key={idx} className="w-6 h-6 rounded shadow-sm" style={{ backgroundColor: color }}></div>
-                ))}
-              </div>
-              <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>
-                Elk actief project krijgt automatisch een unieke kleur. Overlappende projecten zijn zo makkelijk te onderscheiden.
+              <h4 className="text-sm font-medium mb-2" style={{ color: '#64748B' }}>Aangepaste Kleuren</h4>
+              <p className="text-xs" style={{ color: '#94A3B8' }}>
+                Elk project kan een eigen kleur krijgen via de project detail pagina. Dit maakt overlappende projecten makkelijk te onderscheiden in de kalender.
               </p>
             </div>
           </div>
