@@ -1,54 +1,201 @@
-import { useEffect } from "react";
-import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import React, { useEffect, useState } from 'react';
+import '@/App.css';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
+import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const AUTH_URL = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(window.location.origin + '/dashboard')}`;
 
-const Home = () => {
-  const helloWorldApi = async () => {
+// Auth Context
+const AuthContext = React.createContext(null);
+
+function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
     try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
+      const response = await axios.get(`${API}/auth/me`, { withCredentials: true });
+      setUser(response.data);
+    } catch (error) {
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
+  const logout = async () => {
+    try {
+      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
+      setUser(null);
+      toast.success('Uitgelogd');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
+    <AuthContext.Provider value={{ user, setUser, loading, logout, checkAuth }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+const useAuth = () => React.useContext(AuthContext);
+
+// Auth Callback Handler
+function AuthCallback() {
+  const { setUser, checkAuth } = useAuth();
+  const navigate = useNavigate();
+  const [processing, setProcessing] = useState(true);
+
+  useEffect(() => {
+    const processSession = async () => {
+      const hash = window.location.hash;
+      const params = new URLSearchParams(hash.substring(1));
+      const sessionId = params.get('session_id');
+
+      if (sessionId) {
+        try {
+          const response = await axios.post(`${API}/auth/session`, { session_id: sessionId }, { withCredentials: true });
+          setUser(response.data.user);
+          window.history.replaceState({}, document.title, '/dashboard');
+          navigate('/dashboard', { replace: true });
+          toast.success('Welkom!');
+        } catch (error) {
+          console.error('Session error:', error);
+          toast.error('Authenticatie mislukt');
+          navigate('/', { replace: true });
+        }
+      } else {
+        await checkAuth();
+        navigate('/dashboard', { replace: true });
+      }
+      setProcessing(false);
+    };
+
+    processSession();
+  }, []);
+
+  if (processing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#F8FAFC'}}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto mb-4"></div>
+          <p className="text-lg" style={{color: '#1E293B'}}>Authenticeren...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// Landing Page
+function LandingPage() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#F8FAFC'}}>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen" style={{backgroundColor: '#F8FAFC'}}>
+      <div className="container mx-auto px-4 py-16">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-5xl lg:text-6xl font-bold mb-6" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+            Offerte & Project Dashboard
+          </h1>
+          <p className="text-lg mb-8" style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}>
+            Beheer leads, genereer offertes, zoek materialen en plan projecten - alles op één plek
+          </p>
+          <button
+            data-testid="login-button"
+            onClick={() => window.location.href = AUTH_URL}
+            className="px-8 py-4 rounded-full text-lg font-semibold text-white transition-all hover:scale-105"
+            style={{backgroundColor: '#1E40AF', fontFamily: 'Inter, sans-serif'}}
+          >
+            Inloggen met Google
+          </button>
+        </div>
+
+        <div className="mt-20 grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="p-6 rounded-2xl" style={{backgroundColor: 'white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'}}>
+            <div className="text-4xl mb-4" style={{color: '#3B82F6'}}>📋</div>
+            <h3 className="text-xl font-bold mb-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E293B'}}>Lead Management</h3>
+            <p style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}>Beheer al je leads op één centrale plek</p>
+          </div>
+          
+          <div className="p-6 rounded-2xl" style={{backgroundColor: 'white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'}}>
+            <div className="text-4xl mb-4" style={{color: '#3B82F6'}}>💰</div>
+            <h3 className="text-xl font-bold mb-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E293B'}}>Offerte Generator</h3>
+            <p style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}>Genereer professionele offertes in PDF en Excel</p>
+          </div>
+          
+          <div className="p-6 rounded-2xl" style={{backgroundColor: 'white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'}}>
+            <div className="text-4xl mb-4" style={{color: '#3B82F6'}}>🗓️</div>
+            <h3 className="text-xl font-bold mb-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E293B'}}>Project Planner</h3>
+            <p style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}>Plan en beheer goedgekeurde projecten</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
-};
+}
+
+// Protected Route
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: '#F8FAFC'}}>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
 
 function App() {
   return (
     <div className="App">
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/dashboard" element={<ProtectedRoute><AuthCallback /></ProtectedRoute>} />
+          </Routes>
+          <Toaster position="top-right" richColors />
+        </AuthProvider>
       </BrowserRouter>
     </div>
   );
 }
 
 export default App;
+export { useAuth };
