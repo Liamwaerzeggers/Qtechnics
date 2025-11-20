@@ -24,7 +24,7 @@ def create_test_user():
     
     async def create():
         client = AsyncIOMotorClient(os.getenv('MONGO_URL'))
-        db = client.qtechnics
+        db = client.test_database
         
         # Create user with ObjectId as _id
         user_id = str(ObjectId())
