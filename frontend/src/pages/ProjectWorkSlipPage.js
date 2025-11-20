@@ -182,7 +182,22 @@ export default function ProjectWorkSlipPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Notities (Nederlands)</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-medium">Notities (Nederlands) 🇳🇱</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newSlip.notes_nl && !newSlip.notes_uk) {
+                            setNewSlip({...newSlip, notes_uk: `[Vertaling: ${newSlip.notes_nl}]`});
+                            toast.info('Typ hier de Oekraïense vertaling');
+                          }
+                        }}
+                        className="text-xs px-2 py-1 rounded hover:bg-gray-100"
+                        style={{ color: '#1E40AF' }}
+                      >
+                        → Vertaal naar 🇺🇦
+                      </button>
+                    </div>
                     <Textarea
                       value={newSlip.notes_nl}
                       onChange={(e) => setNewSlip({...newSlip, notes_nl: e.target.value})}
@@ -191,13 +206,31 @@ export default function ProjectWorkSlipPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Notities (Українська)</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-medium">Notities (Українська) 🇺🇦</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newSlip.notes_uk && !newSlip.notes_nl) {
+                            setNewSlip({...newSlip, notes_nl: `[Vertaling: ${newSlip.notes_uk}]`});
+                            toast.info('Typ hier de Nederlandse vertaling');
+                          }
+                        }}
+                        className="text-xs px-2 py-1 rounded hover:bg-gray-100"
+                        style={{ color: '#1E40AF' }}
+                      >
+                        → Vertaal naar 🇳🇱
+                      </button>
+                    </div>
                     <Textarea
                       value={newSlip.notes_uk}
                       onChange={(e) => setNewSlip({...newSlip, notes_uk: e.target.value})}
                       rows={4}
                       placeholder="Роботи сьогодні..."
                     />
+                    <p className="text-xs mt-1" style={{ color: '#64748B' }}>
+                      💡 Tip: Gebruik Google Translate of typ handmatig in beide talen
+                    </p>
                   </div>
                   <Button onClick={handleCreateSlip} className="w-full" style={{ backgroundColor: '#1E40AF' }}>
                     Werkbon Aanmaken
