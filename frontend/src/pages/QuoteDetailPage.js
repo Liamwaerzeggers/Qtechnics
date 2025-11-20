@@ -24,7 +24,8 @@ export default function QuoteDetailPage() {
     description: '',
     quantity: '',
     unit_price: '',
-    item_type: 'materiaal'
+    item_type: 'materiaal',
+    vat_rate: 21
   });
   const [materials, setMaterials] = useState([]);
   const [materialSearch, setMaterialSearch] = useState('');
