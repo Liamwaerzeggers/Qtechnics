@@ -193,7 +193,8 @@ function App() {
         <AuthProvider>
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/dashboard" element={<ProtectedRoute><AuthCallback /></ProtectedRoute>} />
+            <Route path="/auth/callback" element={<AuthCallbackHandler />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
             <Route path="/leads/:leadId" element={<ProtectedRoute><LeadDetailPage /></ProtectedRoute>} />
             <Route path="/quotes" element={<ProtectedRoute><QuotesPage /></ProtectedRoute>} />
