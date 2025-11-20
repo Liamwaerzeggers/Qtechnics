@@ -547,21 +547,41 @@ async def delete_line_item(quote_id: str, item_id: str, current_user: User = Dep
     return {"message": "Line item deleted successfully"}
 
 async def recalculate_quote_totals(quote_id: str):
-    """Recalculate quote subtotals and total price"""
+    """Recalculate quote subtotals, VAT breakdown and total price"""
     items = await db.line_items.find({"quote_id": quote_id}).to_list(1000)
     
-    subtotal_labor = sum(item["total"] for item in items if item["item_type"] == "arbeid")
-    subtotal_material = sum(item["total"] for item in items if item["item_type"] == "materiaal")
-    other_total = sum(item["total"] for item in items if item["item_type"] == "overig")
+    # Calculate subtotals by type (excl VAT)
+    subtotal_labor = sum(item.get("total_excl_vat", item.get("total", 0)) for item in items if item["item_type"] == "arbeid")
+    subtotal_material = sum(item.get("total_excl_vat", item.get("total", 0)) for item in items if item["item_type"] == "materiaal")
+    other_total = sum(item.get("total_excl_vat", item.get("total", 0)) for item in items if item["item_type"] == "overig")
     
-    total_price = subtotal_labor + subtotal_material + other_total
+    total_excl_vat = subtotal_labor + subtotal_material + other_total
+    
+    # Calculate VAT breakdown by rate
+    vat_breakdown = {}
+    total_vat = 0.0
+    
+    for item in items:
+        vat_rate = str(item.get("vat_rate", 21))
+        vat_amount = item.get("vat_amount", 0)
+        
+        if vat_rate not in vat_breakdown:
+            vat_breakdown[vat_rate] = 0.0
+        vat_breakdown[vat_rate] += vat_amount
+        total_vat += vat_amount
+    
+    total_incl_vat = total_excl_vat + total_vat
     
     await db.quotes.update_one(
         {"id": quote_id},
         {"$set": {
             "subtotal_labor": subtotal_labor,
             "subtotal_material": subtotal_material,
-            "total_price": total_price
+            "total_excl_vat": total_excl_vat,
+            "vat_breakdown": vat_breakdown,
+            "total_vat": total_vat,
+            "total_incl_vat": total_incl_vat,
+            "total_price": total_incl_vat  # For backwards compatibility
         }}
     )
 
