@@ -410,23 +410,26 @@ export default function ProjectWorkSlipPage() {
           </div>
         )}
 
-        {/* SECTION 1: Materialen uit Offerte */}
+        {/* SECTION 1: Beschikbare Materialen */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
           <h2 className="text-lg font-semibold mb-2" style={{ color: '#1E3A8A' }}>
-            1️⃣ Gebruikte Materialen uit Offerte / Матеріали з пропозиції
+            1️⃣ Gebruikte Materialen / Використані матеріали
           </h2>
           <p className="text-sm mb-4" style={{ color: '#64748B' }}>
-            Selecteer wat je vandaag hebt gebruikt
+            Selecteer wat je vandaag hebt gebruikt (uit offerte & catalogus)
           </p>
           
           {quoteMaterials.length === 0 ? (
             <p className="text-sm italic" style={{ color: '#94A3B8' }}>
-              Geen materialen in offerte / Немає матеріалів у пропозиції
+              Geen materialen beschikbaar / Немає доступних матеріалів
             </p>
           ) : (
             <div className="space-y-3">
               {quoteMaterials.map((material) => {
                 const isSelected = formData.materials_used.find(m => m.material_id === material.id);
+                const isFromCatalog = material.source === 'catalogus';
+                const isFromQuote = material.source === 'offerte';
+                
                 return (
                   <div 
                     key={material.id}
@@ -442,15 +445,34 @@ export default function ProjectWorkSlipPage() {
                         className="mt-1 w-5 h-5"
                       />
                       <div className="flex-1">
-                        <p className="font-medium text-sm" style={{ color: '#1E3A8A' }}>
-                          🇳🇱 {material.description_nl}
-                        </p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-medium text-sm" style={{ color: '#1E3A8A' }}>
+                            🇳🇱 {material.description_nl}
+                          </p>
+                          {isFromCatalog && (
+                            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded">
+                              📦 Catalogus
+                            </span>
+                          )}
+                          {isFromQuote && (
+                            <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+                              📋 Offerte
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm" style={{ color: '#64748B' }}>
                           🇺🇦 {material.description_uk}
                         </p>
-                        <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
-                          Offerte hoeveelheid: {material.quantity_quoted} {material.unit}
-                        </p>
+                        {material.sku && (
+                          <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
+                            SKU: {material.sku}
+                          </p>
+                        )}
+                        {isFromQuote && material.quantity_quoted > 0 && (
+                          <p className="text-xs mt-1" style={{ color: '#94A3B8' }}>
+                            Offerte hoeveelheid: {material.quantity_quoted} {material.unit}
+                          </p>
+                        )}
                       </div>
                     </label>
                     
@@ -464,7 +486,7 @@ export default function ProjectWorkSlipPage() {
                           step="0.1"
                           value={isSelected.quantity_used || ''}
                           onChange={(e) => updateMaterialQuantity(material.id, e.target.value)}
-                          placeholder={`${material.quantity_quoted}`}
+                          placeholder={material.quantity_quoted > 0 ? `${material.quantity_quoted}` : "0"}
                           className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                         />
                       </div>
