@@ -170,6 +170,7 @@ class Project(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     notes: Optional[str] = None
+    color: str = "#1E40AF"  # Default blue color
     # Cost tracking
     labor_cost_per_hour: float = 0.0
     labor_hours: float = 0.0
