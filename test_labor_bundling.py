@@ -189,7 +189,7 @@ def test_quote_flow():
     
     # Step 6: Download PDF
     print("\n📄 Step 6: Generating PDF...")
-    response = requests.get(f"{API_URL}/quotes/{quote_id}/pdf", headers=headers)
+    response = requests.get(f"{API_URL}/quotes/{quote_id}/export/pdf", headers=headers)
     if response.status_code != 200:
         print(f"❌ Failed to generate PDF: {response.text}")
         return False
