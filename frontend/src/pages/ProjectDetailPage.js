@@ -31,6 +31,12 @@ export default function ProjectDetailPage() {
     try {
       const projectRes = await axios.get(`${API}/projects/${projectId}`, { withCredentials: true });
       setProject(projectRes.data);
+      setCostData({
+        labor_cost_per_hour: projectRes.data.labor_cost_per_hour || 0,
+        labor_hours: projectRes.data.labor_hours || 0,
+        material_costs: projectRes.data.material_costs || 0,
+        other_costs: projectRes.data.other_costs || 0
+      });
       
       if (projectRes.data.quote_id) {
         const quoteRes = await axios.get(`${API}/quotes/${projectRes.data.quote_id}`, { withCredentials: true });
