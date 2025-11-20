@@ -455,7 +455,7 @@ export default function ProjectDetailPage() {
                   
                   <button
                     onClick={() => createInvoice('40_before_start', 40)}
-                    disabled={invoices.some(inv => inv.milestone === '40_before_start')}
+                    disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '40_before_start')}
                     className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
                     style={{borderColor: '#CBD5E1'}}
                   >
@@ -463,14 +463,14 @@ export default function ProjectDetailPage() {
                       <div className="font-semibold" style={{color: '#1E293B'}}>40% Voor Start</div>
                       <div className="text-sm" style={{color: '#64748B'}}>Een week voor aanvang</div>
                     </div>
-                    {invoices.some(inv => inv.milestone === '40_before_start') && (
+                    {Array.isArray(invoices) && invoices.some(inv => inv.milestone === '40_before_start') && (
                       <span className="text-green-600 font-bold">✓</span>
                     )}
                   </button>
                   
                   <button
                     onClick={() => createInvoice('40_completion', 40)}
-                    disabled={invoices.some(inv => inv.milestone === '40_completion')}
+                    disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '40_completion')}
                     className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
                     style={{borderColor: '#CBD5E1'}}
                   >
@@ -478,14 +478,14 @@ export default function ProjectDetailPage() {
                       <div className="font-semibold" style={{color: '#1E293B'}}>40% Bij Oplevering</div>
                       <div className="text-sm" style={{color: '#64748B'}}>Werken afgerond</div>
                     </div>
-                    {invoices.some(inv => inv.milestone === '40_completion') && (
+                    {Array.isArray(invoices) && invoices.some(inv => inv.milestone === '40_completion') && (
                       <span className="text-green-600 font-bold">✓</span>
                     )}
                   </button>
                   
                   <button
                     onClick={() => createInvoice('10_satisfaction', 10)}
-                    disabled={invoices.some(inv => inv.milestone === '10_satisfaction')}
+                    disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '10_satisfaction')}
                     className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
                     style={{borderColor: '#CBD5E1'}}
                   >
@@ -493,7 +493,7 @@ export default function ProjectDetailPage() {
                       <div className="font-semibold" style={{color: '#1E293B'}}>10% Tevredenheid</div>
                       <div className="text-sm" style={{color: '#64748B'}}>Klant tevreden</div>
                     </div>
-                    {invoices.some(inv => inv.milestone === '10_satisfaction') && (
+                    {Array.isArray(invoices) && invoices.some(inv => inv.milestone === '10_satisfaction') && (
                       <span className="text-green-600 font-bold">✓</span>
                     )}
                   </button>
