@@ -285,7 +285,6 @@ class Invoice(BaseModel):
     user_id: str
 
 class InvoiceCreate(BaseModel):
-    project_id: str
     milestone: str
     milestone_percentage: int
 
