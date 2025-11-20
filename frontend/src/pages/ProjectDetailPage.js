@@ -45,7 +45,10 @@ export default function ProjectDetailPage() {
     try {
       await axios.post(
         `${API}/projects/${projectId}/invoices`,
-        { project_id: projectId, milestone, milestone_percentage: percentage },
+        { 
+          milestone: milestone, 
+          milestone_percentage: percentage 
+        },
         { withCredentials: true }
       );
       toast.success('Factuur aangemaakt!');
