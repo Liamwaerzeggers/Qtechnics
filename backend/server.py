@@ -172,8 +172,11 @@ class Project(BaseModel):
     labor_cost_per_hour: float = 0.0
     labor_hours: float = 0.0
     material_costs: float = 0.0
+    material_costs_incl_vat: float = 0.0
     other_costs: float = 0.0
+    invoice_uploads: List[dict] = []  # [{filename, total_excl_vat, total_incl_vat, vat_amount, upload_date}]
     total_costs: float = 0.0
+    total_costs_incl_vat: float = 0.0
     profit: float = 0.0
     profit_margin: float = 0.0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
