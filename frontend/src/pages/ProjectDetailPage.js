@@ -73,6 +73,25 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleDeleteInvoice = (invoiceIndex, filename) => {
+    if (!window.confirm(`Factuur "${filename}" verwijderen? Kosten worden teruggedraaid.`)) {
+      return;
+    }
+    
+    axios.delete(
+      `${API}/projects/${projectId}/invoices/${invoiceIndex}`,
+      { withCredentials: true }
+    )
+    .then(() => {
+      toast.success('Factuur verwijderd en kosten aangepast');
+      fetchProjectData();
+    })
+    .catch((error) => {
+      console.error('Delete error:', error);
+      toast.error('Kon factuur niet verwijderen');
+    });
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
