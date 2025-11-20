@@ -1299,13 +1299,15 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
 
 @api_router.get("/calendar/events")
 async def get_calendar_events(current_user: User = Depends(get_current_user)):
-    """Get all calendar events from projects with start/end dates"""
+    """Get all calendar events from projects and work slips"""
+    events = []
+    
+    # 1. Get project events
     projects = await db.projects.find(
         {"user_id": current_user.id},
         {"_id": 0}
     ).to_list(1000)
     
-    events = []
     for project in projects:
         # Only add to calendar if project has start and/or end date
         if project.get("start_date") or project.get("end_date"):
@@ -1320,18 +1322,48 @@ async def get_calendar_events(current_user: User = Depends(get_current_user)):
             
             # Create event
             event = {
-                "id": project["id"],
+                "id": f"project_{project['id']}",
                 "title": project.get("name", "Naamloos Project"),
                 "start": start.isoformat() if start else None,
                 "end": end.isoformat() if end else None,
                 "project_id": project["id"],
                 "status": project.get("status", "actief"),
-                "color": project.get("color", "#1E40AF")
+                "color": project.get("color", "#1E40AF"),
+                "type": "project"
             }
             
             # Only add if we have at least a start date
             if event["start"]:
                 events.append(event)
+    
+    # 2. Get work slip events
+    work_slips = await db.work_slips.find(
+        {"user_id": current_user.id},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    for slip in work_slips:
+        slip_date = slip.get("date")
+        if isinstance(slip_date, str):
+            slip_date = datetime.fromisoformat(slip_date)
+        
+        if slip_date:
+            # Get project name
+            project = await db.projects.find_one({"id": slip["project_id"]}, {"_id": 0})
+            project_name = project.get("name", "Project") if project else "Project"
+            project_color = project.get("color", "#10B981") if project else "#10B981"
+            
+            event = {
+                "id": f"workslip_{slip['id']}",
+                "title": f"📋 {project_name}",
+                "start": slip_date.isoformat(),
+                "end": slip_date.isoformat(),
+                "project_id": slip["project_id"],
+                "work_slip_id": slip["id"],
+                "color": project_color,
+                "type": "workslip"
+            }
+            events.append(event)
     
     return events
 
