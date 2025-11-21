@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import DashboardLayout from '../components/DashboardLayout';
-import { FileText, Download, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { FileText, Download, CheckCircle, Clock, AlertCircle, Mail } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '../components/ui/button';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
