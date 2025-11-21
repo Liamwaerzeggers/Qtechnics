@@ -379,7 +379,9 @@ async def get_current_user(session_token: Optional[str] = Cookie(None), authoriz
         expires_at = expires_at.replace(tzinfo=timezone.utc)
     
     if expires_at < datetime.now(timezone.utc):
+        # Delete from both collections
         await db.user_sessions.delete_one({"session_token": token})
+        await db.sessions.delete_one({"session_token": token})
         raise HTTPException(status_code=401, detail="Session expired")
     
     # Find user
