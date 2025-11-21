@@ -100,11 +100,11 @@ class Lead(BaseModel):
 
 class LeadCreate(BaseModel):
     name: str
-    email: str
-    phone: str
-    address: str
-    project_type: str
-    description: str
+    email: Optional[str] = "geen-email@example.com"
+    phone: Optional[str] = "0000000000"
+    address: Optional[str] = "Geen adres opgegeven"
+    project_type: Optional[str] = "Renovatie"
+    description: Optional[str] = ""
 
 class LeadUpdate(BaseModel):
     name: Optional[str] = None
