@@ -158,6 +158,7 @@ export default function ProjectsPage() {
               </form>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         <div className="relative">
