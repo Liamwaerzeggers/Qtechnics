@@ -110,8 +110,11 @@ export default function ProjectsPage() {
     <DashboardLayout showBackToDashboard={true}>
       <div data-testid="projects-page" className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Projecten</h1>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+            {isWorker ? 'Projecten / Проєкти' : 'Projecten'}
+          </h1>
+          {!isWorker && (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button data-testid="create-project-button" style={{backgroundColor: '#1E40AF'}}>
                 <Plus className="mr-2" size={20} /> Nieuw Project
