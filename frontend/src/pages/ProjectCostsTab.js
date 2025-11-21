@@ -250,28 +250,37 @@ export default function ProjectCostsTab({ project, quote, onUpdate }) {
                   <span className="font-bold" style={{color: '#EF4444'}}>€{project.total_costs?.toFixed(2) || '0.00'}</span>
                 </div>
                 
-                {quote && (
-                  <>
-                    <div className="flex justify-between text-lg">
-                      <span className="font-semibold" style={{color: '#64748B'}}>Verkoopprijs (incl. BTW):</span>
-                      <span className="font-bold" style={{color: '#3B82F6'}}>€{quote.total_incl_vat?.toFixed(2) || '0.00'}</span>
-                    </div>
-                    
-                    <div className="flex justify-between text-2xl border-t pt-3">
-                      <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Winst:</span>
-                      <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: project.profit >= 0 ? '#10B981' : '#EF4444'}}>
-                        €{project.profit?.toFixed(2) || '0.00'}
-                      </span>
-                    </div>
-                    
-                    <div className="flex justify-between">
-                      <span className="font-semibold" style={{color: '#64748B'}}>Winstmarge:</span>
-                      <span className="font-bold text-lg" style={{color: project.profit >= 0 ? '#10B981' : '#EF4444'}}>
-                        {project.profit_margin?.toFixed(1) || '0.0'}%
-                      </span>
-                    </div>
-                  </>
-                )}
+                <div className="flex justify-between text-lg">
+                  <span className="font-semibold" style={{color: '#64748B'}}>Verkoopprijs (incl. BTW):</span>
+                  <span className="font-bold" style={{color: '#3B82F6'}}>
+                    €{quote?.total_incl_vat?.toFixed(2) || project.total_price?.toFixed(2) || '0.00'}
+                  </span>
+                </div>
+                
+                {(() => {
+                  const totalCosts = project.total_costs || 0;
+                  const salePrice = quote?.total_incl_vat || project.total_price || 0;
+                  const profit = salePrice - totalCosts;
+                  const profitMargin = salePrice > 0 ? (profit / salePrice) * 100 : 0;
+                  
+                  return (
+                    <>
+                      <div className="flex justify-between text-2xl border-t pt-3">
+                        <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Winst:</span>
+                        <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: profit >= 0 ? '#10B981' : '#EF4444'}}>
+                          €{profit.toFixed(2)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between">
+                        <span className="font-semibold" style={{color: '#64748B'}}>Winstmarge:</span>
+                        <span className="font-bold text-lg" style={{color: profit >= 0 ? '#10B981' : '#EF4444'}}>
+                          {profitMargin.toFixed(1)}%
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}
