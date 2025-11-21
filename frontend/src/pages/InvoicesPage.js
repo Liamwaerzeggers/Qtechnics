@@ -273,14 +273,28 @@ Q Technics`;
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => handleDownloadPDF(invoice.id, invoice.invoice_number)}
-                          className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors"
-                          style={{color: '#1E40AF'}}
-                        >
-                          <Download size={18} />
-                          <span className="text-sm font-medium">PDF</span>
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDownloadPDF(invoice.id, invoice.invoice_number)}
+                            className="hover:bg-blue-50"
+                            style={{color: '#1E40AF'}}
+                            title="Download PDF"
+                          >
+                            <Download size={18} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSendEmail(invoice)}
+                            className="hover:bg-green-50"
+                            style={{color: '#059669'}}
+                            title="Verstuur per email"
+                          >
+                            <Mail size={18} />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
