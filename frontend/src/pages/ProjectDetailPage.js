@@ -225,16 +225,11 @@ export default function ProjectDetailPage() {
           )}
 
           {activeTab === 'costs' && (
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-xl font-bold mb-4" style={{color: '#1E3A8A'}}>
-                  💰 Kosten & Facturen
-                </h3>
-                <p className="text-sm" style={{color: '#64748B'}}>
-                  Kostenregistratie komt hier (bestaande functionaliteit behouden)
-                </p>
-              </CardContent>
-            </Card>
+            <ProjectCostsTab 
+              project={project} 
+              quote={primaryQuote} 
+              onUpdate={fetchProjectData} 
+            />
           )}
 
           {activeTab === 'work' && (
