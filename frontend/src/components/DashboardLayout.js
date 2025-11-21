@@ -141,7 +141,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
                   <span className="font-semibold">← Terug naar Dashboard</span>
                 </button>
               )}
-              {navItems.map((item) => {
+              {navItems.filter(item => !item.adminOnly || user?.role === 'admin').map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
                 return (
