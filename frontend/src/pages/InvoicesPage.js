@@ -74,6 +74,52 @@ export default function InvoicesPage() {
     }
   };
 
+  const handleSendEmail = async (invoice) => {
+    try {
+      // Get customer email from project/lead
+      const projectRes = await axios.get(`${API}/api/projects/${invoice.projectId}`, { withCredentials: true });
+      const project = projectRes.data;
+      
+      const quoteRes = await axios.get(`${API}/api/quotes/${project.quote_id}`, { withCredentials: true });
+      const quote = quoteRes.data;
+      
+      const leadRes = await axios.get(`${API}/api/leads/${quote.lead_id}`, { withCredentials: true });
+      const customerEmail = leadRes.data.email;
+      const customerName = leadRes.data.name;
+      
+      // Get PDF URL
+      const pdfUrl = `${API}/api/invoices/${invoice.id}/pdf`;
+      
+      // Prepare email with OGM reference
+      const subject = `Factuur ${invoice.invoice_number} - Q Technics`;
+      const body = `Beste ${customerName},
+
+Hierbij ontvangt u factuur ${invoice.invoice_number} voor project "${invoice.projectName}".
+
+Factuurbedrag: €${invoice.total_incl_vat.toFixed(2)}
+Vervaldatum: ${new Date(invoice.due_date).toLocaleDateString('nl-NL')}
+
+GESTRUCTUREERDE MEDEDELING (verplicht bij overschrijving):
+${invoice.payment_reference || invoice.invoice_number}
+
+U kunt deze mededeling kopiëren en plakken in uw bankapp voor automatische verwerking.
+
+Download de factuur via deze link of vraag ons om de PDF toe te sturen.
+
+Met vriendelijke groet,
+Q Technics`;
+
+      // Open mailto link
+      const mailtoLink = `mailto:${customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailtoLink;
+      
+      toast.success(`Email voorbereid voor ${customerEmail}`);
+    } catch (error) {
+      console.error('Failed to prepare email:', error);
+      toast.error('Kon email niet voorbereiden');
+    }
+  };
+
   const togglePaymentStatus = async (invoice) => {
     const newStatus = invoice.payment_status === 'paid' ? 'unpaid' : 'paid';
     const paidDate = newStatus === 'paid' ? new Date().toISOString() : null;
