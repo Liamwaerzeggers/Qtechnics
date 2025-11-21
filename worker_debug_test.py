@@ -369,31 +369,52 @@ class WorkerProjectDebugger:
             self.log("❌ No worker session token to debug", "ERROR")
             return False
         
-        # Check session in database
+        # Check session in database - worker sessions are in 'sessions' collection, not 'user_sessions'
         mongo_commands = f"""
         use('test_database');
         
         var sessionToken = '{self.worker_session_token}';
-        var session = db.user_sessions.findOne({{session_token: sessionToken}});
         
+        // Check in sessions collection (for workers)
+        var session = db.sessions.findOne({{session_token: sessionToken}});
         if (session) {{
-            print('✅ Session found in database');
+            print('✅ Worker session found in sessions collection');
             print('  User ID: ' + session.user_id);
             print('  Expires at: ' + session.expires_at);
             print('  Created at: ' + session.created_at);
             
-            // Check if user exists
+            // Check if worker exists by ID
+            var worker = db.workers.findOne({{id: session.user_id}});
+            if (worker) {{
+                print('✅ Worker found in workers collection');
+                print('  Email: ' + worker.email);
+                print('  Name: ' + worker.name);
+                print('  Active: ' + worker.is_active);
+            }} else {{
+                print('❌ Worker not found for session user_id: ' + session.user_id);
+            }}
+            
+            // Also check if user exists in users collection
             var user = db.users.findOne({{_id: session.user_id}});
             if (user) {{
-                print('✅ User found in database');
+                print('✅ User found in users collection');
                 print('  Email: ' + user.email);
                 print('  Name: ' + user.name);
                 print('  Role: ' + user.role);
             }} else {{
-                print('❌ User not found for session');
+                print('❌ User not found in users collection for ID: ' + session.user_id);
             }}
         }} else {{
-            print('❌ Session not found in database');
+            print('❌ Session not found in sessions collection');
+            
+            // Also check user_sessions collection just in case
+            var userSession = db.user_sessions.findOne({{session_token: sessionToken}});
+            if (userSession) {{
+                print('⚠️ Found session in user_sessions collection instead');
+                print('  User ID: ' + userSession.user_id);
+            }} else {{
+                print('❌ Session not found in user_sessions collection either');
+            }}
         }}
         """
         
