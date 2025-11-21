@@ -151,7 +151,8 @@ function LandingPage() {
       
       setUser(response.data.user);
       toast.success(`Welkom ${response.data.user.name}! 👷`);
-      navigate('/dashboard');
+      // Workers go to projects, admins go to dashboard
+      navigate(response.data.user.role === 'worker' ? '/projects' : '/dashboard');
     } catch (error) {
       console.error('Worker login error:', error);
       if (error.response?.status === 403) {
