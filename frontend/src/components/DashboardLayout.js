@@ -91,7 +91,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
               </div>
             </div>
             <nav className="p-4 space-y-2">
-              {navItems.map((item) => {
+              {navItems.filter(item => !item.adminOnly || user?.role === 'admin').map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
                 return (
