@@ -2105,17 +2105,38 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
     
     elements.append(Spacer(1, 30))
     
-    # Payment info
+    # Payment info with OGM reference
     elements.append(Paragraph("<b>Betalingsinformatie</b>", styles['Heading2']))
+    
+    # Highlight OGM reference
+    ogm_style = ParagraphStyle(
+        'OGMStyle',
+        parent=styles['Normal'],
+        fontSize=12,
+        textColor=colors.HexColor('#1E40AF'),
+        fontName='Helvetica-Bold',
+        spaceAfter=10
+    )
+    
     payment_info = f"""
     Gelieve het bedrag van €{invoice['total_incl_vat']:.2f} over te maken binnen {invoice['payment_term_days']} dagen.<br/>
-    Referentie: {invoice['invoice_number']}<br/>
-    <br/>
+    """
+    elements.append(Paragraph(payment_info, styles['Normal']))
+    
+    # OGM reference in prominent box
+    if invoice.get('payment_reference'):
+        elements.append(Spacer(1, 10))
+        elements.append(Paragraph(f"<b>Gestructureerde mededeling:</b>", styles['Normal']))
+        elements.append(Spacer(1, 5))
+        elements.append(Paragraph(f"{invoice['payment_reference']}", ogm_style))
+        elements.append(Spacer(1, 10))
+    
+    bank_info = f"""
     <b>Bankgegevens:</b><br/>
     [IBAN nummer hier invoeren]<br/>
     [Bank naam]
     """
-    elements.append(Paragraph(payment_info, styles['Normal']))
+    elements.append(Paragraph(bank_info, styles['Normal']))
     
     doc.build(elements)
     buffer.seek(0)
