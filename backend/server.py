@@ -1834,6 +1834,9 @@ async def create_invoice(
     # Generate invoice number
     invoice_number = await generate_invoice_number()
     
+    # Generate OGM payment reference
+    payment_reference = generate_ogm_reference(invoice_number)
+    
     # Calculate due date (7 days from now)
     due_date = datetime.now(timezone.utc) + timedelta(days=7)
     
@@ -1853,6 +1856,7 @@ async def create_invoice(
         total_incl_vat=invoice_total_incl_vat,
         payment_status="unpaid",
         payment_term_days=7,
+        payment_reference=payment_reference,
         due_date=due_date,
         user_id=current_user.id
     )
