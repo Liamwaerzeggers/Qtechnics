@@ -312,6 +312,7 @@ export default function ProjectWorkSlipPage() {
       
       // Reset form
       setFormData({
+        hours_worked: '',
         materials_used: [],
         extra_materials: [],
         work_description_nl: '',
