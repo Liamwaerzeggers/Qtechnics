@@ -352,6 +352,21 @@ test_plan:
         agent: "testing"
         comment: "WORKER LOGIN FUNCTIONALITY FULLY TESTED ✅ **DEEL 1 - Landing Page UI:** ✅ Both login options visible ('Inloggen met Google' + 'Werkman? Log hier in...'), ✅ Worker login form appears with all required elements (👷 Werkman Login title, email/password inputs, login button, back link), ✅ Back link functionality works correctly. **DEEL 2 - Worker Login Flow:** ✅ POST /api/auth/worker/login endpoint working, ✅ Correct error handling for non-existent worker ('Ongeldige inloggegevens' toast), ✅ Workers redirect to /projects (not /dashboard), ✅ Sidebar restrictions implemented (only Dashboard + Projecten visible for workers). **DEEL 3 - Error Handling:** ✅ Wrong credentials → 'Ongeldige inloggegevens', ✅ Empty credentials → HTML5 form validation prevents submission, ✅ Invalid email format → HTML5 email validation working, ✅ Deactivated worker handling implemented in backend (403 status → 'Account is gedeactiveerd...' message). All requirements met - workers can login with email/password and are properly restricted to projects-only access."
 
+  - task: "Worker Project Visibility Bug - Workers see 'Nog geen projecten' despite projects existing"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "CRITICAL BUG IDENTIFIED: Workers could login successfully but couldn't see any projects (showing 'Nog geen projecten'). Root cause: Worker sessions stored in `db.sessions` collection but `get_current_user()` function only checked `db.user_sessions` collection, causing 401 'Invalid session' errors for all worker API requests."
+      - working: true
+        agent: "testing"
+        comment: "CRITICAL BUG FIXED ✅ **Root Cause:** Session collection mismatch - workers used `db.sessions`, admins used `db.user_sessions`, but authentication only checked `db.user_sessions`. **Fix Applied:** Updated `get_current_user()` function (lines 364-367) to check BOTH collections. **Testing Results:** ✅ Worker login working, ✅ Worker authentication successful, ✅ Workers now see ALL 14 projects as intended (no user_id filter), ✅ Admins still see only their own projects (with user_id filter), ✅ Backend logic confirmed working correctly. **Status:** RESOLVED - Workers can now access all projects as designed."
+
 agent_communication:
   - agent: "testing"
     message: |
