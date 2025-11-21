@@ -128,6 +128,37 @@ function LandingPage() {
     );
   }
 
+  const [showWorkerLogin, setShowWorkerLogin] = React.useState(false);
+  const [workerEmail, setWorkerEmail] = React.useState('');
+  const [workerPassword, setWorkerPassword] = React.useState('');
+  const [loggingIn, setLoggingIn] = React.useState(false);
+  const { setUser } = useAuth();
+
+  const handleWorkerLogin = async (e) => {
+    e.preventDefault();
+    setLoggingIn(true);
+    
+    try {
+      const response = await axios.post(`${API}/auth/worker/login`, null, {
+        params: { email: workerEmail, password: workerPassword },
+        withCredentials: true
+      });
+      
+      setUser(response.data.user);
+      toast.success(`Welkom ${response.data.user.name}! 👷`);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Worker login error:', error);
+      if (error.response?.status === 403) {
+        toast.error('Account is gedeactiveerd. Neem contact op met je beheerder.');
+      } else {
+        toast.error('Ongeldige inloggegevens');
+      }
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{backgroundColor: '#F8FAFC'}}>
       <div className="container mx-auto px-4 py-16">
@@ -138,14 +169,83 @@ function LandingPage() {
           <p className="text-lg mb-8" style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}>
             Beheer leads, genereer offertes, zoek materialen en plan projecten - alles op één plek
           </p>
-          <button
-            data-testid="login-button"
-            onClick={() => window.location.href = AUTH_URL}
-            className="px-8 py-4 rounded-full text-lg font-semibold text-white transition-all hover:scale-105"
-            style={{backgroundColor: '#1E40AF', fontFamily: 'Inter, sans-serif'}}
-          >
-            Inloggen met Google
-          </button>
+          
+          {!showWorkerLogin ? (
+            <div className="space-y-4">
+              <button
+                data-testid="login-button"
+                onClick={() => window.location.href = AUTH_URL}
+                className="px-8 py-4 rounded-full text-lg font-semibold text-white transition-all hover:scale-105 block w-full max-w-md mx-auto"
+                style={{backgroundColor: '#1E40AF', fontFamily: 'Inter, sans-serif'}}
+              >
+                Inloggen met Google
+              </button>
+              
+              <button
+                onClick={() => setShowWorkerLogin(true)}
+                className="text-sm underline transition-all hover:opacity-80"
+                style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}
+              >
+                Werkman? Log hier in met email en wachtwoord
+              </button>
+            </div>
+          ) : (
+            <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg">
+              <h2 className="text-2xl font-bold mb-6" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+                👷 Werkman Login
+              </h2>
+              
+              <form onSubmit={handleWorkerLogin} className="space-y-4">
+                <div className="text-left">
+                  <label className="block text-sm font-medium mb-2" style={{color: '#1E293B'}}>
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={workerEmail}
+                    onChange={(e) => setWorkerEmail(e.target.value)}
+                    placeholder="werkman@example.com"
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{fontFamily: 'Inter, sans-serif'}}
+                  />
+                </div>
+                
+                <div className="text-left">
+                  <label className="block text-sm font-medium mb-2" style={{color: '#1E293B'}}>
+                    Wachtwoord
+                  </label>
+                  <input
+                    type="password"
+                    value={workerPassword}
+                    onChange={(e) => setWorkerPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{fontFamily: 'Inter, sans-serif'}}
+                  />
+                </div>
+                
+                <button
+                  type="submit"
+                  disabled={loggingIn}
+                  className="w-full px-8 py-4 rounded-full text-lg font-semibold text-white transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{backgroundColor: '#1E40AF', fontFamily: 'Inter, sans-serif'}}
+                >
+                  {loggingIn ? 'Inloggen...' : 'Inloggen'}
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setShowWorkerLogin(false)}
+                  className="text-sm underline transition-all hover:opacity-80 w-full"
+                  style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}
+                >
+                  ← Terug naar Google login
+                </button>
+              </form>
+            </div>
+          )}
         </div>
 
         <div className="mt-20 grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
