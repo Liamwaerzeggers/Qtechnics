@@ -107,7 +107,7 @@ Q Technics`;
 
   const handleToggleStatus = async (workerId) => {
     try {
-      const response = await axios.post(`${API}/api/workers/${workerId}/toggle`, {}, { withCredentials: true });
+      const response = await axios.post(`${API}/workers/${workerId}/toggle`, {}, { withCredentials: true });
       toast.success(response.data.is_active ? 'Werkman geactiveerd' : 'Werkman gedeactiveerd');
       fetchWorkers();
     } catch (error) {
