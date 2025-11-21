@@ -168,13 +168,26 @@ export default function ProjectsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProjects.map((project) => (
-            <Card key={project.id} data-testid={`project-card-${project.id}`} className="cursor-pointer hover:shadow-lg transition-all" onClick={() => navigate(`/projects/${project.id}`)}>
+            <Card key={project.id} data-testid={`project-card-${project.id}`} className="cursor-pointer hover:shadow-lg transition-all relative group" onClick={() => navigate(`/projects/${project.id}`)}>
               <CardContent className="p-6">
-                <h3 className="text-xl font-bold mb-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>{project.name}</h3>
-                <span className="text-sm px-3 py-1 rounded-full" style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}>{project.status}</span>
-                {project.start_date && (
-                  <p className="text-sm mt-3" style={{color: '#64748B'}}>Start: {new Date(project.start_date).toLocaleDateString('nl-NL')}</p>
-                )}
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold mb-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>{project.name}</h3>
+                    <span className="text-sm px-3 py-1 rounded-full" style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}>{project.status}</span>
+                    {project.start_date && (
+                      <p className="text-sm mt-3" style={{color: '#64748B'}}>Start: {new Date(project.start_date).toLocaleDateString('nl-NL')}</p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => handleDeleteProject(e, project.id, project.name)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600"
+                    title="Project verwijderen"
+                  >
+                    <Trash2 size={18} />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
