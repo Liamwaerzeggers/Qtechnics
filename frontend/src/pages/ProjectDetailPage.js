@@ -56,11 +56,12 @@ export default function ProjectDetailPage() {
         const leadResponse = await axios.post(
           `${API}/leads`,
           {
-            name: project.name,
-            email: project.customer_email || '',
-            phone: project.customer_phone || '',
-            address: project.customer_address || '',
-            notes: `Automatisch aangemaakt voor bestaand project: ${project.name}`
+            name: project.name || 'Onbekende Klant',
+            email: project.customer_email || 'geen-email@example.com',
+            phone: project.customer_phone || '0000000000',
+            address: project.customer_address || 'Geen adres opgegeven',
+            project_type: project.project_type || 'Renovatie',
+            description: `Automatisch aangemaakt voor bestaand project: ${project.name || project.id}`
           },
           { withCredentials: true }
         );
