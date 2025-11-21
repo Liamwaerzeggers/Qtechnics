@@ -246,6 +246,8 @@ test_plan:
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
+  recently_resolved:
+    - "Worker Project Visibility Bug - CRITICAL BUG FIXED: Workers can now see all projects"
 
   - task: "Calendar Feature - Project events with date visualization"
     implemented: true
