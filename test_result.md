@@ -198,6 +198,24 @@ backend:
         agent: "testing"
         comment: "FIXED: ObjectId serialization issue resolved by removing _id field from response in create_worker endpoint. Comprehensive testing completed: ✅ POST /api/workers creates worker with WORKER-XXX ID format, ✅ GET /api/workers retrieves workers list, ✅ Admin authentication required (403 for non-admin), ✅ Duplicate email prevention (400 status), ✅ Database persistence verified, ✅ Password hash excluded from response (security). All core functionality working correctly."
 
+  - task: "Workers Management Frontend - Corrected API routes from double /api to single /api"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/WorkersPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported 'Kon werkmannen niet laden' and 'Not Found' errors caused by double /api in routes (${API}/api/workers instead of ${API}/workers)"
+      - working: true
+        agent: "main"
+        comment: "CORRECTED: Fixed API routes in WorkersPage.js - changed ${API}/api/workers to ${API}/workers for all endpoints (GET, POST, DELETE, toggle). API constant already contains /api prefix."
+      - working: true
+        agent: "testing"
+        comment: "VERIFIED: API route corrections working correctly. All worker endpoints now return 401 (Unauthorized) instead of 404 (Not Found), confirming routes are accessible: ✅ GET /api/workers: 401, ✅ POST /api/workers: 401, ✅ DELETE /api/workers/{id}: 401, ✅ POST /api/workers/{id}/toggle: 401. Backend logs show successful API calls for authenticated users (200 OK responses). Frontend code review confirms all ${API}/api/workers changed to ${API}/workers. Issue RESOLVED - no more 'Kon werkmannen niet laden' or 'Not Found' errors."
+
 frontend:
   - task: "Q Technics Logo Display - Show company logo in header"
     implemented: true
