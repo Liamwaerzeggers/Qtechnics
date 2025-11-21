@@ -164,6 +164,36 @@ export default function FinancesPage() {
     return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(amount);
   };
 
+  const exportToCSV = () => {
+    const data = getData();
+    const viewLabel = selectedView === 'month' ? 'Maand' : selectedView === 'quarter' ? 'Kwartaal' : 'Jaar';
+    
+    // CSV Header
+    let csv = `${viewLabel},Omzet,Kosten,Winst,Projecten\n`;
+    
+    // Data rows
+    data.forEach(row => {
+      const label = row.month || row.quarter || row.year;
+      csv += `${label},${row.revenue.toFixed(2)},${row.costs.toFixed(2)},${row.profit.toFixed(2)},${row.projects}\n`;
+    });
+    
+    // Totals row
+    csv += `\nTOTAAL,${totals.revenue.toFixed(2)},${totals.costs.toFixed(2)},${totals.profit.toFixed(2)},${totals.projects}\n`;
+    
+    // Download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `financien_${selectedView}_${selectedYear}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success('Export gedownload!');
+  };
+
   const getData = () => {
     if (selectedView === 'month') return getMonthlyData();
     if (selectedView === 'quarter') return getQuarterlyData();
