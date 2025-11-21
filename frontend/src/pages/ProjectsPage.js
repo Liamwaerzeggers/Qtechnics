@@ -77,6 +77,23 @@ export default function ProjectsPage() {
     }
   };
 
+  const handleDeleteProject = async (e, projectId, projectName) => {
+    e.stopPropagation(); // Prevent card click
+    
+    if (!window.confirm(`Weet je zeker dat je project "${projectName}" wilt verwijderen? Dit kan niet ongedaan worden gemaakt.`)) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API}/projects/${projectId}`, { withCredentials: true });
+      toast.success('Project verwijderd');
+      fetchData();
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Kon project niet verwijderen');
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
