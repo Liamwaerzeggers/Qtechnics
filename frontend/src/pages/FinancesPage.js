@@ -295,6 +295,16 @@ export default function FinancesPage() {
                 <ChevronRight size={20} />
               </Button>
             </div>
+
+            <Button
+              onClick={exportToCSV}
+              variant="outline"
+              className="flex items-center gap-2"
+              style={{color: '#1E40AF', borderColor: '#1E40AF'}}
+            >
+              <Download size={18} />
+              Export CSV
+            </Button>
           </div>
         </div>
 
