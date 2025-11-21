@@ -137,7 +137,7 @@ Q Technics`;
             </div>
             <div>
               <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
-                Beheerdernen
+                Beheerders
               </h1>
               <p className="text-sm" style={{color: '#64748B'}}>
                 Beheer beheerder accounts met beperkte toegang
