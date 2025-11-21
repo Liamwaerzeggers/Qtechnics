@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { API } from '../App';
+import { API, useAuth } from '../App';
 import DashboardLayout from '../components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,6 +15,8 @@ import { toast } from 'sonner';
 
 export default function ProjectsPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isWorker = user?.role === 'worker';
   const [projects, setProjects] = useState([]);
   const [quotes, setQuotes] = useState([]);
   const [filteredProjects, setFilteredProjects] = useState([]);
