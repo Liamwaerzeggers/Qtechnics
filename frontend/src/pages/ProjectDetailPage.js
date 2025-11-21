@@ -72,7 +72,7 @@ export default function ProjectDetailPage() {
     { id: 'first-visit', label: '📸 Eerste Bezoek', icon: Camera },
     { id: '3d-designs', label: '🏗️ 3D Ontwerpen', icon: Folder },
     { id: 'quotes', label: '📄 Offertes', icon: FileText },
-    { id: 'costs', label: '💰 Kosten & Facturen', icon: Receipt },
+    { id: 'costs', label: '💰 Financieel', icon: Receipt },
     { id: 'work', label: '📋 Werkbonnen', icon: Briefcase },
   ];
 
