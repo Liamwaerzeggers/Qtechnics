@@ -21,7 +21,7 @@ export default function AdminsPage() {
   });
 
   useEffect(() => {
-    fetchWorkers();
+    fetchAdmins();
   }, []);
 
   const fetchAdmins = async () => {
@@ -83,7 +83,7 @@ Q Technics`;
       toast.success('Werkman toegevoegd! Email wordt voorbereid... 👷');
       setIsDialogOpen(false);
       setFormData({ name: '', email: '', password: '' });
-      fetchWorkers();
+      fetchAdmins();
     } catch (error) {
       console.error('Failed to create worker:', error);
       toast.error(error.response?.data?.detail || 'Kon werkman niet toevoegen');
@@ -98,7 +98,7 @@ Q Technics`;
     try {
       await axios.delete(`${API}/workers/${workerId}`, { withCredentials: true });
       toast.success('Werkman verwijderd');
-      fetchWorkers();
+      fetchAdmins();
     } catch (error) {
       console.error('Failed to delete worker:', error);
       toast.error('Kon werkman niet verwijderen');
@@ -109,7 +109,7 @@ Q Technics`;
     try {
       const response = await axios.post(`${API}/workers/${workerId}/toggle`, {}, { withCredentials: true });
       toast.success(response.data.is_active ? 'Werkman geactiveerd' : 'Werkman gedeactiveerd');
-      fetchWorkers();
+      fetchAdmins();
     } catch (error) {
       console.error('Failed to toggle status:', error);
       toast.error('Kon status niet wijzigen');
