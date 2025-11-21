@@ -2366,6 +2366,149 @@ async def worker_login(email: str, password: str):
     
     raise HTTPException(status_code=401, detail="Invalid credentials")
 
+# ============= PROJECT EERSTE BEZOEK & 3D ONTWERPEN ROUTES =============
+
+@api_router.post("/projects/{project_id}/first-visit/photos")
+async def upload_first_visit_photo(
+    project_id: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload photo from first visit"""
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Save photo
+    photos_dir = ROOT_DIR / "uploads" / "first_visit" / project_id
+    photos_dir.mkdir(parents=True, exist_ok=True)
+    
+    file_extension = file.filename.split(".")[-1]
+    unique_filename = f"{uuid.uuid4()}.{file_extension}"
+    file_path = photos_dir / unique_filename
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    photo_url = f"/uploads/first_visit/{project_id}/{unique_filename}"
+    
+    # Update project
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$push": {"first_visit_photos": photo_url}}
+    )
+    
+    return {"url": photo_url, "filename": unique_filename}
+
+@api_router.delete("/projects/{project_id}/first-visit/photos/{photo_name}")
+async def delete_first_visit_photo(
+    project_id: str,
+    photo_name: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete first visit photo"""
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    photo_url = f"/uploads/first_visit/{project_id}/{photo_name}"
+    
+    # Delete file
+    file_path = ROOT_DIR / "uploads" / "first_visit" / project_id / photo_name
+    if file_path.exists():
+        file_path.unlink()
+    
+    # Update project
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$pull": {"first_visit_photos": photo_url}}
+    )
+    
+    return {"message": "Photo deleted"}
+
+@api_router.put("/projects/{project_id}/first-visit/notes")
+async def update_first_visit_notes(
+    project_id: str,
+    notes: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Update first visit notes"""
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"first_visit_notes": notes}}
+    )
+    
+    return {"message": "Notes updated"}
+
+@api_router.post("/projects/{project_id}/designs")
+async def upload_design_file(
+    project_id: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload 3D design file"""
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Save design file
+    designs_dir = ROOT_DIR / "uploads" / "designs" / project_id
+    designs_dir.mkdir(parents=True, exist_ok=True)
+    
+    unique_filename = f"{uuid.uuid4()}_{file.filename}"
+    file_path = designs_dir / unique_filename
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    file_url = f"/uploads/designs/{project_id}/{unique_filename}"
+    
+    design_file = {
+        "filename": file.filename,
+        "url": file_url,
+        "upload_date": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Update project
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$push": {"design_3d_files": design_file}}
+    )
+    
+    return design_file
+
+@api_router.delete("/projects/{project_id}/designs")
+async def delete_design_file(
+    project_id: str,
+    filename: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete 3D design file"""
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Find and delete file
+    for design in project.get("design_3d_files", []):
+        if design["filename"] == filename:
+            file_path = ROOT_DIR / design["url"].lstrip("/")
+            if file_path.exists():
+                file_path.unlink()
+            
+            # Update project
+            await db.projects.update_one(
+                {"id": project_id},
+                {"$pull": {"design_3d_files": {"filename": filename}}}
+            )
+            
+            return {"message": "Design file deleted"}
+    
+    raise HTTPException(status_code=404, detail="Design file not found")
+
 # ============= ADMIN MANAGEMENT ROUTES =============
 
 @api_router.post("/admins")
