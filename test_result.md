@@ -183,6 +183,21 @@ backend:
         agent: "testing"
         comment: "Tested GET /api/invoices/{invoice_id}/pdf endpoint. Successfully created test invoice via POST /api/projects/{project_id}/invoices/create, then downloaded PDF. Verified: Content-Type: application/pdf, Content-Disposition header with filename (factuur_FACT-2025-002.pdf), valid PDF format (101,634 bytes), proper reportlab Image import working. All requirements met."
 
+  - task: "Workers Management API - Add workers via POST /api/workers endpoint"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "Initial test failed with 500 Internal Server Error due to ObjectId serialization issue in create_worker endpoint (lines 2181-2213). MongoDB _id field was being returned in response causing JSON serialization error."
+      - working: true
+        agent: "testing"
+        comment: "FIXED: ObjectId serialization issue resolved by removing _id field from response in create_worker endpoint. Comprehensive testing completed: ✅ POST /api/workers creates worker with WORKER-XXX ID format, ✅ GET /api/workers retrieves workers list, ✅ Admin authentication required (403 for non-admin), ✅ Duplicate email prevention (400 status), ✅ Database persistence verified, ✅ Password hash excluded from response (security). All core functionality working correctly."
+
 frontend:
   - task: "Q Technics Logo Display - Show company logo in header"
     implemented: true
