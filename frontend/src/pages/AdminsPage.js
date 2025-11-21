@@ -305,13 +305,13 @@ Q Technics`;
             </h3>
             <div className="space-y-2 text-sm" style={{color: '#64748B'}}>
               <p>
-                <strong>Login URL voor beheerdernen:</strong> Beheerdernen kunnen inloggen op dezelfde pagina met hun email en wachtwoord.
+                <strong>Login URL voor beheerders:</strong> Beheerders kunnen inloggen via de "Werkman Login" pagina met hun email en wachtwoord.
               </p>
               <p>
-                <strong>Toegang:</strong> Beheerdernen hebben alleen toegang tot projecten en werkbonnen. Ze zien geen prijzen, offertes, facturen of financiën.
+                <strong>Toegang:</strong> Beheerders hebben volledige toegang tot het platform: leads, offertes, projecten, facturen, financiën, materialen, kalender.
               </p>
               <p>
-                <strong>Status:</strong> Gedeactiveerde beheerdernen kunnen niet meer inloggen totdat ze weer worden geactiveerd.
+                <strong>Verschil met Google OAuth:</strong> Deze beheerders loggen in met email/wachtwoord in plaats van Google OAuth, maar hebben dezelfde rechten.
               </p>
             </div>
           </CardContent>
