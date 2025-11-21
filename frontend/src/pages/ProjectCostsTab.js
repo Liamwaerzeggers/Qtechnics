@@ -257,6 +257,14 @@ export default function ProjectCostsTab({ project, quote, onUpdate }) {
                   </span>
                 </div>
                 
+                {!quote && !project.total_price && (
+                  <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <p className="text-sm" style={{color: '#92400E'}}>
+                      💡 <strong>Let op:</strong> Maak een offerte in het "Offertes" tabblad om de verkoopprijs en winst correct te berekenen.
+                    </p>
+                  </div>
+                )}
+                
                 {(() => {
                   const totalCosts = project.total_costs || 0;
                   const salePrice = quote?.total_incl_vat || project.total_price || 0;
