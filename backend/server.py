@@ -10,6 +10,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
+import shutil
 from datetime import datetime, timezone, timedelta, timedelta
 import hashlib
 import secrets
