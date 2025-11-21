@@ -205,7 +205,7 @@ export default function FinancesPage() {
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
             <Select value={selectedView} onValueChange={setSelectedView}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
@@ -213,20 +213,56 @@ export default function FinancesPage() {
               <SelectContent>
                 <SelectItem value="month">📅 Per Maand</SelectItem>
                 <SelectItem value="quarter">📊 Per Kwartaal</SelectItem>
-                <SelectItem value="year">🗓️ Per Jaar</SelectItem>
+                <SelectItem value="year">🗓️ Boekjaar</SelectItem>
               </SelectContent>
             </Select>
 
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Selecteer jaar" />
-              </SelectTrigger>
-              <SelectContent>
-                {getAvailableYears().map(year => (
-                  <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const currentYear = parseInt(selectedYear);
+                  const availableYears = getAvailableYears();
+                  const currentIndex = availableYears.indexOf(currentYear);
+                  if (currentIndex < availableYears.length - 1) {
+                    setSelectedYear(availableYears[currentIndex + 1].toString());
+                  }
+                }}
+                disabled={parseInt(selectedYear) <= Math.min(...getAvailableYears())}
+                title="Vorig jaar"
+              >
+                <ChevronLeft size={20} />
+              </Button>
+              
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Selecteer jaar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAvailableYears().map(year => (
+                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const currentYear = parseInt(selectedYear);
+                  const availableYears = getAvailableYears();
+                  const currentIndex = availableYears.indexOf(currentYear);
+                  if (currentIndex > 0) {
+                    setSelectedYear(availableYears[currentIndex - 1].toString());
+                  }
+                }}
+                disabled={parseInt(selectedYear) >= Math.max(...getAvailableYears())}
+                title="Volgend jaar"
+              >
+                <ChevronRight size={20} />
+              </Button>
+            </div>
           </div>
         </div>
 
