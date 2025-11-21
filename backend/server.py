@@ -1795,6 +1795,14 @@ def generate_ogm_reference(invoice_number: str):
     
     return formatted
 
+def hash_password(password: str) -> str:
+    """Hash password using SHA-256"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(password: str, password_hash: str) -> bool:
+    """Verify password against hash"""
+    return hash_password(password) == password_hash
+
 @api_router.post("/projects/{project_id}/invoices/create")
 async def create_invoice(
     project_id: str,
