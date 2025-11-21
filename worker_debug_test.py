@@ -221,13 +221,14 @@ class WorkerProjectDebugger:
         """Test worker login via POST /api/auth/worker/login"""
         self.log("Testing worker login...")
         
-        login_data = {
+        # Worker login expects query parameters, not JSON body
+        params = {
             "email": worker_email,
             "password": worker_password
         }
         
         try:
-            response = requests.post(f"{self.base_url}/auth/worker/login", json=login_data)
+            response = requests.post(f"{self.base_url}/auth/worker/login", params=params)
             
             self.log(f"Worker login response status: {response.status_code}")
             
