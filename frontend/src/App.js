@@ -19,6 +19,7 @@ import CalendarPage from './pages/CalendarPage';
 import InvoicesPage from './pages/InvoicesPage';
 import FinancesPage from './pages/FinancesPage';
 import WorkersPage from './pages/WorkersPage';
+import AdminsPage from './pages/AdminsPage';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
