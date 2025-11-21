@@ -502,9 +502,14 @@ class WorkerProjectDebugger:
         
         // Clean up worker user
         if ('{self.worker_user_id}') {{
-            db.users.deleteMany({{_id: '{self.worker_user_id}'}});
             db.workers.deleteMany({{email: '{self.worker_user_id}'}});
-            db.user_sessions.deleteMany({{user_id: '{self.worker_user_id}'}});
+            db.sessions.deleteMany({{user_id: {{$regex: /^WORKER-/}}}});
+            
+            // Find worker ID to clean up users collection
+            var worker = db.workers.findOne({{email: '{self.worker_user_id}'}});
+            if (worker) {{
+                db.users.deleteMany({{_id: worker.id}});
+            }}
         }}
         
         print('Cleanup complete');
