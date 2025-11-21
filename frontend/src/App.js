@@ -209,6 +209,7 @@ function App() {
             <Route path="/projects/:projectId/work-slips" element={<ProtectedRoute><ProjectWorkSlipPage /></ProtectedRoute>} />
             <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
             <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
+            <Route path="/finances" element={<ProtectedRoute><FinancesPage /></ProtectedRoute>} />
           </Routes>
           <Toaster position="top-right" richColors />
         </AuthProvider>
