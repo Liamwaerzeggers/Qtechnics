@@ -201,14 +201,17 @@ function LandingPage() {
             </div>
           ) : (
             <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg">
-              <h2 className="text-2xl font-bold mb-6" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+              <h2 className="text-2xl font-bold mb-2 text-center" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
                 👷 Werkman Login
               </h2>
+              <p className="text-center mb-6" style={{color: '#64748B', fontSize: '14px'}}>
+                Вхід працівника
+              </p>
               
               <form onSubmit={handleWorkerLogin} className="space-y-4">
                 <div className="text-left">
                   <label className="block text-sm font-medium mb-2" style={{color: '#1E293B'}}>
-                    Email
+                    Email / Електронна пошта
                   </label>
                   <input
                     type="email"
@@ -223,7 +226,7 @@ function LandingPage() {
                 
                 <div className="text-left">
                   <label className="block text-sm font-medium mb-2" style={{color: '#1E293B'}}>
-                    Wachtwoord
+                    Wachtwoord / Пароль
                   </label>
                   <input
                     type="password"
@@ -242,7 +245,7 @@ function LandingPage() {
                   className="w-full px-8 py-4 rounded-full text-lg font-semibold text-white transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{backgroundColor: '#1E40AF', fontFamily: 'Inter, sans-serif'}}
                 >
-                  {loggingIn ? 'Inloggen...' : 'Inloggen'}
+                  {loggingIn ? 'Inloggen... / Вхід...' : 'Inloggen / Увійти'}
                 </button>
                 
                 <button
@@ -251,7 +254,7 @@ function LandingPage() {
                   className="text-sm underline transition-all hover:opacity-80 w-full"
                   style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}
                 >
-                  ← Terug naar Google login
+                  ← Terug naar beheerder login / Назад до входу адміністратора
                 </button>
               </form>
             </div>
