@@ -50,8 +50,37 @@ export default function WorkersPage() {
     }
 
     try {
-      await axios.post(`${API}/api/workers`, formData, { withCredentials: true });
-      toast.success('Werkman toegevoegd! 👷');
+      const response = await axios.post(`${API}/api/workers`, formData, { withCredentials: true });
+      
+      // Send email with account details
+      const subject = 'Je werkman account bij Q Technics';
+      const body = `Hallo ${formData.name},
+
+Je account is aangemaakt! Je kunt nu inloggen op het Q Technics platform.
+
+🔐 INLOGGEGEVENS:
+Email: ${formData.email}
+Wachtwoord: ${formData.password}
+
+📱 LOGIN URL:
+${window.location.origin}
+
+BELANGRIJK: Bewaar deze email veilig. Je hebt deze gegevens nodig om in te loggen.
+
+Wat kun je doen met je account?
+✅ Projecten bekijken
+✅ Werkbonnen invullen
+✅ Materiaalgebruik registreren
+
+Bij vragen kun je contact opnemen met je beheerder.
+
+Met vriendelijke groet,
+Q Technics`;
+
+      const mailtoLink = `mailto:${formData.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailtoLink;
+      
+      toast.success('Werkman toegevoegd! Email wordt voorbereid... 👷');
       setIsDialogOpen(false);
       setFormData({ name: '', email: '', password: '' });
       fetchWorkers();
