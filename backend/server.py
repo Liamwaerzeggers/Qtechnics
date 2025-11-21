@@ -2304,68 +2304,45 @@ async def toggle_worker_status(worker_id: str, current_user: User = Depends(get_
 
 @api_router.post("/auth/worker/login")
 async def worker_login(email: str, password: str):
-    """Worker/Admin login with email/password"""
-    # Check if worker
+    """Worker login with email/password - ONLY for workers, not admins"""
+    # Check if worker exists
     worker = await db.workers.find_one({"email": email}, {"_id": 0})
-    if worker:
-        if not worker.get("is_active", True):
-            raise HTTPException(status_code=403, detail="Account is deactivated")
-        
-        if not verify_password(password, worker["password_hash"]):
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-        
-        # Create session for worker
-        session_token = secrets.token_urlsafe(32)
-        expires_at = datetime.now(timezone.utc) + timedelta(days=30)
-        
-        session = {
-            "user_id": worker["id"],
-            "session_token": session_token,
-            "expires_at": expires_at.isoformat(),
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        
-        await db.sessions.insert_one(session)
-        
-        # Return worker as user with role=worker
-        user_data = {
-            "id": worker["id"],
-            "email": worker["email"],
-            "name": worker["name"],
-            "role": "worker",
-            "created_at": worker["created_at"]
-        }
-        
-        return {
-            "user": user_data,
-            "session_token": session_token
-        }
     
-    # Check if admin (email/password)
-    admin = await db.users.find_one({"email": email, "role": "admin", "password_hash": {"$exists": True}}, {"_id": 0})
-    if admin:
-        if not verify_password(password, admin["password_hash"]):
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-        
-        # Create session for admin
-        session_token = secrets.token_urlsafe(32)
-        expires_at = datetime.now(timezone.utc) + timedelta(days=30)
-        
-        session = {
-            "user_id": admin["id"],
-            "session_token": session_token,
-            "expires_at": expires_at.isoformat(),
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        
-        await db.sessions.insert_one(session)
-        
-        return {
-            "user": admin,
-            "session_token": session_token
-        }
+    if not worker:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not worker.get("is_active", True):
+        raise HTTPException(status_code=403, detail="Account is gedeactiveerd / Обліковий запис деактивовано")
+    
+    if not verify_password(password, worker["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Create session for worker
+    session_token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+    
+    session = {
+        "user_id": worker["id"],
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.sessions.insert_one(session)
+    
+    # Return worker as user with role=worker
+    user_data = {
+        "id": worker["id"],
+        "email": worker["email"],
+        "name": worker["name"],
+        "role": "worker",
+        "created_at": worker["created_at"]
+    }
+    
+    return {
+        "user": user_data,
+        "session_token": session_token
+    }
 
 # ============= PROJECT EERSTE BEZOEK & 3D ONTWERPEN ROUTES =============
 
