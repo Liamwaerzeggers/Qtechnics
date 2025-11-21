@@ -986,6 +986,8 @@ async def get_projects(current_user: User = Depends(get_current_user)):
             project["start_date"] = datetime.fromisoformat(project["start_date"])
         if project.get("end_date") and isinstance(project["end_date"], str):
             project["end_date"] = datetime.fromisoformat(project["end_date"])
+        if project.get("first_visit_date") and isinstance(project["first_visit_date"], str):
+            project["first_visit_date"] = datetime.fromisoformat(project["first_visit_date"])
     
     return projects
 
