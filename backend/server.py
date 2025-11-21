@@ -216,7 +216,8 @@ class Project(BaseModel):
     user_id: str
 
 class ProjectCreate(BaseModel):
-    lead_id: str  # Changed from quote_id
+    lead_id: Optional[str] = None  # NEW: Optional
+    quote_id: Optional[str] = None  # BLIJFT: Backward compatible
     name: str
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
