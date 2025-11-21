@@ -199,30 +199,54 @@ export default function QuoteDetailPage() {
     }
   };
 
-  const handleSendEmail = () => {
+  const handleSendEmail = async () => {
     if (!lead || !quote) {
       toast.error('Klantgegevens niet beschikbaar');
       return;
     }
 
-    const subject = `Offerte ${quote.quote_number} - Q Technics`;
-    const body = `Beste ${lead.name},
+    try {
+      // First, download the PDF
+      toast.info('PDF wordt gedownload...');
+      const response = await axios.get(`${API}/quotes/${quoteId}/export/pdf`, {
+        withCredentials: true,
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `offerte_${quote.quote_number}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      // Prepare email
+      const subject = `Offerte ${quote.quote_number} - Q Technics`;
+      const body = `Beste ${lead.name},
 
 Hierbij ontvangt u onze offerte ${quote.quote_number} voor uw project "${lead.project_type}".
 
-Totaalbedrag: €${quote.total_incl_vat?.toFixed(2) || quote.total_price?.toFixed(2) || '0.00'}
+📄 OFFERTE BIJLAGE:
+De PDF is automatisch gedownload. Voeg deze toe als bijlage aan deze email.
 
-Download de offerte via deze link of vraag ons om de PDF toe te sturen.
+💰 TOTAALBEDRAG: €${quote.total_incl_vat?.toFixed(2) || quote.total_price?.toFixed(2) || '0.00'}
 
 Wij hopen u hiermee van dienst te zijn geweest en zien uw reactie met belangstelling tegemoet.
+
+Heeft u vragen over deze offerte? Neem gerust contact met ons op.
 
 Met vriendelijke groet,
 Q Technics`;
 
-    const mailtoLink = `mailto:${lead.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailtoLink;
-    
-    toast.success(`Email voorbereid voor ${lead.email}`);
+      const mailtoLink = `mailto:${lead.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailtoLink;
+      
+      toast.success(`✅ PDF gedownload en email voorbereid voor ${lead.email}`);
+    } catch (error) {
+      console.error('Failed to send email:', error);
+      toast.error('Kon email niet voorbereiden');
+    }
   };
 
   const handleStatusChange = async (newStatus) => {
