@@ -140,7 +140,7 @@ Q Technics`;
                 Beheerders
               </h1>
               <p className="text-sm" style={{color: '#64748B'}}>
-                Beheer beheerder accounts met beperkte toegang
+                Beheer beheerder accounts met volledige toegang
               </p>
             </div>
           </div>
