@@ -249,10 +249,8 @@ Q Technics`;
                       </p>
                     </div>
                     
-                    <div className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      worker.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {worker.is_active ? 'Actief' : 'Inactief'}
+                    <div className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                      🔐 Admin
                     </div>
                   </div>
 
@@ -260,27 +258,7 @@ Q Technics`;
                     Toegevoegd: {new Date(worker.created_at).toLocaleDateString('nl-NL')}
                   </div>
 
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleToggleStatus(worker.id)}
-                      className="flex-1"
-                      title={worker.is_active ? 'Deactiveren' : 'Activeren'}
-                    >
-                      {worker.is_active ? (
-                        <>
-                          <Lock size={16} className="mr-1" />
-                          Deactiveren
-                        </>
-                      ) : (
-                        <>
-                          <Unlock size={16} className="mr-1" />
-                          Activeren
-                        </>
-                      )}
-                    </Button>
-
+                  <div className="flex justify-end">
                     <Button
                       variant="ghost"
                       size="sm"
