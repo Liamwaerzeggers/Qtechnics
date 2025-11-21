@@ -96,7 +96,7 @@ Q Technics`;
     }
 
     try {
-      await axios.delete(`${API}/api/workers/${workerId}`, { withCredentials: true });
+      await axios.delete(`${API}/workers/${workerId}`, { withCredentials: true });
       toast.success('Werkman verwijderd');
       fetchWorkers();
     } catch (error) {
