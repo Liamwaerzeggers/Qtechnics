@@ -926,8 +926,12 @@ async def create_project(project_create: ProjectCreate, current_user: User = Dep
 
 @api_router.get("/projects", response_model=List[Project])
 async def get_projects(current_user: User = Depends(get_current_user)):
-    """Get all projects for current user"""
-    projects = await db.projects.find({"user_id": current_user.id}, {"_id": 0}).to_list(1000)
+    """Get all projects for current user (workers see all projects)"""
+    # Workers see all projects, admins see only their own
+    if current_user.role == "worker":
+        projects = await db.projects.find({}, {"_id": 0}).to_list(1000)
+    else:
+        projects = await db.projects.find({"user_id": current_user.id}, {"_id": 0}).to_list(1000)
     
     for project in projects:
         if isinstance(project["created_at"], str):
