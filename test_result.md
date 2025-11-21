@@ -291,6 +291,18 @@ test_plan:
         agent: "main"
         comment: "Client-side translation helper with copy buttons (NL↔UK). Visual indicators (flags 🇳🇱🇺🇦). Tooltip suggests using Google Translate. All work slip fields support dual language."
 
+  - task: "Project Delete Functionality - Delete button on project cards with confirmation"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/ProjectsPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented delete functionality with Trash2 icon on project cards. Button appears on hover (opacity-0 group-hover:opacity-100), has red hover state, includes confirmation dialog with project name, uses event.stopPropagation() to prevent card navigation. Backend DELETE /api/projects/{project_id} endpoint exists and working."
+
 agent_communication:
   - agent: "testing"
     message: |
