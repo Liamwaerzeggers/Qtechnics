@@ -26,7 +26,7 @@ export default function WorkersPage() {
 
   const fetchWorkers = async () => {
     try {
-      const response = await axios.get(`${API}/api/workers`, { withCredentials: true });
+      const response = await axios.get(`${API}/workers`, { withCredentials: true });
       setWorkers(response.data);
     } catch (error) {
       console.error('Failed to fetch workers:', error);
