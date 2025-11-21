@@ -658,6 +658,7 @@ def main():
         test_results.append(("Projects", tester.test_projects()))
         test_results.append(("Export Functionality", tester.test_export_functionality()))
         test_results.append(("Invoice PDF Download", tester.test_invoice_pdf_download()))
+        test_results.append(("Workers Management", tester.test_workers_management()))
         
         # Print results summary
         print("\n" + "=" * 50)
