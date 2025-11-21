@@ -50,7 +50,7 @@ export default function WorkersPage() {
     }
 
     try {
-      const response = await axios.post(`${API}/api/workers`, formData, { withCredentials: true });
+      const response = await axios.post(`${API}/workers`, formData, { withCredentials: true });
       
       // Send email with account details
       const subject = 'Je werkman account bij Q Technics';
