@@ -60,16 +60,11 @@ export default function FinancesPage() {
     projects.forEach(project => {
       // Use start_date, or created_at as fallback
       const projectDate = project.start_date || project.created_at;
-      if (!projectDate) {
-        console.log('Project without date:', project.id);
-        return;
-      }
+      if (!projectDate) return;
       
       const date = new Date(projectDate);
       const projectYear = date.getFullYear();
       const selectedYearInt = parseInt(selectedYear);
-      
-      console.log(`Project ${project.name}: year=${projectYear}, selected=${selectedYearInt}, match=${projectYear === selectedYearInt}`);
       
       if (projectYear !== selectedYearInt) return;
       
@@ -77,8 +72,6 @@ export default function FinancesPage() {
       const profit = project.profit || 0;
       const costs = project.total_costs_incl_vat || 0;
       const revenue = profit + costs;
-      
-      console.log(`Adding to month ${monthIndex}: profit=${profit}, costs=${costs}`);
       
       monthlyData[monthIndex].revenue += revenue;
       monthlyData[monthIndex].costs += costs;
