@@ -2327,6 +2327,74 @@ async def worker_login(email: str, password: str):
     
     raise HTTPException(status_code=401, detail="Invalid credentials")
 
+# ============= ADMIN MANAGEMENT ROUTES =============
+
+@api_router.post("/admins")
+async def create_admin(admin_data: WorkerCreate, current_user: User = Depends(get_current_user)):
+    """Create a new admin account with email/password (super admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can create admins")
+    
+    # Check if email already exists
+    existing_user = await db.users.find_one({"email": admin_data.email}, {"_id": 0})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already in use")
+    
+    existing_worker = await db.workers.find_one({"email": admin_data.email}, {"_id": 0})
+    if existing_worker:
+        raise HTTPException(status_code=400, detail="Email already registered as worker")
+    
+    # Create admin user
+    admin = User(
+        email=admin_data.email,
+        name=admin_data.name,
+        role="admin"
+    )
+    
+    admin_doc = admin.model_dump()
+    admin_doc["password_hash"] = hash_password(admin_data.password)
+    admin_doc["created_at"] = admin_doc["created_at"].isoformat()
+    
+    await db.users.insert_one({"_id": admin_doc["id"], **admin_doc})
+    
+    # Remove password_hash from response
+    admin_doc.pop("password_hash")
+    admin_doc.pop("_id", None)
+    
+    return admin_doc
+
+@api_router.get("/admins")
+async def get_admins(current_user: User = Depends(get_current_user)):
+    """Get all email/password admin accounts (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can view admins")
+    
+    # Get admins with password_hash (email/password logins, not OAuth)
+    admins = await db.users.find(
+        {"role": "admin", "password_hash": {"$exists": True}}, 
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    
+    return admins
+
+@api_router.delete("/admins/{admin_id}")
+async def delete_admin(admin_id: str, current_user: User = Depends(get_current_user)):
+    """Delete an admin (admin only, cannot delete self)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete admins")
+    
+    if admin_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    
+    result = await db.users.delete_one({"id": admin_id, "password_hash": {"$exists": True}})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Admin not found")
+    
+    # Also delete sessions
+    await db.sessions.delete_many({"user_id": admin_id})
+    
+    return {"message": "Admin deleted successfully"}
+
 # Include router
 app.include_router(api_router)
 
