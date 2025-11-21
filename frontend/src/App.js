@@ -183,15 +183,20 @@ function LandingPage() {
                 className="px-8 py-4 rounded-full text-lg font-semibold text-white transition-all hover:scale-105 block w-full max-w-md mx-auto"
                 style={{backgroundColor: '#1E40AF', fontFamily: 'Inter, sans-serif'}}
               >
-                Inloggen met Google
+                🔐 Beheerder - Inloggen met Google
               </button>
               
               <button
                 onClick={() => setShowWorkerLogin(true)}
-                className="text-sm underline transition-all hover:opacity-80"
-                style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}
+                className="px-8 py-4 rounded-full text-lg font-semibold transition-all hover:scale-105 block w-full max-w-md mx-auto border-2"
+                style={{
+                  backgroundColor: 'white',
+                  color: '#1E40AF',
+                  borderColor: '#1E40AF',
+                  fontFamily: 'Inter, sans-serif'
+                }}
               >
-                Werkman? Log hier in met email en wachtwoord
+                👷 Werkman Login / Вхід працівника
               </button>
             </div>
           ) : (
