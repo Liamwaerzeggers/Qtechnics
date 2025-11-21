@@ -87,24 +87,53 @@ export default function InvoicesPage() {
       const customerEmail = leadRes.data.email;
       const customerName = leadRes.data.name;
       
-      // Get PDF URL
-      const pdfUrl = `${API}/api/invoices/${invoice.id}/pdf`;
+      // First, download the PDF
+      toast.info('PDF wordt gedownload...');
+      const pdfResponse = await axios.get(
+        `${API}/api/invoices/${invoice.id}/pdf`,
+        { 
+          withCredentials: true,
+          responseType: 'blob'
+        }
+      );
       
-      // Prepare email with OGM reference
+      const pdfUrl = window.URL.createObjectURL(new Blob([pdfResponse.data]));
+      const pdfLink = document.createElement('a');
+      pdfLink.href = pdfUrl;
+      pdfLink.setAttribute('download', `factuur_${invoice.invoice_number}.pdf`);
+      document.body.appendChild(pdfLink);
+      pdfLink.click();
+      pdfLink.remove();
+      
+      // Generate Belgian bank payment link with OGM
+      const ogm = invoice.payment_reference || '';
+      const amount = invoice.total_incl_vat.toFixed(2);
+      
+      // Prepare email with OGM reference and payment link
       const subject = `Factuur ${invoice.invoice_number} - Q Technics`;
       const body = `Beste ${customerName},
 
 Hierbij ontvangt u factuur ${invoice.invoice_number} voor project "${invoice.projectName}".
 
-Factuurbedrag: €${invoice.total_incl_vat.toFixed(2)}
+📄 FACTUUR BIJLAGE:
+De PDF is automatisch gedownload. Voeg deze toe als bijlage aan deze email.
+
+💰 BETAALINFORMATIE:
+Factuurbedrag: €${amount}
 Vervaldatum: ${new Date(invoice.due_date).toLocaleDateString('nl-NL')}
 
-GESTRUCTUREERDE MEDEDELING (verplicht bij overschrijving):
-${invoice.payment_reference || invoice.invoice_number}
+🏦 GESTRUCTUREERDE MEDEDELING (verplicht):
+${ogm}
 
-U kunt deze mededeling kopiëren en plakken in uw bankapp voor automatische verwerking.
+BELANGRIJK: Gebruik deze gestructureerde mededeling bij uw overschrijving zodat de betaling automatisch wordt verwerkt.
 
-Download de factuur via deze link of vraag ons om de PDF toe te sturen.
+💳 DIRECT BETALEN:
+Kopieer onderstaande link en plak in uw browser om direct te betalen via uw bank:
+https://www.ing.be/mijnrekeningen/betalen?bedrag=${amount}&mededeling=${encodeURIComponent(ogm)}
+
+(Dit werkt voor de meeste Belgische banken. Gebruik anders de mobiele banking app en kopieer de gestructureerde mededeling handmatig.)
+
+Heeft u vragen? Neem gerust contact met ons op.
 
 Met vriendelijke groet,
 Q Technics`;
@@ -113,7 +142,7 @@ Q Technics`;
       const mailtoLink = `mailto:${customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       window.location.href = mailtoLink;
       
-      toast.success(`Email voorbereid voor ${customerEmail}`);
+      toast.success(`✅ PDF gedownload en email voorbereid voor ${customerEmail}`);
     } catch (error) {
       console.error('Failed to prepare email:', error);
       toast.error('Kon email niet voorbereiden');
