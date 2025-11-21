@@ -700,6 +700,43 @@ agent_communication:
 
   - agent: "testing"
     message: |
+      STARTING PROJECT DETAIL PAGE TABBED INTERFACE TESTING:
+      
+      **Test Scope:** Testing the new Project Detail Page with tabbed interface as requested
+      
+      **Implementation Found:**
+      ✅ **Main Component:** ProjectDetailPage.js with complete tabbed interface
+      ✅ **5 Tabs Implemented:** 
+         - 📸 Eerste Bezoek (ProjectFirstVisitTab component)
+         - 🏗️ 3D Ontwerpen (Project3DDesignTab component) 
+         - 📄 Offertes (inline implementation)
+         - 💰 Kosten & Facturen (ProjectCostsTab component)
+         - 📋 Werkbonnen (inline implementation)
+      ✅ **Tab Navigation:** Active tab highlighting with border-blue-500 and proper hover states
+      ✅ **Individual Tab Components:** Separate components for complex tabs with full functionality
+      
+      **Test Plan:**
+      1. Login with Google OAuth as admin
+      2. Navigate to /projects page
+      3. Click on existing project to access detail page
+      4. Verify all 5 tabs are visible and properly labeled
+      5. Test tab switching functionality and visual highlighting
+      6. Test each tab's specific content and buttons:
+         - Eerste Bezoek: Photo upload button, notes textarea, save button
+         - 3D Ontwerpen: File upload button, supported file types display
+         - Offertes: New quote button, existing quotes display
+         - Kosten & Facturen: Cost editing button, cost calculation sections, 4 milestone buttons, invoice upload
+         - Werkbonnen: Navigate to work slips button
+      7. Verify responsive design and mobile compatibility
+      
+      **Expected Results:**
+      - All 5 tabs visible and clickable ✅
+      - Tab content switches correctly on click ✅
+      - Active tab has blue border highlighting ✅
+      - All required sections and buttons present in each tab ✅
+
+  - agent: "testing"
+    message: |
       WORKER PROJECT VISIBILITY BUG FIXED ✅
       
       **CRITICAL BUG IDENTIFIED AND RESOLVED:**
