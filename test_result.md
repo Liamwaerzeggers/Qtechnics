@@ -207,6 +207,7 @@ metadata:
 
 test_plan:
   current_focus:
+    - "Project Delete Functionality - Delete button on project cards with confirmation"
     - "Verify logo displays correctly in frontend header"
     - "End-to-end test: Create quote with mixed items, verify PDF output"
   stuck_tasks: []
