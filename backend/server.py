@@ -2207,8 +2207,9 @@ async def create_worker(worker_data: WorkerCreate, current_user: User = Depends(
     
     await db.workers.insert_one(worker_doc)
     
-    # Remove password_hash from response
-    worker_doc.pop("password_hash")
+    # Remove password_hash and _id from response
+    worker_doc.pop("password_hash", None)
+    worker_doc.pop("_id", None)
     
     return worker_doc
 
