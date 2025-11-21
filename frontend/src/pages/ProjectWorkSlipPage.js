@@ -411,6 +411,33 @@ export default function ProjectWorkSlipPage() {
           </div>
         )}
 
+        {/* SECTION 0: Gewerkte Uren */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <h2 className="text-lg font-semibold mb-2" style={{ color: '#1E3A8A' }}>
+            ⏱️ Gewerkte Uren / Відпрацьовані години
+          </h2>
+          <p className="text-sm mb-4" style={{ color: '#64748B' }}>
+            Hoeveel uur heb je vandaag gewerkt? / Скільки годин ви сьогодні працювали?
+          </p>
+          
+          <div className="max-w-md">
+            <input
+              type="number"
+              step="0.5"
+              min="0"
+              max="24"
+              value={formData.hours_worked}
+              onChange={(e) => setFormData({...formData, hours_worked: e.target.value})}
+              placeholder="bijv. 8.5 / наприклад: 8.5"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{ color: '#1E3A8A' }}
+            />
+            <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>
+              💡 Tip: Gebruik decimalen voor halve uren (8.5 = 8 uur en 30 minuten)
+            </p>
+          </div>
+        </div>
+
         {/* SECTION 1: Materialen uit Offerte */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
           <h2 className="text-lg font-semibold mb-2" style={{ color: '#1E3A8A' }}>
