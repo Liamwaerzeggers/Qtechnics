@@ -161,11 +161,19 @@ export default function ProjectsPage() {
           )}
         </div>
 
+        {isWorker && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <p className="text-sm font-medium" style={{color: '#1E40AF'}}>
+              👷 <strong>Klik op een project</strong> om direct een werkbon in te vullen / <strong>Натисніть на проєкт</strong>, щоб заповнити робочий звіт
+            </p>
+          </div>
+        )}
+
         <div className="relative">
           <Search className="absolute left-3 top-3 text-gray-400" size={20} />
           <Input
             data-testid="search-projects-input"
-            placeholder="Zoek projecten..."
+            placeholder={isWorker ? "Zoek projecten... / Пошук проєктів..." : "Zoek projecten..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
