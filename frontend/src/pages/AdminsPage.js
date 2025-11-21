@@ -24,13 +24,13 @@ export default function AdminsPage() {
     fetchWorkers();
   }, []);
 
-  const fetchWorkers = async () => {
+  const fetchAdmins = async () => {
     try {
-      const response = await axios.get(`${API}/workers`, { withCredentials: true });
-      setWorkers(response.data);
+      const response = await axios.get(`${API}/admins`, { withCredentials: true });
+      setAdmins(response.data);
     } catch (error) {
-      console.error('Failed to fetch workers:', error);
-      toast.error('Kon werkmannen niet laden');
+      console.error('Failed to fetch admins:', error);
+      toast.error('Kon beheerders niet laden');
     } finally {
       setLoading(false);
     }
