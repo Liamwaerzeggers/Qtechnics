@@ -240,7 +240,6 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Project Detail Page with Tabbed Interface - Complete rewrite with 5 tabs"
     - "Project Delete Functionality - Delete button on project cards with confirmation"
     - "Verify logo displays correctly in frontend header"
   stuck_tasks: []
@@ -248,6 +247,7 @@ test_plan:
   test_priority: "high_first"
   recently_resolved:
     - "Worker Project Visibility Bug - CRITICAL BUG FIXED: Workers can now see all projects"
+    - "Project Detail Page with Tabbed Interface - COMPLETED: All 5 tabs implemented with full functionality"
 
   - task: "Calendar Feature - Project events with date visualization"
     implemented: true
