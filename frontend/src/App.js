@@ -142,10 +142,11 @@ function LandingPage() {
     setLoggingIn(true);
     
     try {
-      const response = await axios.post(`${API}/auth/worker/login`, null, {
-        params: { email: workerEmail, password: workerPassword },
-        withCredentials: true
-      });
+      const response = await axios.post(
+        `${API}/auth/worker/login?email=${encodeURIComponent(workerEmail)}&password=${encodeURIComponent(workerPassword)}`,
+        {},
+        { withCredentials: true }
+      );
       
       setUser(response.data.user);
       toast.success(`Welkom ${response.data.user.name}! 👷`);
@@ -154,9 +155,9 @@ function LandingPage() {
     } catch (error) {
       console.error('Worker login error:', error);
       if (error.response?.status === 403) {
-        toast.error('Account is gedeactiveerd. Neem contact op met je beheerder.');
+        toast.error('Account is gedeactiveerd. Neem contact op met je beheerder. / Обліковий запис деактивовано. Зверніться до адміністратора.');
       } else {
-        toast.error('Ongeldige inloggegevens');
+        toast.error('Ongeldige inloggegevens / Невірні дані для входу');
       }
     } finally {
       setLoggingIn(false);
