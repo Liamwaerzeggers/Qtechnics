@@ -9,6 +9,7 @@ import { ArrowLeft, FileText, Camera, Folder, Receipt, Briefcase } from 'lucide-
 import { toast } from 'sonner';
 import ProjectFirstVisitTab from './ProjectFirstVisitTab';
 import Project3DDesignTab from './Project3DDesignTab';
+import ProjectCostsTab from './ProjectCostsTab';
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams();
@@ -17,6 +18,7 @@ export default function ProjectDetailPage() {
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('first-visit');
+  const [primaryQuote, setPrimaryQuote] = useState(null);
 
   useEffect(() => {
     fetchProjectData();
