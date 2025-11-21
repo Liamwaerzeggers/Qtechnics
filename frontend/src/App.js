@@ -211,6 +211,7 @@ function App() {
             <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
             <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
             <Route path="/finances" element={<ProtectedRoute><FinancesPage /></ProtectedRoute>} />
+            <Route path="/workers" element={<ProtectedRoute><WorkersPage /></ProtectedRoute>} />
           </Routes>
           <Toaster position="top-right" richColors />
         </AuthProvider>
