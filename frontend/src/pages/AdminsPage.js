@@ -10,8 +10,8 @@ import { Label } from '../components/ui/label';
 import { Users, Plus, Trash2, Lock, Unlock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function WorkersPage() {
-  const [workers, setWorkers] = useState([]);
+export default function AdminsPage() {
+  const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
