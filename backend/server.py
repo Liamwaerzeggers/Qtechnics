@@ -306,6 +306,7 @@ class Invoice(BaseModel):
     # Payment info
     payment_status: str = "unpaid"  # unpaid, paid, overdue
     payment_term_days: int = 7
+    payment_reference: Optional[str] = None  # OGM structured reference (+++123/4567/89012+++)
     due_date: datetime
     paid_date: Optional[datetime] = None
     
