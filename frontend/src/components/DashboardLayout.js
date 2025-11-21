@@ -19,6 +19,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
     { name: 'Kalender', path: '/calendar', icon: Calendar, testId: 'nav-calendar', adminOnly: true },
     { name: 'Materialen', path: '/materials', icon: Package, testId: 'nav-materials', adminOnly: true },
     { name: 'Werkmannen', path: '/workers', icon: UserCog, testId: 'nav-workers', adminOnly: true },
+    { name: 'Beheerders', path: '/admins', icon: ShieldCheck, testId: 'nav-admins', adminOnly: true },
   ];
 
   const handleLogout = async () => {
