@@ -50,10 +50,10 @@ export default function AdminsPage() {
     }
 
     try {
-      const response = await axios.post(`${API}/workers`, formData, { withCredentials: true });
+      const response = await axios.post(`${API}/admins`, formData, { withCredentials: true });
       
       // Send email with account details
-      const subject = 'Je werkman account bij Q Technics';
+      const subject = 'Je beheerder account bij Q Technics';
       const body = `Hallo ${formData.name},
 
 Je account is aangemaakt! Je kunt nu inloggen op het Q Technics platform.
@@ -80,13 +80,13 @@ Q Technics`;
       const mailtoLink = `mailto:${formData.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       window.location.href = mailtoLink;
       
-      toast.success('Werkman toegevoegd! Email wordt voorbereid... 👷');
+      toast.success('Beheerder toegevoegd! Email wordt voorbereid... 👷');
       setIsDialogOpen(false);
       setFormData({ name: '', email: '', password: '' });
       fetchAdmins();
     } catch (error) {
       console.error('Failed to create worker:', error);
-      toast.error(error.response?.data?.detail || 'Kon werkman niet toevoegen');
+      toast.error(error.response?.data?.detail || 'Kon beheerder niet toevoegen');
     }
   };
 
@@ -96,19 +96,19 @@ Q Technics`;
     }
 
     try {
-      await axios.delete(`${API}/workers/${workerId}`, { withCredentials: true });
-      toast.success('Werkman verwijderd');
+      await axios.delete(`${API}/admins/${workerId}`, { withCredentials: true });
+      toast.success('Beheerder verwijderd');
       fetchAdmins();
     } catch (error) {
       console.error('Failed to delete worker:', error);
-      toast.error('Kon werkman niet verwijderen');
+      toast.error('Kon beheerder niet verwijderen');
     }
   };
 
   const handleToggleStatus = async (workerId) => {
     try {
-      const response = await axios.post(`${API}/workers/${workerId}/toggle`, {}, { withCredentials: true });
-      toast.success(response.data.is_active ? 'Werkman geactiveerd' : 'Werkman gedeactiveerd');
+      const response = await axios.post(`${API}/admins/${workerId}/toggle`, {}, { withCredentials: true });
+      toast.success(response.data.is_active ? 'Beheerder geactiveerd' : 'Beheerder gedeactiveerd');
       fetchAdmins();
     } catch (error) {
       console.error('Failed to toggle status:', error);
@@ -137,10 +137,10 @@ Q Technics`;
             </div>
             <div>
               <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
-                Werkmannen
+                Beheerdernen
               </h1>
               <p className="text-sm" style={{color: '#64748B'}}>
-                Beheer werkman accounts met beperkte toegang
+                Beheer beheerder accounts met beperkte toegang
               </p>
             </div>
           </div>
@@ -149,12 +149,12 @@ Q Technics`;
             <DialogTrigger asChild>
               <Button style={{backgroundColor: '#1E40AF'}}>
                 <Plus className="mr-2" size={20} />
-                Nieuwe Werkman
+                Nieuwe Beheerder
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Nieuwe Werkman Toevoegen</DialogTitle>
+                <DialogTitle>Nieuwe Beheerder Toevoegen</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -192,7 +192,7 @@ Q Technics`;
 
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <p className="text-sm" style={{color: '#1E40AF'}}>
-                    <strong>ℹ️ Let op:</strong> Werkmannen kunnen:
+                    <strong>ℹ️ Let op:</strong> Beheerdernen kunnen:
                   </p>
                   <ul className="text-sm mt-2 space-y-1" style={{color: '#64748B'}}>
                     <li>✅ Projecten bekijken (zonder prijzen)</li>
@@ -215,25 +215,25 @@ Q Technics`;
         </div>
 
         {/* Workers List */}
-        {workers.length === 0 ? (
+        {admins.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <Users size={48} className="mx-auto mb-4" style={{color: '#94A3B8'}} />
               <p className="text-lg font-medium mb-2" style={{color: '#64748B'}}>
-                Nog geen werkmannen toegevoegd
+                Nog geen beheerdernen toegevoegd
               </p>
               <p className="text-sm mb-4" style={{color: '#94A3B8'}}>
-                Voeg je eerste werkman toe om te beginnen
+                Voeg je eerste beheerder toe om te beginnen
               </p>
               <Button onClick={() => setIsDialogOpen(true)} style={{backgroundColor: '#1E40AF'}}>
                 <Plus className="mr-2" size={20} />
-                Eerste Werkman Toevoegen
+                Eerste Beheerder Toevoegen
               </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {workers.map((worker) => (
+            {admins.map((worker) => (
               <Card key={worker.id} className="relative group">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
@@ -301,17 +301,17 @@ Q Technics`;
         <Card>
           <CardContent className="p-6">
             <h3 className="font-semibold mb-3" style={{color: '#1E3A8A'}}>
-              📝 Werkman Login
+              📝 Beheerder Login
             </h3>
             <div className="space-y-2 text-sm" style={{color: '#64748B'}}>
               <p>
-                <strong>Login URL voor werkmannen:</strong> Werkmannen kunnen inloggen op dezelfde pagina met hun email en wachtwoord.
+                <strong>Login URL voor beheerdernen:</strong> Beheerdernen kunnen inloggen op dezelfde pagina met hun email en wachtwoord.
               </p>
               <p>
-                <strong>Toegang:</strong> Werkmannen hebben alleen toegang tot projecten en werkbonnen. Ze zien geen prijzen, offertes, facturen of financiën.
+                <strong>Toegang:</strong> Beheerdernen hebben alleen toegang tot projecten en werkbonnen. Ze zien geen prijzen, offertes, facturen of financiën.
               </p>
               <p>
-                <strong>Status:</strong> Gedeactiveerde werkmannen kunnen niet meer inloggen totdat ze weer worden geactiveerd.
+                <strong>Status:</strong> Gedeactiveerde beheerdernen kunnen niet meer inloggen totdat ze weer worden geactiveerd.
               </p>
             </div>
           </CardContent>
