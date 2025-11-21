@@ -106,7 +106,10 @@ export default function FinancesPage() {
         if (!projectDate) return;
         
         const date = new Date(projectDate);
-        if (date.getFullYear() !== parseInt(selectedYear)) return;
+        const projectYear = date.getFullYear();
+        const selectedYearInt = parseInt(selectedYear);
+        
+        if (projectYear !== selectedYearInt) return;
         
         const monthIndex = date.getMonth();
         if (!quarter.months.includes(monthIndex)) return;
