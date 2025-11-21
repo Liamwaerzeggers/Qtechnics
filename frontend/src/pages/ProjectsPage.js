@@ -173,9 +173,22 @@ export default function ProjectsPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h3 className="text-xl font-bold mb-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>{project.name}</h3>
-                    <span className="text-sm px-3 py-1 rounded-full" style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}>{project.status}</span>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm px-3 py-1 rounded-full" style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}>{project.status}</span>
+                      {typeof project.profit === 'number' && (
+                        <span 
+                          className="text-sm px-3 py-1 rounded-full font-semibold" 
+                          style={{
+                            backgroundColor: project.profit >= 0 ? '#D1FAE5' : '#FEE2E2', 
+                            color: project.profit >= 0 ? '#065F46' : '#991B1B'
+                          }}
+                        >
+                          💰 {project.profit >= 0 ? '+' : ''}{project.profit.toLocaleString('nl-NL', {style: 'currency', currency: 'EUR'})}
+                        </span>
+                      )}
+                    </div>
                     {project.start_date && (
-                      <p className="text-sm mt-3" style={{color: '#64748B'}}>Start: {new Date(project.start_date).toLocaleDateString('nl-NL')}</p>
+                      <p className="text-sm mt-2" style={{color: '#64748B'}}>Start: {new Date(project.start_date).toLocaleDateString('nl-NL')}</p>
                     )}
                   </div>
                   <Button
