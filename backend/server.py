@@ -184,13 +184,23 @@ class Material(BaseModel):
 class Project(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: f"PROJ-{str(uuid.uuid4())[:8].upper()}")
-    quote_id: str
+    lead_id: str  # Changed from quote_id - project linked to lead
+    quote_id: Optional[str] = None  # Quote is now optional
     name: str
-    status: str = "gepland"  # gepland, in uitvoering, voltooid
+    status: str = "eerste bezoek"  # eerste bezoek, offerte in opmaak, gepland, in uitvoering, voltooid
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     notes: Optional[str] = None
     color: str = "#1E40AF"  # Default blue color
+    
+    # NIEUWE SECTIE: Eerste Bezoek
+    first_visit_photos: List[str] = []  # Photo URLs/paths
+    first_visit_notes: str = ""  # Notes from first visit
+    first_visit_date: Optional[datetime] = None
+    
+    # NIEUWE SECTIE: 3D Ontwerpen
+    design_3d_files: List[dict] = []  # [{filename, url, upload_date}]
+    
     # Cost tracking
     labor_cost_per_hour: float = 0.0
     labor_hours: float = 0.0
@@ -206,7 +216,7 @@ class Project(BaseModel):
     user_id: str
 
 class ProjectCreate(BaseModel):
-    quote_id: str
+    lead_id: str  # Changed from quote_id
     name: str
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
