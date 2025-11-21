@@ -195,9 +195,9 @@ Q Technics`;
                     <strong>ℹ️ Let op:</strong> Beheerdernen kunnen:
                   </p>
                   <ul className="text-sm mt-2 space-y-1" style={{color: '#64748B'}}>
-                    <li>✅ Projecten bekijken (zonder prijzen)</li>
-                    <li>✅ Werkbonnen invullen</li>
-                    <li>❌ Geen toegang tot offertes, facturen, financiën</li>
+                    <li>✅ Volledige toegang tot alle features</li>
+                    <li>✅ Leads, offertes, projecten beheren</li>
+                    <li>✅ Facturen en financiën inzien</li>
                   </ul>
                 </div>
 
