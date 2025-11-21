@@ -479,12 +479,29 @@ async def logout(response: Response, current_user: User = Depends(get_current_us
 
 @api_router.post("/leads", response_model=Lead)
 async def create_lead(lead: LeadCreate, current_user: User = Depends(get_current_user)):
-    """Create a new lead"""
+    """Create a new lead and automatically create a project"""
     lead_obj = Lead(**lead.model_dump(), user_id=current_user.id)
     lead_doc = lead_obj.model_dump()
     lead_doc["created_at"] = lead_doc["created_at"].isoformat()
     
     await db.leads.insert_one(lead_doc)
+    
+    # AUTOMATISCH PROJECT AANMAKEN
+    project = Project(
+        lead_id=lead_obj.id,
+        name=f"Project - {lead_obj.name}",
+        status="eerste bezoek",
+        first_visit_date=datetime.now(timezone.utc),
+        user_id=current_user.id
+    )
+    
+    project_doc = project.model_dump()
+    project_doc["created_at"] = project_doc["created_at"].isoformat()
+    if project_doc.get("first_visit_date"):
+        project_doc["first_visit_date"] = project_doc["first_visit_date"].isoformat()
+    
+    await db.projects.insert_one(project_doc)
+    
     return lead_obj
 
 @api_router.get("/leads", response_model=List[Lead])
