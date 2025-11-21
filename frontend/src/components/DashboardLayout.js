@@ -10,14 +10,15 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, testId: 'nav-dashboard' },
-    { name: 'Leads', path: '/leads', icon: Users, testId: 'nav-leads' },
-    { name: 'Offertes', path: '/quotes', icon: FileText, testId: 'nav-quotes' },
-    { name: 'Projecten', path: '/projects', icon: FileSpreadsheet, testId: 'nav-projects' },
-    { name: 'Facturen', path: '/invoices', icon: FileText, testId: 'nav-invoices' },
-    { name: 'Financiën', path: '/finances', icon: TrendingUp, testId: 'nav-finances' },
-    { name: 'Kalender', path: '/calendar', icon: Calendar, testId: 'nav-calendar' },
-    { name: 'Materialen', path: '/materials', icon: Package, testId: 'nav-materials' },
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, testId: 'nav-dashboard', adminOnly: false },
+    { name: 'Leads', path: '/leads', icon: Users, testId: 'nav-leads', adminOnly: true },
+    { name: 'Offertes', path: '/quotes', icon: FileText, testId: 'nav-quotes', adminOnly: true },
+    { name: 'Projecten', path: '/projects', icon: FileSpreadsheet, testId: 'nav-projects', adminOnly: false },
+    { name: 'Facturen', path: '/invoices', icon: FileText, testId: 'nav-invoices', adminOnly: true },
+    { name: 'Financiën', path: '/finances', icon: TrendingUp, testId: 'nav-finances', adminOnly: true },
+    { name: 'Kalender', path: '/calendar', icon: Calendar, testId: 'nav-calendar', adminOnly: true },
+    { name: 'Materialen', path: '/materials', icon: Package, testId: 'nav-materials', adminOnly: true },
+    { name: 'Werkmannen', path: '/workers', icon: UserCog, testId: 'nav-workers', adminOnly: true },
   ];
 
   const handleLogout = async () => {
