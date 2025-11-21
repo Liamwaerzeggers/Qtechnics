@@ -1749,6 +1749,32 @@ async def generate_invoice_number():
     
     return f"FACT-{current_year}-{new_num:03d}"
 
+def generate_ogm_reference(invoice_number: str):
+    """
+    Generate Belgian OGM (gestructureerde mededeling) payment reference
+    Format: +++123/4567/89012+++
+    Last 2 digits are modulo 97 checksum
+    """
+    # Extract numeric part from invoice number (e.g., FACT-2025-001 -> 2025001)
+    import re
+    numbers = re.sub(r'[^0-9]', '', invoice_number)
+    
+    # Ensure we have at least 10 digits, pad if needed
+    if len(numbers) < 10:
+        numbers = numbers.zfill(10)
+    else:
+        numbers = numbers[:10]  # Take first 10 digits
+    
+    # Calculate modulo 97 checksum
+    check_number = int(numbers) % 97
+    if check_number == 0:
+        check_number = 97
+    
+    # Format as OGM: +++nnn/nnnn/nnncc+++
+    formatted = f"+++{numbers[:3]}/{numbers[3:7]}/{numbers[7:10]}{check_number:02d}+++"
+    
+    return formatted
+
 @api_router.post("/projects/{project_id}/invoices/create")
 async def create_invoice(
     project_id: str,
