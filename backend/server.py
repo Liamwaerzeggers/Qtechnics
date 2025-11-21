@@ -943,11 +943,18 @@ async def get_materials(skip: int = 0, limit: int = 100, current_user: User = De
 
 @api_router.post("/projects", response_model=Project)
 async def create_project(project_create: ProjectCreate, current_user: User = Depends(get_current_user)):
-    """Create a new project from an approved quote"""
-    # Verify quote exists
-    quote = await db.quotes.find_one({"id": project_create.quote_id, "user_id": current_user.id})
-    if not quote:
-        raise HTTPException(status_code=404, detail="Quote not found")
+    """Create a new project (from quote OR lead)"""
+    # Backward compatible: verify quote if quote_id provided
+    if project_create.quote_id:
+        quote = await db.quotes.find_one({"id": project_create.quote_id, "user_id": current_user.id})
+        if not quote:
+            raise HTTPException(status_code=404, detail="Quote not found")
+    
+    # NEW: verify lead if lead_id provided
+    if project_create.lead_id:
+        lead = await db.leads.find_one({"id": project_create.lead_id, "user_id": current_user.id})
+        if not lead:
+            raise HTTPException(status_code=404, detail="Lead not found")
     
     project_obj = Project(**project_create.model_dump(), user_id=current_user.id)
     
@@ -957,6 +964,8 @@ async def create_project(project_create: ProjectCreate, current_user: User = Dep
         project_doc["start_date"] = project_doc["start_date"].isoformat()
     if project_doc.get("end_date"):
         project_doc["end_date"] = project_doc["end_date"].isoformat()
+    if project_doc.get("first_visit_date"):
+        project_doc["first_visit_date"] = project_doc["first_visit_date"].isoformat()
     
     await db.projects.insert_one(project_doc)
     return project_obj
