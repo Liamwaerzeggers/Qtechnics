@@ -15,6 +15,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
     { name: 'Offertes', path: '/quotes', icon: FileText, testId: 'nav-quotes' },
     { name: 'Projecten', path: '/projects', icon: FileSpreadsheet, testId: 'nav-projects' },
     { name: 'Facturen', path: '/invoices', icon: FileText, testId: 'nav-invoices' },
+    { name: 'Financiën', path: '/finances', icon: TrendingUp, testId: 'nav-finances' },
     { name: 'Kalender', path: '/calendar', icon: Calendar, testId: 'nav-calendar' },
     { name: 'Materialen', path: '/materials', icon: Package, testId: 'nav-materials' },
   ];
