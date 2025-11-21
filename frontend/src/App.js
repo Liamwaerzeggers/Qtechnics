@@ -326,6 +326,7 @@ function App() {
             <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
             <Route path="/finances" element={<ProtectedRoute><FinancesPage /></ProtectedRoute>} />
             <Route path="/workers" element={<ProtectedRoute><WorkersPage /></ProtectedRoute>} />
+            <Route path="/admins" element={<ProtectedRoute><AdminsPage /></ProtectedRoute>} />
           </Routes>
           <Toaster position="top-right" richColors />
         </AuthProvider>
