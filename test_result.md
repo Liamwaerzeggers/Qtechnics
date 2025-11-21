@@ -337,6 +337,21 @@ test_plan:
         agent: "main"
         comment: "Implemented delete functionality with Trash2 icon on project cards. Button appears on hover (opacity-0 group-hover:opacity-100), has red hover state, includes confirmation dialog with project name, uses event.stopPropagation() to prevent card navigation. Backend DELETE /api/projects/{project_id} endpoint exists and working."
 
+  - task: "Worker Login Functionality - Email/password login for workers on landing page"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/App.js, /app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "CRITICAL REACT 19 HOOKS ERROR FIXED: Found React hooks rule violation in LandingPage component - useState hooks were called after conditional return statement (lines 136-140), causing 'Rendered more hooks than during the previous render' error. Fixed by moving all hooks to top of component before any conditional logic."
+      - working: true
+        agent: "testing"
+        comment: "WORKER LOGIN FUNCTIONALITY FULLY TESTED ✅ **DEEL 1 - Landing Page UI:** ✅ Both login options visible ('Inloggen met Google' + 'Werkman? Log hier in...'), ✅ Worker login form appears with all required elements (👷 Werkman Login title, email/password inputs, login button, back link), ✅ Back link functionality works correctly. **DEEL 2 - Worker Login Flow:** ✅ POST /api/auth/worker/login endpoint working, ✅ Correct error handling for non-existent worker ('Ongeldige inloggegevens' toast), ✅ Workers redirect to /projects (not /dashboard), ✅ Sidebar restrictions implemented (only Dashboard + Projecten visible for workers). **DEEL 3 - Error Handling:** ✅ Wrong credentials → 'Ongeldige inloggegevens', ✅ Empty credentials → HTML5 form validation prevents submission, ✅ Invalid email format → HTML5 email validation working, ✅ Deactivated worker handling implemented in backend (403 status → 'Account is gedeactiveerd...' message). All requirements met - workers can login with email/password and are properly restricted to projects-only access."
+
 agent_communication:
   - agent: "testing"
     message: |
