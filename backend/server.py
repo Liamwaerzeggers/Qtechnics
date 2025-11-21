@@ -184,10 +184,10 @@ class Material(BaseModel):
 class Project(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: f"PROJ-{str(uuid.uuid4())[:8].upper()}")
-    lead_id: str  # Changed from quote_id - project linked to lead
-    quote_id: Optional[str] = None  # Quote is now optional
+    lead_id: Optional[str] = None  # NEW: Optional link to lead
+    quote_id: Optional[str] = None  # BLIJFT: Backward compatible (was verplicht)
     name: str
-    status: str = "eerste bezoek"  # eerste bezoek, offerte in opmaak, gepland, in uitvoering, voltooid
+    status: str = "gepland"  # eerste bezoek, offerte in opmaak, gepland, in uitvoering, voltooid
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     notes: Optional[str] = None
