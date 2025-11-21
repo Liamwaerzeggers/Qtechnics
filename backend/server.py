@@ -266,6 +266,9 @@ class DailyReport(BaseModel):
     project_id: str
     date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
+    # Hours worked
+    hours_worked: Optional[float] = None
+    
     # Materials tracking (NO PRICES)
     materials_used: List[MaterialUsed] = []  # From quote
     extra_materials: List[ExtraMaterial] = []  # Added by workers
