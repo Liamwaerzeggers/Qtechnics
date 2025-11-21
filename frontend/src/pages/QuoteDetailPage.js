@@ -199,6 +199,32 @@ export default function QuoteDetailPage() {
     }
   };
 
+  const handleSendEmail = () => {
+    if (!lead || !quote) {
+      toast.error('Klantgegevens niet beschikbaar');
+      return;
+    }
+
+    const subject = `Offerte ${quote.quote_number} - Q Technics`;
+    const body = `Beste ${lead.name},
+
+Hierbij ontvangt u onze offerte ${quote.quote_number} voor uw project "${lead.project_type}".
+
+Totaalbedrag: €${quote.total_incl_vat?.toFixed(2) || quote.total_price?.toFixed(2) || '0.00'}
+
+Download de offerte via deze link of vraag ons om de PDF toe te sturen.
+
+Wij hopen u hiermee van dienst te zijn geweest en zien uw reactie met belangstelling tegemoet.
+
+Met vriendelijke groet,
+Q Technics`;
+
+    const mailtoLink = `mailto:${lead.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoLink;
+    
+    toast.success(`Email voorbereid voor ${lead.email}`);
+  };
+
   const handleStatusChange = async (newStatus) => {
     try {
       await axios.put(`${API}/quotes/${quoteId}`, { status: newStatus }, { withCredentials: true });
