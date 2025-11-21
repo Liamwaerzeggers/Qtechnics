@@ -369,6 +369,18 @@ test_plan:
         agent: "testing"
         comment: "CRITICAL BUG FIXED ✅ **Root Cause:** Session collection mismatch - workers used `db.sessions`, admins used `db.user_sessions`, but authentication only checked `db.user_sessions`. **Fix Applied:** Updated `get_current_user()` function (lines 364-367) to check BOTH collections. **Testing Results:** ✅ Worker login working, ✅ Worker authentication successful, ✅ Workers now see ALL 14 projects as intended (no user_id filter), ✅ Admins still see only their own projects (with user_id filter), ✅ Backend logic confirmed working correctly. **Status:** RESOLVED - Workers can now access all projects as designed."
 
+  - task: "Project Detail Page with Tabbed Interface - Complete rewrite with 5 tabs"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/ProjectDetailPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "ProjectDetailPage completely rewritten with tabbed interface. 5 tabs implemented: 'Eerste Bezoek' (ProjectFirstVisitTab), '3D Ontwerpen' (Project3DDesignTab), 'Offertes', 'Kosten & Facturen' (ProjectCostsTab), 'Werkbonnen'. Tab switching functionality with visual highlighting (border-blue-500). Each tab has specific content and buttons as required."
+
 agent_communication:
   - agent: "testing"
     message: |
