@@ -2176,6 +2176,118 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
         }
     )
 
+# ============= WORKER MANAGEMENT ROUTES =============
+
+@api_router.post("/workers")
+async def create_worker(worker_data: WorkerCreate, current_user: User = Depends(get_current_user)):
+    """Create a new worker account (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can create workers")
+    
+    # Check if email already exists
+    existing_worker = await db.workers.find_one({"email": worker_data.email}, {"_id": 0})
+    if existing_worker:
+        raise HTTPException(status_code=400, detail="Email already in use")
+    
+    # Check if email exists as regular user
+    existing_user = await db.users.find_one({"email": worker_data.email}, {"_id": 0})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered as admin")
+    
+    # Create worker
+    worker = Worker(
+        email=worker_data.email,
+        name=worker_data.name,
+        password_hash=hash_password(worker_data.password),
+        created_by=current_user.id
+    )
+    
+    worker_doc = worker.model_dump()
+    worker_doc["created_at"] = worker_doc["created_at"].isoformat()
+    
+    await db.workers.insert_one(worker_doc)
+    
+    # Remove password_hash from response
+    worker_doc.pop("password_hash")
+    
+    return worker_doc
+
+@api_router.get("/workers")
+async def get_workers(current_user: User = Depends(get_current_user)):
+    """Get all workers (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can view workers")
+    
+    workers = await db.workers.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    return workers
+
+@api_router.delete("/workers/{worker_id}")
+async def delete_worker(worker_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a worker (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete workers")
+    
+    result = await db.workers.delete_one({"id": worker_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Worker not found")
+    
+    return {"message": "Worker deleted successfully"}
+
+@api_router.post("/workers/{worker_id}/toggle")
+async def toggle_worker_status(worker_id: str, current_user: User = Depends(get_current_user)):
+    """Toggle worker active status (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can modify workers")
+    
+    worker = await db.workers.find_one({"id": worker_id}, {"_id": 0})
+    if not worker:
+        raise HTTPException(status_code=404, detail="Worker not found")
+    
+    new_status = not worker.get("is_active", True)
+    await db.workers.update_one({"id": worker_id}, {"$set": {"is_active": new_status}})
+    
+    return {"is_active": new_status}
+
+@api_router.post("/auth/worker/login")
+async def worker_login(email: str, password: str):
+    """Worker login with email/password"""
+    worker = await db.workers.find_one({"email": email}, {"_id": 0})
+    if not worker:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    if not worker.get("is_active", True):
+        raise HTTPException(status_code=403, detail="Account is deactivated")
+    
+    if not verify_password(password, worker["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Create session
+    session_token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+    
+    session = {
+        "user_id": worker["id"],
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.sessions.insert_one(session)
+    
+    # Return worker as user with role=worker
+    user_data = {
+        "id": worker["id"],
+        "email": worker["email"],
+        "name": worker["name"],
+        "role": "worker",
+        "created_at": worker["created_at"]
+    }
+    
+    return {
+        "user": user_data,
+        "session_token": session_token
+    }
+
 # Include router
 app.include_router(api_router)
 
