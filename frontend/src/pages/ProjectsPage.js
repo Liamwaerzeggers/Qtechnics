@@ -202,15 +202,17 @@ export default function ProjectsPage() {
                       <p className="text-sm mt-2" style={{color: '#64748B'}}>Start: {new Date(project.start_date).toLocaleDateString('nl-NL')}</p>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => handleDeleteProject(e, project.id, project.name)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600"
-                    title="Project verwijderen"
-                  >
-                    <Trash2 size={18} />
-                  </Button>
+                  {!isWorker && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleDeleteProject(e, project.id, project.name)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600"
+                      title="Project verwijderen"
+                    >
+                      <Trash2 size={18} />
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
