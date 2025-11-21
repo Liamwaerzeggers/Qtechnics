@@ -48,19 +48,42 @@ export default function ProjectDetailPage() {
   };
 
   const handleCreateQuote = async () => {
-    if (!project.lead_id) {
-      toast.error('Dit project heeft geen gekoppelde lead');
-      return;
-    }
-
     try {
+      let leadId = project.lead_id;
+      
+      // Als er geen lead_id is, maak eerst een lead aan voor dit project
+      if (!leadId) {
+        const leadResponse = await axios.post(
+          `${API}/leads`,
+          {
+            name: project.name,
+            email: project.customer_email || '',
+            phone: project.customer_phone || '',
+            address: project.customer_address || '',
+            notes: `Automatisch aangemaakt voor bestaand project: ${project.name}`
+          },
+          { withCredentials: true }
+        );
+        
+        leadId = leadResponse.data.id;
+        
+        // Update project met nieuwe lead_id
+        await axios.put(
+          `${API}/projects/${project.id}`,
+          { lead_id: leadId },
+          { withCredentials: true }
+        );
+        
+        toast.success('Lead aangemaakt en gekoppeld aan project');
+      }
+
       const response = await axios.post(
         `${API}/quotes`,
-        { lead_id: project.lead_id },
+        { lead_id: leadId },
         { withCredentials: true }
       );
       
-      toast.success('Offerte aangemaakt!');
+      toast.success('Offerte aangemaakt! 📄');
       navigate(`/quotes/${response.data.id}`);
     } catch (error) {
       console.error('Failed to create quote:', error);
