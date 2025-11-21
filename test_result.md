@@ -668,3 +668,43 @@ agent_communication:
       Cannot perform full UI testing due to Google OAuth requirement, but API route corrections are confirmed working.
       
       **Status:** ISSUE RESOLVED - Workers Management page will no longer show "Kon werkmannen niet laden" or "Not Found" errors
+
+  - agent: "testing"
+    message: |
+      WORKER PROJECT VISIBILITY BUG FIXED ✅
+      
+      **CRITICAL BUG IDENTIFIED AND RESOLVED:**
+      
+      **Root Cause Found:**
+      ❌ **Session Collection Mismatch:** Worker sessions were stored in `db.sessions` collection but `get_current_user()` function only checked `db.user_sessions` collection
+      ❌ **Authentication Failure:** This caused all worker API requests to return 401 "Invalid session" error
+      ❌ **Result:** Workers saw "Nog geen projecten" because they couldn't authenticate to access ANY backend endpoints
+      
+      **Fix Applied:**
+      ✅ **Updated get_current_user() function (lines 364-367):** Now checks BOTH `db.user_sessions` (for admins) AND `db.sessions` (for workers)
+      ✅ **Updated session cleanup (lines 378-380):** Deletes expired sessions from both collections
+      ✅ **Backend restarted:** Applied fix and verified service running
+      
+      **Comprehensive Testing Results:**
+      ✅ **Worker Login:** POST /api/auth/worker/login working correctly (query parameters, not JSON body)
+      ✅ **Worker Authentication:** Session tokens now properly validated for workers
+      ✅ **Worker Project Access:** GET /api/projects returns ALL projects (14 projects) for workers as expected
+      ✅ **Admin Project Access:** GET /api/projects still correctly filtered by user_id for admins (3 projects)
+      ✅ **Database Verification:** 14 total projects exist in database, workers can see all, admins see only their own
+      
+      **Backend Logic Confirmed Working:**
+      ```python
+      if current_user.role == "worker":
+          projects = await db.projects.find({}, {"_id": 0}).to_list(1000)  # ALL projects
+      else:
+          projects = await db.projects.find({"user_id": current_user.id}, {"_id": 0}).to_list(1000)  # Own projects only
+      ```
+      
+      **Test Results:**
+      - Worker can login with email/password ✅
+      - Worker session properly authenticated ✅  
+      - Worker sees ALL 14 projects (not filtered by user_id) ✅
+      - Admin sees only their own 3 projects (filtered by user_id) ✅
+      - No more "Nog geen projecten" error ✅
+      
+      **STATUS:** CRITICAL BUG RESOLVED - Workers can now see all projects as intended
