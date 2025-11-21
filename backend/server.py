@@ -44,12 +44,29 @@ class User(BaseModel):
     email: str
     name: str
     picture: Optional[str] = None
+    role: str = "admin"  # admin or worker
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserCreate(BaseModel):
     email: str
     name: str
     picture: Optional[str] = None
+    role: str = "admin"
+
+class Worker(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"WORKER-{str(uuid.uuid4())[:8].upper()}")
+    email: str
+    name: str
+    password_hash: str
+    created_by: str  # admin user_id
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_active: bool = True
+
+class WorkerCreate(BaseModel):
+    email: str
+    name: str
+    password: str
 
 class UserSession(BaseModel):
     model_config = ConfigDict(extra="ignore")
