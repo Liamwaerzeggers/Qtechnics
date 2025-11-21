@@ -111,8 +111,12 @@ function AuthCallbackHandler() {
 
 // Landing Page
 function LandingPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, setUser } = useAuth();
   const navigate = useNavigate();
+  const [showWorkerLogin, setShowWorkerLogin] = React.useState(false);
+  const [workerEmail, setWorkerEmail] = React.useState('');
+  const [workerPassword, setWorkerPassword] = React.useState('');
+  const [loggingIn, setLoggingIn] = React.useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -132,12 +136,6 @@ function LandingPage() {
       </div>
     );
   }
-
-  const [showWorkerLogin, setShowWorkerLogin] = React.useState(false);
-  const [workerEmail, setWorkerEmail] = React.useState('');
-  const [workerPassword, setWorkerPassword] = React.useState('');
-  const [loggingIn, setLoggingIn] = React.useState(false);
-  const { setUser } = useAuth();
 
   const handleWorkerLogin = async (e) => {
     e.preventDefault();
