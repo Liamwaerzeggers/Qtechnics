@@ -237,7 +237,7 @@ export default function FinancesPage() {
             </div>
           </div>
 
-          <div className="flex gap-3 items-center">
+          <div className="flex gap-3 items-center flex-wrap">
             <Select value={selectedView} onValueChange={setSelectedView}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
