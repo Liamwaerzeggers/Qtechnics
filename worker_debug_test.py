@@ -114,9 +114,9 @@ class WorkerProjectDebugger:
             is_active: true
         }});
         
-        // Also create in users collection with worker role
+        // Also create in users collection with worker role (using worker ID as _id)
         db.users.insertOne({{
-            _id: workerEmail,
+            _id: workerId,
             email: workerEmail,
             name: 'Test Worker',
             role: 'worker',
