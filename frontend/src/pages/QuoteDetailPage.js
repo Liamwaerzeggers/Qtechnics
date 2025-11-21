@@ -268,6 +268,9 @@ Q Technics`;
             </h1>
           </div>
           <div className="flex gap-2">
+            <Button onClick={handleSendEmail} variant="outline" style={{color: '#059669', borderColor: '#059669'}}>
+              <Mail className="mr-2" size={20} /> Verstuur Email
+            </Button>
             <Button data-testid="download-pdf-button" onClick={handleDownloadPDF} variant="outline">
               <Download className="mr-2" size={20} /> PDF
             </Button>
