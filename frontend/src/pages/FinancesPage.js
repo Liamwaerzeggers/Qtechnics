@@ -126,9 +126,16 @@ export default function FinancesPage() {
     });
   };
 
-  // Calculate yearly totals
+  // Calculate yearly totals (for selected year)
   const getYearlyData = () => {
-    const years = {};
+    const selectedYearInt = parseInt(selectedYear);
+    let yearData = {
+      year: selectedYearInt,
+      revenue: 0,
+      costs: 0,
+      profit: 0,
+      projects: 0
+    };
     
     projects.forEach(project => {
       const projectDate = project.start_date || project.created_at;
@@ -136,26 +143,18 @@ export default function FinancesPage() {
       
       const year = new Date(projectDate).getFullYear();
       
-      if (!years[year]) {
-        years[year] = {
-          year,
-          revenue: 0,
-          costs: 0,
-          profit: 0,
-          projects: 0
-        };
-      }
+      if (year !== selectedYearInt) return;
 
       const profit = project.profit || 0;
       const costs = project.total_costs_incl_vat || 0;
       
-      years[year].profit += profit;
-      years[year].costs += costs;
-      years[year].revenue += profit + costs;
-      years[year].projects += 1;
+      yearData.profit += profit;
+      yearData.costs += costs;
+      yearData.revenue += profit + costs;
+      yearData.projects += 1;
     });
 
-    return Object.values(years).sort((a, b) => b.year - a.year);
+    return [yearData];
   };
 
   const formatCurrency = (amount) => {
