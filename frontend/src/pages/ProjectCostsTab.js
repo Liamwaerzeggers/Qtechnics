@@ -145,8 +145,47 @@ export default function ProjectCostsTab({ project, quote, onUpdate }) {
     }
   };
 
+  // Calculate financials
+  const totalCosts = project.total_costs || 0;
+  const salePrice = quote?.total_incl_vat || project.total_price || 0;
+  const profit = salePrice - totalCosts;
+  const profitMargin = salePrice > 0 ? (profit / salePrice) * 100 : 0;
+
   return (
     <div className="space-y-6">
+      {/* Financial Summary Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-sm font-semibold mb-2" style={{color: '#64748B'}}>Totale Kosten</div>
+            <div className="text-3xl font-bold" style={{color: '#EF4444'}}>
+              €{totalCosts.toFixed(2)}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-sm font-semibold mb-2" style={{color: '#64748B'}}>Verkoopprijs</div>
+            <div className="text-3xl font-bold" style={{color: '#3B82F6'}}>
+              €{salePrice.toFixed(2)}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-sm font-semibold mb-2" style={{color: '#64748B'}}>Winst</div>
+            <div className="text-3xl font-bold" style={{color: profit >= 0 ? '#10B981' : '#EF4444'}}>
+              €{profit.toFixed(2)}
+            </div>
+            <div className="text-sm mt-1" style={{color: profit >= 0 ? '#10B981' : '#EF4444'}}>
+              {profitMargin.toFixed(1)}% marge
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Kosten & Winstberekening */}
       <Card>
         <CardHeader>
