@@ -588,3 +588,28 @@ agent_communication:
       **All Requirements Met:** Mobile-first ✅, Bilingual ✅, No prices ✅, Translation ✅, Photos ✅
       
       **Status:** READY FOR PRODUCTION - Full end-to-end functionality confirmed through code analysis and UI testing
+
+  - agent: "testing"
+    message: |
+      WORKERS MANAGEMENT API ROUTE CORRECTION VERIFIED ✅
+      
+      **User Issue Resolved:**
+      User reported "Kon werkmannen niet laden" and "Not Found" errors caused by double `/api` in API routes.
+      
+      **Root Cause Confirmed:**
+      Frontend was calling `${API}/api/workers` instead of `${API}/workers` where API constant already contains `/api` prefix.
+      
+      **Fix Verification:**
+      ✅ **Code Review:** WorkersPage.js corrected - all endpoints now use `${API}/workers` format
+      ✅ **API Endpoint Testing:** All worker endpoints return 401 (Unauthorized) instead of 404 (Not Found):
+         - GET /api/workers: 401 ✅
+         - POST /api/workers: 401 ✅  
+         - DELETE /api/workers/{id}: 401 ✅
+         - POST /api/workers/{id}/toggle: 401 ✅
+      ✅ **Backend Logs:** Show successful API calls for authenticated users (200 OK responses)
+      ✅ **Route Accessibility:** All endpoints properly accessible and responding
+      
+      **Authentication Limitation:**
+      Cannot perform full UI testing due to Google OAuth requirement, but API route corrections are confirmed working.
+      
+      **Status:** ISSUE RESOLVED - Workers Management page will no longer show "Kon werkmannen niet laden" or "Not Found" errors
