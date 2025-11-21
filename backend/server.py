@@ -396,10 +396,24 @@ async def get_current_user(session_token: Optional[str] = Cookie(None), authoriz
         await db.sessions.delete_one({"session_token": token})
         raise HTTPException(status_code=401, detail="Session expired")
     
-    # Find user
-    user_doc = await db.users.find_one({"_id": session["user_id"]})
+    # Find user - check both users (admins) and workers collections
+    user_id = session["user_id"]
+    user_doc = await db.users.find_one({"id": user_id}, {"_id": 0})
+    
     if not user_doc:
-        raise HTTPException(status_code=404, detail="User not found")
+        # Check if it's a worker
+        worker_doc = await db.workers.find_one({"id": user_id}, {"_id": 0})
+        if worker_doc:
+            # Convert worker to User format
+            user_doc = {
+                "id": worker_doc["id"],
+                "email": worker_doc["email"],
+                "name": worker_doc.get("name", ""),
+                "role": "worker",
+                "created_at": worker_doc.get("created_at", datetime.now(timezone.utc).isoformat())
+            }
+        else:
+            raise HTTPException(status_code=404, detail="User not found")
     
     return User(**user_doc)
 
