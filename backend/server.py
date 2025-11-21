@@ -291,6 +291,7 @@ class DailyReport(BaseModel):
 class DailyReportCreate(BaseModel):
     project_id: str
     date: Optional[datetime] = None
+    hours_worked: Optional[float] = None
     materials_used: Optional[List[MaterialUsed]] = []
     extra_materials: Optional[List[ExtraMaterial]] = []
     work_description_nl: Optional[str] = None
