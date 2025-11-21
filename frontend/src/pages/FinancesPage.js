@@ -28,16 +28,17 @@ export default function FinancesPage() {
     }
   };
 
-  // Get available years from projects
+  // Get available years from projects (1 jaar terug, 3 jaar vooruit)
   const getAvailableYears = () => {
-    const years = new Set();
-    projects.forEach(project => {
-      if (project.created_at) {
-        const year = new Date(project.created_at).getFullYear();
-        years.add(year);
-      }
-    });
-    return Array.from(years).sort((a, b) => b - a);
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    
+    // 1 jaar terug tot 3 jaar vooruit
+    for (let i = -1; i <= 3; i++) {
+      years.push(currentYear + i);
+    }
+    
+    return years.sort((a, b) => b - a);
   };
 
   // Calculate financials by month
