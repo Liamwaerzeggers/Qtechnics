@@ -34,6 +34,10 @@ export default function ProjectDetailPage() {
         const quotesResponse = await axios.get(`${API}/quotes`, { withCredentials: true });
         const projectQuotes = quotesResponse.data.filter(q => q.lead_id === projectResponse.data.lead_id);
         setQuotes(projectQuotes);
+        
+        // Set primary quote (first one or the one with status 'goedgekeurd')
+        const approvedQuote = projectQuotes.find(q => q.status === 'goedgekeurd');
+        setPrimaryQuote(approvedQuote || projectQuotes[0] || null);
       }
     } catch (error) {
       console.error('Failed to fetch project:', error);
