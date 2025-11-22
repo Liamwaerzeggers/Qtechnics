@@ -170,9 +170,9 @@ Q Technics`;
                 <div>
                   <Label>Email *</Label>
                   <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    type="text"
+                    value={formData.username}
+                    onChange={(e) => setFormData({...formData, username: e.target.value})}
                     placeholder="jan@example.com"
                     required
                   />
