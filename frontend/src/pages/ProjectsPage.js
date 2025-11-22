@@ -233,8 +233,8 @@ export default function ProjectsPage() {
                       variant="ghost"
                       size="sm"
                       onClick={(e) => handleDeleteProject(e, project.id, project.name)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600"
-                      title="Project verwijderen"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-orange-50 hover:text-orange-600"
+                      title={project.is_archived ? "Project is gearchiveerd" : "Project archiveren (verbergen voor werkmannen)"}
                     >
                       <Trash2 size={18} />
                     </Button>
