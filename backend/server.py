@@ -983,9 +983,14 @@ async def search_materials(q: str, current_user: User = Depends(get_current_user
 
 @api_router.get("/materials")
 async def get_materials(skip: int = 0, limit: int = 100, current_user: User = Depends(get_current_user)):
-    """Get all materials with pagination"""
-    materials = await db.materials.find({"user_id": current_user.id}, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
-    total = await db.materials.count_documents({"user_id": current_user.id})
+    """Get all materials with pagination (all admins see all materials)"""
+    # All admins see all materials, workers see nothing
+    if current_user.role == "admin":
+        materials = await db.materials.find({}, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
+        total = await db.materials.count_documents({})
+    else:
+        materials = []
+        total = 0
     
     for material in materials:
         if isinstance(material["created_at"], str):
