@@ -39,7 +39,7 @@ export default function WorkersPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.password) {
+    if (!formData.name || !formData.username || !formData.password) {
       toast.error('Vul alle velden in');
       return;
     }
