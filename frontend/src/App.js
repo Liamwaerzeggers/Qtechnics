@@ -115,8 +115,9 @@ function LandingPage() {
   const { user, loading, setUser } = useAuth();
   const navigate = useNavigate();
   const [showWorkerLogin, setShowWorkerLogin] = React.useState(false);
-  const [workerEmail, setWorkerEmail] = React.useState('');
-  const [workerPassword, setWorkerPassword] = React.useState('');
+  const [showAdminLogin, setShowAdminLogin] = React.useState(false);
+  const [loginUsername, setLoginUsername] = React.useState('');
+  const [loginPassword, setLoginPassword] = React.useState('');
   const [loggingIn, setLoggingIn] = React.useState(false);
 
   useEffect(() => {
