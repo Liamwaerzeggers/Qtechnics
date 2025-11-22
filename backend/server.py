@@ -45,9 +45,11 @@ class User(BaseModel):
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
     id: str = Field(alias="_id")
     email: str
+    username: Optional[str] = None  # For username/password admins
     name: str
     picture: Optional[str] = None
     role: str = "admin"  # admin or worker
+    password_hash: Optional[str] = None  # For username/password admins
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserCreate(BaseModel):
@@ -55,6 +57,12 @@ class UserCreate(BaseModel):
     name: str
     picture: Optional[str] = None
     role: str = "admin"
+
+class AdminCreate(BaseModel):
+    username: str
+    name: str
+    email: str
+    password: str
 
 class Worker(BaseModel):
     model_config = ConfigDict(extra="ignore")
