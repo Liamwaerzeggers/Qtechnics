@@ -2307,19 +2307,19 @@ async def create_worker(worker_data: WorkerCreate, current_user: User = Depends(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can create workers")
     
-    # Check if email already exists
-    existing_worker = await db.workers.find_one({"email": worker_data.email}, {"_id": 0})
+    # Check if username already exists
+    existing_worker = await db.workers.find_one({"username": worker_data.username}, {"_id": 0})
     if existing_worker:
-        raise HTTPException(status_code=400, detail="Email already in use")
+        raise HTTPException(status_code=400, detail="Gebruikersnaam is al in gebruik")
     
-    # Check if email exists as regular user
-    existing_user = await db.users.find_one({"email": worker_data.email}, {"_id": 0})
+    # Check if username exists as admin
+    existing_user = await db.users.find_one({"username": worker_data.username}, {"_id": 0})
     if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered as admin")
+        raise HTTPException(status_code=400, detail="Gebruikersnaam is al geregistreerd als beheerder")
     
     # Create worker
     worker = Worker(
-        email=worker_data.email,
+        username=worker_data.username,
         name=worker_data.name,
         password_hash=hash_password(worker_data.password),
         created_by=current_user.id
