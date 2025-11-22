@@ -16,7 +16,7 @@ export default function WorkersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    username: '',
     password: ''
   });
 
