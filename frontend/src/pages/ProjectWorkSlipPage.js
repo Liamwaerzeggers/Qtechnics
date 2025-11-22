@@ -135,8 +135,18 @@ export default function ProjectWorkSlipPage() {
   const [photoFiles, setPhotoFiles] = useState([]);
 
   useEffect(() => {
+    fetchUser();
     fetchData();
   }, [projectId]);
+
+  const fetchUser = async () => {
+    try {
+      const response = await axios.get(`${window.location.origin}/api/auth/me`, { withCredentials: true });
+      setCurrentUser(response.data);
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
