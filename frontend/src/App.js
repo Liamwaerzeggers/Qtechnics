@@ -145,15 +145,14 @@ function LandingPage() {
     
     try {
       const response = await axios.post(
-        `${API}/auth/worker/login?email=${encodeURIComponent(workerEmail)}&password=${encodeURIComponent(workerPassword)}`,
+        `${API}/auth/worker/login?username=${encodeURIComponent(loginUsername)}&password=${encodeURIComponent(loginPassword)}`,
         {},
         { withCredentials: true }
       );
       
       setUser(response.data.user);
       toast.success(`Welkom ${response.data.user.name}! 👷`);
-      // Workers go to projects, admins go to dashboard
-      navigate(response.data.user.role === 'worker' ? '/projects' : '/dashboard');
+      navigate('/projects');
     } catch (error) {
       console.error('Worker login error:', error);
       if (error.response?.status === 403) {
@@ -161,6 +160,28 @@ function LandingPage() {
       } else {
         toast.error('Ongeldige inloggegevens / Невірні дані для входу');
       }
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
+  const handleAdminLogin = async (e) => {
+    e.preventDefault();
+    setLoggingIn(true);
+    
+    try {
+      const response = await axios.post(
+        `${API}/auth/admin/login?username=${encodeURIComponent(loginUsername)}&password=${encodeURIComponent(loginPassword)}`,
+        {},
+        { withCredentials: true }
+      );
+      
+      setUser(response.data.user);
+      toast.success(`Welkom ${response.data.user.name}! 👨‍💼`);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Admin login error:', error);
+      toast.error('Ongeldige inloggegevens');
     } finally {
       setLoggingIn(false);
     }
