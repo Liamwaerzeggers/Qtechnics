@@ -82,17 +82,17 @@ export default function ProjectsPage() {
   const handleDeleteProject = async (e, projectId, projectName) => {
     e.stopPropagation(); // Prevent card click
     
-    if (!window.confirm(`Weet je zeker dat je project "${projectName}" wilt verwijderen? Dit kan niet ongedaan worden gemaakt.`)) {
+    if (!window.confirm(`Weet je zeker dat je project "${projectName}" wilt archiveren? Het project wordt verborgen voor werkmannen maar blijft beschikbaar voor jou.`)) {
       return;
     }
 
     try {
       await axios.delete(`${API}/projects/${projectId}`, { withCredentials: true });
-      toast.success('Project verwijderd');
+      toast.success('Project gearchiveerd - verborgen voor werkmannen');
       fetchData();
     } catch (error) {
-      console.error('Delete error:', error);
-      toast.error('Kon project niet verwijderen');
+      console.error('Archive error:', error);
+      toast.error('Kon project niet archiveren');
     }
   };
 
