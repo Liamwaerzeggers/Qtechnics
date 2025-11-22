@@ -213,6 +213,7 @@ class Project(BaseModel):
     total_costs_incl_vat: float = 0.0
     profit: float = 0.0
     profit_margin: float = 0.0
+    is_archived: bool = False  # Soft delete - hidden from workers when True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
 
