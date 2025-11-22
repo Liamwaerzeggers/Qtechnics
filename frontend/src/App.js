@@ -198,7 +198,7 @@ function LandingPage() {
             Beheer leads, genereer offertes, zoek materialen en plan projecten - alles op één plek
           </p>
           
-          {!showWorkerLogin ? (
+          {!showWorkerLogin && !showAdminLogin ? (
             <div className="space-y-4">
               <button
                 data-testid="login-button"
@@ -210,7 +210,7 @@ function LandingPage() {
               </button>
               
               <button
-                onClick={() => setShowWorkerLogin(true)}
+                onClick={() => { setShowAdminLogin(true); setShowWorkerLogin(false); }}
                 className="px-8 py-4 rounded-full text-lg font-semibold transition-all hover:scale-105 block w-full max-w-md mx-auto border-2"
                 style={{
                   backgroundColor: 'white',
@@ -219,7 +219,80 @@ function LandingPage() {
                   fontFamily: 'Inter, sans-serif'
                 }}
               >
+                👨‍💼 Beheerder Login (gebruikersnaam)
+              </button>
+              
+              <button
+                onClick={() => { setShowWorkerLogin(true); setShowAdminLogin(false); }}
+                className="px-8 py-4 rounded-full text-lg font-semibold transition-all hover:scale-105 block w-full max-w-md mx-auto border-2"
+                style={{
+                  backgroundColor: 'white',
+                  color: '#10B981',
+                  borderColor: '#10B981',
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              >
                 👷 Werkman Login / Вхід працівника
+              </button>
+            </div>
+          ) : showAdminLogin ? (
+            <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg">
+              <h2 className="text-2xl font-bold mb-2 text-center" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+                👨‍💼 Beheerder Login
+              </h2>
+              <p className="text-center mb-6" style={{color: '#64748B', fontSize: '14px'}}>
+                Inloggen met gebruikersnaam
+              </p>
+              
+              <form onSubmit={handleAdminLogin} className="space-y-4">
+                <div className="text-left">
+                  <label className="block text-sm font-medium mb-2" style={{color: '#1E293B'}}>
+                    Gebruikersnaam
+                  </label>
+                  <input
+                    type="text"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
+                    placeholder="admin123"
+                    required
+                    autoComplete="username"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{fontFamily: 'Inter, sans-serif'}}
+                  />
+                </div>
+                
+                <div className="text-left">
+                  <label className="block text-sm font-medium mb-2" style={{color: '#1E293B'}}>
+                    Wachtwoord
+                  </label>
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    autoComplete="current-password"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{fontFamily: 'Inter, sans-serif'}}
+                  />
+                </div>
+                
+                <button
+                  type="submit"
+                  disabled={loggingIn}
+                  className="w-full py-3 rounded-lg text-white font-semibold transition-all disabled:opacity-50"
+                  style={{backgroundColor: '#1E40AF', fontFamily: 'Inter, sans-serif'}}
+                >
+                  {loggingIn ? 'Bezig met inloggen...' : 'Inloggen'}
+                </button>
+              </form>
+              
+              <button
+                onClick={() => { setShowAdminLogin(false); setLoginUsername(''); setLoginPassword(''); }}
+                className="w-full mt-4 text-sm"
+                style={{color: '#64748B'}}
+              >
+                ← Terug naar inlogopties
               </button>
             </div>
           ) : (
