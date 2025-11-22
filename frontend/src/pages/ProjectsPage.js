@@ -96,6 +96,24 @@ export default function ProjectsPage() {
     }
   };
 
+  const handleToggleWorkerVisibility = async (e, projectId, currentVisibility) => {
+    e.stopPropagation(); // Prevent card click
+    
+    try {
+      const response = await axios.put(
+        `${API}/projects/${projectId}/toggle-worker-visibility`, 
+        {},
+        { withCredentials: true }
+      );
+      
+      toast.success(response.data.message);
+      fetchData(); // Refresh project list
+    } catch (error) {
+      console.error('Toggle visibility error:', error);
+      toast.error('Kon zichtbaarheid niet wijzigen');
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
