@@ -192,11 +192,29 @@ export default function ProjectsPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h3 className="text-xl font-bold mb-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>{project.name}</h3>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm px-3 py-1 rounded-full" style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}>{project.status}</span>
+                    <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span 
+                          className="text-xs font-semibold px-3 py-1 rounded-full"
+                          style={{
+                            backgroundColor: project.status === 'voltooid' ? '#DCFCE7' : project.status === 'in uitvoering' ? '#DBEAFE' : '#FEF3C7',
+                            color: project.status === 'voltooid' ? '#166534' : project.status === 'in uitvoering' ? '#1E40AF' : '#92400E'
+                          }}
+                        >
+                          {project.status}
+                        </span>
+                        {project.is_archived && (
+                          <span 
+                            className="text-xs font-semibold px-3 py-1 rounded-full"
+                            style={{backgroundColor: '#F3F4F6', color: '#6B7280'}}
+                          >
+                            📦 Gearchiveerd
+                          </span>
+                        )}
+                      </div>
                       {!isWorker && typeof project.profit === 'number' && (
                         <span 
-                          className="text-sm px-3 py-1 rounded-full font-semibold" 
+                          className="text-xs font-semibold px-3 py-1 rounded-full"
                           style={{
                             backgroundColor: project.profit >= 0 ? '#D1FAE5' : '#FEE2E2', 
                             color: project.profit >= 0 ? '#065F46' : '#991B1B'
