@@ -168,7 +168,7 @@ Q Technics`;
                 </div>
 
                 <div>
-                  <Label>Email *</Label>
+                  <Label>Gebruikersnaam *</Label>
                   <Input
                     type="text"
                     value={formData.username}
