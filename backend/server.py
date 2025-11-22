@@ -1444,15 +1444,24 @@ async def export_quote_excel(quote_id: str, current_user: User = Depends(get_cur
 
 @api_router.get("/dashboard/stats")
 async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
-    """Get dashboard statistics"""
-    total_leads = await db.leads.count_documents({"user_id": current_user.id})
-    total_quotes = await db.quotes.count_documents({"user_id": current_user.id})
-    total_projects = await db.projects.count_documents({"user_id": current_user.id})
-    total_materials = await db.materials.count_documents({"user_id": current_user.id})
-    
-    # Get recent items - exclude MongoDB _id field
-    recent_leads = await db.leads.find({"user_id": current_user.id}, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
-    recent_quotes = await db.quotes.find({"user_id": current_user.id}, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
+    """Get dashboard statistics (all admins see all data)"""
+    # All admins see all data, workers see nothing
+    if current_user.role == "admin":
+        total_leads = await db.leads.count_documents({})
+        total_quotes = await db.quotes.count_documents({})
+        total_projects = await db.projects.count_documents({})
+        total_materials = await db.materials.count_documents({})
+        
+        # Get recent items - exclude MongoDB _id field
+        recent_leads = await db.leads.find({}, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
+        recent_quotes = await db.quotes.find({}, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
+    else:
+        total_leads = 0
+        total_quotes = 0
+        total_projects = 0
+        total_materials = 0
+        recent_leads = []
+        recent_quotes = []
     
     return {
         "total_leads": total_leads,
