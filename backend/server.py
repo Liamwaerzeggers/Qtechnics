@@ -957,21 +957,25 @@ async def upload_materials_csv(file: UploadFile = File(...), current_user: User 
 
 @api_router.get("/materials/search")
 async def search_materials(q: str, current_user: User = Depends(get_current_user)):
-    """Search materials by text query"""
+    """Search materials by text query (all admins see all materials)"""
     if not q:
         return {"results": [], "count": 0}
     
     # Case-insensitive search on multiple fields
-    query = {
-        "user_id": current_user.id,
-        "$or": [
-            {"sku": {"$regex": q, "$options": "i"}},
-            {"name": {"$regex": q, "$options": "i"}},
-            {"description": {"$regex": q, "$options": "i"}},
-            {"category": {"$regex": q, "$options": "i"}},
-            {"brand": {"$regex": q, "$options": "i"}}
-        ]
-    }
+    # All admins see all materials
+    if current_user.role == "admin":
+        query = {
+            "$or": [
+                {"sku": {"$regex": q, "$options": "i"}},
+                {"name": {"$regex": q, "$options": "i"}},
+                {"description": {"$regex": q, "$options": "i"}},
+                {"category": {"$regex": q, "$options": "i"}},
+                {"brand": {"$regex": q, "$options": "i"}}
+            ]
+        }
+    else:
+        # Workers see nothing
+        return {"results": [], "count": 0}
     
     materials = await db.materials.find(query, {"_id": 0}).limit(50).to_list(50)
     
