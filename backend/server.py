@@ -1099,12 +1099,30 @@ async def update_project(project_id: str, project_update: ProjectUpdate, current
 
 @api_router.delete("/projects/{project_id}")
 async def delete_project(project_id: str, current_user: User = Depends(get_current_user)):
-    """Delete a project"""
-    result = await db.projects.delete_one({"id": project_id, "user_id": current_user.id})
-    if result.deleted_count == 0:
+    """Archive a project (soft delete) - hidden from workers"""
+    result = await db.projects.update_one(
+        {"id": project_id, "user_id": current_user.id},
+        {"$set": {"is_archived": True}}
+    )
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    return {"message": "Project deleted successfully"}
+    return {"message": "Project archived successfully"}
+
+@api_router.put("/projects/{project_id}/toggle-archive")
+async def toggle_project_archive(project_id: str, current_user: User = Depends(get_current_user)):
+    """Toggle project archive status"""
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    new_status = not project.get("is_archived", False)
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"is_archived": new_status}}
+    )
+    
+    return {"is_archived": new_status, "message": f"Project {'archived' if new_status else 'activated'}"}
 
 @api_router.post("/projects/{project_id}/invoices")
 async def add_invoice_to_project(project_id: str, invoice: InvoiceUpload, current_user: User = Depends(get_current_user)):
