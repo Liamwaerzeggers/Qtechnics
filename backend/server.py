@@ -2621,36 +2621,41 @@ async def delete_design_file(
 # ============= ADMIN MANAGEMENT ROUTES =============
 
 @api_router.post("/admins")
-async def create_admin(admin_data: WorkerCreate, current_user: User = Depends(get_current_user)):
-    """Create a new admin account with email/password (super admin only)"""
+async def create_admin(admin_data: AdminCreate, current_user: User = Depends(get_current_user)):
+    """Create a new admin account with username/password (super admin only)"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can create admins")
     
-    # Check if email already exists
-    existing_user = await db.users.find_one({"email": admin_data.email}, {"_id": 0})
+    # Check if username already exists
+    existing_user = await db.users.find_one({"username": admin_data.username}, {"_id": 0})
     if existing_user:
-        raise HTTPException(status_code=400, detail="Email already in use")
+        raise HTTPException(status_code=400, detail="Gebruikersnaam is al in gebruik")
     
-    existing_worker = await db.workers.find_one({"email": admin_data.email}, {"_id": 0})
+    existing_worker = await db.workers.find_one({"username": admin_data.username}, {"_id": 0})
     if existing_worker:
-        raise HTTPException(status_code=400, detail="Email already registered as worker")
+        raise HTTPException(status_code=400, detail="Gebruikersnaam is al geregistreerd als werkman")
     
-    # Create admin user
-    admin = User(
-        email=admin_data.email,
-        name=admin_data.name,
-        role="admin"
-    )
+    # Check if email already exists
+    existing_email = await db.users.find_one({"email": admin_data.email}, {"_id": 0})
+    if existing_email:
+        raise HTTPException(status_code=400, detail="Email is al in gebruik")
     
-    admin_doc = admin.model_dump()
-    admin_doc["password_hash"] = hash_password(admin_data.password)
-    admin_doc["created_at"] = admin_doc["created_at"].isoformat()
+    # Create admin user with unique ID
+    admin_id = f"ADMIN-{str(uuid.uuid4())[:8].upper()}"
+    admin_doc = {
+        "id": admin_id,
+        "username": admin_data.username,
+        "email": admin_data.email,
+        "name": admin_data.name,
+        "role": "admin",
+        "password_hash": hash_password(admin_data.password),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
     
-    await db.users.insert_one({"_id": admin_doc["id"], **admin_doc})
+    await db.users.insert_one({"_id": admin_id, **admin_doc})
     
     # Remove password_hash from response
     admin_doc.pop("password_hash")
-    admin_doc.pop("_id", None)
     
     return admin_doc
 
