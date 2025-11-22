@@ -399,10 +399,12 @@ async def get_current_user(session_token: Optional[str] = Cookie(None), authoriz
     
     # Find user - check both users (admins) and workers collections
     user_id = session["user_id"]
-    user_doc = await db.users.find_one({"id": user_id}, {"_id": 0})
+    
+    # First try to find as admin (using _id which can be email or ObjectId)
+    user_doc = await db.users.find_one({"_id": user_id})
     
     if not user_doc:
-        # Check if it's a worker
+        # Check if it's a worker (workers have custom 'id' field like WORKER-XXX)
         worker_doc = await db.workers.find_one({"id": user_id}, {"_id": 0})
         if worker_doc:
             # Convert worker to User format
