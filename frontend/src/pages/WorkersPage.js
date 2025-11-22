@@ -77,7 +77,7 @@ Bij vragen kun je contact opnemen met je beheerder.
 Met vriendelijke groet,
 Q Technics`;
 
-      const mailtoLink = `mailto:${formData.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       window.location.href = mailtoLink;
       
       toast.success('Werkman toegevoegd! Email wordt voorbereid... 👷');
