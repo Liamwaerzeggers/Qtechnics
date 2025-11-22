@@ -567,8 +567,12 @@ async def get_lead(lead_id: str, current_user: User = Depends(get_current_user))
 
 @api_router.put("/leads/{lead_id}", response_model=Lead)
 async def update_lead(lead_id: str, lead_update: LeadUpdate, current_user: User = Depends(get_current_user)):
-    """Update a lead"""
-    existing_lead = await db.leads.find_one({"id": lead_id, "user_id": current_user.id})
+    """Update a lead (all admins can edit)"""
+    # All admins can update any lead
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can update leads")
+    
+    existing_lead = await db.leads.find_one({"id": lead_id})
     if not existing_lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     
