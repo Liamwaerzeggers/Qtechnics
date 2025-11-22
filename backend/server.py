@@ -1127,6 +1127,27 @@ async def toggle_project_archive(project_id: str, current_user: User = Depends(g
     
     return {"is_archived": new_status, "message": f"Project {'archived' if new_status else 'activated'}"}
 
+@api_router.put("/projects/{project_id}/toggle-worker-visibility")
+async def toggle_worker_visibility(project_id: str, current_user: User = Depends(get_current_user)):
+    """Toggle project visibility for workers (admin only)"""
+    if current_user.role == "worker":
+        raise HTTPException(status_code=403, detail="Only admins can change visibility")
+    
+    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    new_visibility = not project.get("visible_to_workers", False)
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"visible_to_workers": new_visibility}}
+    )
+    
+    return {
+        "visible_to_workers": new_visibility, 
+        "message": f"Project is nu {'zichtbaar' if new_visibility else 'verborgen'} voor werkmannen"
+    }
+
 @api_router.post("/projects/{project_id}/invoices")
 async def add_invoice_to_project(project_id: str, invoice: InvoiceUpload, current_user: User = Depends(get_current_user)):
     """Add an invoice to project costs"""
