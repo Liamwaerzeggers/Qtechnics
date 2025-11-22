@@ -2317,7 +2317,7 @@ async def toggle_worker_status(worker_id: str, current_user: User = Depends(get_
     return {"is_active": new_status}
 
 @api_router.post("/auth/worker/login")
-async def worker_login(email: str, password: str):
+async def worker_login(email: str, password: str, response: Response):
     """Worker login with email/password - ONLY for workers, not admins"""
     # Check if worker exists
     worker = await db.workers.find_one({"email": email}, {"_id": 0})
@@ -2343,6 +2343,16 @@ async def worker_login(email: str, password: str):
     }
     
     await db.sessions.insert_one(session)
+    
+    # Set cookie for session token
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=30 * 24 * 60 * 60  # 30 days
+    )
     
     # Return worker as user with role=worker
     user_data = {
