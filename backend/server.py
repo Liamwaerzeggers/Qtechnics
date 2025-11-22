@@ -2372,6 +2372,57 @@ async def toggle_worker_status(worker_id: str, current_user: User = Depends(get_
     
     return {"is_active": new_status}
 
+@api_router.post("/auth/admin/login")
+async def admin_login(username: str, password: str, response: Response):
+    """Admin login with username/password"""
+    # Check if admin exists
+    admin = await db.users.find_one({"username": username, "role": "admin"}, {"_id": 0})
+    
+    if not admin or not admin.get("password_hash"):
+        raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
+    
+    if not verify_password(password, admin["password_hash"]):
+        raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
+    
+    # Create session for admin
+    session_token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+    
+    # Admin _id is their email
+    session = {
+        "user_id": admin.get("id") or admin.get("email"),
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.sessions.insert_one(session)
+    
+    # Set cookie for session token
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=30 * 24 * 60 * 60  # 30 days
+    )
+    
+    # Return admin user data
+    admin_data = {
+        "id": admin.get("id") or admin.get("email"),
+        "username": admin["username"],
+        "email": admin["email"],
+        "name": admin["name"],
+        "role": "admin",
+        "created_at": admin.get("created_at", datetime.now(timezone.utc).isoformat())
+    }
+    
+    return {
+        "user": admin_data,
+        "session_token": session_token
+    }
+
 @api_router.post("/auth/worker/login")
 async def worker_login(username: str, password: str, response: Response):
     """Worker login with username/password - ONLY for workers"""
