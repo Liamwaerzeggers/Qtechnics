@@ -246,6 +246,30 @@ export default function ProjectsPage() {
                     {project.start_date && (
                       <p className="text-sm mt-2" style={{color: '#64748B'}}>Start: {new Date(project.start_date).toLocaleDateString('nl-NL')}</p>
                     )}
+                    
+                    {/* Worker Visibility Toggle - Only for admins */}
+                    {!isWorker && (
+                      <div 
+                        className="mt-3 pt-3 border-t border-gray-200"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={project.visible_to_workers || false}
+                              onCheckedChange={(checked) => handleToggleWorkerVisibility(event, project.id, project.visible_to_workers)}
+                              className="data-[state=checked]:bg-green-500"
+                            />
+                            <span className="text-sm font-medium" style={{color: '#1E293B'}}>
+                              Zichtbaar voor werkmannen
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs mt-1 ml-9" style={{color: project.visible_to_workers ? '#10B981' : '#6B7280'}}>
+                          {project.visible_to_workers ? '✓ Werkmannen zien dit project' : '✕ Niet zichtbaar voor werkmannen'}
+                        </p>
+                      </div>
+                    )}
                   </div>
                   {!isWorker && (
                     <Button
