@@ -242,7 +242,7 @@ Q Technics`;
                         {worker.name}
                       </h3>
                       <p className="text-sm" style={{color: '#64748B'}}>
-                        {worker.email}
+                        @{worker.username}
                       </p>
                       <p className="text-xs mt-1" style={{color: '#94A3B8'}}>
                         ID: {worker.id}
