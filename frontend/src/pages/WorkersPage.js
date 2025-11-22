@@ -59,7 +59,7 @@ export default function WorkersPage() {
 Je account is aangemaakt! Je kunt nu inloggen op het Q Technics platform.
 
 🔐 INLOGGEGEVENS:
-Email: ${formData.email}
+Gebruikersnaam: ${formData.username}
 Wachtwoord: ${formData.password}
 
 📱 LOGIN URL:
