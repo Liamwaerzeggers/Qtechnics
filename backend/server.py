@@ -1009,7 +1009,12 @@ async def get_projects(current_user: User = Depends(get_current_user)):
 @api_router.get("/projects/{project_id}", response_model=Project)
 async def get_project(project_id: str, current_user: User = Depends(get_current_user)):
     """Get a specific project"""
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    # Workers can see all projects, admins only see their own
+    if current_user.role == "worker":
+        project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    else:
+        project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
