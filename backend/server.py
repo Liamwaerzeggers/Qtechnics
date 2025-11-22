@@ -2373,19 +2373,19 @@ async def toggle_worker_status(worker_id: str, current_user: User = Depends(get_
     return {"is_active": new_status}
 
 @api_router.post("/auth/worker/login")
-async def worker_login(email: str, password: str, response: Response):
-    """Worker login with email/password - ONLY for workers, not admins"""
+async def worker_login(username: str, password: str, response: Response):
+    """Worker login with username/password - ONLY for workers"""
     # Check if worker exists
-    worker = await db.workers.find_one({"email": email}, {"_id": 0})
+    worker = await db.workers.find_one({"username": username}, {"_id": 0})
     
     if not worker:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
     
     if not worker.get("is_active", True):
         raise HTTPException(status_code=403, detail="Account is gedeactiveerd / Обліковий запис деактивовано")
     
     if not verify_password(password, worker["password_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
     
     # Create session for worker
     session_token = secrets.token_urlsafe(32)
@@ -2413,7 +2413,7 @@ async def worker_login(email: str, password: str, response: Response):
     # Return worker as user with role=worker
     user_data = {
         "id": worker["id"],
-        "email": worker["email"],
+        "username": worker["username"],
         "name": worker["name"],
         "role": "worker",
         "created_at": worker["created_at"]
