@@ -550,8 +550,13 @@ async def get_leads(current_user: User = Depends(get_current_user)):
 
 @api_router.get("/leads/{lead_id}", response_model=Lead)
 async def get_lead(lead_id: str, current_user: User = Depends(get_current_user)):
-    """Get a specific lead"""
-    lead = await db.leads.find_one({"id": lead_id, "user_id": current_user.id}, {"_id": 0})
+    """Get a specific lead (all admins can access)"""
+    # All admins can see all leads
+    if current_user.role == "admin":
+        lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    else:
+        lead = None
+    
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     
