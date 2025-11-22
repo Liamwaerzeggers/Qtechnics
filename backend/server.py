@@ -589,8 +589,12 @@ async def update_lead(lead_id: str, lead_update: LeadUpdate, current_user: User 
 
 @api_router.delete("/leads/{lead_id}")
 async def delete_lead(lead_id: str, current_user: User = Depends(get_current_user)):
-    """Delete a lead"""
-    result = await db.leads.delete_one({"id": lead_id, "user_id": current_user.id})
+    """Delete a lead (all admins can delete)"""
+    # All admins can delete any lead
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete leads")
+    
+    result = await db.leads.delete_one({"id": lead_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Lead not found")
     
