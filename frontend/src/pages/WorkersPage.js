@@ -82,7 +82,7 @@ Q Technics`;
       
       toast.success('Werkman toegevoegd! Email wordt voorbereid... 👷');
       setIsDialogOpen(false);
-      setFormData({ name: '', email: '', password: '' });
+      setFormData({ name: '', username: '', password: '' });
       fetchWorkers();
     } catch (error) {
       console.error('Failed to create worker:', error);
