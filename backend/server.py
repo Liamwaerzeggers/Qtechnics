@@ -1513,11 +1513,13 @@ async def get_calendar_events(current_user: User = Depends(get_current_user)):
             if event["start"]:
                 events.append(event)
     
-    # 2. Get work slip events
-    work_slips = await db.work_slips.find(
-        {"user_id": current_user.id},
-        {"_id": 0}
-    ).to_list(1000)
+    # 2. Get work slip events - all admins see all work slips
+    if current_user.role == "admin":
+        work_slips = await db.work_slips.find({}, {"_id": 0}).to_list(1000)
+    else:
+        # Workers only see work slips for visible projects
+        visible_project_ids = [p["id"] for p in projects]
+        work_slips = await db.work_slips.find({"project_id": {"$in": visible_project_ids}}, {"_id": 0}).to_list(1000)
     
     for slip in work_slips:
         slip_date = slip.get("date")
