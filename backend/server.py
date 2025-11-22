@@ -59,7 +59,7 @@ class UserCreate(BaseModel):
 class Worker(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: f"WORKER-{str(uuid.uuid4())[:8].upper()}")
-    email: str
+    username: str  # Changed from email to username
     name: str
     password_hash: str
     created_by: str  # admin user_id
@@ -67,7 +67,7 @@ class Worker(BaseModel):
     is_active: bool = True
 
 class WorkerCreate(BaseModel):
-    email: str
+    username: str  # Changed from email to username
     name: str
     password: str
 
