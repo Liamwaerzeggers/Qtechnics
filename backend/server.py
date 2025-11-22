@@ -609,8 +609,12 @@ async def create_quote(quote_create: QuoteCreate, current_user: User = Depends(g
 
 @api_router.get("/quotes", response_model=List[Quote])
 async def get_quotes(current_user: User = Depends(get_current_user)):
-    """Get all quotes for current user"""
-    quotes = await db.quotes.find({"user_id": current_user.id}, {"_id": 0}).to_list(1000)
+    """Get all quotes (all admins see all data)"""
+    # All admins see all quotes, workers see nothing
+    if current_user.role == "admin":
+        quotes = await db.quotes.find({}, {"_id": 0}).to_list(1000)
+    else:
+        quotes = []
     
     for quote in quotes:
         if isinstance(quote["date"], str):
