@@ -1476,14 +1476,14 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
 
 @api_router.get("/calendar/events")
 async def get_calendar_events(current_user: User = Depends(get_current_user)):
-    """Get all calendar events from projects and work slips"""
+    """Get all calendar events from projects and work slips (all admins see all)"""
     events = []
     
-    # 1. Get project events
-    projects = await db.projects.find(
-        {"user_id": current_user.id},
-        {"_id": 0}
-    ).to_list(1000)
+    # 1. Get project events - all admins see all projects
+    if current_user.role == "admin":
+        projects = await db.projects.find({}, {"_id": 0}).to_list(1000)
+    else:
+        projects = await db.projects.find({"visible_to_workers": True}, {"_id": 0}).to_list(1000)
     
     for project in projects:
         # Only add to calendar if project has start and/or end date
