@@ -419,7 +419,8 @@ async def get_current_user(session_token: Optional[str] = Cookie(None), authoriz
             # Convert worker to User format
             user_doc = {
                 "id": worker_doc["id"],
-                "email": worker_doc["email"],
+                "username": worker_doc.get("username"),
+                "email": worker_doc.get("username") + "@worker.local",  # Dummy email for compatibility
                 "name": worker_doc.get("name", ""),
                 "role": "worker",
                 "created_at": worker_doc.get("created_at", datetime.now(timezone.utc).isoformat())
