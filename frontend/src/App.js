@@ -348,11 +348,11 @@ function LandingPage() {
                 
                 <button
                   type="button"
-                  onClick={() => setShowWorkerLogin(false)}
+                  onClick={() => { setShowWorkerLogin(false); setLoginUsername(''); setLoginPassword(''); }}
                   className="text-sm underline transition-all hover:opacity-80 w-full"
                   style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}
                 >
-                  ← Terug naar beheerder login / Назад до входу адміністратора
+                  ← Terug naar inlogopties / Назад до опцій входу
                 </button>
               </form>
             </div>
