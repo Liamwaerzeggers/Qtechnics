@@ -631,8 +631,13 @@ async def get_quotes(current_user: User = Depends(get_current_user)):
 
 @api_router.get("/quotes/{quote_id}", response_model=Quote)
 async def get_quote(quote_id: str, current_user: User = Depends(get_current_user)):
-    """Get a specific quote"""
-    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id}, {"_id": 0})
+    """Get a specific quote (all admins can access)"""
+    # All admins can see all quotes
+    if current_user.role == "admin":
+        quote = await db.quotes.find_one({"id": quote_id}, {"_id": 0})
+    else:
+        quote = None
+    
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
     
