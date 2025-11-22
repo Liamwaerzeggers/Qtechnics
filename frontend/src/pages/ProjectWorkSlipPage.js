@@ -372,7 +372,14 @@ export default function ProjectWorkSlipPage() {
         <div className="flex items-center justify-between">
           <Button 
             variant="ghost" 
-            onClick={() => navigate(`/projects/${projectId}`)}
+            onClick={() => {
+              // Workers go back to projects list, admins go to project detail
+              if (currentUser?.role === 'worker') {
+                navigate('/projects');
+              } else {
+                navigate(`/projects/${projectId}`);
+              }
+            }}
             className="flex items-center"
           >
             <ArrowLeft size={20} className="mr-2" />
