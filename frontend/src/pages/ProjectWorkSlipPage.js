@@ -113,6 +113,7 @@ export default function ProjectWorkSlipPage() {
   const [quoteMaterials, setQuoteMaterials] = useState([]);
   const [workSlips, setWorkSlips] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   
   // Form state voor nieuwe werkbon
