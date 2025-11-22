@@ -2064,8 +2064,9 @@ async def get_project_customer_invoices(
     project_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Get all customer invoices for a project"""
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    """Get all customer invoices for a project (all admins can access)"""
+    # All admins can see all project invoices
+    project = await db.projects.find_one({"id": project_id})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
