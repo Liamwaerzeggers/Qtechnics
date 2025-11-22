@@ -630,9 +630,9 @@ async def get_quotes(current_user: User = Depends(get_current_user)):
         quotes = []
     
     for quote in quotes:
-        if isinstance(quote["date"], str):
+        if quote.get("date") and isinstance(quote["date"], str):
             quote["date"] = datetime.fromisoformat(quote["date"])
-        if isinstance(quote["created_at"], str):
+        if quote.get("created_at") and isinstance(quote["created_at"], str):
             quote["created_at"] = datetime.fromisoformat(quote["created_at"])
     
     return quotes
