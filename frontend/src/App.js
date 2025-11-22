@@ -307,15 +307,16 @@ function LandingPage() {
               <form onSubmit={handleWorkerLogin} className="space-y-4">
                 <div className="text-left">
                   <label className="block text-sm font-medium mb-2" style={{color: '#1E293B'}}>
-                    Email / Електронна пошта
+                    Gebruikersnaam / Ім'я користувача
                   </label>
                   <input
-                    type="email"
-                    value={workerEmail}
-                    onChange={(e) => setWorkerEmail(e.target.value)}
-                    placeholder="werkman@example.com"
+                    type="text"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
+                    placeholder="werkman123"
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    autoComplete="username"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     style={{fontFamily: 'Inter, sans-serif'}}
                   />
                 </div>
@@ -326,11 +327,12 @@ function LandingPage() {
                   </label>
                   <input
                     type="password"
-                    value={workerPassword}
-                    onChange={(e) => setWorkerPassword(e.target.value)}
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    autoComplete="current-password"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     style={{fontFamily: 'Inter, sans-serif'}}
                   />
                 </div>
