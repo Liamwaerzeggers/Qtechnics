@@ -210,10 +210,10 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                   {/* Square thumbnail with rounded corners */}
                   <div 
                     className="relative aspect-square overflow-hidden rounded-xl cursor-pointer bg-gray-100"
-                    onClick={() => setLightboxPhoto(`${process.env.REACT_APP_BACKEND_URL}${photo}`)}
+                    onClick={() => setLightboxPhoto(getFullImageUrl(photo))}
                   >
                     <img
-                      src={`${process.env.REACT_APP_BACKEND_URL}${photo}`}
+                      src={getFullImageUrl(photo)}
                       alt={`Eerste bezoek ${idx + 1}`}
                       className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
                     />
