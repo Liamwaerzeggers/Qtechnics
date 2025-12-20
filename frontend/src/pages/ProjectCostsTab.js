@@ -527,10 +527,11 @@ export default function ProjectCostsTab({ project, quote, onUpdate }) {
                       </div>
                       <button
                         onClick={() => handleDeleteInvoice(idx, invoice.filename)}
-                        className="p-2 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+                        className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-red-50 hover:text-red-600 active:bg-red-100 transition-colors touch-manipulation"
                         title="Verwijderen"
+                        style={{color: '#64748B'}}
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={20} />
                       </button>
                     </div>
                   ))}
