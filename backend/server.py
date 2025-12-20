@@ -1913,7 +1913,7 @@ async def upload_work_slip_photo(
         f.write(content)
     
     # Add to work slip photos array
-    photo_url = f"/static/uploads/work_slips/{project_id}/{unique_filename}"
+    photo_url = f"/api/uploads/work_slips/{project_id}/{unique_filename}"
     await db.work_slips.update_one(
         {"id": slip_id},
         {"$push": {"photos": photo_url}}
