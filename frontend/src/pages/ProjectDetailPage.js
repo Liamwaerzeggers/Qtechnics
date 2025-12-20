@@ -229,25 +229,48 @@ export default function ProjectDetailPage() {
                       {quotes.map((quote) => (
                         <div
                           key={quote.id}
-                          onClick={() => navigate(`/quotes/${quote.id}`, { state: { fromProject: project.id } })}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
                           style={{borderColor: '#E5E7EB'}}
                         >
-                          <div>
+                          <div 
+                            className="flex-1 cursor-pointer"
+                            onClick={() => navigate(`/quotes/${quote.id}`, { state: { fromProject: project.id } })}
+                          >
                             <p className="font-semibold" style={{color: '#1E3A8A'}}>
                               {quote.quote_number}
                             </p>
-                            <p className="text-sm" style={{color: '#64748B'}}>
-                              Status: {quote.status}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold" style={{color: '#1E3A8A'}}>
-                              €{quote.total_incl_vat?.toFixed(2) || '0.00'}
-                            </p>
-                            <p className="text-xs" style={{color: '#94A3B8'}}>
+                            <p className="text-xs mt-1" style={{color: '#94A3B8'}}>
                               {new Date(quote.date).toLocaleDateString('nl-NL')}
                             </p>
+                          </div>
+                          
+                          <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+                            <div className="text-right">
+                              <p className="font-bold" style={{color: '#1E3A8A'}}>
+                                €{quote.total_incl_vat?.toFixed(2) || '0.00'}
+                              </p>
+                            </div>
+                            
+                            <select
+                              value={quote.status}
+                              onChange={(e) => handleUpdateQuoteStatus(quote.id, e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="px-3 py-2 border rounded-lg text-sm font-medium"
+                              style={{
+                                borderColor: '#E5E7EB',
+                                color: quote.status === 'goedgekeurd' ? '#10B981' : 
+                                       quote.status === 'afgekeurd' ? '#EF4444' : 
+                                       quote.status === 'verzonden' ? '#3B82F6' : '#F59E0B',
+                                backgroundColor: quote.status === 'goedgekeurd' ? '#ECFDF5' : 
+                                                quote.status === 'afgekeurd' ? '#FEE2E2' : 
+                                                quote.status === 'verzonden' ? '#DBEAFE' : '#FEF3C7'
+                              }}
+                            >
+                              <option value="concept">Concept</option>
+                              <option value="verzonden">Verzonden</option>
+                              <option value="goedgekeurd">Goedgekeurd</option>
+                              <option value="afgekeurd">Afgekeurd</option>
+                            </select>
                           </div>
                         </div>
                       ))}
