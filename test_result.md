@@ -926,3 +926,40 @@ test_plan:
       - Quotes page button added and visible
       
       **Ready for user verification**
+
+  - agent: "main"
+    message: |
+      LABOR COST TRACKING FROM WORK SLIPS IMPLEMENTED
+      
+      **New Feature: Track labor costs per work slip**
+      
+      **Backend Changes (server.py):**
+      - Added fields to DailyReport model: number_of_workers, hourly_rate (€32 default), labor_cost
+      - Labor cost formula: hours_worked × number_of_workers × hourly_rate
+      - New function: recalculate_project_labor_from_workslips() 
+        - Sums all work slip labor costs
+        - Updates project.labor_hours (total man-hours)
+        - Updates project.labor_cost_from_workslips
+        - Updates project.total_costs
+      - create_work_slip, update_work_slip, delete_work_slip all trigger recalculation
+      
+      **Frontend Changes:**
+      - ProjectWorkSlipPage.js: 
+        - Added input fields for hours, number of workers, and hourly rate display
+        - Shows calculated labor cost before submission
+        - Displays labor cost per work slip in the timeline
+        - Shows totals at bottom of timeline
+      
+      - ProjectCostsTab.js:
+        - Displays labor costs from work slips prominently
+        - Shows man-hours breakdown
+        - Auto-calculated from work slips
+      
+      **Test Required:**
+      1. Navigate to a project's werkbon page
+      2. Fill in hours (e.g., 8), number of workers (e.g., 2)
+      3. Verify calculation shows: 8 × 2 × €32 = €512
+      4. Submit the work slip
+      5. Check Financieel tab - labor costs should appear
+      
+      **Status:** READY FOR TESTING
