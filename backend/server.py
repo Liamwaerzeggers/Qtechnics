@@ -289,8 +289,11 @@ class DailyReport(BaseModel):
     project_id: str
     date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
-    # Hours worked
+    # Hours worked and labor tracking
     hours_worked: Optional[float] = None
+    number_of_workers: int = 1  # Number of workers on this day
+    hourly_rate: float = 32.0  # €32 per hour default
+    labor_cost: Optional[float] = None  # Calculated: hours_worked * number_of_workers * hourly_rate
     
     # Materials tracking (NO PRICES)
     materials_used: List[MaterialUsed] = []  # From quote
@@ -315,12 +318,17 @@ class DailyReportCreate(BaseModel):
     project_id: str
     date: Optional[datetime] = None
     hours_worked: Optional[float] = None
+    number_of_workers: int = 1
+    hourly_rate: float = 32.0
     materials_used: Optional[List[MaterialUsed]] = []
     extra_materials: Optional[List[ExtraMaterial]] = []
     work_description_nl: Optional[str] = None
     work_description_uk: Optional[str] = None
 
 class DailyReportUpdate(BaseModel):
+    hours_worked: Optional[float] = None
+    number_of_workers: Optional[int] = None
+    hourly_rate: Optional[float] = None
     materials_used: Optional[List[MaterialUsed]] = None
     extra_materials: Optional[List[ExtraMaterial]] = None
     work_description_nl: Optional[str] = None
