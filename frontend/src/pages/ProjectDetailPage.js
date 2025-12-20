@@ -85,7 +85,7 @@ export default function ProjectDetailPage() {
       );
       
       toast.success('Offerte aangemaakt! 📄');
-      navigate(`/quotes/${response.data.id}`);
+      navigate(`/quotes/${response.data.id}`, { state: { fromProject: project.id } });
     } catch (error) {
       console.error('Failed to create quote:', error);
       toast.error('Kon offerte niet aanmaken');
