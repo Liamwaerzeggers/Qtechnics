@@ -800,3 +800,57 @@ agent_communication:
       - No more "Nog geen projecten" error ✅
       
       **STATUS:** CRITICAL BUG RESOLVED - Workers can now see all projects as intended
+  - agent: "main"
+    message: |
+      PHOTO GALLERY FIX IMPLEMENTED - Eerste Bezoek Tab
+      
+      **Problem:** Images not rendering in "Eerste Bezoek" tab photo gallery. User reported empty spaces where thumbnails should be.
+      
+      **Root Cause Identified:**
+      1. Static files were mounted on `/uploads` directly on FastAPI app
+      2. Kubernetes ingress only routes `/api` prefixed requests to backend (port 8001)
+      3. `/uploads/...` requests went to frontend (port 3000) returning HTML instead of images
+      
+      **Fixes Applied:**
+      1. **Backend (server.py):**
+         - Changed static files mount from `/uploads` to `/api/uploads`
+         - Updated all photo_url assignments to use `/api/uploads/...` prefix
+         - Lines affected: 1916, 2553, 2574, 2628, 2751
+      
+      2. **Frontend (ProjectFirstVisitTab.js):**
+         - Added `getFullImageUrl()` helper function
+         - Handles both old URLs (/uploads/...) and new URLs (/api/uploads/...)
+         - Correctly constructs full URL: REACT_APP_BACKEND_URL + /api/uploads/...
+      
+      **Test Required:**
+      - Navigate to project with first visit photos
+      - Verify thumbnails render correctly
+      - Test lightbox opens with full-size image
+      - Test download functionality
+      - Test delete functionality
+      
+      **Status:** READY FOR TESTING
+
+frontend:
+  - task: "Photo Gallery in Eerste Bezoek Tab - Squared thumbnails with lightbox"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/ProjectFirstVisitTab.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "User reported images not visible in Eerste Bezoek tab. Empty spaces shown where thumbnails should be. Lightbox also empty."
+      - working: "NA"
+        agent: "main"
+        comment: "ROOT CAUSE FOUND: Static files mounted on /uploads went to frontend (3000) instead of backend (8001) due to Kubernetes ingress routing. Fixed by mounting on /api/uploads and updating all URL references. Added getFullImageUrl() helper for backward compatibility with old URLs."
+
+test_plan:
+  current_focus:
+    - "Photo Gallery in Eerste Bezoek Tab - Verify fix works"
+    - "Mobile delete button for purchase invoices"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
