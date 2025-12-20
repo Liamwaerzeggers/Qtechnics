@@ -2746,10 +2746,10 @@ async def delete_admin(admin_id: str, current_user: User = Depends(get_current_u
 app.include_router(api_router)
 
 # Mount static files for uploads
-# Note: Kubernetes ingress routes /api requests to backend, so mount at /api/uploads
+# Note: Mount at /uploads on main app, API router handles /api prefix separately
 uploads_dir = ROOT_DIR / "uploads"
 uploads_dir.mkdir(exist_ok=True)
-app.mount("/api/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,
