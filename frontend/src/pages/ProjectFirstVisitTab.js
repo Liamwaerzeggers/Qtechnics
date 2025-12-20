@@ -194,16 +194,35 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {photos.map((photo, idx) => (
                 <div key={idx} className="relative group">
-                  <img
-                    src={`${process.env.REACT_APP_BACKEND_URL}${photo}`}
-                    alt={`Eerste bezoek ${idx + 1}`}
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
+                  {/* Square thumbnail with rounded corners */}
+                  <div 
+                    className="relative aspect-square overflow-hidden rounded-xl cursor-pointer bg-gray-100"
+                    onClick={() => setLightboxPhoto(`${process.env.REACT_APP_BACKEND_URL}${photo}`)}
+                  >
+                    <img
+                      src={`${process.env.REACT_APP_BACKEND_URL}${photo}`}
+                      alt={`Eerste bezoek ${idx + 1}`}
+                      className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                    />
+                    
+                    {/* Zoom overlay */}
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
+                      <ZoomIn 
+                        size={32} 
+                        className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Delete button */}
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => handleDeletePhoto(photo)}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeletePhoto(photo);
+                    }}
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                   >
                     <Trash2 size={16} />
                   </Button>
