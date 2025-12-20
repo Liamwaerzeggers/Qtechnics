@@ -423,7 +423,8 @@ export default function ProjectWorkSlipPage() {
                     <p className="text-xs font-semibold" style={{ color: '#64748B' }}>
                       {formatDate(slip.date)}
                     </p>
-                    {slip.labor_cost > 0 && (
+                    {/* Arbeidskosten alleen zichtbaar voor admins */}
+                    {slip.labor_cost > 0 && currentUser?.role !== 'worker' && (
                       <span className="text-xs font-semibold px-2 py-0.5 bg-green-100 text-green-700 rounded">
                         €{slip.labor_cost?.toFixed(2)}
                       </span>
@@ -446,15 +447,17 @@ export default function ProjectWorkSlipPage() {
                 </div>
               ))}
             </div>
-            {/* Totaal arbeidskosten */}
-            <div className="mt-4 pt-3 border-t border-gray-200">
-              <p className="text-sm font-semibold" style={{ color: '#1E3A8A' }}>
-                💰 Totaal arbeidskosten: €{workSlips.reduce((sum, slip) => sum + (slip.labor_cost || 0), 0).toFixed(2)}
-              </p>
-              <p className="text-xs" style={{ color: '#64748B' }}>
-                {workSlips.reduce((sum, slip) => sum + ((slip.hours_worked || 0) * (slip.number_of_workers || 1)), 0).toFixed(1)} totaal man-uren
-              </p>
-            </div>
+            {/* Totaal arbeidskosten - alleen zichtbaar voor admins */}
+            {currentUser?.role !== 'worker' && (
+              <div className="mt-4 pt-3 border-t border-gray-200">
+                <p className="text-sm font-semibold" style={{ color: '#1E3A8A' }}>
+                  💰 Totaal arbeidskosten: €{workSlips.reduce((sum, slip) => sum + (slip.labor_cost || 0), 0).toFixed(2)}
+                </p>
+                <p className="text-xs" style={{ color: '#64748B' }}>
+                  {workSlips.reduce((sum, slip) => sum + ((slip.hours_worked || 0) * (slip.number_of_workers || 1)), 0).toFixed(1)} totaal man-uren
+                </p>
+              </div>
+            )}
           </div>
         )}
 
