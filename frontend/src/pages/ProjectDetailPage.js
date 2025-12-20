@@ -214,7 +214,7 @@ export default function ProjectDetailPage() {
                       {quotes.map((quote) => (
                         <div
                           key={quote.id}
-                          onClick={() => navigate(`/quotes/${quote.id}`)}
+                          onClick={() => navigate(`/quotes/${quote.id}`, { state: { fromProject: project.id } })}
                           className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
                           style={{borderColor: '#E5E7EB'}}
                         >
