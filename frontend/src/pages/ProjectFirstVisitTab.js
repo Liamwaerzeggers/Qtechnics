@@ -7,6 +7,19 @@ import { Card, CardContent } from '../components/ui/card';
 import { Camera, Upload, Trash2, Save, Loader2, X, Download, ZoomIn } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper function to construct full image URL
+const getFullImageUrl = (photoPath) => {
+  if (!photoPath) return '';
+  // If already a full URL, return as-is
+  if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
+    return photoPath;
+  }
+  const baseUrl = process.env.REACT_APP_BACKEND_URL || '';
+  // Ensure path starts with /api/ for proper routing
+  const normalizedPath = photoPath.startsWith('/api/') ? photoPath : `/api${photoPath}`;
+  return `${baseUrl}${normalizedPath}`;
+};
+
 export default function ProjectFirstVisitTab({ project, onUpdate }) {
   const [notes, setNotes] = useState(project.first_visit_notes || '');
   const [photos, setPhotos] = useState(project.first_visit_photos || []);
