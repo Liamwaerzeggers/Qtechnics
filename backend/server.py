@@ -2625,7 +2625,7 @@ async def upload_design_file(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
-    file_url = f"/api/uploads/designs/{project_id}/{unique_filename}"
+    file_url = f"/static/uploads/designs/{project_id}/{unique_filename}"
     
     design_file = {
         "filename": file.filename,
