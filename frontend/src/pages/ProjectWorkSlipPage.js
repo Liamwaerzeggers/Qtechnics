@@ -287,9 +287,12 @@ export default function ProjectWorkSlipPage() {
     setIsCreating(true);
     
     try {
-      // Create work slip
+      // Create work slip with hours and workers
       const slipData = {
         project_id: projectId,
+        hours_worked: parseFloat(formData.hours_worked) || 0,
+        number_of_workers: parseInt(formData.number_of_workers) || 1,
+        hourly_rate: parseFloat(formData.hourly_rate) || 32,
         materials_used: formData.materials_used,
         extra_materials: formData.extra_materials,
         work_description_nl: formData.work_description_nl,
@@ -326,6 +329,8 @@ export default function ProjectWorkSlipPage() {
       // Reset form
       setFormData({
         hours_worked: '',
+        number_of_workers: 1,
+        hourly_rate: 32,
         materials_used: [],
         extra_materials: [],
         work_description_nl: '',
