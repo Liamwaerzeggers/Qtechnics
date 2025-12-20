@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API } from '../App';
 import { Button } from '../components/ui/button';
@@ -30,6 +30,13 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
+
+  // Update state when project prop changes
+  useEffect(() => {
+    setNotes(project.first_visit_notes || '');
+    setPhotos(project.first_visit_photos || []);
+    console.log('Project photos updated:', project.first_visit_photos);
+  }, [project.first_visit_notes, project.first_visit_photos]);
 
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
