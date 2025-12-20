@@ -96,7 +96,10 @@ export default function QuotesPage() {
 
         {filteredQuotes.length === 0 && (
           <div className="text-center py-12">
-            <p style={{color: '#94A3B8'}}>Geen offertes gevonden. Maak een offerte vanuit een lead.</p>
+            <p style={{color: '#94A3B8'}}>Geen offertes gevonden.</p>
+            <p className="mt-2 text-sm" style={{color: '#64748B'}}>
+              💡 Tip: Maak een offerte door naar <button onClick={() => navigate('/leads')} className="text-blue-600 underline hover:text-blue-800">Leads</button> te gaan en op "Offerte Maken" te klikken, of maak een offerte vanuit een project.
+            </p>
           </div>
         )}
       </div>
