@@ -416,12 +416,24 @@ export default function ProjectWorkSlipPage() {
             <h2 className="text-lg font-semibold mb-3" style={{ color: '#1E3A8A' }}>
               📅 Recente Werkbonnen / Останні робочі звіти
             </h2>
-            <div className="space-y-3 max-h-64 overflow-y-auto">
-              {workSlips.slice(0, 5).map((slip) => (
+            <div className="space-y-3 max-h-80 overflow-y-auto">
+              {workSlips.slice(0, 10).map((slip) => (
                 <div key={slip.id} className="border-l-4 border-blue-500 pl-3 py-2 bg-gray-50 rounded">
-                  <p className="text-xs font-semibold" style={{ color: '#64748B' }}>
-                    {formatDate(slip.date)}
-                  </p>
+                  <div className="flex justify-between items-start">
+                    <p className="text-xs font-semibold" style={{ color: '#64748B' }}>
+                      {formatDate(slip.date)}
+                    </p>
+                    {slip.labor_cost > 0 && (
+                      <span className="text-xs font-semibold px-2 py-0.5 bg-green-100 text-green-700 rounded">
+                        €{slip.labor_cost?.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                  {slip.hours_worked > 0 && (
+                    <p className="text-xs mt-1" style={{ color: '#166534' }}>
+                      ⏱️ {slip.hours_worked}u × {slip.number_of_workers || 1} man = {(slip.hours_worked * (slip.number_of_workers || 1)).toFixed(1)} man-uren
+                    </p>
+                  )}
                   <p className="text-sm mt-1" style={{ color: '#334155' }}>
                     🇳🇱 {slip.work_description_nl?.substring(0, 80) || '-'}
                     {slip.work_description_nl?.length > 80 && '...'}
@@ -433,6 +445,15 @@ export default function ProjectWorkSlipPage() {
                   )}
                 </div>
               ))}
+            </div>
+            {/* Totaal arbeidskosten */}
+            <div className="mt-4 pt-3 border-t border-gray-200">
+              <p className="text-sm font-semibold" style={{ color: '#1E3A8A' }}>
+                💰 Totaal arbeidskosten: €{workSlips.reduce((sum, slip) => sum + (slip.labor_cost || 0), 0).toFixed(2)}
+              </p>
+              <p className="text-xs" style={{ color: '#64748B' }}>
+                {workSlips.reduce((sum, slip) => sum + ((slip.hours_worked || 0) * (slip.number_of_workers || 1)), 0).toFixed(1)} totaal man-uren
+              </p>
             </div>
           </div>
         )}
