@@ -119,6 +119,8 @@ export default function ProjectWorkSlipPage() {
   // Form state voor nieuwe werkbon
   const [formData, setFormData] = useState({
     hours_worked: '',
+    number_of_workers: 1,
+    hourly_rate: 32,
     materials_used: [],
     extra_materials: [],
     work_description_nl: '',
