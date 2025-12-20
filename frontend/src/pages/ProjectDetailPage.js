@@ -24,6 +24,16 @@ export default function ProjectDetailPage() {
     fetchProjectData();
   }, [projectId]);
 
+  // Refresh data when returning from quote page
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchProjectData();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [projectId]);
+
   const fetchProjectData = async () => {
     try {
       const projectResponse = await axios.get(`${API}/projects/${projectId}`, { withCredentials: true });
