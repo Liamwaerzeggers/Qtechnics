@@ -14,6 +14,7 @@ import ProjectCostsTab from './ProjectCostsTab';
 export default function ProjectDetailPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [project, setProject] = useState(null);
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,17 +23,7 @@ export default function ProjectDetailPage() {
 
   useEffect(() => {
     fetchProjectData();
-  }, [projectId]);
-
-  // Refresh data when returning from quote page
-  useEffect(() => {
-    const handleFocus = () => {
-      fetchProjectData();
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [projectId]);
+  }, [projectId, location.key]); // Re-fetch when location changes (e.g., returning from quote page)
 
   const fetchProjectData = async () => {
     try {
