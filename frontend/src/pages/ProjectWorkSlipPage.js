@@ -441,22 +441,71 @@ export default function ProjectWorkSlipPage() {
             Hoeveel uur heb je vandaag gewerkt? / Скільки годин ви сьогодні працювали?
           </p>
           
-          <div className="max-w-md">
-            <input
-              type="number"
-              step="0.5"
-              min="0"
-              max="24"
-              value={formData.hours_worked}
-              onChange={(e) => setFormData({...formData, hours_worked: e.target.value})}
-              placeholder="bijv. 8.5 / наприклад: 8.5"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
-              style={{ color: '#1E3A8A' }}
-            />
-            <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>
-              💡 Tip: Gebruik decimalen voor halve uren (8.5 = 8 uur en 30 minuten)
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl">
+            {/* Gewerkte uren */}
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#1E3A8A' }}>
+                Uren / Години
+              </label>
+              <input
+                type="number"
+                step="0.5"
+                min="0"
+                max="24"
+                value={formData.hours_worked}
+                onChange={(e) => setFormData({...formData, hours_worked: e.target.value})}
+                placeholder="8.5"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ color: '#1E3A8A' }}
+              />
+            </div>
+            
+            {/* Aantal werkmannen */}
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#1E3A8A' }}>
+                Aantal man / Кількість працівників
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                value={formData.number_of_workers}
+                onChange={(e) => setFormData({...formData, number_of_workers: parseInt(e.target.value) || 1})}
+                placeholder="1"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ color: '#1E3A8A' }}
+              />
+            </div>
+            
+            {/* Uurtarief (readonly) */}
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#1E3A8A' }}>
+                Uurtarief / Ставка
+              </label>
+              <div className="px-4 py-3 border border-gray-200 rounded-lg text-lg font-semibold bg-gray-50" style={{ color: '#64748B' }}>
+                €{formData.hourly_rate}/uur
+              </div>
+            </div>
           </div>
+          
+          {/* Berekende arbeidskosten */}
+          {formData.hours_worked && (
+            <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200 max-w-2xl">
+              <p className="text-sm font-medium" style={{ color: '#166534' }}>
+                💰 Arbeidskosten / Витрати на оплату праці: 
+                <span className="text-lg ml-2">
+                  €{(parseFloat(formData.hours_worked) * formData.number_of_workers * formData.hourly_rate).toFixed(2)}
+                </span>
+              </p>
+              <p className="text-xs mt-1" style={{ color: '#15803d' }}>
+                {formData.hours_worked} uren × {formData.number_of_workers} man × €{formData.hourly_rate} = €{(parseFloat(formData.hours_worked) * formData.number_of_workers * formData.hourly_rate).toFixed(2)}
+              </p>
+            </div>
+          )}
+          
+          <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>
+            💡 Tip: Gebruik decimalen voor halve uren (8.5 = 8 uur en 30 minuten)
+          </p>
         </div>
 
         {/* SECTION 1: Materialen uit Offerte */}
