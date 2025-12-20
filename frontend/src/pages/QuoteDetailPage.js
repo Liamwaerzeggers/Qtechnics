@@ -15,8 +15,8 @@ import { toast } from 'sonner';
 export default function QuoteDetailPage() {
   const { quoteId } = useParams();
   const navigate = useNavigate();
-  const location = window.location;
-  const fromProjectId = navigate?.location?.state?.fromProject || new URLSearchParams(location.search).get('project');
+  const location = useLocation();
+  const fromProjectId = location.state?.fromProject;
   const [quote, setQuote] = useState(null);
   const [lead, setLead] = useState(null);
   const [lineItems, setLineItems] = useState([]);
