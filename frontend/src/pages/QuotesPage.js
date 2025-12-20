@@ -56,8 +56,16 @@ export default function QuotesPage() {
   return (
     <DashboardLayout showBackToDashboard={true}>
       <div data-testid="quotes-page" className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Offertes</h1>
+          <Button 
+            onClick={() => navigate('/quotes/new')}
+            className="flex items-center gap-2"
+            style={{backgroundColor: '#1E40AF', color: 'white'}}
+          >
+            <Plus size={20} />
+            Nieuwe Offerte
+          </Button>
         </div>
 
         <div className="relative">
