@@ -2742,37 +2742,6 @@ async def delete_admin(admin_id: str, current_user: User = Depends(get_current_u
     
     return {"message": "Admin deleted successfully"}
 
-# Static file serving endpoint for uploads (since ingress only routes /api/* to backend)
-@api_router.get("/uploads/{file_path:path}")
-async def serve_upload_file(file_path: str):
-    """Serve uploaded files through API endpoint"""
-    from fastapi.responses import FileResponse
-    import os
-    
-    # Construct the full file path
-    full_path = ROOT_DIR / "uploads" / file_path
-    
-    # Check if file exists and is within uploads directory (security check)
-    if not full_path.exists() or not str(full_path).startswith(str(ROOT_DIR / "uploads")):
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    # Determine content type based on file extension
-    content_type = "application/octet-stream"
-    if file_path.lower().endswith(('.jpg', '.jpeg')):
-        content_type = "image/jpeg"
-    elif file_path.lower().endswith('.png'):
-        content_type = "image/png"
-    elif file_path.lower().endswith('.gif'):
-        content_type = "image/gif"
-    elif file_path.lower().endswith('.webp'):
-        content_type = "image/webp"
-    
-    return FileResponse(
-        path=str(full_path),
-        media_type=content_type,
-        headers={"Cache-Control": "public, max-age=3600"}
-    )
-
 # Include router
 app.include_router(api_router)
 
