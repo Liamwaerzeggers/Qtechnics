@@ -93,6 +93,21 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleUpdateQuoteStatus = async (quoteId, newStatus) => {
+    try {
+      await axios.put(
+        `${API}/quotes/${quoteId}`,
+        { status: newStatus },
+        { withCredentials: true }
+      );
+      toast.success('Offerte status bijgewerkt!');
+      fetchProjectData(); // Refresh to show updated data
+    } catch (error) {
+      console.error('Failed to update quote status:', error);
+      toast.error('Kon status niet bijwerken');
+    }
+  };
+
   const tabs = [
     { id: 'first-visit', label: '📸 Eerste Bezoek', icon: Camera },
     { id: '3d-designs', label: '🏗️ 3D Ontwerpen', icon: Folder },
