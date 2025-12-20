@@ -4,7 +4,7 @@ import { API } from '../App';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Card, CardContent } from '../components/ui/card';
-import { Camera, Upload, Trash2, Save, Loader2 } from 'lucide-react';
+import { Camera, Upload, Trash2, Save, Loader2, X, Download, ZoomIn } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ProjectFirstVisitTab({ project, onUpdate }) {
@@ -12,6 +12,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
   const [photos, setPhotos] = useState(project.first_visit_photos || []);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [lightboxPhoto, setLightboxPhoto] = useState(null);
 
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
