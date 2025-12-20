@@ -218,6 +218,12 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                       src={getFullImageUrl(photo)}
                       alt={`Eerste bezoek ${idx + 1}`}
                       className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                      onError={(e) => {
+                        console.error('Image load error:', photo);
+                        e.target.style.display = 'none';
+                        e.target.parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-gray-400"><span>⚠️ Kon niet laden</span></div>';
+                      }}
+                      loading="lazy"
                     />
                     
                     {/* Zoom overlay */}
