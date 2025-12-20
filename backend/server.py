@@ -1886,7 +1886,7 @@ async def get_work_slips(project_id: str, current_user: User = Depends(get_curre
 async def update_work_slip(project_id: str, slip_id: str, report_update: DailyReportUpdate, current_user: User = Depends(get_current_user)):
     """Update a daily report"""
     # Verify project exists
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    project = await db.projects.find_one({"id": project_id})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
@@ -1899,10 +1899,19 @@ async def update_work_slip(project_id: str, slip_id: str, report_update: DailyRe
     update_data = {k: v for k, v in report_update.model_dump().items() if v is not None}
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     
+    # Recalculate labor cost if hours or workers changed
+    hours_worked = update_data.get("hours_worked", existing.get("hours_worked", 0)) or 0
+    number_of_workers = update_data.get("number_of_workers", existing.get("number_of_workers", 1)) or 1
+    hourly_rate = update_data.get("hourly_rate", existing.get("hourly_rate", 32.0)) or 32.0
+    update_data["labor_cost"] = hours_worked * number_of_workers * hourly_rate
+    
     await db.work_slips.update_one(
         {"id": slip_id, "project_id": project_id},
         {"$set": update_data}
     )
+    
+    # Recalculate project labor costs
+    await recalculate_project_labor_from_workslips(project_id)
     
     # Fetch updated report
     updated = await db.work_slips.find_one({"id": slip_id}, {"_id": 0})
@@ -1918,7 +1927,7 @@ async def update_work_slip(project_id: str, slip_id: str, report_update: DailyRe
 async def delete_work_slip(project_id: str, slip_id: str, current_user: User = Depends(get_current_user)):
     """Delete a daily report"""
     # Verify project exists
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    project = await db.projects.find_one({"id": project_id})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
@@ -1926,6 +1935,9 @@ async def delete_work_slip(project_id: str, slip_id: str, current_user: User = D
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Work slip not found")
+    
+    # Recalculate project labor costs after deletion
+    await recalculate_project_labor_from_workslips(project_id)
     
     return {"message": "Work slip deleted"}
 
