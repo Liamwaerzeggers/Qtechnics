@@ -303,18 +303,10 @@ export default function ProjectDetailPage() {
           )}
 
           {activeTab === 'work' && (
-            <Card>
-              <CardContent className="p-6">
-                <div className="text-center py-8">
-                  <h3 className="text-xl font-bold mb-4" style={{color: '#1E3A8A'}}>
-                    📋 Werkbonnen
-                  </h3>
-                  <Button onClick={() => navigate(`/projects/${projectId}/work-slips`)}>
-                    Naar Werkbonnen
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <ProjectWorkSlipsTab 
+              project={project} 
+              onUpdate={fetchProjectData} 
+            />
           )}
         </div>
       </div>
