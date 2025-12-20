@@ -36,9 +36,9 @@ export default function ProjectDetailPage() {
         const projectQuotes = quotesResponse.data.filter(q => q.lead_id === projectResponse.data.lead_id);
         setQuotes(projectQuotes);
         
-        // Set primary quote (first one or the one with status 'goedgekeurd')
+        // Set primary quote - ONLY approved quotes, not any quote
         const approvedQuote = projectQuotes.find(q => q.status === 'goedgekeurd');
-        setPrimaryQuote(approvedQuote || projectQuotes[0] || null);
+        setPrimaryQuote(approvedQuote || null); // Only use approved quote, not fallback to first
       }
     } catch (error) {
       console.error('Failed to fetch project:', error);
