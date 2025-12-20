@@ -1913,7 +1913,7 @@ async def upload_work_slip_photo(
         f.write(content)
     
     # Add to work slip photos array
-    photo_url = f"/api/uploads/work_slips/{project_id}/{unique_filename}"
+    photo_url = f"/api/static/work_slips/{project_id}/{unique_filename}"
     await db.work_slips.update_one(
         {"id": slip_id},
         {"$push": {"photos": photo_url}}
@@ -2550,7 +2550,7 @@ async def upload_first_visit_photo(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
-    photo_url = f"/api/uploads/first_visit/{project_id}/{unique_filename}"
+    photo_url = f"/api/static/first_visit/{project_id}/{unique_filename}"
     
     # Update project
     await db.projects.update_one(
@@ -2571,7 +2571,7 @@ async def delete_first_visit_photo(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    photo_url = f"/api/uploads/first_visit/{project_id}/{photo_name}"
+    photo_url = f"/api/static/first_visit/{project_id}/{photo_name}"
     
     # Delete file
     file_path = ROOT_DIR / "uploads" / "first_visit" / project_id / photo_name
@@ -2654,7 +2654,7 @@ async def upload_design_file(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
-    file_url = f"/api/uploads/designs/{project_id}/{unique_filename}"
+    file_url = f"/api/static/designs/{project_id}/{unique_filename}"
     
     design_file = {
         "filename": file.filename,
