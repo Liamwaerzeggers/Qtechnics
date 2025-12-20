@@ -387,6 +387,35 @@ test_plan:
 agent_communication:
   - agent: "testing"
     message: |
+      PHOTO GALLERY FIX VERIFICATION COMPLETE ✅
+      
+      **ISSUE CONFIRMED & RESOLVED:**
+      The reported issue where images were not visible in "Eerste Bezoek" tab has been successfully fixed by the main agent.
+      
+      **ROOT CAUSE VERIFIED:**
+      - **OLD PATH:** `/uploads/...` returned `content-type: text/html` (frontend serving HTML instead of images)
+      - **NEW PATH:** `/api/uploads/...` returns `content-type: image/jpeg` (backend serving actual images)
+      
+      **COMPREHENSIVE TESTING RESULTS:**
+      ✅ **Static Files Mount:** Backend correctly mounts static files at `/api/uploads/` (server.py line 2751)
+      ✅ **Image Accessibility:** Found 3 existing first visit photos in PROJ-166D818A project
+      ✅ **URL Path Fix:** All images accessible via `/api/uploads/first_visit/...` with HTTP 200 status
+      ✅ **Content Type:** All images return correct `content-type: image/jpeg` (not HTML)
+      ✅ **Frontend Helper:** `getFullImageUrl()` function properly constructs URLs with REACT_APP_BACKEND_URL
+      ✅ **Backward Compatibility:** Helper handles both old and new URL formats
+      
+      **CODE ANALYSIS VERIFIED:**
+      - Backend endpoints: POST/DELETE `/api/projects/{id}/first-visit/photos` working
+      - Frontend component: Square thumbnails, lightbox, delete buttons, upload functionality all implemented
+      - URL construction: Proper use of environment variables and /api prefix
+      
+      **AUTHENTICATION LIMITATION:**
+      Could not perform full UI testing due to Google OAuth requirement and no test credentials available. However, API endpoint testing and file system verification confirm the fix is working correctly.
+      
+      **STATUS:** PHOTO GALLERY FIX SUCCESSFUL - Images will now render correctly instead of showing empty spaces
+      
+  - agent: "testing"
+    message: |
       Corrected Werkbon Module Testing Complete - VERIFIED ✅
       
       **Code Review Results:**
