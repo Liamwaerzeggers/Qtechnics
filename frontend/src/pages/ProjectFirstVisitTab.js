@@ -19,7 +19,9 @@ const getFullImageUrl = (photoPath) => {
   const normalizedPath = photoPath.startsWith('/api/') ? photoPath : `/api${photoPath}`;
   // Add cache busting parameter to force reload
   const cacheBuster = `?v=${Date.now()}`;
-  return `${baseUrl}${normalizedPath}${cacheBuster}`;
+  const fullUrl = `${baseUrl}${normalizedPath}${cacheBuster}`;
+  console.log('Image URL constructed:', fullUrl, 'from path:', photoPath);
+  return fullUrl;
 };
 
 export default function ProjectFirstVisitTab({ project, onUpdate }) {
