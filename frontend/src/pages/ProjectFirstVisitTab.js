@@ -7,7 +7,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { Camera, Upload, Trash2, Save, Loader2, X, Download, ZoomIn } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Helper function to construct full image URL
+// Helper function to construct full image URL with cache busting
 const getFullImageUrl = (photoPath) => {
   if (!photoPath) return '';
   // If already a full URL, return as-is
@@ -17,7 +17,9 @@ const getFullImageUrl = (photoPath) => {
   const baseUrl = process.env.REACT_APP_BACKEND_URL || '';
   // Ensure path starts with /api/ for proper routing
   const normalizedPath = photoPath.startsWith('/api/') ? photoPath : `/api${photoPath}`;
-  return `${baseUrl}${normalizedPath}`;
+  // Add cache busting parameter to force reload
+  const cacheBuster = `?v=${Date.now()}`;
+  return `${baseUrl}${normalizedPath}${cacheBuster}`;
 };
 
 export default function ProjectFirstVisitTab({ project, onUpdate }) {
