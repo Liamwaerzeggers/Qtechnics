@@ -1867,8 +1867,8 @@ async def recalculate_project_labor_from_workslips(project_id: str):
 @api_router.get("/projects/{project_id}/work-slips", response_model=List[DailyReport])
 async def get_work_slips(project_id: str, current_user: User = Depends(get_current_user)):
     """Get all daily reports for a project"""
-    # Verify project exists
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    # Verify project exists - allow workers to see visible projects
+    project = await db.projects.find_one({"id": project_id})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
@@ -1879,6 +1879,11 @@ async def get_work_slips(project_id: str, current_user: User = Depends(get_curre
         for field in ["date", "created_at", "updated_at"]:
             if field in report and isinstance(report[field], str):
                 report[field] = datetime.fromisoformat(report[field])
+        
+        # Hide financial info from workers
+        if current_user.role == "worker":
+            report["hourly_rate"] = None
+            report["labor_cost"] = None
     
     return reports
 
