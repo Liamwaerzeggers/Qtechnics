@@ -1076,8 +1076,12 @@ async def get_project(project_id: str, current_user: User = Depends(get_current_
 
 @api_router.put("/projects/{project_id}", response_model=Project)
 async def update_project(project_id: str, project_update: ProjectUpdate, current_user: User = Depends(get_current_user)):
-    """Update a project"""
-    existing_project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    """Update a project (all admins can update)"""
+    # All admins can update any project
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can update projects")
+    
+    existing_project = await db.projects.find_one({"id": project_id})
     if not existing_project:
         raise HTTPException(status_code=404, detail="Project not found")
     
