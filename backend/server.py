@@ -2571,7 +2571,7 @@ async def delete_first_visit_photo(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    photo_url = f"/static/uploads/first_visit/{project_id}/{photo_name}"
+    photo_url = f"/api/uploads/first_visit/{project_id}/{photo_name}"
     
     # Delete file
     file_path = ROOT_DIR / "uploads" / "first_visit" / project_id / photo_name
