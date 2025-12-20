@@ -83,8 +83,69 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
     }
   };
 
+  const handleDownloadPhoto = async (photoUrl) => {
+    try {
+      const response = await fetch(photoUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = photoUrl.split('/').pop();
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Foto gedownload! 📥');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Kon foto niet downloaden');
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Lightbox Modal */}
+      {lightboxPhoto && (
+        <div 
+          className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4"
+          onClick={() => setLightboxPhoto(null)}
+        >
+          <div className="relative max-w-7xl max-h-screen">
+            {/* Close Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxPhoto(null);
+              }}
+              className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
+              title="Sluiten"
+            >
+              <X size={24} style={{color: '#1E293B'}} />
+            </button>
+            
+            {/* Download Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDownloadPhoto(lightboxPhoto);
+              }}
+              className="absolute top-4 right-20 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
+              title="Download"
+            >
+              <Download size={24} style={{color: '#1E293B'}} />
+            </button>
+            
+            {/* Image */}
+            <img
+              src={lightboxPhoto}
+              alt="Vergrote foto"
+              className="max-w-full max-h-screen object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Foto's Sectie */}
       <Card>
         <CardContent className="p-6">
