@@ -894,7 +894,7 @@ frontend:
 
 test_plan:
   current_focus:
-    - "Mobile delete button for purchase invoices"
+    - "Werkbonnen Tab Testing - Dutch Project Management System"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
