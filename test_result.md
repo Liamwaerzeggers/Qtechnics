@@ -852,7 +852,6 @@ frontend:
 
 test_plan:
   current_focus:
-    - "Photo Gallery in Eerste Bezoek Tab - Verify fix works"
     - "Mobile delete button for purchase invoices"
   stuck_tasks: []
   test_all: false
