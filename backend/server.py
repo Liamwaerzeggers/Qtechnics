@@ -246,6 +246,7 @@ class ProjectUpdate(BaseModel):
     material_costs: Optional[float] = None
     material_costs_incl_vat: Optional[float] = None
     other_costs: Optional[float] = None
+    lead_id: Optional[str] = None  # Allow updating lead_id
 
 class InvoiceUpload(BaseModel):
     filename: str
