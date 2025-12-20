@@ -467,7 +467,7 @@ export default function ProjectWorkSlipPage() {
             Hoeveel uur heb je vandaag gewerkt? / Скільки годин ви сьогодні працювали?
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl">
+          <div className={`grid grid-cols-1 ${currentUser?.role !== 'worker' ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4 max-w-2xl`}>
             {/* Gewerkte uren */}
             <div>
               <label className="block text-sm font-medium mb-1" style={{ color: '#1E3A8A' }}>
@@ -503,19 +503,21 @@ export default function ProjectWorkSlipPage() {
               />
             </div>
             
-            {/* Uurtarief (readonly) */}
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#1E3A8A' }}>
-                Uurtarief / Ставка
-              </label>
-              <div className="px-4 py-3 border border-gray-200 rounded-lg text-lg font-semibold bg-gray-50" style={{ color: '#64748B' }}>
-                €{formData.hourly_rate}/uur
+            {/* Uurtarief - ALLEEN ZICHTBAAR VOOR ADMINS */}
+            {currentUser?.role !== 'worker' && (
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#1E3A8A' }}>
+                  Uurtarief / Ставка
+                </label>
+                <div className="px-4 py-3 border border-gray-200 rounded-lg text-lg font-semibold bg-gray-50" style={{ color: '#64748B' }}>
+                  €{formData.hourly_rate}/uur
+                </div>
               </div>
-            </div>
+            )}
           </div>
           
-          {/* Berekende arbeidskosten */}
-          {formData.hours_worked && (
+          {/* Berekende arbeidskosten - ALLEEN ZICHTBAAR VOOR ADMINS */}
+          {formData.hours_worked && currentUser?.role !== 'worker' && (
             <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200 max-w-2xl">
               <p className="text-sm font-medium" style={{ color: '#166534' }}>
                 💰 Arbeidskosten / Витрати на оплату праці: 
