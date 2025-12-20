@@ -270,18 +270,33 @@ export default function ProjectCostsTab({ project, quote, onUpdate }) {
             </div>
           ) : (
             <div className="space-y-3">
+              {/* Arbeidskosten uit Werkbonnen */}
+              {project.labor_cost_from_workslips > 0 && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-semibold" style={{color: '#166534'}}>
+                        ⏱️ Arbeidskosten uit Werkbonnen
+                      </div>
+                      <div className="text-xs" style={{color: '#15803d'}}>
+                        Automatisch berekend: {project.labor_hours?.toFixed(1) || '0'} man-uren × €32/uur
+                      </div>
+                    </div>
+                    <div className="text-2xl font-bold" style={{color: '#166534'}}>
+                      €{project.labor_cost_from_workslips?.toFixed(2) || '0.00'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <div className="text-sm font-semibold" style={{color: '#64748B'}}>Uurtarief Arbeid</div>
-                  <div style={{color: '#1E293B'}}>€{project.labor_cost_per_hour?.toFixed(2) || '0.00'}</div>
+                  <div className="text-sm font-semibold" style={{color: '#64748B'}}>Man-uren (uit werkbonnen)</div>
+                  <div style={{color: '#1E293B'}}>{project.labor_hours?.toFixed(1) || '0.0'} man-uur</div>
                 </div>
                 <div>
-                  <div className="text-sm font-semibold" style={{color: '#64748B'}}>Aantal Uren</div>
-                  <div style={{color: '#1E293B'}}>{project.labor_hours?.toFixed(1) || '0.0'} uur</div>
-                </div>
-                <div>
-                  <div className="text-sm font-semibold" style={{color: '#64748B'}}>Totale Arbeidskosten</div>
-                  <div style={{color: '#1E293B'}}>€{((project.labor_cost_per_hour || 0) * (project.labor_hours || 0)).toFixed(2)}</div>
+                  <div className="text-sm font-semibold" style={{color: '#64748B'}}>Arbeidskosten (uit werkbonnen)</div>
+                  <div style={{color: '#166534'}}>€{project.labor_cost_from_workslips?.toFixed(2) || '0.00'}</div>
                 </div>
                 <div>
                   <div className="text-sm font-semibold" style={{color: '#64748B'}}>Aankoopprijs Materialen</div>
