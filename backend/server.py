@@ -2550,7 +2550,7 @@ async def upload_first_visit_photo(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
-    photo_url = f"/api/uploads/first_visit/{project_id}/{unique_filename}"
+    photo_url = f"/static/uploads/first_visit/{project_id}/{unique_filename}"
     
     # Update project
     await db.projects.update_one(
