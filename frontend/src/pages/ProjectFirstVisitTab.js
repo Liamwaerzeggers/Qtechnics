@@ -15,11 +15,9 @@ const getFullImageUrl = (photoPath) => {
     return photoPath;
   }
   const baseUrl = process.env.REACT_APP_BACKEND_URL || '';
-  // Ensure path starts with /api/ for proper routing
-  const normalizedPath = photoPath.startsWith('/api/') ? photoPath : `/api${photoPath}`;
   // Add cache busting parameter to force reload
   const cacheBuster = `?v=${Date.now()}`;
-  const fullUrl = `${baseUrl}${normalizedPath}${cacheBuster}`;
+  const fullUrl = `${baseUrl}${photoPath}${cacheBuster}`;
   console.log('Image URL constructed:', fullUrl, 'from path:', photoPath);
   return fullUrl;
 };
