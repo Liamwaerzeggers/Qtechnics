@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import ProjectFirstVisitTab from './ProjectFirstVisitTab';
 import Project3DDesignTab from './Project3DDesignTab';
 import ProjectCostsTab from './ProjectCostsTab';
+import ProjectWorkSlipsTab from './ProjectWorkSlipsTab';
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams();
