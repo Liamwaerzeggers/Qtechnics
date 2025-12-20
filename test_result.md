@@ -885,3 +885,31 @@ test_plan:
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
+
+  - agent: "main"
+    message: |
+      ALL THREE ISSUES ADDRESSED:
+      
+      **Issue 1 (P0 - FIXED): Photo Gallery in Eerste Bezoek Tab**
+      - Root cause: Static files mounted on /uploads went to frontend (3000) instead of backend (8001)
+      - Fix: Changed mount path from /uploads to /api/uploads for Kubernetes ingress routing
+      - Updated all photo_url assignments in backend to use /api/uploads prefix
+      - Added getFullImageUrl() helper in frontend for backward compatibility
+      - Verified: Images now return content-type: image/jpeg instead of text/html
+      
+      **Issue 2 (P1 - IMPROVED): Delete button for purchase invoices on mobile**
+      - Improved touch target size: min-w-[44px] min-h-[44px] (Apple HIG recommendation)
+      - Added touch-manipulation for better mobile responsiveness
+      - Added active:bg-red-100 for visual feedback on touch
+      
+      **Issue 3 (P2 - FIXED): "Nieuwe Offerte" button missing from /quotes page**
+      - Added "Nieuwe Offerte" button with Plus icon
+      - Button navigates to /leads page (since quotes require lead data)
+      - Improved empty state message with helpful tip
+      
+      **Testing Status:**
+      - Photo gallery fix verified by testing agent via API endpoint testing
+      - Mobile delete button needs manual verification on actual mobile device
+      - Quotes page button added and visible
+      
+      **Ready for user verification**
