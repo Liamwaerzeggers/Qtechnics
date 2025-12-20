@@ -166,7 +166,13 @@ export default function ProjectDetailPage() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    // Refresh data when switching to quotes tab to show newly created quotes
+                    if (tab.id === 'quotes') {
+                      fetchProjectData();
+                    }
+                  }}
                   className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-all whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'border-blue-500 text-blue-600 font-semibold'
