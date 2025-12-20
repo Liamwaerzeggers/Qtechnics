@@ -1804,8 +1804,8 @@ async def get_project_quote_materials(project_id: str, current_user: User = Depe
 @api_router.post("/projects/{project_id}/work-slips", response_model=DailyReport)
 async def create_work_slip(project_id: str, report: DailyReportCreate, current_user: User = Depends(get_current_user)):
     """Create a new daily report (werkbon) for a project"""
-    # Verify project exists and belongs to user
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    # Verify project exists - allow all users to create work slips for visible projects
+    project = await db.projects.find_one({"id": project_id})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
@@ -1813,6 +1813,13 @@ async def create_work_slip(project_id: str, report: DailyReportCreate, current_u
     report_data = report.model_dump()
     if report_data.get("date") is None:
         report_data["date"] = datetime.now(timezone.utc)
+    
+    # Calculate labor cost: hours_worked * number_of_workers * hourly_rate
+    hours_worked = report_data.get("hours_worked") or 0
+    number_of_workers = report_data.get("number_of_workers") or 1
+    hourly_rate = report_data.get("hourly_rate") or 32.0
+    labor_cost = hours_worked * number_of_workers * hourly_rate
+    report_data["labor_cost"] = labor_cost
     
     # Create report
     report_obj = DailyReport(**report_data, user_id=current_user.id)
@@ -1823,7 +1830,39 @@ async def create_work_slip(project_id: str, report: DailyReportCreate, current_u
     
     await db.work_slips.insert_one(report_doc)
     
+    # Update project labor costs - sum all work slips labor costs
+    await recalculate_project_labor_from_workslips(project_id)
+    
     return report_obj
+
+async def recalculate_project_labor_from_workslips(project_id: str):
+    """Recalculate project labor costs from all work slips"""
+    # Get all work slips for this project
+    work_slips = await db.work_slips.find({"project_id": project_id}, {"_id": 0}).to_list(1000)
+    
+    # Sum up all labor costs and hours
+    total_labor_cost = sum(slip.get("labor_cost", 0) or 0 for slip in work_slips)
+    total_hours = sum((slip.get("hours_worked", 0) or 0) * (slip.get("number_of_workers", 1) or 1) for slip in work_slips)
+    
+    # Get current project
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        return
+    
+    # Calculate total costs
+    material_costs = project.get("material_costs", 0) or 0
+    other_costs = project.get("other_costs", 0) or 0
+    total_costs = total_labor_cost + material_costs + other_costs
+    
+    # Update project with new labor costs from work slips
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {
+            "labor_hours": total_hours,  # Total man-hours
+            "labor_cost_from_workslips": total_labor_cost,  # Labor cost calculated from work slips
+            "total_costs": total_costs
+        }}
+    )
 
 @api_router.get("/projects/{project_id}/work-slips", response_model=List[DailyReport])
 async def get_work_slips(project_id: str, current_user: User = Depends(get_current_user)):
