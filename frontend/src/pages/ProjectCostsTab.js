@@ -302,21 +302,21 @@ export default function ProjectCostsTab({ project, quote, onUpdate }) {
                 <div className="flex justify-between text-lg">
                   <span className="font-semibold" style={{color: '#64748B'}}>Verkoopprijs (incl. BTW):</span>
                   <span className="font-bold" style={{color: '#3B82F6'}}>
-                    €{quote?.total_incl_vat?.toFixed(2) || project.total_price?.toFixed(2) || '0.00'}
+                    €{quote?.total_incl_vat?.toFixed(2) || '0.00'}
                   </span>
                 </div>
                 
-                {!quote && !project.total_price && (
+                {!hasApprovedQuote && (
                   <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                     <p className="text-sm" style={{color: '#92400E'}}>
-                      💡 <strong>Let op:</strong> Maak een offerte in het "Offertes" tabblad om de verkoopprijs en winst correct te berekenen.
+                      💡 <strong>Let op:</strong> Keur een offerte goed in het "Offertes" tabblad. Alleen goedgekeurde offertes worden gebruikt voor winstberekening.
                     </p>
                   </div>
                 )}
                 
                 {(() => {
                   const totalCosts = project.total_costs || 0;
-                  const salePrice = quote?.total_incl_vat || project.total_price || 0;
+                  const salePrice = quote?.total_incl_vat || 0; // Only approved quote
                   const profit = salePrice - totalCosts;
                   const profitMargin = salePrice > 0 ? (profit / salePrice) * 100 : 0;
                   
