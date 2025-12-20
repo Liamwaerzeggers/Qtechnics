@@ -59,9 +59,10 @@ export default function QuotesPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Offertes</h1>
           <Button 
-            onClick={() => navigate('/quotes/new')}
+            onClick={() => navigate('/leads')}
             className="flex items-center gap-2"
             style={{backgroundColor: '#1E40AF', color: 'white'}}
+            title="Maak eerst een lead aan, dan kun je een offerte genereren"
           >
             <Plus size={20} />
             Nieuwe Offerte
