@@ -145,14 +145,24 @@ export default function ProjectCostsTab({ project, quote, onUpdate }) {
     }
   };
 
-  // Calculate financials
+  // Calculate financials - only use approved quote
   const totalCosts = project.total_costs || 0;
-  const salePrice = quote?.total_incl_vat || project.total_price || 0;
+  const salePrice = quote?.total_incl_vat || 0; // Only from approved quote
   const profit = salePrice - totalCosts;
   const profitMargin = salePrice > 0 ? (profit / salePrice) * 100 : 0;
+  const hasApprovedQuote = quote?.status === 'goedgekeurd';
 
   return (
     <div className="space-y-6">
+      {/* Warning if no approved quote */}
+      {!hasApprovedQuote && (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-sm font-medium" style={{color: '#92400E'}}>
+            ⚠️ <strong>Let op:</strong> Er is nog geen goedgekeurde offerte. Keur een offerte goed in het "Offertes" tabblad om de verkoopprijs en winst te berekenen.
+          </p>
+        </div>
+      )}
+
       {/* Financial Summary Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
