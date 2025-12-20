@@ -286,9 +286,20 @@ Q Technics`;
       <div data-testid="quote-detail-page" className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Button data-testid="back-button" variant="ghost" onClick={() => navigate('/quotes')}>
+            <Button data-testid="back-button" variant="ghost" onClick={() => fromProjectId ? navigate(`/projects/${fromProjectId}`) : navigate('/quotes')}>
               <ArrowLeft size={20} />
             </Button>
+            {fromProjectId && (
+              <Button 
+                onClick={() => {
+                  toast.success('Offerte opgeslagen! Terug naar project...');
+                  navigate(`/projects/${fromProjectId}`);
+                }}
+                style={{backgroundColor: '#10B981', color: 'white'}}
+              >
+                ✓ Opslaan en Terug naar Project
+              </Button>
+            )}
             <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
               {quote.quote_number}
             </h1>
