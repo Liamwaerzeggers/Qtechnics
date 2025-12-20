@@ -1144,15 +1144,15 @@ async def update_project(project_id: str, project_update: ProjectUpdate, current
 
 @api_router.delete("/projects/{project_id}")
 async def delete_project(project_id: str, current_user: User = Depends(get_current_user)):
-    """Archive a project (soft delete) - hidden from workers"""
-    result = await db.projects.update_one(
-        {"id": project_id, "user_id": current_user.id},
-        {"$set": {"is_archived": True}}
-    )
-    if result.matched_count == 0:
+    """Permanently delete a project (all admins can delete)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete projects")
+    
+    result = await db.projects.delete_one({"id": project_id})
+    if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    return {"message": "Project archived successfully"}
+    return {"message": "Project permanently deleted"}
 
 @api_router.put("/projects/{project_id}/toggle-archive")
 async def toggle_project_archive(project_id: str, current_user: User = Depends(get_current_user)):
