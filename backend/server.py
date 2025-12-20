@@ -128,7 +128,7 @@ class Quote(BaseModel):
     id: str = Field(default_factory=lambda: f"OFF-{datetime.now(timezone.utc).year}-{str(uuid.uuid4())[:6].upper()}")
     lead_id: str
     quote_number: str = ""
-    date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    date: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
     status: str = "concept"
     subtotal_labor: float = 0.0
     subtotal_material: float = 0.0
