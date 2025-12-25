@@ -1103,6 +1103,17 @@ async def get_work_items(skip: int = 0, limit: int = 100, current_user: User = D
     if current_user.role == "admin":
         work_items = await db.work_items.find({}, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
         total = await db.work_items.count_documents({})
+        
+        # Clean work items - remove NaN/Infinity values
+        import math
+        for item in work_items:
+            if 'price' in item and (math.isnan(item['price']) or math.isinf(item['price'])):
+                item['price'] = 0.0
+            if isinstance(item.get("created_at"), str):
+                try:
+                    item["created_at"] = datetime.fromisoformat(item["created_at"])
+                except:
+                    pass
     else:
         work_items = []
         total = 0
