@@ -150,12 +150,11 @@ export default function ProjectsPage() {
               <form onSubmit={handleSubmit} className="space-y-4" data-testid="create-project-form">
                 <div>
                   <Label>Selecteer Offerte (Optioneel)</Label>
-                  <Select value={formData.quote_id} onValueChange={(value) => setFormData({...formData, quote_id: value})}>
+                  <Select value={formData.quote_id || undefined} onValueChange={(value) => setFormData({...formData, quote_id: value})}>
                     <SelectTrigger data-testid="project-quote-select">
                       <SelectValue placeholder="Geen offerte (optioneel)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Geen offerte</SelectItem>
                       {quotes.map((quote) => (
                         <SelectItem key={quote.id} value={quote.id}>{quote.quote_number}</SelectItem>
                       ))}
