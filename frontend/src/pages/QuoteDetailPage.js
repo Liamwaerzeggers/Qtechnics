@@ -523,40 +523,16 @@ Q Technics`;
                                       )}
                                     </div>
                                   ))}
-                                </>
-                              ) : materialSearch ? (
-                                <div className="p-4 text-center" style={{color: '#94A3B8'}}>
-                                  Geen materialen gevonden voor "{materialSearch}"
-                                </div>
-                              ) : (
-                                <>
-                                  <div className="sticky top-0 bg-gray-100 px-3 py-2 text-sm font-semibold" style={{color: '#64748B'}}>
-                                    Alle materialen ({materials.length})
-                                  </div>
-                                  {materials.slice(0, 50).map((material) => (
-                                    <div
-                                      key={material.id}
-                                      data-testid={`material-option-${material.id}`}
-                                      className="p-3 hover:bg-blue-50 cursor-pointer border-b transition-colors"
-                                      onClick={() => handleSelectMaterial(material)}
-                                      style={{borderColor: '#F1F5F9'}}
-                                    >
-                                      <div className="font-semibold" style={{color: '#1E293B'}}>{material.name}</div>
-                                      <div className="text-sm flex justify-between" style={{color: '#64748B'}}>
-                                        <span>SKU: {material.sku}</span>
-                                        <span className="font-bold" style={{color: '#3B82F6'}}>€{material.price.toFixed(2)}</span>
-                                      </div>
-                                      {material.brand && (
-                                        <div className="text-xs mt-1" style={{color: '#94A3B8'}}>Merk: {material.brand}</div>
-                                      )}
-                                    </div>
-                                  ))}
-                                  {materials.length > 50 && (
+                                  {materials.length > 50 && !materialSearch && (
                                     <div className="p-3 text-center text-sm" style={{color: '#64748B'}}>
                                       Typ om door {materials.length} materialen te zoeken...
                                     </div>
                                   )}
                                 </>
+                              ) : (
+                                <div className="p-4 text-center" style={{color: '#94A3B8'}}>
+                                  {materialSearch ? `Geen materialen gevonden voor "${materialSearch}"` : 'Geen materialen beschikbaar'}
+                                </div>
                               )}
                             </div>
                           )}
