@@ -2040,7 +2040,7 @@ async def update_work_slip(project_id: str, slip_id: str, report_update: DailyRe
     # Recalculate labor cost if hours or workers changed
     hours_worked = update_data.get("hours_worked", existing.get("hours_worked", 0)) or 0
     number_of_workers = update_data.get("number_of_workers", existing.get("number_of_workers", 1)) or 1
-    hourly_rate = update_data.get("hourly_rate", existing.get("hourly_rate", 32.0)) or 32.0
+    hourly_rate = update_data.get("hourly_rate", existing.get("hourly_rate", 30.0)) or 30.0
     update_data["labor_cost"] = hours_worked * number_of_workers * hourly_rate
     
     await db.work_slips.update_one(
