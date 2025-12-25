@@ -125,6 +125,18 @@ export default function QuoteDetailPage() {
     }
   };
 
+  const fetchWorkItems = async () => {
+    try {
+      const response = await axios.get(`${API}/work-items?limit=15000`, { withCredentials: true });
+      const workItemsList = response.data.work_items || [];
+      setWorkItems(workItemsList);
+      console.log('✓ Loaded work items:', workItemsList.length);
+    } catch (error) {
+      console.error('✗ Could not fetch work items:', error);
+      toast.error('Kon werk items niet laden');
+    }
+  };
+
   const handleSelectMaterial = (material) => {
     setFormData({
       ...formData,
