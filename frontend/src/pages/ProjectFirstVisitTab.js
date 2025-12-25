@@ -75,6 +75,85 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
 
   // Update measurements when project changes
   useEffect(() => {
+
+  const handleAddMeasurement = async () => {
+    if (!selectedWorkItem || !quantity || parseFloat(quantity) <= 0) {
+      toast.error('Selecteer een werk item en voer een hoeveelheid in');
+      return;
+    }
+
+    try {
+      const measurement = {
+        work_item_id: selectedWorkItem.id,
+        title: selectedWorkItem.title,
+        quantity: parseFloat(quantity),
+        unit: selectedWorkItem.unit,
+        price: selectedWorkItem.price,
+        vat_rate: parseInt(vatRate),
+        item_type: 'arbeid'
+      };
+
+      await axios.post(
+        `${API}/projects/${project.id}/measurements`,
+        measurement,
+        { withCredentials: true }
+      );
+
+      toast.success(`${selectedWorkItem.title} toegevoegd!`);
+      
+      // Reset form
+      setSelectedWorkItem(null);
+      setQuantity('');
+      setWorkItemSearch('');
+      setShowWorkItemDropdown(false);
+      
+      // Reload project
+      onUpdate();
+    } catch (error) {
+      toast.error('Kon meting niet toevoegen');
+    }
+  };
+
+  const handleDeleteMeasurement = async (measurementId) => {
+    try {
+      await axios.delete(
+        `${API}/projects/${project.id}/measurements/${measurementId}`,
+        { withCredentials: true }
+      );
+      toast.success('Meting verwijderd');
+      onUpdate();
+    } catch (error) {
+      toast.error('Kon meting niet verwijderen');
+    }
+  };
+
+  const handleGenerateQuote = async () => {
+    if (measurements.length === 0) {
+      toast.error('Voeg eerst metingen toe');
+      return;
+    }
+
+    setGeneratingQuote(true);
+    try {
+      const response = await axios.post(
+        `${API}/projects/${project.id}/generate-quote`,
+        {},
+        { withCredentials: true }
+      );
+      
+      toast.success(`Offerte ${response.data.quote_id} gegenereerd! ${response.data.line_items_count} werk items toegevoegd. Nu kunt u materialen toevoegen.`);
+      onUpdate();
+      
+      // Optionally navigate to quote
+      setTimeout(() => {
+        window.location.href = `/quotes/${response.data.quote_id}`;
+      }, 2000);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Kon offerte niet genereren');
+    } finally {
+      setGeneratingQuote(false);
+    }
+  };
     setMeasurements(project.measurements || []);
   }, [project.measurements]);
   }, [project.first_visit_notes, project.first_visit_photos]);
