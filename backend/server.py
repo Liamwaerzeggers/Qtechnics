@@ -1013,6 +1013,102 @@ async def get_materials(skip: int = 0, limit: int = 100, current_user: User = De
         total = await db.materials.count_documents({})
     else:
         materials = []
+
+# ===== WORK ITEMS ENDPOINTS =====
+@api_router.post("/work-items/upload")
+async def upload_work_items_csv(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    """Upload work items CSV (titel, eenheid, verkoopprijs)"""
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Alleen CSV bestanden zijn toegestaan")
+    
+    try:
+        content = await file.read()
+        df = pd.read_csv(io.BytesIO(content))
+        
+        # Map column names
+        column_mapping = {
+            'titel': 'title',
+            'Titel': 'title',
+            'TITEL': 'title',
+            'Title': 'title',
+            'eenheid': 'unit',
+            'Eenheid': 'unit',
+            'EENHEID': 'unit',
+            'Unit': 'unit',
+            'verkoopprijs': 'price',
+            'Verkoopprijs': 'price',
+            'VERKOOPPRIJS': 'price',
+            'Price': 'price',
+            'Prijs': 'price',
+            'prijs': 'price'
+        }
+        
+        df = df.rename(columns=column_mapping)
+        
+        # Validate required columns
+        required_cols = ['title', 'unit', 'price']
+        missing = [col for col in required_cols if col not in df.columns]
+        if missing:
+            raise HTTPException(status_code=400, detail=f"Ontbrekende kolommen: {', '.join(missing)}")
+        
+        # Delete existing work items for this user
+        await db.work_items.delete_many({"user_id": current_user.id})
+        
+        # Insert new work items
+        work_items_to_insert = []
+        for _, row in df.iterrows():
+            try:
+                work_item = WorkItem(
+                    title=str(row['title']).strip(),
+                    unit=str(row['unit']).strip(),
+                    price=float(row['price']),
+                    user_id=current_user.id
+                )
+                work_item_doc = work_item.model_dump()
+                work_item_doc['created_at'] = work_item_doc['created_at'].isoformat()
+                work_items_to_insert.append(work_item_doc)
+            except Exception as e:
+                logger.warning(f"Skipping invalid row: {e}")
+                continue
+        
+        if work_items_to_insert:
+            await db.work_items.insert_many(work_items_to_insert)
+        
+        return {"message": f"{len(work_items_to_insert)} werk items geüpload", "count": len(work_items_to_insert)}
+    
+    except Exception as e:
+        logger.error(f"Error uploading work items CSV: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/work-items/search")
+async def search_work_items(q: str = "", current_user: User = Depends(get_current_user)):
+    """Search work items by title"""
+    if len(q) < 2:
+        return []
+    
+    # All admins see all work items
+    search_filter = {
+        "$or": [
+            {"title": {"$regex": q, "$options": "i"}},
+            {"unit": {"$regex": q, "$options": "i"}}
+        ]
+    }
+    
+    results = await db.work_items.find(search_filter, {"_id": 0}).limit(20).to_list(20)
+    return results
+
+@api_router.get("/work-items")
+async def get_work_items(skip: int = 0, limit: int = 100, current_user: User = Depends(get_current_user)):
+    """Get all work items"""
+    if current_user.role == "admin":
+        work_items = await db.work_items.find({}, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
+        total = await db.work_items.count_documents({})
+    else:
+        work_items = []
+        total = 0
+    
+    return {"work_items": work_items, "total": total}
+
         total = 0
     
     for material in materials:
