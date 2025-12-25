@@ -1058,10 +1058,17 @@ async def upload_work_items_csv(file: UploadFile = File(...), current_user: User
         work_items_to_insert = []
         for _, row in df.iterrows():
             try:
+                price = float(row['price'])
+                # Validate price - skip if NaN or Infinity
+                import math
+                if math.isnan(price) or math.isinf(price) or price < 0:
+                    logger.warning(f"Skipping row with invalid price: {price}")
+                    continue
+                    
                 work_item = WorkItem(
                     title=str(row['title']).strip(),
                     unit=str(row['unit']).strip(),
-                    price=float(row['price']),
+                    price=price,
                     user_id=current_user.id
                 )
                 work_item_doc = work_item.model_dump()
