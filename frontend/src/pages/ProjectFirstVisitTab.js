@@ -45,6 +45,38 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
     setNotes(project.first_visit_notes || '');
     setPhotos(project.first_visit_photos || []);
     console.log('Project photos updated:', project.first_visit_photos);
+
+  // Fetch work items on mount
+  useEffect(() => {
+    const fetchWorkItems = async () => {
+      try {
+        const response = await axios.get(`${API}/work-items?limit=1000`, { withCredentials: true });
+        setWorkItems(response.data.work_items || []);
+      } catch (error) {
+        console.error('Failed to fetch work items:', error);
+      }
+    };
+    fetchWorkItems();
+  }, []);
+
+  // Filter work items based on search
+  useEffect(() => {
+    if (workItemSearch && workItemSearch.trim().length > 0) {
+      const searchTerm = workItemSearch.toLowerCase().trim();
+      const filtered = workItems.filter(w =>
+        (w.title && w.title.toLowerCase().includes(searchTerm)) ||
+        (w.unit && w.unit.toLowerCase().includes(searchTerm))
+      );
+      setFilteredWorkItems(filtered.slice(0, 50));
+    } else {
+      setFilteredWorkItems(workItems.slice(0, 50));
+    }
+  }, [workItemSearch, workItems]);
+
+  // Update measurements when project changes
+  useEffect(() => {
+    setMeasurements(project.measurements || []);
+  }, [project.measurements]);
   }, [project.first_visit_notes, project.first_visit_photos]);
 
   const handlePhotoUpload = async (e) => {
