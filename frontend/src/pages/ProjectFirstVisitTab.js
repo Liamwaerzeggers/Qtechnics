@@ -29,6 +29,17 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
   const [saving, setSaving] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
 
+  // Measurements state
+  const [workItems, setWorkItems] = useState([]);
+  const [measurements, setMeasurements] = useState(project.measurements || []);
+  const [selectedWorkItem, setSelectedWorkItem] = useState(null);
+  const [quantity, setQuantity] = useState('');
+  const [vatRate, setVatRate] = useState('6');
+  const [generatingQuote, setGeneratingQuote] = useState(false);
+  const [showWorkItemDropdown, setShowWorkItemDropdown] = useState(false);
+  const [workItemSearch, setWorkItemSearch] = useState('');
+  const [filteredWorkItems, setFilteredWorkItems] = useState([]);
+
   // Update state when project prop changes
   useEffect(() => {
     setNotes(project.first_visit_notes || '');
