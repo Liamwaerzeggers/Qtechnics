@@ -1095,6 +1095,13 @@ async def search_work_items(q: str = "", current_user: User = Depends(get_curren
     }
     
     results = await db.work_items.find(search_filter, {"_id": 0}).limit(20).to_list(20)
+    
+    # Clean results - remove NaN/Infinity values
+    import math
+    for item in results:
+        if 'price' in item and (math.isnan(item['price']) or math.isinf(item['price'])):
+            item['price'] = 0.0
+    
     return results
 
 @api_router.get("/work-items")
