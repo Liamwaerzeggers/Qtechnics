@@ -50,6 +50,25 @@ export default function ProjectCostsTab({ project, quote, onUpdate }) {
     }
   };
 
+  const handleCalculateLaborCosts = async () => {
+    try {
+      const response = await axios.post(
+        `${API}/projects/${project.id}/calculate-labor-costs`,
+        {},
+        { withCredentials: true }
+      );
+      toast.success(`Arbeidskosten berekend! ${response.data.work_slips_count} werkbonnen verwerkt. Totaal: ${response.data.total_hours.toFixed(1)} uur × €30 = €${response.data.total_labor_cost.toFixed(2)}`);
+      onUpdate();
+      // Reload cost data
+      setCostData({
+        ...costData,
+        labor_hours: response.data.total_hours
+      });
+    } catch (error) {
+      toast.error('Kon arbeidskosten niet berekenen');
+    }
+  };
+
   const createInvoice = async (milestone, percentage) => {
     try {
       await axios.post(
