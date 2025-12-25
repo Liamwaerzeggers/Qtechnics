@@ -2490,13 +2490,24 @@ async def toggle_worker_status(worker_id: str, current_user: User = Depends(get_
 @api_router.post("/auth/admin/login")
 async def admin_login(username: str, password: str, response: Response):
     """Admin login with username/password"""
+    logger.info(f"Admin login attempt for username: {username}")
+    
     # Check if admin exists
     admin = await db.users.find_one({"username": username, "role": "admin"}, {"_id": 0})
     
+    logger.info(f"Admin found: {admin is not None}")
+    if admin:
+        logger.info(f"Has password_hash: {admin.get('password_hash') is not None}")
+    
     if not admin or not admin.get("password_hash"):
+        logger.warning(f"Login failed - admin not found or no password_hash for: {username}")
         raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
     
-    if not verify_password(password, admin["password_hash"]):
+    password_valid = verify_password(password, admin["password_hash"])
+    logger.info(f"Password valid: {password_valid}")
+    
+    if not password_valid:
+        logger.warning(f"Login failed - invalid password for: {username}")
         raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
     
     # Create session for admin
