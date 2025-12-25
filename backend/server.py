@@ -130,6 +130,7 @@ class Quote(BaseModel):
     quote_number: str = ""
     date: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
     status: str = "concept"
+    line_items: List[dict] = []  # Line items (materials + work)
     subtotal_labor: float = 0.0
     subtotal_material: float = 0.0
     total_excl_vat: float = 0.0
