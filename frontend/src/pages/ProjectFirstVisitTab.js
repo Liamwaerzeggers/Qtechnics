@@ -425,6 +425,177 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
           <p className="text-xs mt-2" style={{color: '#94A3B8'}}>
             💡 Tip: Deze notities helpen bij het opstellen van de offerte en zijn intern zichtbaar
           </p>
+
+          {/* NIEUWE SECTIE: Metingen & Werk Items */}
+          <div className="mt-8 pt-8 border-t">
+            <h4 className="text-lg font-bold mb-4" style={{color: '#1E3A8A'}}>
+              📏 Metingen & Werk Items
+            </h4>
+            <p className="text-sm mb-4" style={{color: '#64748B'}}>
+              Selecteer werk items uit de prijslijst en voer hoeveelheden in. Dit wordt automatisch een offerte waar u daarna materialen aan kunt toevoegen.
+            </p>
+
+            {/* Voeg Werk Item Toe */}
+            <div className="bg-blue-50 p-4 rounded-lg mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Werk Item Selectie */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                    Selecteer Werk
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Zoek werk (stucwerk, schilderwerk...)..."
+                      value={selectedWorkItem ? selectedWorkItem.title : workItemSearch}
+                      onChange={(e) => {
+                        setWorkItemSearch(e.target.value);
+                        setSelectedWorkItem(null);
+                        setShowWorkItemDropdown(true);
+                      }}
+                      onFocus={() => setShowWorkItemDropdown(true)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    />
+                    {showWorkItemDropdown && !selectedWorkItem && (
+                      <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {filteredWorkItems.length > 0 ? (
+                          filteredWorkItems.map((item) => (
+                            <div
+                              key={item.id}
+                              className="p-3 hover:bg-blue-50 cursor-pointer border-b"
+                              onClick={() => {
+                                setSelectedWorkItem(item);
+                                setWorkItemSearch('');
+                                setShowWorkItemDropdown(false);
+                              }}
+                            >
+                              <div className="font-semibold" style={{color: '#1E293B'}}>{item.title}</div>
+                              <div className="text-sm" style={{color: '#64748B'}}>
+                                Eenheid: {item.unit} • €{item.price.toFixed(2)}/{item.unit}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center" style={{color: '#94A3B8'}}>
+                            Geen werk items gevonden
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Hoeveelheid */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                    Hoeveelheid {selectedWorkItem && `(${selectedWorkItem.unit})`}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    placeholder="15"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                {/* BTW Tarief */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                    BTW Tarief
+                  </label>
+                  <select
+                    value={vatRate}
+                    onChange={(e) => setVatRate(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  >
+                    <option value="6">6% (renovatie)</option>
+                    <option value="21">21% (standaard)</option>
+                  </select>
+                </div>
+
+                {/* Toevoegen Knop */}
+                <div className="md:col-span-2 flex items-end">
+                  <Button
+                    onClick={handleAddMeasurement}
+                    disabled={!selectedWorkItem || !quantity}
+                    className="w-full"
+                    style={{backgroundColor: '#3B82F6'}}
+                  >
+                    ➕ Voeg Toe
+                  </Button>
+                </div>
+              </div>
+
+              {selectedWorkItem && quantity && (
+                <div className="mt-3 p-2 bg-white rounded text-sm">
+                  <strong>Preview:</strong> {selectedWorkItem.title} - {quantity} {selectedWorkItem.unit} × €{selectedWorkItem.price.toFixed(2)} = <strong>€{(parseFloat(quantity) * selectedWorkItem.price).toFixed(2)}</strong> (excl BTW)
+                </div>
+              )}
+            </div>
+
+            {/* Metingen Lijst */}
+            {measurements.length > 0 ? (
+              <div className="space-y-2 mb-4">
+                <h5 className="font-semibold text-sm" style={{color: '#1E3A8A'}}>
+                  Toegevoegde Metingen ({measurements.length})
+                </h5>
+                {measurements.map((m) => (
+                  <div key={m.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                    <div className="flex-1">
+                      <div className="font-semibold" style={{color: '#1E293B'}}>{m.title}</div>
+                      <div className="text-sm" style={{color: '#64748B'}}>
+                        {m.quantity} {m.unit} × €{m.price.toFixed(2)} = €{(m.quantity * m.price).toFixed(2)} (excl BTW, {m.vat_rate}% BTW)
+                      </div>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteMeasurement(m.id)}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                ))}
+
+                {/* Totaal */}
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="text-sm font-medium" style={{color: '#166534'}}>
+                    💰 Totaal (excl BTW): €{measurements.reduce((sum, m) => sum + (m.quantity * m.price), 0).toFixed(2)}
+                  </div>
+                </div>
+
+                {/* Genereer Offerte Knop */}
+                <Button
+                  onClick={handleGenerateQuote}
+                  disabled={generatingQuote}
+                  className="w-full mt-4"
+                  style={{backgroundColor: '#10B981', fontSize: '1.1rem', padding: '1.5rem'}}
+                >
+                  {generatingQuote ? (
+                    <>
+                      <Loader2 className="animate-spin mr-2" size={24} />
+                      Offerte Genereren...
+                    </>
+                  ) : (
+                    <>
+                      📋 Genereer Offerte uit Metingen
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-center mt-2" style={{color: '#64748B'}}>
+                  💡 De offerte wordt automatisch aangemaakt met deze werk items. Daarna kunt u materialen toevoegen.
+                </p>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                📏 Nog geen metingen toegevoegd. Voeg werk items toe om een offerte te genereren.
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
