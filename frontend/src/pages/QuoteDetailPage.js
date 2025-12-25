@@ -584,7 +584,7 @@ Q Technics`;
 
                     {!useCustomMaterial && formData.item_type === 'arbeid' ? (
                       <div>
-                        <Label>Selecteer Werk Item</Label>
+                        <Label>Selecteer Werk</Label>
                         <div className="relative">
                           <div className="relative">
                             <Input 
