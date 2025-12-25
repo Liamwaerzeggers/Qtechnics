@@ -163,6 +163,18 @@ export default function QuoteDetailPage() {
     toast.success(`${material.name} geselecteerd`);
   };
 
+  const handleSelectWorkItem = (workItem) => {
+    setFormData({
+      ...formData,
+      description: workItem.title,
+      unit_price: workItem.price.toString(),
+      item_type: 'arbeid'
+    });
+    setWorkItemSearch('');
+    setShowWorkItemDropdown(false);
+    toast.success(`${workItem.title} geselecteerd`);
+  };
+
   const handleAddItem = async (e) => {
     e.preventDefault();
     try {
