@@ -145,17 +145,19 @@ export default function ProjectsPage() {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4" data-testid="create-project-form">
                 <div>
-                  <Label>Selecteer Offerte</Label>
-                  <Select value={formData.quote_id} onValueChange={(value) => setFormData({...formData, quote_id: value})} required>
+                  <Label>Selecteer Offerte (Optioneel)</Label>
+                  <Select value={formData.quote_id} onValueChange={(value) => setFormData({...formData, quote_id: value})}>
                     <SelectTrigger data-testid="project-quote-select">
-                      <SelectValue placeholder="Kies een offerte" />
+                      <SelectValue placeholder="Geen offerte (optioneel)" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="">Geen offerte</SelectItem>
                       {quotes.map((quote) => (
                         <SelectItem key={quote.id} value={quote.id}>{quote.quote_number}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-gray-500 mt-1">💡 Tip: Maak een Lead aan om automatisch een project te starten</p>
                 </div>
                 <div>
                   <Label>Projectnaam</Label>
