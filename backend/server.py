@@ -1111,14 +1111,6 @@ async def get_work_items(skip: int = 0, limit: int = 100, current_user: User = D
 
 # ===== PROJECTS ENDPOINTS =====
 @api_router.post("/projects", response_model=Project)
-        if isinstance(material["created_at"], str):
-            material["created_at"] = datetime.fromisoformat(material["created_at"])
-    
-    return {"materials": materials, "total": total}
-
-# ============= PROJECT ROUTES =============
-
-@api_router.post("/projects", response_model=Project)
 async def create_project(project_create: ProjectCreate, current_user: User = Depends(get_current_user)):
     """Create a new project (from quote OR lead)"""
     # Backward compatible: verify quote if quote_id provided
