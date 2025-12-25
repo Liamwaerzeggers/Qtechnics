@@ -582,6 +582,118 @@ Q Technics`;
                       </div>
                     ) : null}
 
+                    {!useCustomMaterial && formData.item_type === 'arbeid' ? (
+                      <div>
+                        <Label>Selecteer Werk Item</Label>
+                        <div className="relative">
+                          <div className="relative">
+                            <Input 
+                              data-testid="work-item-search-input"
+                              placeholder="Typ om te zoeken of klik voor volledige lijst..."
+                              value={workItemSearch} 
+                              onChange={(e) => {
+                                setWorkItemSearch(e.target.value);
+                                setShowWorkItemDropdown(true);
+                              }}
+                              onFocus={() => setShowWorkItemDropdown(true)}
+                            />
+                            <button
+                              type="button"
+                              className="absolute right-2 top-2.5"
+                              onClick={() => {
+                                setShowWorkItemDropdown(!showWorkItemDropdown);
+                                if (!showWorkItemDropdown) {
+                                  setWorkItemSearch('');
+                                }
+                              }}
+                            >
+                              <svg className="w-5 h-5" style={{color: '#64748B'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                          </div>
+                          {showWorkItemDropdown && (
+                            <div 
+                              className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-80 overflow-y-auto"
+                              style={{borderColor: '#E2E8F0'}}
+                            >
+                              {filteredWorkItems.length > 0 ? (
+                                <>
+                                  <div className="sticky top-0 bg-gray-100 px-3 py-2 text-sm font-semibold" style={{color: '#64748B'}}>
+                                    {filteredWorkItems.length} resultaten {workItemSearch && `voor "${workItemSearch}"`}
+                                  </div>
+                                  {filteredWorkItems.map((workItem) => (
+                                    <div
+                                      key={workItem.id}
+                                      data-testid={`work-item-option-${workItem.id}`}
+                                      className="p-3 hover:bg-blue-50 cursor-pointer border-b transition-colors"
+                                      onClick={() => handleSelectWorkItem(workItem)}
+                                      style={{borderColor: '#F1F5F9'}}
+                                    >
+                                      <div className="font-semibold" style={{color: '#1E293B'}}>{workItem.title}</div>
+                                      <div className="text-sm flex justify-between" style={{color: '#64748B'}}>
+                                        <span>Eenheid: {workItem.unit}</span>
+                                        <span className="font-bold" style={{color: '#3B82F6'}}>€{workItem.price.toFixed(2)}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </>
+                              ) : workItemSearch ? (
+                                <div className="p-4 text-center" style={{color: '#94A3B8'}}>
+                                  Geen werk items gevonden voor "{workItemSearch}"
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="sticky top-0 bg-gray-100 px-3 py-2 text-sm font-semibold" style={{color: '#64748B'}}>
+                                    Alle werk items ({workItems.length})
+                                  </div>
+                                  {workItems.slice(0, 50).map((workItem) => (
+                                    <div
+                                      key={workItem.id}
+                                      data-testid={`work-item-option-${workItem.id}`}
+                                      className="p-3 hover:bg-blue-50 cursor-pointer border-b transition-colors"
+                                      onClick={() => handleSelectWorkItem(workItem)}
+                                      style={{borderColor: '#F1F5F9'}}
+                                    >
+                                      <div className="font-semibold" style={{color: '#1E293B'}}>{workItem.title}</div>
+                                      <div className="text-sm flex justify-between" style={{color: '#64748B'}}>
+                                        <span>Eenheid: {workItem.unit}</span>
+                                        <span className="font-bold" style={{color: '#3B82F6'}}>€{workItem.price.toFixed(2)}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {workItems.length > 50 && (
+                                    <div className="p-3 text-center text-sm" style={{color: '#64748B'}}>
+                                      Typ om door {workItems.length} werk items te zoeken...
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex justify-between items-center mt-1">
+                          <p className="text-xs" style={{color: '#64748B'}}>
+                            {workItems.length > 0 ? (
+                              `${workItems.length} werk items beschikbaar - typ om te zoeken`
+                            ) : (
+                              'Geen werk items gevonden - upload eerst een CSV in de Materialen pagina'
+                            )}
+                          </p>
+                          {workItems.length === 0 && (
+                            <button
+                              type="button"
+                              onClick={() => window.location.href = '/materials'}
+                              className="text-xs px-2 py-1 rounded"
+                              style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}
+                            >
+                              Naar Materialen →
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
+
                     <div>
                       <Label>Omschrijving</Label>
                       <Input 
