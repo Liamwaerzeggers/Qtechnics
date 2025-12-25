@@ -73,11 +73,6 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
     }
   }, [workItemSearch, workItems]);
 
-  // Update measurements when project changes
-  useEffect(() => {
-    setMeasurements(project.measurements || []);
-  }, [project.measurements]);
-
   const handleAddMeasurement = async () => {
     if (!selectedWorkItem || !quantity || parseFloat(quantity) <= 0) {
       toast.error('Selecteer een werk item en voer een hoeveelheid in');
