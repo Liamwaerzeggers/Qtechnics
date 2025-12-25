@@ -34,10 +34,17 @@ export default function QuoteDetailPage() {
   const [filteredMaterials, setFilteredMaterials] = useState([]);
   const [showMaterialDropdown, setShowMaterialDropdown] = useState(false);
   const [useCustomMaterial, setUseCustomMaterial] = useState(false);
+  
+  // Work items state
+  const [workItems, setWorkItems] = useState([]);
+  const [workItemSearch, setWorkItemSearch] = useState('');
+  const [filteredWorkItems, setFilteredWorkItems] = useState([]);
+  const [showWorkItemDropdown, setShowWorkItemDropdown] = useState(false);
 
   useEffect(() => {
     fetchQuoteData();
     fetchMaterials();
+    fetchWorkItems();
   }, [quoteId]);
 
   // Close dropdown when clicking outside
