@@ -189,6 +189,16 @@ class Material(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
 
+class WorkItem(BaseModel):
+    """Work/Labor items for quotes (stucwerk, schilderwerk, etc)"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str  # Titel van het werk
+    unit: str  # Eenheid: m², lm, stuks, uur
+    price: float  # Verkoopprijs ex BTW
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    user_id: str
+
 # Project Models
 class Project(BaseModel):
     model_config = ConfigDict(extra="ignore")
