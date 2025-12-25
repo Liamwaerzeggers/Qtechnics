@@ -2536,7 +2536,7 @@ async def admin_login(username: str, password: str, response: Response):
     
     # Return admin user data
     admin_data = {
-        "id": admin.get("id") or admin.get("email"),
+        "id": admin["_id"],  # Use _id from database
         "username": admin["username"],
         "email": admin["email"],
         "name": admin["name"],
