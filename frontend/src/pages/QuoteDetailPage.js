@@ -589,7 +589,7 @@ Q Technics`;
                           <div className="relative">
                             <Input 
                               data-testid="work-item-search-input"
-                              placeholder="Typ om te zoeken of klik voor volledige lijst..."
+                              placeholder="Zoek werk (stucwerk, schilderwerk...)..."
                               value={workItemSearch} 
                               onChange={(e) => {
                                 setWorkItemSearch(e.target.value);
