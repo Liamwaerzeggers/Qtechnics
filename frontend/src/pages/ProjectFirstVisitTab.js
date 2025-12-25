@@ -75,6 +75,8 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
 
   // Update measurements when project changes
   useEffect(() => {
+    setMeasurements(project.measurements || []);
+  }, [project.measurements]);
 
   const handleAddMeasurement = async () => {
     if (!selectedWorkItem || !quantity || parseFloat(quantity) <= 0) {
