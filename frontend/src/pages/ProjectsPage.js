@@ -67,6 +67,10 @@ export default function ProjectsPage() {
     e.preventDefault();
     try {
       const data = { ...formData };
+      // Don't send empty quote_id
+      if (!data.quote_id || data.quote_id === '') {
+        delete data.quote_id;
+      }
       if (data.start_date) data.start_date = new Date(data.start_date).toISOString();
       if (data.end_date) data.end_date = new Date(data.end_date).toISOString();
       
