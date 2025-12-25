@@ -156,9 +156,14 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
       setGeneratingQuote(false);
     }
   };
+
+  // Update state when project prop changes
+  useEffect(() => {
+    setNotes(project.first_visit_notes || '');
+    setPhotos(project.first_visit_photos || []);
     setMeasurements(project.measurements || []);
-  }, [project.measurements]);
-  }, [project.first_visit_notes, project.first_visit_photos]);
+    console.log('Project photos updated:', project.first_visit_photos);
+  }, [project.first_visit_notes, project.first_visit_photos, project.measurements]);
 
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
