@@ -329,7 +329,7 @@ class DailyReportCreate(BaseModel):
     date: Optional[datetime] = None
     hours_worked: Optional[float] = None
     number_of_workers: int = 1
-    hourly_rate: float = 32.0
+    hourly_rate: float = 30.0
     materials_used: Optional[List[MaterialUsed]] = []
     extra_materials: Optional[List[ExtraMaterial]] = []
     work_description_nl: Optional[str] = None
