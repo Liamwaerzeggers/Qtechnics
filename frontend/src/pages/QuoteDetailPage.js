@@ -471,7 +471,7 @@ Q Technics`;
                           <div className="relative">
                             <Input 
                               data-testid="material-search-input"
-                              placeholder="Typ om te zoeken of klik voor volledige lijst..."
+                              placeholder="Zoek materiaal (tegels, cement...)..."
                               value={materialSearch} 
                               onChange={(e) => {
                                 setMaterialSearch(e.target.value);
