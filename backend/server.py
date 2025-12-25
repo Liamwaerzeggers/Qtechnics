@@ -2913,6 +2913,147 @@ async def update_first_visit_notes(
     return {"message": "Notes updated"}
 
 @api_router.post("/projects/{project_id}/designs")
+
+
+# ===== PROJECT MEASUREMENTS ENDPOINTS =====
+@api_router.post("/projects/{project_id}/measurements")
+async def add_measurement(project_id: str, measurement: dict, current_user: User = Depends(get_current_user)):
+    """Add work item measurement for quote generation"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can add measurements")
+    
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Add measurement with ID
+    measurement['id'] = str(uuid.uuid4())
+    measurements = project.get('measurements', [])
+    measurements.append(measurement)
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"measurements": measurements}}
+    )
+    
+    return {"message": "Measurement added", "id": measurement['id']}
+
+@api_router.delete("/projects/{project_id}/measurements/{measurement_id}")
+async def delete_measurement(project_id: str, measurement_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a measurement"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete measurements")
+    
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    measurements = [m for m in project.get('measurements', []) if m.get('id') != measurement_id]
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"measurements": measurements}}
+    )
+    
+    return {"message": "Measurement deleted"}
+
+@api_router.post("/projects/{project_id}/generate-quote")
+async def generate_quote_from_measurements(project_id: str, current_user: User = Depends(get_current_user)):
+    """Generate quote from project measurements"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can generate quotes")
+    
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    measurements = project.get('measurements', [])
+    if not measurements:
+        raise HTTPException(status_code=400, detail="No measurements to generate quote from")
+    
+    # Check if lead exists
+    lead_id = project.get('lead_id')
+    if not lead_id:
+        raise HTTPException(status_code=400, detail="Project must have a lead to generate quote")
+    
+    # Create line items from measurements
+    line_items = []
+    subtotal_labor = 0.0
+    subtotal_material = 0.0
+    vat_breakdown = {}
+    
+    for m in measurements:
+        quantity = float(m.get('quantity', 0))
+        unit_price = float(m.get('price', 0))
+        vat_rate = int(m.get('vat_rate', 21))
+        item_type = m.get('item_type', 'arbeid')
+        
+        total_excl = quantity * unit_price
+        
+        line_item = {
+            "id": str(uuid.uuid4()),
+            "description": m.get('title', ''),
+            "quantity": quantity,
+            "unit": m.get('unit', ''),
+            "unit_price": unit_price,
+            "vat_rate": vat_rate,
+            "item_type": item_type
+        }
+        line_items.append(line_item)
+        
+        # Calculate subtotals
+        if item_type == 'arbeid':
+            subtotal_labor += total_excl
+        else:
+            subtotal_material += total_excl
+        
+        # VAT breakdown
+        vat_key = str(vat_rate)
+        if vat_key not in vat_breakdown:
+            vat_breakdown[vat_key] = 0.0
+        vat_breakdown[vat_key] += total_excl * (vat_rate / 100)
+    
+    # Calculate totals
+    total_excl_vat = subtotal_labor + subtotal_material
+    total_vat = sum(vat_breakdown.values())
+    total_incl_vat = total_excl_vat + total_vat
+    
+    # Create quote
+    quote_id = f"OFF-{datetime.now(timezone.utc).year}-{str(uuid.uuid4())[:6].upper()}"
+    quote = {
+        "id": quote_id,
+        "lead_id": lead_id,
+        "project_id": project_id,
+        "quote_number": quote_id,
+        "date": datetime.now(timezone.utc).isoformat(),
+        "status": "concept",
+        "line_items": line_items,
+        "subtotal_labor": subtotal_labor,
+        "subtotal_material": subtotal_material,
+        "total_excl_vat": total_excl_vat,
+        "vat_breakdown": vat_breakdown,
+        "total_vat": total_vat,
+        "total_incl_vat": total_incl_vat,
+        "total_price": total_incl_vat,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "user_id": current_user.id
+    }
+    
+    await db.quotes.insert_one(quote)
+    
+    # Update project with quote_id
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"quote_id": quote_id}}
+    )
+    
+    return {
+        "message": "Quote generated successfully",
+        "quote_id": quote_id,
+        "total_incl_vat": total_incl_vat,
+        "line_items_count": len(line_items)
+    }
+
 async def upload_design_file(
     project_id: str,
     file: UploadFile = File(...),
