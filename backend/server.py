@@ -302,7 +302,7 @@ class DailyReport(BaseModel):
     # Hours worked and labor tracking
     hours_worked: Optional[float] = None
     number_of_workers: int = 1  # Number of workers on this day
-    hourly_rate: float = 32.0  # €32 per hour default
+    hourly_rate: float = 30.0  # €30 per hour default
     labor_cost: Optional[float] = None  # Calculated: hours_worked * number_of_workers * hourly_rate
     
     # Materials tracking (NO PRICES)
