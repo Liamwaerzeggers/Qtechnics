@@ -279,7 +279,7 @@ export default function ProjectCostsTab({ project, quote, onUpdate }) {
                         ⏱️ Arbeidskosten uit Werkbonnen
                       </div>
                       <div className="text-xs" style={{color: '#15803d'}}>
-                        Automatisch berekend: {project.labor_hours?.toFixed(1) || '0'} man-uren × €32/uur
+                        Automatisch berekend: {project.labor_hours?.toFixed(1) || '0'} man-uren × €30/uur
                       </div>
                     </div>
                     <div className="text-2xl font-bold" style={{color: '#166534'}}>
