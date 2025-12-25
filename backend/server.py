@@ -1011,8 +1011,19 @@ async def get_materials(skip: int = 0, limit: int = 100, current_user: User = De
     if current_user.role == "admin":
         materials = await db.materials.find({}, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
         total = await db.materials.count_documents({})
+        
+        # Convert datetime strings if needed
+        for material in materials:
+            if isinstance(material.get("created_at"), str):
+                try:
+                    material["created_at"] = datetime.fromisoformat(material["created_at"])
+                except:
+                    pass
     else:
         materials = []
+        total = 0
+    
+    return {"materials": materials, "total": total}
 
 # ===== WORK ITEMS ENDPOINTS =====
 @api_router.post("/work-items/upload")
