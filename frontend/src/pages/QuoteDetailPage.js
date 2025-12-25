@@ -89,6 +89,21 @@ export default function QuoteDetailPage() {
     }
   }, [materialSearch, materials]);
 
+  // Work item search effect
+  useEffect(() => {
+    if (workItemSearch && workItemSearch.trim().length > 0) {
+      const searchTerm = workItemSearch.toLowerCase().trim();
+      const filtered = workItems.filter(w => {
+        if (w.title && w.title.toLowerCase().includes(searchTerm)) return true;
+        if (w.unit && w.unit.toLowerCase().includes(searchTerm)) return true;
+        return false;
+      });
+      setFilteredWorkItems(filtered.slice(0, 50));
+    } else {
+      setFilteredWorkItems([]);
+    }
+  }, [workItemSearch, workItems]);
+
   const fetchQuoteData = async () => {
     try {
       const [quoteRes, itemsRes] = await Promise.all([
