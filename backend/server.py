@@ -1934,6 +1934,73 @@ async def get_project_quote_materials(project_id: str, current_user: User = Depe
     
     return materials
 
+
+@api_router.post("/projects/{project_id}/calculate-labor-costs")
+async def calculate_project_labor_costs(project_id: str, current_user: User = Depends(get_current_user)):
+    """Calculate total labor costs from all work slips and update project"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can calculate costs")
+    
+    # Get project
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Get all work slips for this project
+    work_slips = await db.work_slips.find({"project_id": project_id}, {"_id": 0}).to_list(1000)
+    
+    # Calculate total labor hours and cost
+    total_hours = 0.0
+    total_labor_cost = 0.0
+    
+    for slip in work_slips:
+        hours = slip.get("hours_worked", 0) or 0
+        workers = slip.get("number_of_workers", 1) or 1
+        rate = slip.get("hourly_rate", 30.0) or 30.0
+        
+        slip_hours = hours * workers
+        slip_cost = hours * workers * rate
+        
+        total_hours += slip_hours
+        total_labor_cost += slip_cost
+    
+    # Update project with calculated costs
+    update_data = {
+        "labor_hours": total_hours,
+        "labor_cost_per_hour": 30.0,  # Fixed rate
+    }
+    
+    # Calculate total costs
+    material_costs = project.get("material_costs", 0.0)
+    other_costs = project.get("other_costs", 0.0)
+    total_costs = total_labor_cost + material_costs + other_costs
+    
+    update_data["total_costs"] = total_costs
+    
+    # Calculate profit if quote exists
+    if project.get("quote_id"):
+        quote = await db.quotes.find_one({"id": project["quote_id"]})
+        if quote:
+            revenue = quote.get("total_incl_vat", quote.get("total_price", 0.0))
+            profit = revenue - total_costs
+            profit_margin = (profit / revenue * 100) if revenue > 0 else 0
+            
+            update_data["profit"] = profit
+            update_data["profit_margin"] = profit_margin
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": update_data}
+    )
+    
+    return {
+        "total_hours": total_hours,
+        "total_labor_cost": total_labor_cost,
+        "total_costs": total_costs,
+        "work_slips_count": len(work_slips)
+    }
+
+
 @api_router.post("/projects/{project_id}/work-slips", response_model=DailyReport)
 async def create_work_slip(project_id: str, report: DailyReportCreate, current_user: User = Depends(get_current_user)):
     """Create a new daily report (werkbon) for a project"""
