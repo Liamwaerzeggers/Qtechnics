@@ -218,6 +218,9 @@ class Project(BaseModel):
     first_visit_notes: str = ""  # Notes from first visit
     first_visit_date: Optional[datetime] = None
     
+    # NIEUWE SECTIE: Metingen & Werk Items (voor offerte generatie)
+    measurements: List[dict] = []  # [{work_item_id, title, quantity, unit, price, vat_rate}]
+    
     # NIEUWE SECTIE: 3D Ontwerpen
     design_3d_files: List[dict] = []  # [{filename, url, upload_date}]
     
