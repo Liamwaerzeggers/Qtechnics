@@ -181,12 +181,14 @@ export default function ProjectWorkSlipPage() {
   const fetchQuoteMaterials = async () => {
     try {
       const response = await axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/projects/${projectId}/quote-materials`,
+        `${window.location.origin}/api/projects/${projectId}/quote-materials`,
         { withCredentials: true }
       );
+      console.log('Quote materials loaded:', response.data);
       setQuoteMaterials(response.data || []);
     } catch (error) {
       console.error('Failed to fetch quote materials:', error);
+      setQuoteMaterials([]);
     }
   };
 
