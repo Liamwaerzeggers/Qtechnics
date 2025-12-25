@@ -1950,7 +1950,7 @@ async def create_work_slip(project_id: str, report: DailyReportCreate, current_u
     # Calculate labor cost: hours_worked * number_of_workers * hourly_rate
     hours_worked = report_data.get("hours_worked") or 0
     number_of_workers = report_data.get("number_of_workers") or 1
-    hourly_rate = report_data.get("hourly_rate") or 32.0
+    hourly_rate = report_data.get("hourly_rate") or 30.0
     labor_cost = hours_worked * number_of_workers * hourly_rate
     report_data["labor_cost"] = labor_cost
     
