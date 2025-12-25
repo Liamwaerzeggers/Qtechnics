@@ -261,12 +261,25 @@ export default function ProjectCostsTab({ project, quote, onUpdate }) {
               </div>
               <div>
                 <Label>Aantal Uren</Label>
-                <Input 
-                  type="number" 
-                  step="0.5"
-                  value={costData.labor_hours} 
-                  onChange={(e) => setCostData({...costData, labor_hours: parseFloat(e.target.value) || 0})} 
-                />
+                <div className="flex gap-2">
+                  <Input 
+                    type="number" 
+                    step="0.5"
+                    value={costData.labor_hours} 
+                    onChange={(e) => setCostData({...costData, labor_hours: parseFloat(e.target.value) || 0})} 
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleCalculateLaborCosts}
+                    style={{backgroundColor: '#10B981', whiteSpace: 'nowrap'}}
+                    title="Bereken arbeidsuren uit alle werkbonnen"
+                  >
+                    📊 Uit Werkbonnen
+                  </Button>
+                </div>
+                <p className="text-xs mt-1" style={{color: '#64748B'}}>
+                  💡 Klik op "Uit Werkbonnen" om automatisch alle uren te berekenen
+                </p>
               </div>
               <div>
                 <Label>Aankoopprijs Materialen (€)</Label>
