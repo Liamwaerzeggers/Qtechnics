@@ -2492,8 +2492,8 @@ async def admin_login(username: str, password: str, response: Response):
     """Admin login with username/password"""
     logger.info(f"Admin login attempt for username: {username}")
     
-    # Check if admin exists
-    admin = await db.users.find_one({"username": username, "role": "admin"}, {"_id": 0})
+    # Check if admin exists - INCLUDE _id in result
+    admin = await db.users.find_one({"username": username, "role": "admin"})
     
     logger.info(f"Admin found: {admin is not None}")
     if admin:
@@ -2514,9 +2514,9 @@ async def admin_login(username: str, password: str, response: Response):
     session_token = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(days=30)
     
-    # Admin _id is their email
+    # Use _id as user_id
     session = {
-        "user_id": admin.get("id") or admin.get("email"),
+        "user_id": admin["_id"],  # Use the _id from database
         "session_token": session_token,
         "expires_at": expires_at.isoformat(),
         "created_at": datetime.now(timezone.utc).isoformat()
