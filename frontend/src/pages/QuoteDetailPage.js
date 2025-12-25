@@ -85,7 +85,8 @@ export default function QuoteDetailPage() {
       console.log(`Found ${filtered.length} results for "${materialSearch}"`);
       setFilteredMaterials(filtered.slice(0, 50)); // Limit to 50 results for performance
     } else {
-      setFilteredMaterials([]); // Will show first 50 from materials array in UI when no search term
+      // Show first 50 materials when no search term
+      setFilteredMaterials(materials.slice(0, 50));
     }
   }, [materialSearch, materials]);
 
