@@ -1109,9 +1109,8 @@ async def get_work_items(skip: int = 0, limit: int = 100, current_user: User = D
     
     return {"work_items": work_items, "total": total}
 
-        total = 0
-    
-    for material in materials:
+# ===== PROJECTS ENDPOINTS =====
+@api_router.post("/projects", response_model=Project)
         if isinstance(material["created_at"], str):
             material["created_at"] = datetime.fromisoformat(material["created_at"])
     
