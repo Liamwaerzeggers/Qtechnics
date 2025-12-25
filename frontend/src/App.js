@@ -21,7 +21,7 @@ import FinancesPage from './pages/FinancesPage';
 import WorkersPage from './pages/WorkersPage';
 import AdminsPage from './pages/AdminsPage';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
 const API = `${BACKEND_URL}/api`;
 const AUTH_URL = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(window.location.origin + '/auth/callback')}`;
 
