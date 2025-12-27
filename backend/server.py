@@ -2959,7 +2959,7 @@ async def delete_measurement(project_id: str, measurement_id: str, current_user:
 
 @api_router.post("/projects/{project_id}/generate-quote")
 async def generate_quote_from_measurements(project_id: str, current_user: User = Depends(get_current_user)):
-    """Generate quote from project measurements"""
+    """Generate quote from project measurements - creates individual editable line items"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can generate quotes")
     
@@ -2976,11 +2976,11 @@ async def generate_quote_from_measurements(project_id: str, current_user: User =
     if not lead_id:
         raise HTTPException(status_code=400, detail="Project must have a lead to generate quote")
     
-    # Create line items from measurements
-    line_items = []
-    subtotal_labor = 0.0
-    subtotal_material = 0.0
-    vat_breakdown = {}
+    # Create quote first
+    quote_id = f"OFF-{datetime.now(timezone.utc).year}-{str(uuid.uuid4())[:6].upper()}"
+    
+    # Create line items from measurements - store in SEPARATE collection for editing
+    line_items_to_insert = []
     
     for m in measurements:
         quantity = float(m.get('quantity', 0))
@@ -2989,37 +2989,47 @@ async def generate_quote_from_measurements(project_id: str, current_user: User =
         item_type = m.get('item_type', 'arbeid')
         
         total_excl = quantity * unit_price
+        vat_amount = total_excl * (vat_rate / 100)
+        total_incl = total_excl + vat_amount
         
-        line_item = {
+        line_item_doc = {
             "id": str(uuid.uuid4()),
+            "quote_id": quote_id,  # Link to quote
             "description": m.get('title', ''),
             "quantity": quantity,
             "unit": m.get('unit', ''),
             "unit_price": unit_price,
-            "vat_rate": vat_rate,
-            "item_type": item_type
+            "vat_rate": float(vat_rate),
+            "item_type": item_type,
+            "total_excl_vat": total_excl,
+            "vat_amount": vat_amount,
+            "total_incl_vat": total_incl,
+            "total": total_incl,  # Backwards compatibility
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
-        line_items.append(line_item)
-        
-        # Calculate subtotals
-        if item_type == 'arbeid':
-            subtotal_labor += total_excl
-        else:
-            subtotal_material += total_excl
-        
-        # VAT breakdown
-        vat_key = str(vat_rate)
+        line_items_to_insert.append(line_item_doc)
+    
+    # Insert all line items into the separate collection
+    if line_items_to_insert:
+        await db.line_items.insert_many(line_items_to_insert)
+    
+    # Calculate totals from inserted items
+    subtotal_labor = sum(item['total_excl_vat'] for item in line_items_to_insert if item['item_type'] == 'arbeid')
+    subtotal_material = sum(item['total_excl_vat'] for item in line_items_to_insert if item['item_type'] != 'arbeid')
+    total_excl_vat = subtotal_labor + subtotal_material
+    
+    # VAT breakdown
+    vat_breakdown = {}
+    for item in line_items_to_insert:
+        vat_key = str(int(item['vat_rate']))
         if vat_key not in vat_breakdown:
             vat_breakdown[vat_key] = 0.0
-        vat_breakdown[vat_key] += total_excl * (vat_rate / 100)
+        vat_breakdown[vat_key] += item['vat_amount']
     
-    # Calculate totals
-    total_excl_vat = subtotal_labor + subtotal_material
     total_vat = sum(vat_breakdown.values())
     total_incl_vat = total_excl_vat + total_vat
     
-    # Create quote
-    quote_id = f"OFF-{datetime.now(timezone.utc).year}-{str(uuid.uuid4())[:6].upper()}"
+    # Create quote document (line_items empty - they're in separate collection)
     quote = {
         "id": quote_id,
         "lead_id": lead_id,
@@ -3027,7 +3037,7 @@ async def generate_quote_from_measurements(project_id: str, current_user: User =
         "quote_number": quote_id,
         "date": datetime.now(timezone.utc).isoformat(),
         "status": "concept",
-        "line_items": line_items,
+        "line_items": [],  # Empty - items are in separate collection for editing
         "subtotal_labor": subtotal_labor,
         "subtotal_material": subtotal_material,
         "total_excl_vat": total_excl_vat,
@@ -3051,7 +3061,7 @@ async def generate_quote_from_measurements(project_id: str, current_user: User =
         "message": "Quote generated successfully",
         "quote_id": quote_id,
         "total_incl_vat": total_incl_vat,
-        "line_items_count": len(line_items)
+        "line_items_count": len(line_items_to_insert)
     }
 
 async def upload_design_file(
