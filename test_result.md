@@ -72,17 +72,17 @@ backend:
         comment: "POST /api/quotes/{quote_id}/items working correctly. Successfully added new test item (€121.00), count increased from 2 to 3 items. Quote total automatically recalculated to €1954.80. All VAT calculations correct."
 
 frontend:
-  - task: "Frontend Testing"
-    implemented: false
-    working: "NA"
-    file: "N/A"
+  - task: "Quote Detail Page UI - Line Items Display and Functionality"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/pages/QuoteDetailPage.js"
     stuck_count: 0
-    priority: "low"
+    priority: "high"
     needs_retesting: false
     status_history:
-      - working: "NA"
+      - working: true
         agent: "testing"
-        comment: "Frontend testing not performed as per system limitations. Backend API functionality fully verified."
+        comment: "Quote detail page UI fully functional. Line Items section displays multiple items correctly as separate editable rows. Each item shows description, quantity x price, type, total, and red delete button. Item deletion works properly with automatic total recalculation. 'Item Toevoegen' button present. All validation criteria met: items displayed as separate rows (not as 1 total), delete buttons visible and clickable, totals recalculated after changes. Tested with quote OFF-2025-75EC79."
 
 metadata:
   created_by: "testing_agent"
