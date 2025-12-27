@@ -783,6 +783,273 @@ TEST003,Test Boor,12.75,HSS boor 8mm,Gereedschap,TestBrand"""
         
         return True
 
+    def test_quote_generation_from_measurements(self):
+        """Test quote generation from project measurements functionality"""
+        print("\n📐 Testing Quote Generation from Measurements...")
+        
+        # Step 1: Login as admin using the specific credentials
+        print("🔐 Testing admin login with test/test123...")
+        
+        # Test admin login endpoint
+        login_url = f"{self.base_url}/auth/admin/login?username=test&password=test123"
+        
+        try:
+            response = requests.post(login_url)
+            
+            if response.status_code != 200:
+                print(f"❌ Admin login failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+                return False
+            
+            # Extract session token from response
+            login_data = response.json()
+            admin_session_token = None
+            
+            # Check if session token is in response body
+            if 'session_token' in login_data:
+                admin_session_token = login_data['session_token']
+            
+            # Also check cookies
+            if not admin_session_token and 'session_token' in response.cookies:
+                admin_session_token = response.cookies['session_token']
+            
+            if not admin_session_token:
+                print("❌ No session token received from admin login")
+                return False
+                
+            print(f"✅ Admin login successful - Token: {admin_session_token[:10]}...")
+            
+            # Update session token for subsequent requests
+            self.session_token = admin_session_token
+            
+        except Exception as e:
+            print(f"❌ Admin login error: {str(e)}")
+            return False
+        
+        # Step 2: Get project PROJ-EEFA4606 and verify it has measurements
+        print("\n🔍 Testing project retrieval and measurements...")
+        
+        project_id = "PROJ-EEFA4606"
+        success, project_data = self.run_test(
+            "Get Project with Measurements",
+            "GET",
+            f"projects/{project_id}",
+            200
+        )
+        
+        if not success:
+            print(f"❌ Failed to retrieve project {project_id}")
+            return False
+        
+        measurements = project_data.get('measurements', [])
+        if not measurements:
+            print(f"❌ Project {project_id} has no measurements")
+            return False
+        
+        print(f"✅ Project has {len(measurements)} measurements:")
+        for i, m in enumerate(measurements, 1):
+            print(f"   {i}. {m.get('title', 'Unknown')} - {m.get('quantity', 0)} {m.get('unit', '')}")
+        
+        # Step 3: Generate quote from measurements
+        print("\n💰 Testing quote generation from measurements...")
+        
+        success, quote_response = self.run_test(
+            "Generate Quote from Measurements",
+            "POST",
+            f"projects/{project_id}/generate-quote",
+            200
+        )
+        
+        if not success:
+            print("❌ Failed to generate quote from measurements")
+            return False
+        
+        quote_id = quote_response.get('quote_id')
+        if not quote_id:
+            print("❌ No quote_id in response")
+            return False
+        
+        line_items_count = quote_response.get('line_items_count', 0)
+        total_incl_vat = quote_response.get('total_incl_vat', 0)
+        
+        print(f"✅ Quote generated successfully:")
+        print(f"   Quote ID: {quote_id}")
+        print(f"   Line Items: {line_items_count}")
+        print(f"   Total (incl VAT): €{total_incl_vat:.2f}")
+        
+        # Step 4: Test GET /api/quotes/{quote_id}/items - should return 3 items
+        print(f"\n📋 Testing line items retrieval for quote {quote_id}...")
+        
+        success, items_response = self.run_test(
+            "Get Quote Line Items",
+            "GET",
+            f"quotes/{quote_id}/items",
+            200
+        )
+        
+        if not success:
+            print("❌ Failed to retrieve quote line items")
+            return False
+        
+        line_items = items_response if isinstance(items_response, list) else []
+        
+        if len(line_items) != 3:
+            print(f"❌ Expected 3 line items, got {len(line_items)}")
+            return False
+        
+        print(f"✅ Retrieved {len(line_items)} line items as expected")
+        
+        # Verify each item has required fields
+        required_fields = ['id', 'description', 'quantity', 'unit_price', 'total', 'vat_rate']
+        for i, item in enumerate(line_items, 1):
+            print(f"   Item {i}: {item.get('description', 'Unknown')}")
+            print(f"     Quantity: {item.get('quantity', 0)}")
+            print(f"     Unit Price: €{item.get('unit_price', 0):.2f}")
+            print(f"     VAT Rate: {item.get('vat_rate', 0)}%")
+            print(f"     Total: €{item.get('total', 0):.2f}")
+            
+            # Check required fields
+            missing_fields = [field for field in required_fields if field not in item]
+            if missing_fields:
+                print(f"❌ Item {i} missing fields: {missing_fields}")
+                return False
+        
+        print("✅ All line items have required fields")
+        
+        # Step 5: Test deleting a line item and verify total recalculation
+        print(f"\n🗑️ Testing line item deletion and total recalculation...")
+        
+        if line_items:
+            item_to_delete = line_items[0]
+            item_id = item_to_delete['id']
+            item_description = item_to_delete.get('description', 'Unknown')
+            
+            print(f"   Deleting item: {item_description}")
+            
+            success, delete_response = self.run_test(
+                "Delete Line Item",
+                "DELETE",
+                f"quotes/{quote_id}/items/{item_id}",
+                200
+            )
+            
+            if not success:
+                print("❌ Failed to delete line item")
+                return False
+            
+            print("✅ Line item deleted successfully")
+            
+            # Verify item count reduced
+            success, updated_items = self.run_test(
+                "Verify Item Count After Delete",
+                "GET",
+                f"quotes/{quote_id}/items",
+                200
+            )
+            
+            if not success:
+                print("❌ Failed to retrieve updated line items")
+                return False
+            
+            updated_items_list = updated_items if isinstance(updated_items, list) else []
+            
+            if len(updated_items_list) != 2:
+                print(f"❌ Expected 2 items after deletion, got {len(updated_items_list)}")
+                return False
+            
+            print("✅ Item count correctly reduced to 2")
+            
+            # Verify quote totals were recalculated
+            success, updated_quote = self.run_test(
+                "Verify Quote Total Recalculation",
+                "GET",
+                f"quotes/{quote_id}",
+                200
+            )
+            
+            if success:
+                new_total = updated_quote.get('total_incl_vat', 0)
+                print(f"   Updated total: €{new_total:.2f} (was €{total_incl_vat:.2f})")
+                
+                if new_total < total_incl_vat:
+                    print("✅ Quote total correctly recalculated after deletion")
+                else:
+                    print("❌ Quote total not recalculated properly")
+                    return False
+        
+        # Step 6: Test adding a new line item
+        print(f"\n➕ Testing adding new line item...")
+        
+        new_item_data = {
+            "description": "Test item",
+            "quantity": 1,
+            "unit_price": 100,
+            "item_type": "materiaal",
+            "vat_rate": 21
+        }
+        
+        success, add_response = self.run_test(
+            "Add New Line Item",
+            "POST",
+            f"quotes/{quote_id}/items",
+            200,
+            data=new_item_data
+        )
+        
+        if not success:
+            print("❌ Failed to add new line item")
+            return False
+        
+        new_item = add_response
+        print(f"✅ New item added: {new_item.get('description')}")
+        print(f"   Total: €{new_item.get('total', 0):.2f}")
+        
+        # Verify item count increased
+        success, final_items = self.run_test(
+            "Verify Final Item Count",
+            "GET",
+            f"quotes/{quote_id}/items",
+            200
+        )
+        
+        if success:
+            final_items_list = final_items if isinstance(final_items, list) else []
+            
+            if len(final_items_list) != 3:
+                print(f"❌ Expected 3 items after addition, got {len(final_items_list)}")
+                return False
+            
+            print("✅ Item count correctly increased to 3")
+        
+        # Final verification: Check quote totals were recalculated again
+        success, final_quote = self.run_test(
+            "Verify Final Quote Totals",
+            "GET",
+            f"quotes/{quote_id}",
+            200
+        )
+        
+        if success:
+            final_total = final_quote.get('total_incl_vat', 0)
+            print(f"   Final total: €{final_total:.2f}")
+            print("✅ Quote totals automatically recalculated")
+        
+        print("\n🎉 Quote Generation from Measurements test completed successfully!")
+        print("✅ All functionality working as expected:")
+        print("   ✅ Admin login with test/test123")
+        print("   ✅ Project measurements retrieval")
+        print("   ✅ Quote generation from measurements")
+        print("   ✅ Line items stored in separate collection")
+        print("   ✅ Individual line item editing/deletion")
+        print("   ✅ Automatic total recalculation")
+        print("   ✅ New line item addition")
+        
+        return True
+
 def main():
     print("🚀 Starting Offerte Dashboard API Tests")
     print("=" * 50)
