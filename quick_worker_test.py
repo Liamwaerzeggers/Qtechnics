@@ -57,7 +57,7 @@ def create_test_worker():
 
 def test_worker_login_and_projects(email, password):
     """Test worker login and project access"""
-    base_url = "https://dutch-project-flow.preview.emergentagent.com/api"
+    base_url = "https://zealous-mendel-1.preview.emergentagent.com/api"
     
     # Test login
     print(f"🔍 Testing login for {email}...")

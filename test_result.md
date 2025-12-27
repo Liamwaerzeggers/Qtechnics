@@ -904,7 +904,7 @@ test_plan:
       WERKBONNEN TAB TESTING COMPLETE - COMPREHENSIVE CODE ANALYSIS ✅
       
       **TESTING SCOPE:** Dutch Project Management System - Werkbonnen Tab Functionality
-      **URL TESTED:** https://dutch-project-flow.preview.emergentagent.com
+      **URL TESTED:** https://zealous-mendel-1.preview.emergentagent.com
       
       **AUTHENTICATION LIMITATION:**
       ❌ **UI Testing Blocked:** Google OAuth authentication required for admin access
