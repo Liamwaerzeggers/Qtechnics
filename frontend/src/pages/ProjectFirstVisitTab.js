@@ -41,10 +41,16 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
   const [filteredWorkItems, setFilteredWorkItems] = useState([]);
 
   // Update state when project prop changes
+  // useEffect(() => {
+  //   setNotes(project.first_visit_notes || '');
+  //   setPhotos(project.first_visit_photos || []);
+  //   console.log('Project photos updated:', project.first_visit_photos);
+  
   useEffect(() => {
-    setNotes(project.first_visit_notes || '');
-    setPhotos(project.first_visit_photos || []);
-    console.log('Project photos updated:', project.first_visit_photos);
+  setNotes(project.first_visit_notes || '');
+  setPhotos(project.first_visit_photos || []);
+  console.log('Project photos updated:', project.first_visit_photos);
+}, [project.first_visit_notes, project.first_visit_photos]);
 
   // Fetch work items on mount
   useEffect(() => {
