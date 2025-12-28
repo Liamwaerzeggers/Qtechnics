@@ -201,6 +201,21 @@ export default function CalendarPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 className="font-semibold mb-3" style={{ color: '#1E3A8A' }}>Legenda & Info</h3>
           <div className="space-y-4">
+            {/* Event Types */}
+            <div>
+              <h4 className="text-sm font-medium mb-2" style={{ color: '#64748B' }}>Event Types</h4>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#1E40AF' }}></div>
+                  <span className="text-sm" style={{ color: '#64748B' }}>Project periode</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 rounded border-2 border-dashed" style={{ backgroundColor: '#F59E0B', borderColor: 'white' }}></div>
+                  <span className="text-sm" style={{ color: '#64748B' }}>🔧 Gepland werk</span>
+                </div>
+              </div>
+            </div>
+            
             {/* Status Colors */}
             <div>
               <h4 className="text-sm font-medium mb-2" style={{ color: '#64748B' }}>Status</h4>
@@ -220,7 +235,7 @@ export default function CalendarPage() {
             <div>
               <h4 className="text-sm font-medium mb-2" style={{ color: '#64748B' }}>Aangepaste Kleuren</h4>
               <p className="text-xs" style={{ color: '#94A3B8' }}>
-                Elk project kan een eigen kleur krijgen via de project detail pagina. Dit maakt overlappende projecten makkelijk te onderscheiden in de kalender.
+                Elk project kan een eigen kleur krijgen via de project detail pagina. Geplande werken (oranje, stippellijn) worden binnen de projectperiode getoond.
               </p>
             </div>
           </div>
