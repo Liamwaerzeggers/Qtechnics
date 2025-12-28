@@ -310,15 +310,15 @@ export default function CustomerPortalPage() {
           </div>
         )}
 
-        {/* Calendar Tab */}
+        {/* Calendar Tab - Mobile Optimized */}
         {activeTab === 'calendar' && (
           <Card>
-            <CardHeader>
-              <CardTitle>📅 Geplande Werkperiodes</CardTitle>
+            <CardHeader className="pb-2 sm:pb-4">
+              <CardTitle className="text-base sm:text-lg">📅 Geplande Werkperiodes</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {project.scheduled_days && project.scheduled_days.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {project.scheduled_days
                     .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
                     .map((period, idx) => {
@@ -328,50 +328,58 @@ export default function CustomerPortalPage() {
                       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
                       
                       return (
-                        <div key={idx} className="flex items-center gap-4 p-4 bg-white border rounded-lg shadow-sm">
-                          {/* Start Date */}
-                          <div className="text-center min-w-[70px] bg-blue-500 text-white rounded-lg p-2">
-                            <p className="text-xs font-medium">VAN</p>
-                            <p className="text-2xl font-bold">{startDate.getDate()}</p>
-                            <p className="text-xs">{startDate.toLocaleDateString('nl-BE', { month: 'short' })}</p>
+                        <div key={idx} className="bg-white border rounded-lg p-3 sm:p-4 shadow-sm">
+                          {/* Description - Mobile First */}
+                          <div className="mb-3">
+                            <h4 className="font-semibold text-gray-800 text-base sm:text-lg">{period.description || 'Werkzaamheden'}</h4>
+                            <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                              {diffDays} {diffDays === 1 ? 'dag' : 'dagen'}
+                            </span>
                           </div>
                           
-                          {/* Arrow */}
-                          <span className="text-gray-400">→</span>
-                          
-                          {/* End Date */}
-                          <div className="text-center min-w-[70px] bg-orange-500 text-white rounded-lg p-2">
-                            <p className="text-xs font-medium">T/M</p>
-                            <p className="text-2xl font-bold">{endDate.getDate()}</p>
-                            <p className="text-xs">{endDate.toLocaleDateString('nl-BE', { month: 'short' })}</p>
+                          {/* Date Display - Responsive */}
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            {/* Start Date */}
+                            <div className="text-center bg-blue-500 text-white rounded-lg p-2 min-w-[50px] sm:min-w-[60px]">
+                              <p className="text-[10px] sm:text-xs font-medium opacity-80">VAN</p>
+                              <p className="text-lg sm:text-xl font-bold">{startDate.getDate()}</p>
+                              <p className="text-[10px] sm:text-xs">{startDate.toLocaleDateString('nl-BE', { month: 'short' })}</p>
+                            </div>
+                            
+                            {/* Arrow */}
+                            <span className="text-gray-400 text-sm">→</span>
+                            
+                            {/* End Date */}
+                            <div className="text-center bg-orange-500 text-white rounded-lg p-2 min-w-[50px] sm:min-w-[60px]">
+                              <p className="text-[10px] sm:text-xs font-medium opacity-80">T/M</p>
+                              <p className="text-lg sm:text-xl font-bold">{endDate.getDate()}</p>
+                              <p className="text-[10px] sm:text-xs">{endDate.toLocaleDateString('nl-BE', { month: 'short' })}</p>
+                            </div>
+                            
+                            {/* Year badge - only on larger screens */}
+                            <span className="hidden sm:inline-block text-xs text-gray-500">
+                              {endDate.getFullYear()}
+                            </span>
                           </div>
                           
-                          {/* Days badge */}
-                          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                            {diffDays} {diffDays === 1 ? 'dag' : 'dagen'}
-                          </span>
-                          
-                          {/* Description */}
-                          <div className="flex-1">
-                            <p className="font-semibold text-gray-800">{period.description || 'Werkzaamheden'}</p>
-                            <p className="text-sm text-gray-500">
-                              {startDate.toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long' })} t/m {endDate.toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                            </p>
-                          </div>
+                          {/* Full date text - smaller on mobile */}
+                          <p className="text-xs text-gray-500 mt-2">
+                            {startDate.toLocaleDateString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short' })} t/m {endDate.toLocaleDateString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
                         </div>
                       );
                     })}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-gray-500 text-center py-6 text-sm">
                   Nog geen werkperiodes ingepland
                 </p>
               )}
               
               {(project.planning_start_date || project.planning_end_date) && (
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium mb-2">Projectperiode</h4>
-                  <p className="text-sm text-gray-600">
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium mb-1 text-sm">Projectperiode</h4>
+                  <p className="text-xs sm:text-sm text-gray-600">
                     {formatDate(project.planning_start_date)} - {formatDate(project.planning_end_date)}
                   </p>
                 </div>
