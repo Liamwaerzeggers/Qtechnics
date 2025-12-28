@@ -364,6 +364,9 @@ export default function ProjectWorkSlipsTab({ project, onUpdate }) {
                     <td className="p-4 text-sm" style={{color: '#166534'}}>
                       {totalManHours.toFixed(1)} man-uren totaal
                     </td>
+                    <td className="p-4 text-center text-xs" style={{color: '#166534'}}>
+                      {workSlips.filter(s => s.visible_to_customer).length}/{workSlips.length} zichtbaar
+                    </td>
                     <td></td>
                   </tr>
                 </tfoot>
