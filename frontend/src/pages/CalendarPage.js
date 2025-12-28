@@ -5,9 +5,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import DashboardLayout from '../components/DashboardLayout';
-import { Calendar as CalendarIcon, Loader2, X } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 
 // Custom CSS for better event display
 const calendarStyles = `
