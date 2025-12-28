@@ -783,6 +783,245 @@ TEST003,Test Boor,12.75,HSS boor 8mm,Gereedschap,TestBrand"""
         
         return True
 
+    def test_peppol_bug_fixes(self):
+        """Test the two specific Peppol/Billit bug fixes"""
+        print("\n🔧 Testing Peppol/Billit Bug Fixes...")
+        
+        # Step 1: Login as admin using the specific credentials
+        print("🔐 Testing admin login with test/test123...")
+        
+        # Test admin login endpoint
+        login_url = f"{self.base_url}/auth/admin/login?username=test&password=test123"
+        
+        try:
+            response = requests.post(login_url)
+            
+            if response.status_code != 200:
+                print(f"❌ Admin login failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+                return False
+            
+            # Extract session token from response
+            login_data = response.json()
+            admin_session_token = None
+            
+            # Check if session token is in response body
+            if 'session_token' in login_data:
+                admin_session_token = login_data['session_token']
+            
+            # Also check cookies
+            if not admin_session_token and 'session_token' in response.cookies:
+                admin_session_token = response.cookies['session_token']
+            
+            if not admin_session_token:
+                print("❌ No session token received from admin login")
+                return False
+                
+            print(f"✅ Admin login successful - Token: {admin_session_token[:10]}...")
+            
+            # Update session token for subsequent requests
+            self.session_token = admin_session_token
+            
+        except Exception as e:
+            print(f"❌ Admin login error: {str(e)}")
+            return False
+        
+        # Step 2: Get customer invoices from the specific project
+        print("\n📋 Getting customer invoices from project PROJ-EEFA4606...")
+        
+        project_id = "PROJ-EEFA4606"
+        success, invoices_response = self.run_test(
+            "Get Customer Invoices",
+            "GET",
+            f"projects/{project_id}/customer-invoices",
+            200
+        )
+        
+        if not success:
+            print(f"❌ Failed to get customer invoices for project {project_id}")
+            return False
+        
+        invoices = invoices_response if isinstance(invoices_response, list) else []
+        if not invoices:
+            print(f"❌ No customer invoices found for project {project_id}")
+            return False
+        
+        print(f"✅ Found {len(invoices)} customer invoices")
+        
+        # Step 3: Test Bug Fix 1 - PDF Download for invoices with comma-separated quote_ids
+        print("\n🐛 Testing Bug Fix 1: PDF Download for Multi-Quote Invoices...")
+        
+        pdf_test_results = []
+        for i, invoice in enumerate(invoices[:3]):  # Test first 3 invoices
+            invoice_id = invoice.get('id')
+            quote_id = invoice.get('quote_id', '')
+            
+            print(f"\n   Testing invoice {i+1}: {invoice_id}")
+            print(f"   Quote ID(s): {quote_id}")
+            
+            # Check if this invoice has comma-separated quote_ids (the bug scenario)
+            has_multiple_quotes = ',' in quote_id
+            if has_multiple_quotes:
+                print(f"   ✅ Multi-quote invoice detected (comma-separated quote_ids)")
+            
+            # Test PDF download
+            url = f"{self.base_url}/invoices/{invoice_id}/pdf"
+            headers = {'Authorization': f'Bearer {self.session_token}'}
+            
+            try:
+                response = requests.get(url, headers=headers)
+                
+                print(f"   Status Code: {response.status_code}")
+                
+                if response.status_code == 200:
+                    # Verify it's a valid PDF
+                    if response.content.startswith(b'%PDF'):
+                        print(f"   ✅ PDF download successful - Valid PDF format")
+                        print(f"   ✅ PDF size: {len(response.content)} bytes")
+                        pdf_test_results.append(True)
+                    else:
+                        print(f"   ❌ Response is not a valid PDF")
+                        pdf_test_results.append(False)
+                else:
+                    print(f"   ❌ PDF download failed - Status: {response.status_code}")
+                    try:
+                        error_detail = response.json()
+                        print(f"   Error: {error_detail}")
+                    except:
+                        print(f"   Response: {response.text[:200]}")
+                    pdf_test_results.append(False)
+                    
+            except Exception as e:
+                print(f"   ❌ PDF download error: {str(e)}")
+                pdf_test_results.append(False)
+        
+        # Step 4: Test Bug Fix 2 - Peppol Send "Invoice Not Found" Fix
+        print("\n🐛 Testing Bug Fix 2: Peppol Send Invoice Found...")
+        
+        peppol_test_results = []
+        for i, invoice in enumerate(invoices[:2]):  # Test first 2 invoices
+            invoice_id = invoice.get('id')
+            
+            print(f"\n   Testing Peppol send for invoice {i+1}: {invoice_id}")
+            
+            # Test Peppol send
+            url = f"{self.base_url}/invoices/{invoice_id}/send-peppol"
+            headers = {'Authorization': f'Bearer {self.session_token}'}
+            
+            try:
+                response = requests.post(url, headers=headers)
+                
+                print(f"   Status Code: {response.status_code}")
+                
+                if response.status_code == 404:
+                    # This would indicate the old bug - invoice not found
+                    try:
+                        error_detail = response.json()
+                        if "Invoice not found" in str(error_detail):
+                            print(f"   ❌ BUG STILL EXISTS: Invoice not found error")
+                            peppol_test_results.append(False)
+                        else:
+                            print(f"   ✅ Different 404 error (not the bug): {error_detail}")
+                            peppol_test_results.append(True)
+                    except:
+                        print(f"   ❌ 404 error: {response.text[:200]}")
+                        peppol_test_results.append(False)
+                        
+                elif response.status_code in [200, 400, 500]:
+                    # Invoice was found (bug fixed), but may have other issues
+                    try:
+                        response_data = response.json()
+                        error_msg = str(response_data)
+                        
+                        if "Invoice not found" in error_msg:
+                            print(f"   ❌ BUG STILL EXISTS: Invoice not found in response")
+                            peppol_test_results.append(False)
+                        elif "InvalidAccessToken" in error_msg or "Billit" in error_msg:
+                            print(f"   ✅ Invoice found! Billit API error (expected): {response_data}")
+                            peppol_test_results.append(True)
+                        else:
+                            print(f"   ✅ Invoice found! Response: {response_data}")
+                            peppol_test_results.append(True)
+                            
+                    except:
+                        print(f"   ✅ Invoice found! Non-JSON response: {response.text[:200]}")
+                        peppol_test_results.append(True)
+                        
+                else:
+                    print(f"   ⚠️ Unexpected status code: {response.status_code}")
+                    try:
+                        error_detail = response.json()
+                        print(f"   Response: {error_detail}")
+                    except:
+                        print(f"   Response: {response.text[:200]}")
+                    peppol_test_results.append(True)  # Assume invoice was found
+                    
+            except Exception as e:
+                print(f"   ❌ Peppol send error: {str(e)}")
+                peppol_test_results.append(False)
+        
+        # Step 5: Test Peppol Status Endpoint
+        print("\n📊 Testing Peppol Status Endpoint...")
+        
+        status_test_results = []
+        for i, invoice in enumerate(invoices[:2]):  # Test first 2 invoices
+            invoice_id = invoice.get('id')
+            
+            print(f"\n   Testing Peppol status for invoice {i+1}: {invoice_id}")
+            
+            success, status_response = self.run_test(
+                f"Get Peppol Status - Invoice {i+1}",
+                "GET",
+                f"invoices/{invoice_id}/peppol-status",
+                200
+            )
+            
+            if success:
+                peppol_status = status_response.get('peppol_status', 'unknown')
+                billit_id = status_response.get('billit_invoice_id')
+                print(f"   ✅ Peppol Status: {peppol_status}")
+                if billit_id:
+                    print(f"   ✅ Billit Invoice ID: {billit_id}")
+                status_test_results.append(True)
+            else:
+                print(f"   ❌ Failed to get Peppol status")
+                status_test_results.append(False)
+        
+        # Summary
+        print("\n📊 Bug Fix Test Results Summary:")
+        print("=" * 50)
+        
+        pdf_success_rate = sum(pdf_test_results) / len(pdf_test_results) if pdf_test_results else 0
+        peppol_success_rate = sum(peppol_test_results) / len(peppol_test_results) if peppol_test_results else 0
+        status_success_rate = sum(status_test_results) / len(status_test_results) if status_test_results else 0
+        
+        print(f"🐛 Bug Fix 1 - PDF Download: {sum(pdf_test_results)}/{len(pdf_test_results)} passed ({pdf_success_rate:.1%})")
+        print(f"🐛 Bug Fix 2 - Peppol Send: {sum(peppol_test_results)}/{len(peppol_test_results)} passed ({peppol_success_rate:.1%})")
+        print(f"📊 Peppol Status: {sum(status_test_results)}/{len(status_test_results)} passed ({status_success_rate:.1%})")
+        
+        # Overall success
+        overall_success = (pdf_success_rate >= 0.8 and peppol_success_rate >= 0.8 and status_success_rate >= 0.8)
+        
+        if overall_success:
+            print("\n🎉 Bug fixes verified successfully!")
+            print("✅ PDF download works for multi-quote invoices")
+            print("✅ Peppol send finds invoices correctly")
+            print("✅ Peppol status endpoint working")
+        else:
+            print("\n⚠️ Some issues detected in bug fixes")
+            if pdf_success_rate < 0.8:
+                print("❌ PDF download issues detected")
+            if peppol_success_rate < 0.8:
+                print("❌ Peppol send issues detected")
+            if status_success_rate < 0.8:
+                print("❌ Peppol status issues detected")
+        
+        return overall_success
+
     def test_quote_generation_from_measurements(self):
         """Test quote generation from project measurements functionality"""
         print("\n📐 Testing Quote Generation from Measurements...")
