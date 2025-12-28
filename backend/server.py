@@ -1711,66 +1711,15 @@ async def get_calendar_events(current_user: User = Depends(get_current_user)):
         projects = await db.projects.find({"visible_to_workers": True}, {"_id": 0}).to_list(1000)
     
     for project in projects:
-        # Only add to calendar if project has start and/or end date
-        if project.get("start_date") or project.get("end_date"):
-            # Parse dates
-            start = project.get("start_date")
-            end = project.get("end_date")
-            
-            if isinstance(start, str):
-                start = datetime.fromisoformat(start)
-            if isinstance(end, str):
-                end = datetime.fromisoformat(end)
-            
-            # Create event
-            event = {
-                "id": f"project_{project['id']}",
-                "title": project.get("name", "Naamloos Project"),
-                "start": start.isoformat() if start else None,
-                "end": end.isoformat() if end else None,
-                "project_id": project["id"],
-                "status": project.get("status", "actief"),
-                "color": project.get("color", "#1E40AF"),
-                "type": "project"
-            }
-            
-            # Only add if we have at least a start date
-            if event["start"]:
-                events.append(event)
-        
-        # 1b. Add scheduled work periods - show them as separate events FOR visibility
-        # but styled differently to show they're part of the project
+        # First collect scheduled work periods - these should be displayed IN FRONT
         scheduled_days = project.get("scheduled_days", [])
-        scheduled_work_list = []
+        work_events = []
+        
         for period in scheduled_days:
             start_date = period.get("start_date")
             end_date = period.get("end_date")
             
             # Support both old format (single date) and new format (date range)
-            if not end_date:
-                end_date = period.get("date", start_date)
-                start_date = period.get("date", start_date)
-            
-            if start_date:
-                description = period.get("description", period.get("notes", "Gepland werk"))
-                scheduled_work_list.append({
-                    "start": start_date,
-                    "end": end_date,
-                    "description": description
-                })
-        
-        # Add scheduled work info to the project event (for tooltip/popup display)
-        if scheduled_work_list and events:
-            for evt in events:
-                if evt.get("project_id") == project["id"] and evt.get("type") == "project":
-                    evt["scheduled_work"] = scheduled_work_list
-                    break
-        
-        # Create separate events for work periods (smaller/indented bars INSIDE project)
-        for period in scheduled_days:
-            start_date = period.get("start_date")
-            end_date = period.get("end_date")
-            
             if not end_date:
                 end_date = period.get("date", start_date)
                 start_date = period.get("date", start_date)
@@ -1793,21 +1742,49 @@ async def get_calendar_events(current_user: User = Depends(get_current_user)):
                     
                     description = period.get("description", period.get("notes", "Gepland werk"))
                     
-                    event = {
+                    work_event = {
                         "id": f"work_{project['id']}_{start_date}",
                         "title": f"🔧 {description}",
                         "start": start_dt.isoformat(),
-                        "end": end_dt_display.isoformat(),  # +1 day for inclusive display
+                        "end": end_dt_display.isoformat(),
                         "project_id": project["id"],
                         "project_name": project.get("name", "Project"),
                         "status": project.get("status", "actief"),
-                        "color": "#F59E0B",  # Orange for scheduled work
+                        "color": "#F59E0B",
                         "type": "scheduled_work",
                         "description": description
                     }
-                    events.append(event)
+                    work_events.append(work_event)
                 except Exception as e:
                     logger.error(f"Error parsing scheduled work dates: {e}")
+        
+        # Add work events FIRST (they appear in front)
+        events.extend(work_events)
+        
+        # Then add project event SECOND (it appears behind/below)
+        if project.get("start_date") or project.get("end_date"):
+            start = project.get("start_date")
+            end = project.get("end_date")
+            
+            if isinstance(start, str):
+                start = datetime.fromisoformat(start)
+            if isinstance(end, str):
+                end = datetime.fromisoformat(end)
+            
+            project_event = {
+                "id": f"project_{project['id']}",
+                "title": project.get("name", "Naamloos Project"),
+                "start": start.isoformat() if start else None,
+                "end": end.isoformat() if end else None,
+                "project_id": project["id"],
+                "status": project.get("status", "actief"),
+                "color": project.get("color", "#1E40AF"),
+                "type": "project",
+                "scheduled_work": [{"start": w["start"], "end": w["end"], "description": w["description"]} for w in work_events]
+            }
+            
+            if project_event["start"]:
+                events.append(project_event)
     
     # 2. Get work slip events - all admins see all work slips
     if current_user.role == "admin":
