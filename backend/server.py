@@ -1737,6 +1737,27 @@ async def get_calendar_events(current_user: User = Depends(get_current_user)):
             # Only add if we have at least a start date
             if event["start"]:
                 events.append(event)
+        
+        # 1b. Add scheduled work days as separate events
+        scheduled_days = project.get("scheduled_days", [])
+        for day in scheduled_days:
+            day_date = day.get("date")
+            if isinstance(day_date, str):
+                day_date = datetime.fromisoformat(day_date)
+            
+            if day_date:
+                event = {
+                    "id": f"scheduled_{project['id']}_{day_date.strftime('%Y%m%d')}",
+                    "title": f"📅 {project.get('name', 'Project')}",
+                    "start": day_date.isoformat(),
+                    "end": day_date.isoformat(),
+                    "project_id": project["id"],
+                    "status": project.get("status", "actief"),
+                    "color": "#F59E0B",  # Orange for scheduled days
+                    "type": "scheduled_day",
+                    "notes": day.get("notes", "")
+                }
+                events.append(event)
     
     # 2. Get work slip events - all admins see all work slips
     if current_user.role == "admin":
