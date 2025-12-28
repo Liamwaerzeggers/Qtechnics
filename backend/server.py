@@ -3531,7 +3531,13 @@ def transform_invoice_to_billit(invoice: dict, lead: dict, project: dict) -> dic
 
 @api_router.post("/invoices/{invoice_id}/send-peppol")
 async def send_invoice_via_peppol(invoice_id: str, current_user: User = Depends(get_current_user)):
-    """Send an invoice via Peppol through Billit"""
+    """Send an invoice via Peppol through Billit.
+    
+    Process:
+    1. Create order in Billit via /v1/orders
+    2. Send order via Peppol using /v1/command/send with TransportType='Peppol'
+    3. Track status via webhooks or polling
+    """
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can send Peppol invoices")
     
@@ -3541,7 +3547,7 @@ async def send_invoice_via_peppol(invoice_id: str, current_user: User = Depends(
         raise HTTPException(status_code=404, detail="Invoice not found")
     
     # Check if already sent
-    if invoice.get("peppol_status") == "sent":
+    if invoice.get("peppol_status") in ["sent", "delivered"]:
         raise HTTPException(status_code=400, detail="Invoice already sent via Peppol")
     
     # Get project and lead info
@@ -3563,31 +3569,36 @@ async def send_invoice_via_peppol(invoice_id: str, current_user: User = Depends(
             {"$set": {"peppol_status": "sending"}}
         )
         
-        # Send to Billit
-        billit_response = await send_to_billit(billit_data)
-        billit_invoice_id = billit_response.get("id") or billit_response.get("invoiceId")
+        # Step 1: Create order in Billit
+        logger.info(f"Creating Billit order for invoice {invoice_id}")
+        billit_response = await create_billit_order(billit_data)
+        billit_order_id = billit_response.get("orderId")
         
-        # Send via Peppol
-        peppol_response = await send_peppol_command(billit_invoice_id)
+        if not billit_order_id:
+            raise Exception("Billit did not return an order ID")
+        
+        logger.info(f"Billit order created with ID: {billit_order_id}")
+        
+        # Step 2: Send via Peppol
+        logger.info(f"Sending order {billit_order_id} via Peppol")
+        send_response = await send_billit_command(billit_order_id, transport_type="Peppol")
         
         # Update invoice with Peppol info
         await db.invoices.update_one(
             {"id": invoice_id},
             {"$set": {
                 "peppol_status": "sent",
-                "billit_invoice_id": billit_invoice_id,
-                "peppol_message_id": peppol_response.get("messageId"),
+                "billit_order_id": billit_order_id,
                 "peppol_sent_at": datetime.now(timezone.utc).isoformat()
             }}
         )
         
-        logger.info(f"Invoice {invoice_id} sent via Peppol, Billit ID: {billit_invoice_id}")
+        logger.info(f"Invoice {invoice_id} sent via Peppol, Billit Order ID: {billit_order_id}")
         
         return {
             "success": True,
             "message": "Factuur verstuurd via Peppol",
-            "billit_invoice_id": billit_invoice_id,
-            "peppol_message_id": peppol_response.get("messageId")
+            "billit_order_id": billit_order_id
         }
         
     except HTTPException:
