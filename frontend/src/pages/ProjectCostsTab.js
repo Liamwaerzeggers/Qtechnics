@@ -101,6 +101,46 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
     }
   };
 
+  const sendViaPeppol = async (invoiceId) => {
+    setSendingPeppol(invoiceId);
+    try {
+      const response = await axios.post(
+        `${API}/invoices/${invoiceId}/send-peppol`,
+        {},
+        { withCredentials: true }
+      );
+      toast.success('Factuur verstuurd via Peppol! 📧');
+      fetchInvoices(); // Refresh to get updated status
+    } catch (error) {
+      console.error('Peppol send failed:', error);
+      const errorMsg = error.response?.data?.detail || 'Kon factuur niet versturen via Peppol';
+      toast.error(errorMsg);
+    } finally {
+      setSendingPeppol(null);
+    }
+  };
+
+  const getPeppolStatusBadge = (invoice) => {
+    const status = invoice.peppol_status || 'not_sent';
+    const styles = {
+      not_sent: { bg: '#E5E7EB', color: '#374151', text: 'Niet verstuurd' },
+      sending: { bg: '#FEF3C7', color: '#92400E', text: 'Verzenden...' },
+      sent: { bg: '#DBEAFE', color: '#1E40AF', text: 'Verstuurd' },
+      delivered: { bg: '#D1FAE5', color: '#065F46', text: 'Afgeleverd' },
+      failed: { bg: '#FEE2E2', color: '#991B1B', text: 'Mislukt' }
+    };
+    const style = styles[status] || styles.not_sent;
+    
+    return (
+      <span 
+        className="px-2 py-0.5 text-xs rounded-full font-medium"
+        style={{ backgroundColor: style.bg, color: style.color }}
+      >
+        {style.text}
+      </span>
+    );
+  };
+
   const handleInvoiceUpload = async (e) => {
     const file = e.target.files[0];
     if (!file || file.type !== 'application/pdf') {
