@@ -3450,98 +3450,84 @@ async def send_billit_command(order_id: int, transport_type: str = "Peppol") -> 
         return response.json() if response.text else {"status": "sent"}
 
 def transform_invoice_to_billit(invoice: dict, lead: dict, project: dict) -> dict:
-    """Transform Qtechnics invoice to Billit format"""
-    # Determine customer type and Peppol identifier
-    customer_identifier = None
-    customer_scheme = None
-    
-    if lead.get("vat_number"):
-        # B2B - use VAT number for Peppol routing
-        customer_identifier = lead["vat_number"].replace(" ", "").upper()
-        # Belgian VAT: BE + 10 digits
-        if customer_identifier.startswith("BE"):
-            customer_scheme = "0208"  # Belgian enterprise number scheme
-        else:
-            customer_scheme = "9925"  # VAT scheme
-    
-    # Build line items for Billit
-    billit_lines = []
-    for idx, item in enumerate(invoice.get("line_items", []), 1):
-        billit_lines.append({
-            "lineNumber": idx,
-            "description": item.get("description", ""),
-            "quantity": item.get("quantity", 1),
-            "unitCode": item.get("unit", "EA"),  # EA = Each
-            "unitPrice": item.get("unit_price", 0),
-            "vatPercentage": item.get("vat_rate", 21),
-            "lineTotal": item.get("total_excl_vat", item.get("quantity", 1) * item.get("unit_price", 0))
-        })
-    
-    # Calculate due date
+    """Transform Qtechnics invoice to Billit API format.
+    Based on: https://docs.billit.be/docs/create-first-invoice
+    """
+    # Calculate dates
     invoice_date = invoice.get("invoice_date")
     if isinstance(invoice_date, str):
-        invoice_date = datetime.fromisoformat(invoice_date)
+        invoice_date = datetime.fromisoformat(invoice_date.replace('Z', '+00:00'))
     due_date = invoice.get("due_date")
     if isinstance(due_date, str):
-        due_date = datetime.fromisoformat(due_date)
+        due_date = datetime.fromisoformat(due_date.replace('Z', '+00:00'))
     
-    billit_invoice = {
-        "invoiceNumber": invoice.get("invoice_number", ""),
-        "invoiceDate": invoice_date.strftime("%Y-%m-%d") if invoice_date else datetime.now().strftime("%Y-%m-%d"),
-        "dueDate": due_date.strftime("%Y-%m-%d") if due_date else (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d"),
-        "currency": "EUR",
-        
-        # Seller (your company)
-        "seller": {
-            "name": "Qtechnics",
-            "vatNumber": COMPANY_VAT,
-            "address": {
-                "street": "Uw bedrijfsadres",  # TODO: Configure in settings
-                "city": "Uw stad",
-                "postalCode": "0000",
-                "country": "BE"
-            }
+    # Build order lines for Billit
+    order_lines = []
+    for item in invoice.get("line_items", []):
+        order_lines.append({
+            "Quantity": float(item.get("quantity", 1)),
+            "UnitPriceExcl": float(item.get("unit_price", 0)),
+            "Description": item.get("description", ""),
+            "VATPercentage": float(item.get("vat_rate", 21))
+        })
+    
+    # Parse address into components (simple split by comma or newline)
+    address_str = lead.get("address", "")
+    address_parts = address_str.replace('\n', ',').split(',')
+    street = address_parts[0].strip() if address_parts else ""
+    city = address_parts[1].strip() if len(address_parts) > 1 else ""
+    zipcode = ""
+    
+    # Try to extract zipcode from city (e.g., "9000 Gent")
+    city_parts = city.split(' ', 1)
+    if city_parts and city_parts[0].isdigit():
+        zipcode = city_parts[0]
+        city = city_parts[1] if len(city_parts) > 1 else ""
+    
+    # Build the Billit order object
+    billit_order = {
+        "OrderType": "Invoice",
+        "OrderDirection": "Income",  # Sales invoice
+        "OrderNumber": invoice.get("invoice_number", ""),
+        "OrderDate": invoice_date.strftime("%Y-%m-%d") if invoice_date else datetime.now().strftime("%Y-%m-%d"),
+        "ExpiryDate": due_date.strftime("%Y-%m-%d") if due_date else (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d"),
+        "Reference": project.get("name", ""),  # Project reference
+        "PaymentReference": invoice.get("payment_reference", ""),  # OGM reference
+        "Currency": "EUR",
+        "Customer": {
+            "Name": lead.get("name", ""),
+            "PartyType": "Customer",
+            "Addresses": [
+                {
+                    "AddressType": "InvoiceAddress",
+                    "Name": lead.get("name", ""),
+                    "Street": street,
+                    "City": city,
+                    "Zipcode": zipcode,
+                    "Email": lead.get("email", ""),
+                    "CountryCode": "BE"
+                }
+            ]
         },
-        
-        # Buyer (customer)
-        "buyer": {
-            "name": lead.get("name", ""),
-            "email": lead.get("email", ""),
-            "address": {
-                "street": lead.get("address", ""),
-                "city": "",
-                "postalCode": "",
-                "country": "BE"
-            }
-        },
-        
-        # Line items
-        "lines": billit_lines,
-        
-        # Totals
-        "totalExclVat": invoice.get("total_excl_vat", 0),
-        "totalVat": invoice.get("total_vat", 0),
-        "totalInclVat": invoice.get("total_incl_vat", 0),
-        
-        # Payment reference
-        "paymentReference": invoice.get("payment_reference", ""),
-        
-        # Project reference
-        "orderReference": project.get("name", ""),
-        
-        # Peppol specific
-        "sendViaPeppol": True
+        "OrderLines": order_lines
     }
     
-    # Add Peppol identifier if B2B
-    if customer_identifier:
-        billit_invoice["buyer"]["peppolIdentifier"] = {
-            "scheme": customer_scheme,
-            "value": customer_identifier
-        }
-        billit_invoice["buyer"]["vatNumber"] = customer_identifier
+    # Add VAT number if customer is a business (B2B)
+    if lead.get("vat_number"):
+        vat_number = lead["vat_number"].replace(" ", "").upper()
+        billit_order["Customer"]["VATNumber"] = vat_number
+        
+        # Add Peppol identifier for B2B routing
+        if vat_number.startswith("BE"):
+            # Belgian enterprise number scheme (KBO)
+            billit_order["Customer"]["Identifiers"] = [
+                {
+                    "IdentifierType": "KBO",
+                    "Identifier": vat_number[2:]  # Remove 'BE' prefix for KBO
+                }
+            ]
     
-    return billit_invoice
+    return billit_order
 
 @api_router.post("/invoices/{invoice_id}/send-peppol")
 async def send_invoice_via_peppol(invoice_id: str, current_user: User = Depends(get_current_user)):
