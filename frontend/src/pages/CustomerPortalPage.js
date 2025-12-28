@@ -207,28 +207,28 @@ export default function CustomerPortalPage() {
         </nav>
       </div>
 
-      {/* Content */}
-      <main className="max-w-6xl mx-auto px-4 py-6">
+      {/* Content - Mobile Optimized */}
+      <main className="px-3 sm:px-4 py-4 sm:py-6 max-w-6xl mx-auto">
         {/* Overview Tab */}
         {activeTab === 'overview' && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {/* Project Status Card */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-blue-600" />
+              <CardHeader className="pb-2 sm:pb-4">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                   Project Status
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className="pt-0">
+                <div className="space-y-2 sm:space-y-3">
                   <div>
-                    <p className="text-sm text-gray-500">Start datum</p>
-                    <p className="font-medium">{formatDate(project.planning_start_date || project.start_date)}</p>
+                    <p className="text-xs sm:text-sm text-gray-500">Start datum</p>
+                    <p className="font-medium text-sm sm:text-base">{formatDate(project.planning_start_date || project.start_date)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Verwachte einddatum</p>
-                    <p className="font-medium">{formatDate(project.planning_end_date || project.end_date)}</p>
+                    <p className="text-xs sm:text-sm text-gray-500">Verwachte einddatum</p>
+                    <p className="font-medium text-sm sm:text-base">{formatDate(project.planning_end_date || project.end_date)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -236,27 +236,27 @@ export default function CustomerPortalPage() {
 
             {/* Quick Stats */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="w-5 h-5 text-green-600" />
+              <CardHeader className="pb-2 sm:pb-4">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                   In één oogopslag
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
+              <CardContent className="pt-0">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Foto's eerste bezoek</span>
                     <span className="font-medium">{project.first_visit_photos?.length || 0}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span className="text-gray-500">3D Ontwerpen</span>
                     <span className="font-medium">{project.design_3d_files?.length || 0}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Goedgekeurde offertes</span>
                     <span className="font-medium">{approved_quotes?.length || 0}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Werk updates</span>
                     <span className="font-medium">{work_updates?.length || 0}</span>
                   </div>
@@ -265,23 +265,23 @@ export default function CustomerPortalPage() {
             </Card>
 
             {/* Rating Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="w-5 h-5 text-yellow-500" />
+            <Card className="md:col-span-2 lg:col-span-1">
+              <CardHeader className="pb-2 sm:pb-4">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
                   Uw Beoordeling
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex gap-1 mb-3">
+              <CardContent className="pt-0">
+                <div className="flex gap-1 mb-3 justify-center sm:justify-start">
                   {[1, 2, 3, 4, 5].map(star => (
                     <button
                       key={star}
                       onClick={() => setRating(star)}
-                      className="focus:outline-none"
+                      className="focus:outline-none p-1"
                     >
                       <Star
-                        className={`w-8 h-8 transition-colors ${
+                        className={`w-7 h-7 sm:w-8 sm:h-8 transition-colors ${
                           star <= rating
                             ? 'fill-yellow-400 text-yellow-400'
                             : 'text-gray-300 hover:text-yellow-300'
@@ -294,13 +294,14 @@ export default function CustomerPortalPage() {
                   placeholder="Optioneel: laat een opmerking achter..."
                   value={ratingComment}
                   onChange={(e) => setRatingComment(e.target.value)}
-                  className="mb-3"
+                  className="mb-3 text-sm"
                   rows={2}
                 />
                 <Button 
                   onClick={submitRating} 
                   disabled={submittingRating || rating === 0}
-                  className="w-full"
+                  className="w-full text-sm"
+                  size="sm"
                 >
                   {submittingRating ? 'Opslaan...' : 'Beoordeling opslaan'}
                 </Button>
