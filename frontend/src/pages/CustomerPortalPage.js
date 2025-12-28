@@ -624,19 +624,20 @@ export default function CustomerPortalPage() {
                 )}
               </div>
 
-              {/* New Message Input */}
+              {/* New Message Input - Mobile Optimized */}
               <div className="flex gap-2">
                 <Textarea
                   placeholder="Typ uw vraag of opmerking..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  className="flex-1"
+                  className="flex-1 text-sm"
                   rows={2}
                 />
                 <Button
                   onClick={sendMessage}
                   disabled={sendingMessage || !newMessage.trim()}
-                  className="self-end"
+                  className="self-end px-3"
+                  size="sm"
                 >
                   {sendingMessage ? '...' : <Send className="w-4 h-4" />}
                 </Button>
@@ -646,20 +647,20 @@ export default function CustomerPortalPage() {
         )}
       </main>
 
-      {/* Photo Modal */}
+      {/* Photo Modal - Mobile Optimized */}
       {selectedPhoto && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-2 sm:p-4"
           onClick={() => setSelectedPhoto(null)}
         >
           <img
             src={getPhotoUrl(selectedPhoto)}
             alt="Grote weergave"
-            className="max-w-full max-h-full object-contain"
+            className="max-w-full max-h-full object-contain rounded-lg"
           />
           <button
             onClick={() => setSelectedPhoto(null)}
-            className="absolute top-4 right-4 text-white text-xl bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-70"
+            className="absolute top-2 right-2 sm:top-4 sm:right-4 text-white text-lg sm:text-xl bg-black bg-opacity-50 rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center hover:bg-opacity-70"
           >
             ✕
           </button>
