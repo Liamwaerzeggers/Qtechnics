@@ -23,7 +23,9 @@ export default function LeadDetailPage() {
     phone: '',
     address: '',
     project_type: '',
-    description: ''
+    description: '',
+    vat_number: '',
+    is_business: false
   });
 
   useEffect(() => {
@@ -40,7 +42,9 @@ export default function LeadDetailPage() {
         phone: response.data.phone,
         address: response.data.address,
         project_type: response.data.project_type,
-        description: response.data.description
+        description: response.data.description,
+        vat_number: response.data.vat_number || '',
+        is_business: response.data.is_business || false
       });
     } catch (error) {
       toast.error('Kon lead niet ophalen');
