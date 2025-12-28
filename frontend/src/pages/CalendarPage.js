@@ -88,8 +88,14 @@ export default function CalendarPage() {
 
   // Get project color (use custom color or status-based)
   const getProjectColor = (event) => {
+    const type = event.resource.type;
     const status = event.resource.status;
     const customColor = event.resource.color;
+    
+    // Scheduled work gets orange color
+    if (type === 'scheduled_work') {
+      return '#F59E0B';
+    }
     
     // Special colors for status
     if (status === 'voltooid') return '#10B981'; // Green for completed
@@ -100,41 +106,28 @@ export default function CalendarPage() {
   };
 
   const handleSelectEvent = (event) => {
-    // Show popup with scheduled work details if project has them
-    if (event.resource.type === 'project' && event.resource.scheduled_work?.length > 0) {
-      setSelectedEvent(event);
-    } else if (event.resource.type === 'workslip') {
-      navigate(`/projects/${event.resource.project_id}/work-slips`);
-    } else {
-      navigate(`/projects/${event.resource.project_id}`);
-    }
-  };
-
-  const handleNavigateToProject = () => {
-    if (selectedEvent) {
-      navigate(`/projects/${selectedEvent.resource.project_id}`);
-      setSelectedEvent(null);
-    }
+    // Navigate to project for all event types
+    navigate(`/projects/${event.resource.project_id}`);
   };
 
   const eventStyleGetter = (event) => {
     const backgroundColor = getProjectColor(event);
     const isWorkSlip = event.resource.type === 'workslip';
-    const hasScheduledWork = event.resource.scheduled_work?.length > 0;
+    const isScheduledWork = event.resource.type === 'scheduled_work';
     
     const style = {
       backgroundColor: backgroundColor,
-      borderRadius: '6px',
-      opacity: isWorkSlip ? 0.85 : 0.9,
+      borderRadius: isScheduledWork ? '4px' : '6px',
+      opacity: isScheduledWork ? 0.95 : 0.8,
       color: 'white',
-      border: isWorkSlip ? '2px solid rgba(255,255,255,0.5)' : hasScheduledWork ? '2px solid #F59E0B' : '0px',
+      border: isScheduledWork ? '1px solid rgba(255,255,255,0.8)' : isWorkSlip ? '2px solid rgba(255,255,255,0.5)' : 'none',
       display: 'block',
-      fontSize: '12px',
-      padding: '2px 6px',
-      fontWeight: '600',
+      fontSize: isScheduledWork ? '11px' : '12px',
+      padding: isScheduledWork ? '1px 4px' : '2px 6px',
+      fontWeight: isScheduledWork ? '500' : '600',
       cursor: 'pointer',
       transition: 'all 0.2s',
-      boxShadow: isWorkSlip ? '0 2px 4px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.12)',
+      boxShadow: isScheduledWork ? '0 1px 2px rgba(0,0,0,0.15)' : '0 1px 3px rgba(0,0,0,0.12)',
     };
     
     return { style };
