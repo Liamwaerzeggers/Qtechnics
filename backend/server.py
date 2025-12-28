@@ -1637,6 +1637,47 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
         # Get recent items - exclude MongoDB _id field
         recent_leads = await db.leads.find({}, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
         recent_quotes = await db.quotes.find({}, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
+        
+        # Get material reminders - projects starting within 30 days
+        reminder_date = datetime.now(timezone.utc) + timedelta(days=30)
+        today = datetime.now(timezone.utc)
+        
+        projects_with_reminders = await db.projects.find({
+            "start_date": {"$gte": today.isoformat(), "$lte": reminder_date.isoformat()}
+        }, {"_id": 0}).to_list(100)
+        
+        material_reminders = []
+        for project in projects_with_reminders:
+            # Get materials from approved quotes
+            lead_id = project.get("lead_id")
+            quote_materials = []
+            if lead_id:
+                approved_quotes = await db.quotes.find({
+                    "lead_id": lead_id,
+                    "status": "goedgekeurd"
+                }, {"_id": 0}).to_list(100)
+                
+                for quote in approved_quotes:
+                    items = await db.line_items.find({
+                        "quote_id": quote["id"],
+                        "item_type": "materiaal"
+                    }, {"_id": 0, "description": 1, "quantity": 1, "unit": 1}).to_list(100)
+                    quote_materials.extend(items)
+            
+            start_date = project.get("start_date")
+            if isinstance(start_date, str):
+                start_date = datetime.fromisoformat(start_date)
+            
+            days_until_start = (start_date - today).days if start_date else None
+            
+            material_reminders.append({
+                "project_id": project["id"],
+                "project_name": project.get("name", "Naamloos"),
+                "start_date": start_date.isoformat() if start_date else None,
+                "days_until_start": days_until_start,
+                "quote_materials": quote_materials,
+                "required_materials": project.get("required_materials", ""),
+            })
     else:
         total_leads = 0
         total_quotes = 0
@@ -1644,6 +1685,7 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
         total_materials = 0
         recent_leads = []
         recent_quotes = []
+        material_reminders = []
     
     return {
         "total_leads": total_leads,
@@ -1651,7 +1693,8 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
         "total_projects": total_projects,
         "total_materials": total_materials,
         "recent_leads": recent_leads,
-        "recent_quotes": recent_quotes
+        "recent_quotes": recent_quotes,
+        "material_reminders": material_reminders
     }
 
 # ============= CALENDAR ROUTES =============
