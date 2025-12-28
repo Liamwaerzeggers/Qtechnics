@@ -3780,10 +3780,27 @@ async def get_customer_portal_data(access_token: str):
     
     # Get approved quotes for this project (customers can see prices here)
     # Status can be "approved" or "goedgekeurd" (Dutch)
-    quotes = await db.quotes.find({
+    # Search by both project_id AND lead_id since quotes can be linked to either
+    quotes = []
+    
+    # First try by project_id
+    project_quotes = await db.quotes.find({
         "project_id": project_id,
         "status": {"$in": ["approved", "goedgekeurd"]}
     }, {"_id": 0}).to_list(100)
+    quotes.extend(project_quotes)
+    
+    # Also search by lead_id
+    if lead_id:
+        lead_quotes = await db.quotes.find({
+            "lead_id": lead_id,
+            "status": {"$in": ["approved", "goedgekeurd"]}
+        }, {"_id": 0}).to_list(100)
+        # Add quotes not already in list (avoid duplicates)
+        existing_ids = {q["id"] for q in quotes}
+        for q in lead_quotes:
+            if q["id"] not in existing_ids:
+                quotes.append(q)
     
     # Get line items for approved quotes
     for quote in quotes:
