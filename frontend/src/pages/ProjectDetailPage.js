@@ -322,8 +322,250 @@ export default function ProjectDetailPage() {
               onUpdate={fetchProjectData} 
             />
           )}
+
+          {activeTab === 'customer' && (
+            <CustomerPortalTab 
+              project={project} 
+              onUpdate={fetchProjectData} 
+            />
+          )}
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+// Customer Portal Tab Component
+function CustomerPortalTab({ project, onUpdate }) {
+  const [customerLink, setCustomerLink] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+
+  useEffect(() => {
+    if (project.customer_access_token) {
+      const baseUrl = window.location.origin;
+      setCustomerLink(`${baseUrl}/klant/${project.customer_access_token}`);
+    }
+  }, [project.customer_access_token]);
+
+  const generateLink = async () => {
+    setGenerating(true);
+    try {
+      const response = await axios.post(
+        `${API}/projects/${project.id}/generate-customer-link`,
+        {},
+        { withCredentials: true }
+      );
+      const baseUrl = window.location.origin;
+      setCustomerLink(`${baseUrl}/klant/${response.data.token}`);
+      toast.success('Klantportaal link gegenereerd!');
+      onUpdate();
+    } catch (error) {
+      toast.error('Kon link niet genereren');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(customerLink);
+    setCopied(true);
+    toast.success('Link gekopieerd!');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const sendMessage = async () => {
+    if (!newMessage.trim()) return;
+    
+    setSendingMessage(true);
+    try {
+      await axios.post(
+        `${API}/projects/${project.id}/customer-messages`,
+        { message: newMessage },
+        { withCredentials: true }
+      );
+      toast.success('Bericht verzonden naar klant!');
+      setNewMessage('');
+      onUpdate();
+    } catch (error) {
+      toast.error('Kon bericht niet verzenden');
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  const messages = project.customer_messages || [];
+  const unreadCount = messages.filter(m => m.is_from_customer && !m.is_read).length;
+
+  return (
+    <div className="space-y-6">
+      {/* Customer Portal Link */}
+      <Card>
+        <CardContent className="p-6">
+          <h3 className="text-xl font-bold mb-4" style={{color: '#1E3A8A'}}>
+            🔗 Klantportaal Link
+          </h3>
+          <p className="text-gray-600 mb-4">
+            Genereer een unieke link die u kunt delen met uw klant. 
+            Via deze link kan de klant hun projectvoortgang volgen zonder in te loggen.
+          </p>
+          
+          {customerLink ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <Link className="w-5 h-5 text-green-600 flex-shrink-0" />
+                <input
+                  type="text"
+                  value={customerLink}
+                  readOnly
+                  className="flex-1 bg-transparent border-none text-sm text-green-800 focus:outline-none"
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={copyLink}
+                  className="flex-shrink-0"
+                >
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500">
+                ⚠️ Deel deze link alleen met de klant. Iedereen met deze link kan het project bekijken.
+              </p>
+              <Button variant="outline" onClick={generateLink} disabled={generating}>
+                {generating ? 'Genereren...' : 'Nieuwe link genereren'}
+              </Button>
+            </div>
+          ) : (
+            <Button onClick={generateLink} disabled={generating}>
+              {generating ? 'Genereren...' : '🔗 Klantportaal link genereren'}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Customer Rating */}
+      {project.customer_rating && (
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="text-xl font-bold mb-4" style={{color: '#1E3A8A'}}>
+              ⭐ Klant Beoordeling
+            </h3>
+            <div className="flex items-center gap-2 mb-2">
+              {[1, 2, 3, 4, 5].map(star => (
+                <span 
+                  key={star} 
+                  className={`text-2xl ${star <= project.customer_rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                >
+                  ★
+                </span>
+              ))}
+              <span className="ml-2 font-semibold">{project.customer_rating}/5</span>
+            </div>
+            {project.customer_rating_comment && (
+              <p className="text-gray-600 italic">"{project.customer_rating_comment}"</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Messages */}
+      <Card>
+        <CardContent className="p-6">
+          <h3 className="text-xl font-bold mb-4" style={{color: '#1E3A8A'}}>
+            💬 Berichten met Klant
+            {unreadCount > 0 && (
+              <span className="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+                {unreadCount} nieuw
+              </span>
+            )}
+          </h3>
+          
+          {/* Messages List */}
+          <div className="space-y-3 mb-4 max-h-80 overflow-y-auto">
+            {messages.length > 0 ? (
+              messages
+                .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+                .map(msg => (
+                  <div
+                    key={msg.id}
+                    className={`p-3 rounded-lg ${
+                      msg.is_from_customer
+                        ? 'bg-blue-50 border-l-4 border-blue-500'
+                        : 'bg-gray-50 border-l-4 border-gray-300'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="text-xs font-medium">
+                        {msg.is_from_customer ? '👤 Klant' : `📤 ${msg.sender || 'U'}`}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {new Date(msg.timestamp).toLocaleString('nl-BE')}
+                      </span>
+                    </div>
+                    <p className="text-gray-800">{msg.message}</p>
+                  </div>
+                ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">
+                Nog geen berichten. Stuur een bericht naar de klant of wacht op hun vragen.
+              </p>
+            )}
+          </div>
+
+          {/* Send Message */}
+          <div className="flex gap-2">
+            <textarea
+              placeholder="Typ een bericht naar de klant..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              className="flex-1 p-2 border rounded-lg resize-none"
+              rows={2}
+            />
+            <Button
+              onClick={sendMessage}
+              disabled={sendingMessage || !newMessage.trim()}
+              className="self-end"
+            >
+              {sendingMessage ? '...' : 'Verzenden'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* What Customer Can See */}
+      <Card>
+        <CardContent className="p-6">
+          <h3 className="text-xl font-bold mb-4" style={{color: '#1E3A8A'}}>
+            👁️ Wat ziet de klant?
+          </h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="p-3 bg-green-50 rounded-lg">
+              <p className="font-semibold text-green-800 mb-2">✅ Wel zichtbaar:</p>
+              <ul className="text-sm text-green-700 space-y-1">
+                <li>• Projectplanning en kalender</li>
+                <li>• Foto's van eerste bezoek</li>
+                <li>• 3D ontwerpen</li>
+                <li>• Goedgekeurde offertes (met prijzen)</li>
+                <li>• Werkbonnen (alleen aangevinkte)</li>
+                <li>• Berichten uitwisselen</li>
+              </ul>
+            </div>
+            <div className="p-3 bg-red-50 rounded-lg">
+              <p className="font-semibold text-red-800 mb-2">❌ Niet zichtbaar:</p>
+              <ul className="text-sm text-red-700 space-y-1">
+                <li>• Kosten en winstmarges</li>
+                <li>• Uurtarieven en arbeidskosten</li>
+                <li>• Inkoopfacturen</li>
+                <li>• Interne notities</li>
+                <li>• Andere projecten</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
