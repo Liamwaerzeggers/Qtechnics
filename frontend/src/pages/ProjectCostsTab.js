@@ -513,8 +513,10 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                         </div>
                         <div className="text-sm" style={{color: '#64748B'}}>
                           {new Date(invoice.invoice_date).toLocaleDateString('nl-NL')} • {
+                            invoice.milestone === '25_approval' ? '25% Akkoord' :
                             invoice.milestone === '10_approval' ? '10% Akkoord' :
-                            invoice.milestone === '40_before_start' ? '40% Voor Start' :
+                            invoice.milestone === '40_before_start' ? '40% Voor Aanvang' :
+                            invoice.milestone === '25_completion' ? '25% Oplevering' :
                             invoice.milestone === '40_completion' ? '40% Oplevering' :
                             '10% Tevredenheid'
                           }
