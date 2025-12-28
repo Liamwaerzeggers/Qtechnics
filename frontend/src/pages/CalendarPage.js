@@ -228,63 +228,11 @@ export default function CalendarPage() {
             <div>
               <h4 className="text-sm font-medium mb-2" style={{ color: '#64748B' }}>Geplande Werken</h4>
               <p className="text-xs" style={{ color: '#94A3B8' }}>
-                Klik op een project met 🔧 om de geplande werkperiodes te zien. Elk project kan een eigen kleur krijgen via de project detail pagina.
+                Oranje balken tonen de geplande werkperiodes binnen elk project. Klik op een balk om naar het project te gaan.
               </p>
             </div>
           </div>
         </div>
-
-        {/* Scheduled Work Popup Dialog */}
-        <Dialog open={!!selectedEvent} onOpenChange={() => setSelectedEvent(null)}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2" style={{color: '#1E40AF'}}>
-                📅 {selectedEvent?.title?.replace(/\s*\(\d+\s*🔧\)$/, '')}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              {/* Project Period */}
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm font-medium" style={{color: '#1E40AF'}}>Projectperiode</p>
-                <p className="text-sm" style={{color: '#64748B'}}>
-                  {selectedEvent?.start?.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                  {' '} t/m {' '}
-                  {selectedEvent?.end?.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                </p>
-              </div>
-
-              {/* Scheduled Work Periods */}
-              <div>
-                <h4 className="font-semibold mb-3" style={{color: '#1E293B'}}>
-                  🔧 Geplande Werken ({selectedEvent?.resource?.scheduled_work?.length || 0})
-                </h4>
-                <div className="space-y-2">
-                  {selectedEvent?.resource?.scheduled_work?.map((work, index) => (
-                    <div key={index} className="p-3 rounded-lg border" style={{backgroundColor: '#FEF3C7', borderColor: '#F59E0B'}}>
-                      <div className="font-medium" style={{color: '#92400E'}}>{work.description}</div>
-                      <div className="text-sm mt-1" style={{color: '#78716C'}}>
-                        {new Date(work.start).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' })}
-                        {' '} t/m {' '}
-                        {new Date(work.end).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" onClick={() => setSelectedEvent(null)}>
-                  Sluiten
-                </Button>
-                <Button onClick={handleNavigateToProject} style={{backgroundColor: '#1E40AF'}}>
-                  Naar Project
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </DashboardLayout>
   );
