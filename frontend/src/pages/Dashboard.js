@@ -97,6 +97,90 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Material Reminders - One month before start */}
+          {stats?.material_reminders && stats.material_reminders.length > 0 && (
+            <Card className="lg:col-span-2 border-2" style={{borderColor: '#F59E0B', backgroundColor: '#FFFBEB'}}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#92400E'}}>
+                  📦 Materiaal Herinneringen
+                  <span className="px-2 py-1 text-xs rounded-full" style={{backgroundColor: '#FEF3C7', color: '#92400E'}}>
+                    {stats.material_reminders.length} project(en)
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm mb-4" style={{color: '#92400E'}}>
+                  De volgende projecten starten binnen 30 dagen. Controleer of alle materialen beschikbaar zijn!
+                </p>
+                <div className="space-y-4">
+                  {stats.material_reminders.map((reminder) => (
+                    <div
+                      key={reminder.project_id}
+                      className="p-4 rounded-lg cursor-pointer hover:shadow-md transition-all bg-white border"
+                      style={{borderColor: '#FCD34D'}}
+                      onClick={() => navigate(`/projects/${reminder.project_id}`)}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-semibold text-lg" style={{color: '#1E293B'}}>
+                          {reminder.project_name}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-3 py-1 rounded-full text-sm font-semibold" style={{
+                            backgroundColor: reminder.days_until_start <= 7 ? '#FEE2E2' : '#FEF3C7',
+                            color: reminder.days_until_start <= 7 ? '#991B1B' : '#92400E'
+                          }}>
+                            {reminder.days_until_start <= 7 ? '⚠️' : '📅'} Start over {reminder.days_until_start} dagen
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="text-sm mb-3" style={{color: '#64748B'}}>
+                        Start: {new Date(reminder.start_date).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                      
+                      {/* Materials from quotes */}
+                      {reminder.quote_materials && reminder.quote_materials.length > 0 && (
+                        <div className="mb-3">
+                          <div className="text-sm font-semibold mb-2" style={{color: '#065F46'}}>
+                            📋 Materialen uit offerte:
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {reminder.quote_materials.slice(0, 5).map((mat, idx) => (
+                              <span key={idx} className="px-2 py-1 text-xs rounded-full" style={{backgroundColor: '#D1FAE5', color: '#065F46'}}>
+                                {mat.description} ({mat.quantity} {mat.unit || 'x'})
+                              </span>
+                            ))}
+                            {reminder.quote_materials.length > 5 && (
+                              <span className="px-2 py-1 text-xs rounded-full" style={{backgroundColor: '#E5E7EB', color: '#4B5563'}}>
+                                +{reminder.quote_materials.length - 5} meer
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Manual materials */}
+                      {reminder.required_materials && (
+                        <div>
+                          <div className="text-sm font-semibold mb-1" style={{color: '#1E40AF'}}>
+                            ✏️ Aanvullende materialen:
+                          </div>
+                          <p className="text-sm" style={{color: '#4B5563'}}>{reminder.required_materials}</p>
+                        </div>
+                      )}
+                      
+                      {!reminder.quote_materials?.length && !reminder.required_materials && (
+                        <p className="text-sm italic" style={{color: '#94A3B8'}}>
+                          Geen specifieke materialen opgegeven
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Recente Leads</CardTitle>
