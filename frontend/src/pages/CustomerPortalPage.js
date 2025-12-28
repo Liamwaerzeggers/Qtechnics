@@ -21,6 +21,19 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper function to get correct photo URL
+const getPhotoUrl = (photo) => {
+  if (!photo) return '';
+  if (photo.startsWith('http')) return photo;
+  // API already contains /api, so we need the base URL without /api
+  const baseUrl = API.replace('/api', '');
+  // Photo path already starts with /api/static/... so just append to base
+  if (photo.startsWith('/api/')) {
+    return `${baseUrl}${photo}`;
+  }
+  return `${baseUrl}/api${photo}`;
+};
+
 export default function CustomerPortalPage() {
   const { accessToken } = useParams();
   const [loading, setLoading] = useState(true);
