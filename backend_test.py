@@ -1313,6 +1313,7 @@ def main():
         test_results.append(("Export Functionality", tester.test_export_functionality()))
         test_results.append(("Invoice PDF Download", tester.test_invoice_pdf_download()))
         test_results.append(("Workers Management", tester.test_workers_management()))
+        test_results.append(("Peppol Bug Fixes", tester.test_peppol_bug_fixes()))
         test_results.append(("Quote Generation from Measurements", tester.test_quote_generation_from_measurements()))
         
         # Print results summary
