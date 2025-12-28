@@ -3723,8 +3723,10 @@ async def billit_webhook(request: Request):
 # These endpoints use access tokens instead of session authentication
 
 @api_router.post("/projects/{project_id}/generate-customer-link")
-async def generate_customer_access_link(project_id: str, current_user: User = Depends(get_current_user)):
-    """Generate a unique access link for customers to view their project"""
+async def generate_customer_access_link(project_id: str, force_new: bool = False, current_user: User = Depends(get_current_user)):
+    """Generate a unique access link for customers to view their project.
+    If a link already exists, return the existing one unless force_new=True.
+    """
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can generate customer links")
     
@@ -3732,7 +3734,16 @@ async def generate_customer_access_link(project_id: str, current_user: User = De
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Generate unique token
+    # Check if a token already exists
+    existing_token = project.get("customer_access_token")
+    if existing_token and not force_new:
+        return {
+            "token": existing_token,
+            "message": "Bestaande klantportaal link opgehaald",
+            "is_existing": True
+        }
+    
+    # Generate unique token (permanent - never expires)
     import secrets
     token = secrets.token_urlsafe(32)
     
@@ -3743,7 +3754,8 @@ async def generate_customer_access_link(project_id: str, current_user: User = De
     
     return {
         "token": token,
-        "message": "Klantportaal link gegenereerd"
+        "message": "Klantportaal link gegenereerd",
+        "is_existing": False
     }
 
 @api_router.get("/customer-portal/{access_token}")
