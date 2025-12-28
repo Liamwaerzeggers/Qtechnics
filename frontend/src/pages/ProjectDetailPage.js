@@ -299,6 +299,14 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
+          {activeTab === 'planning' && (
+            <ProjectPlanningTab 
+              project={project} 
+              approvedQuotes={approvedQuotes}
+              onUpdate={fetchProjectData} 
+            />
+          )}
+
           {activeTab === 'costs' && (
             <ProjectCostsTab 
               project={project} 
