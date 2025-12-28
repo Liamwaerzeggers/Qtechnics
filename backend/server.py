@@ -3204,17 +3204,21 @@ async def generate_quote_from_measurements(project_id: str, current_user: User =
     
     await db.quotes.insert_one(quote)
     
-    # Update project with quote_id
+    # Update project with quote_id and CLEAR measurements
     await db.projects.update_one(
         {"id": project_id},
-        {"$set": {"quote_id": quote_id}}
+        {
+            "$set": {"quote_id": quote_id},
+            "$unset": {"measurements": ""}  # Clear measurements after generating quote
+        }
     )
     
     return {
         "message": "Quote generated successfully",
         "quote_id": quote_id,
         "total_incl_vat": total_incl_vat,
-        "line_items_count": len(line_items_to_insert)
+        "line_items_count": len(line_items_to_insert),
+        "measurements_cleared": True
     }
 
 async def upload_design_file(
