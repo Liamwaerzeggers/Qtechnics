@@ -85,8 +85,14 @@ export default function CalendarPage() {
 
   // Get project color (use custom color or status-based)
   const getProjectColor = (event) => {
+    const type = event.resource.type;
     const status = event.resource.status;
     const customColor = event.resource.color;
+    
+    // Scheduled work gets its own color
+    if (type === 'scheduled_work') {
+      return '#F59E0B'; // Orange for scheduled work
+    }
     
     // Special colors for status
     if (status === 'voltooid') return '#10B981'; // Green for completed
@@ -102,7 +108,7 @@ export default function CalendarPage() {
       // Navigate to work slip page
       navigate(`/projects/${event.resource.project_id}/work-slips`);
     } else {
-      // Navigate to project detail page
+      // Navigate to project detail page (for both project and scheduled_work)
       navigate(`/projects/${event.resource.project_id}`);
     }
   };
@@ -110,20 +116,22 @@ export default function CalendarPage() {
   const eventStyleGetter = (event) => {
     const backgroundColor = getProjectColor(event);
     const isWorkSlip = event.resource.type === 'workslip';
+    const isScheduledWork = event.resource.type === 'scheduled_work';
     
     const style = {
       backgroundColor: backgroundColor,
       borderRadius: '6px',
-      opacity: isWorkSlip ? 0.85 : 0.9,
+      opacity: isWorkSlip ? 0.85 : isScheduledWork ? 0.95 : 0.9,
       color: 'white',
-      border: isWorkSlip ? '2px solid rgba(255,255,255,0.5)' : '0px',
+      border: isWorkSlip ? '2px solid rgba(255,255,255,0.5)' : isScheduledWork ? '2px dashed rgba(255,255,255,0.7)' : '0px',
       display: 'block',
-      fontSize: '12px',
+      fontSize: isScheduledWork ? '10px' : '12px',
       padding: '2px 6px',
       fontWeight: '600',
       cursor: 'pointer',
       transition: 'all 0.2s',
       boxShadow: isWorkSlip ? '0 2px 4px rgba(0,0,0,0.2)' : '0 1px 3px rgba(0,0,0,0.12)',
+      marginLeft: isScheduledWork ? '10px' : '0px', // Indent scheduled work
     };
     
     return { style };
