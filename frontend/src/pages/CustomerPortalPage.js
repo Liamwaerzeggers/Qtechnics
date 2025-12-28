@@ -426,7 +426,7 @@ export default function CustomerPortalPage() {
                     {project.design_3d_files.map((design, idx) => (
                       <a
                         key={idx}
-                        href={design.url?.startsWith('http') ? design.url : `${API}${design.url}`}
+                        href={getPhotoUrl(design.url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
