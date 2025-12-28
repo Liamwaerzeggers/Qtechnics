@@ -539,7 +539,7 @@ export default function CustomerPortalPage() {
                               {update.photos.map((photo, idx) => (
                                 <img
                                   key={idx}
-                                  src={photo.startsWith('http') ? photo : `${API}${photo}`}
+                                  src={getPhotoUrl(photo)}
                                   alt={`Werk foto ${idx + 1}`}
                                   className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-90"
                                   onClick={() => setSelectedPhoto(photo)}
