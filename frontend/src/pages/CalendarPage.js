@@ -106,13 +106,20 @@ export default function CalendarPage() {
   };
 
   const handleSelectEvent = (event) => {
-    // Navigate based on event type
-    if (event.resource.type === 'workslip') {
-      // Navigate to work slip page
+    // Show popup with scheduled work details if project has them
+    if (event.resource.type === 'project' && event.resource.scheduled_work?.length > 0) {
+      setSelectedEvent(event);
+    } else if (event.resource.type === 'workslip') {
       navigate(`/projects/${event.resource.project_id}/work-slips`);
     } else {
-      // Navigate to project detail page (for both project and scheduled_work)
       navigate(`/projects/${event.resource.project_id}`);
+    }
+  };
+
+  const handleNavigateToProject = () => {
+    if (selectedEvent) {
+      navigate(`/projects/${selectedEvent.resource.project_id}`);
+      setSelectedEvent(null);
     }
   };
 
