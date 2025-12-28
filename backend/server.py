@@ -267,6 +267,8 @@ class ProjectUpdate(BaseModel):
     material_costs_incl_vat: Optional[float] = None
     other_costs: Optional[float] = None
     lead_id: Optional[str] = None  # Allow updating lead_id
+    scheduled_days: Optional[List[dict]] = None  # Planning days with notes
+    required_materials: Optional[str] = None  # Manual materials text
 
 class InvoiceUpload(BaseModel):
     filename: str
