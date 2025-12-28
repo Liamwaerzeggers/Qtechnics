@@ -537,26 +537,26 @@ export default function CustomerPortalPage() {
           </div>
         )}
 
-        {/* Work Updates Tab */}
+        {/* Work Updates Tab - Mobile Optimized */}
         {activeTab === 'updates' && (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {work_updates && work_updates.length > 0 ? (
               work_updates
                 .sort((a, b) => new Date(b.date) - new Date(a.date))
                 .map(update => (
                   <Card key={update.id}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-start gap-4">
-                        <div className="bg-blue-100 p-3 rounded-full">
-                          <Hammer className="w-6 h-6 text-blue-600" />
+                    <CardContent className="p-3 sm:pt-6">
+                      <div className="flex items-start gap-3 sm:gap-4">
+                        <div className="bg-blue-100 p-2 sm:p-3 rounded-full flex-shrink-0">
+                          <Hammer className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                         </div>
-                        <div className="flex-1">
-                          <p className="text-sm text-gray-500">{formatDate(update.date)}</p>
-                          <p className="mt-2 text-gray-800">{update.work_description_nl || 'Werkzaamheden uitgevoerd'}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs sm:text-sm text-gray-500">{formatDate(update.date)}</p>
+                          <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-800">{update.work_description_nl || 'Werkzaamheden uitgevoerd'}</p>
                           
                           {/* Work Photos */}
                           {update.photos && update.photos.length > 0 && (
-                            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
                               {update.photos.map((photo, idx) => (
                                 <img
                                   key={idx}
@@ -575,7 +575,7 @@ export default function CustomerPortalPage() {
                 ))
             ) : (
               <Card>
-                <CardContent className="py-8 text-center text-gray-500">
+                <CardContent className="py-6 text-center text-gray-500 text-sm">
                   Nog geen updates beschikbaar
                 </CardContent>
               </Card>
@@ -583,40 +583,42 @@ export default function CustomerPortalPage() {
           </div>
         )}
 
-        {/* Messages Tab */}
+        {/* Messages Tab - Mobile Optimized */}
         {activeTab === 'messages' && (
           <Card>
-            <CardHeader>
-              <CardTitle>💬 Berichten</CardTitle>
+            <CardHeader className="pb-2 sm:pb-4">
+              <CardTitle className="text-base sm:text-lg">💬 Berichten</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {/* Messages List */}
-              <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
+              <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6 max-h-80 sm:max-h-96 overflow-y-auto">
                 {project.customer_messages && project.customer_messages.length > 0 ? (
                   project.customer_messages
                     .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
                     .map(msg => (
                       <div
                         key={msg.id}
-                        className={`p-3 rounded-lg ${
+                        className={`p-2.5 sm:p-3 rounded-lg text-sm ${
                           msg.is_from_customer
-                            ? 'bg-blue-100 ml-8'
-                            : 'bg-gray-100 mr-8'
+                            ? 'bg-blue-100 ml-4 sm:ml-8'
+                            : 'bg-gray-100 mr-4 sm:mr-8'
                         }`}
                       >
-                        <div className="flex justify-between items-start mb-1">
+                        <div className="flex justify-between items-start mb-1 gap-2">
                           <span className="text-xs font-medium text-gray-600">
                             {msg.is_from_customer ? 'U' : msg.sender || 'Qtechnics'}
                           </span>
-                          <span className="text-xs text-gray-400">
-                            {new Date(msg.timestamp).toLocaleString('nl-BE')}
+                          <span className="text-[10px] sm:text-xs text-gray-400 flex-shrink-0">
+                            {new Date(msg.timestamp).toLocaleString('nl-BE', { 
+                              day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
+                            })}
                           </span>
                         </div>
-                        <p className="text-gray-800">{msg.message}</p>
+                        <p className="text-gray-800 text-sm">{msg.message}</p>
                       </div>
                     ))
                 ) : (
-                  <p className="text-gray-500 text-center py-4">
+                  <p className="text-gray-500 text-center py-4 text-sm">
                     Nog geen berichten. Stel gerust een vraag!
                   </p>
                 )}
