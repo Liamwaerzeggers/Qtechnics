@@ -3573,7 +3573,7 @@ async def send_invoice_via_peppol(invoice_id: str, current_user: User = Depends(
 @api_router.get("/invoices/{invoice_id}/peppol-status")
 async def get_peppol_status(invoice_id: str, current_user: User = Depends(get_current_user)):
     """Get Peppol status for an invoice"""
-    invoice = await db.customer_invoices.find_one({"id": invoice_id}, {"_id": 0})
+    invoice = await db.invoices.find_one({"id": invoice_id}, {"_id": 0})
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
     
@@ -3616,7 +3616,7 @@ async def billit_webhook(request: Request):
         
         if billit_invoice_id:
             # Find our invoice by billit_invoice_id
-            invoice = await db.customer_invoices.find_one(
+            invoice = await db.invoices.find_one(
                 {"billit_invoice_id": billit_invoice_id},
                 {"_id": 0}
             )
@@ -3635,7 +3635,7 @@ async def billit_webhook(request: Request):
                     update_data["peppol_status"] = "sent"
                 
                 if update_data:
-                    await db.customer_invoices.update_one(
+                    await db.invoices.update_one(
                         {"billit_invoice_id": billit_invoice_id},
                         {"$set": update_data}
                     )
