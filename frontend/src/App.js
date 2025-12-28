@@ -20,6 +20,7 @@ import InvoicesPage from './pages/InvoicesPage';
 import FinancesPage from './pages/FinancesPage';
 import WorkersPage from './pages/WorkersPage';
 import AdminsPage from './pages/AdminsPage';
+import CustomerPortalPage from './pages/CustomerPortalPage';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
 const API = `${BACKEND_URL}/api`;
