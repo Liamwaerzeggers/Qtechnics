@@ -14,8 +14,9 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
   const [endDate, setEndDate] = useState(project?.end_date ? project.end_date.split('T')[0] : '');
   const [scheduledDays, setScheduledDays] = useState(project?.scheduled_days || []);
   const [requiredMaterials, setRequiredMaterials] = useState(project?.required_materials || '');
-  const [newDayDate, setNewDayDate] = useState('');
-  const [newDayNotes, setNewDayNotes] = useState('');
+  const [newWorkStart, setNewWorkStart] = useState('');
+  const [newWorkEnd, setNewWorkEnd] = useState('');
+  const [newWorkDescription, setNewWorkDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [quoteMaterials, setQuoteMaterials] = useState([]);
 
@@ -63,37 +64,55 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
     }
   };
 
-  const handleAddScheduledDay = () => {
-    if (!newDayDate) {
-      toast.error('Selecteer een datum');
+  const handleAddWorkPeriod = () => {
+    if (!newWorkStart || !newWorkEnd) {
+      toast.error('Vul zowel begin- als einddatum in');
       return;
     }
 
-    // Check if date already exists
-    if (scheduledDays.some(d => d.date === newDayDate)) {
-      toast.error('Deze datum is al gepland');
+    if (!newWorkDescription.trim()) {
+      toast.error('Vul een omschrijving in van de werken');
       return;
     }
+
+    if (new Date(newWorkEnd) < new Date(newWorkStart)) {
+      toast.error('Einddatum moet na begindatum liggen');
+      return;
+    }
+
+    const newPeriod = {
+      id: Date.now().toString(),
+      start_date: newWorkStart,
+      end_date: newWorkEnd,
+      description: newWorkDescription
+    };
 
     setScheduledDays([
       ...scheduledDays,
-      { date: newDayDate, notes: newDayNotes }
-    ].sort((a, b) => new Date(a.date) - new Date(b.date)));
+      newPeriod
+    ].sort((a, b) => new Date(a.start_date) - new Date(b.start_date)));
     
-    setNewDayDate('');
-    setNewDayNotes('');
-    toast.success('Werkdag toegevoegd');
+    setNewWorkStart('');
+    setNewWorkEnd('');
+    setNewWorkDescription('');
+    toast.success('Werkperiode toegevoegd');
   };
 
-  const handleRemoveScheduledDay = (date) => {
-    setScheduledDays(scheduledDays.filter(d => d.date !== date));
-    toast.success('Werkdag verwijderd');
+  const handleRemoveWorkPeriod = (id) => {
+    setScheduledDays(scheduledDays.filter(d => d.id !== id));
+    toast.success('Werkperiode verwijderd');
   };
 
-  const handleUpdateDayNotes = (date, notes) => {
+  const handleUpdateWorkPeriod = (id, field, value) => {
     setScheduledDays(scheduledDays.map(d => 
-      d.date === date ? { ...d, notes } : d
+      d.id === id ? { ...d, [field]: value } : d
     ));
+  };
+
+  // Calculate days between two dates
+  const getDaysDiff = (start, end) => {
+    const diffTime = Math.abs(new Date(end) - new Date(start));
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
   };
 
   return (
@@ -109,7 +128,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label>Startdatum</Label>
+              <Label>Startdatum Project</Label>
               <Input
                 type="date"
                 value={startDate}
@@ -117,7 +136,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
               />
             </div>
             <div>
-              <Label>Einddatum</Label>
+              <Label>Einddatum Project</Label>
               <Input
                 type="date"
                 value={endDate}
@@ -128,98 +147,127 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
         </CardContent>
       </Card>
 
-      {/* Scheduled Work Days */}
+      {/* Scheduled Work Periods */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            📅 Geplande Werkdagen
+            📅 Geplande Werken
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Add new day */}
+            {/* Add new work period */}
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h4 className="font-semibold mb-3" style={{color: '#1E40AF'}}>Nieuwe Werkdag Toevoegen</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <h4 className="font-semibold mb-3" style={{color: '#1E40AF'}}>Nieuwe Werkperiode Toevoegen</h4>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <div>
-                  <Label>Datum</Label>
+                  <Label>Van (begindatum)</Label>
                   <Input
                     type="date"
-                    value={newDayDate}
-                    onChange={(e) => setNewDayDate(e.target.value)}
+                    value={newWorkStart}
+                    onChange={(e) => setNewWorkStart(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Tot (einddatum)</Label>
+                  <Input
+                    type="date"
+                    value={newWorkEnd}
+                    onChange={(e) => setNewWorkEnd(e.target.value)}
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Label>Notities (welke werken?)</Label>
+                  <Label>Omschrijving werken</Label>
                   <Input
-                    placeholder="Bijv: Tegels plaatsen, egaliseren..."
-                    value={newDayNotes}
-                    onChange={(e) => setNewDayNotes(e.target.value)}
+                    placeholder="Bijv: Tegelwerken badkamer, Leidingwerk..."
+                    value={newWorkDescription}
+                    onChange={(e) => setNewWorkDescription(e.target.value)}
                   />
                 </div>
               </div>
               <Button 
-                onClick={handleAddScheduledDay}
+                onClick={handleAddWorkPeriod}
                 className="mt-3"
                 style={{backgroundColor: '#1E40AF'}}
               >
-                <Plus size={16} className="mr-2" /> Werkdag Toevoegen
+                <Plus size={16} className="mr-2" /> Werkperiode Toevoegen
               </Button>
             </div>
 
-            {/* List of scheduled days */}
+            {/* List of scheduled work periods */}
             {scheduledDays.length > 0 ? (
               <div className="space-y-3">
                 <h4 className="font-semibold" style={{color: '#1E293B'}}>
-                  Geplande dagen ({scheduledDays.length})
+                  Geplande werkperiodes ({scheduledDays.length})
                 </h4>
-                {scheduledDays.map((day, index) => (
+                {scheduledDays.map((period) => (
                   <div 
-                    key={day.date} 
-                    className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border"
+                    key={period.id || period.start_date} 
+                    className="p-4 bg-gray-50 rounded-lg border"
                     style={{borderColor: '#E5E7EB'}}
                   >
-                    <div className="flex-shrink-0">
-                      <div className="w-16 h-16 rounded-lg flex flex-col items-center justify-center" style={{backgroundColor: '#F59E0B'}}>
-                        <span className="text-white text-xs font-semibold">
-                          {new Date(day.date).toLocaleDateString('nl-NL', { weekday: 'short' })}
-                        </span>
-                        <span className="text-white text-lg font-bold">
-                          {new Date(day.date).getDate()}
-                        </span>
-                        <span className="text-white text-xs">
-                          {new Date(day.date).toLocaleDateString('nl-NL', { month: 'short' })}
-                        </span>
+                    <div className="flex items-start gap-4">
+                      {/* Date Range Display */}
+                      <div className="flex-shrink-0 flex items-center gap-2">
+                        <div className="w-20 h-20 rounded-lg flex flex-col items-center justify-center" style={{backgroundColor: '#F59E0B'}}>
+                          <span className="text-white text-xs font-semibold">VAN</span>
+                          <span className="text-white text-lg font-bold">
+                            {new Date(period.start_date).getDate()}
+                          </span>
+                          <span className="text-white text-xs">
+                            {new Date(period.start_date).toLocaleDateString('nl-NL', { month: 'short' })}
+                          </span>
+                        </div>
+                        <div className="text-2xl font-bold" style={{color: '#9CA3AF'}}>→</div>
+                        <div className="w-20 h-20 rounded-lg flex flex-col items-center justify-center" style={{backgroundColor: '#10B981'}}>
+                          <span className="text-white text-xs font-semibold">TOT</span>
+                          <span className="text-white text-lg font-bold">
+                            {new Date(period.end_date).getDate()}
+                          </span>
+                          <span className="text-white text-xs">
+                            {new Date(period.end_date).toLocaleDateString('nl-NL', { month: 'short' })}
+                          </span>
+                        </div>
                       </div>
+                      
+                      {/* Description */}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2 py-1 text-xs rounded-full" style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}>
+                            {getDaysDiff(period.start_date, period.end_date)} dagen
+                          </span>
+                        </div>
+                        <Input
+                          value={period.description || period.notes || ''}
+                          onChange={(e) => handleUpdateWorkPeriod(period.id || period.start_date, 'description', e.target.value)}
+                          placeholder="Omschrijving van de werken..."
+                          className="font-medium"
+                        />
+                        <p className="text-sm mt-2" style={{color: '#64748B'}}>
+                          {new Date(period.start_date).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })} 
+                          {' '} t/m {' '}
+                          {new Date(period.end_date).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                        </p>
+                      </div>
+                      
+                      {/* Delete Button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveWorkPeriod(period.id || period.start_date)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 size={18} />
+                      </Button>
                     </div>
-                    <div className="flex-1">
-                      <p className="font-semibold" style={{color: '#1E293B'}}>
-                        {new Date(day.date).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                      </p>
-                      <Textarea
-                        value={day.notes}
-                        onChange={(e) => handleUpdateDayNotes(day.date, e.target.value)}
-                        placeholder="Notities over de werkzaamheden..."
-                        className="mt-2"
-                        rows={2}
-                      />
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveScheduledDay(day.date)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 size={18} />
-                    </Button>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <Calendar size={48} className="mx-auto mb-3 opacity-50" />
-                <p>Nog geen werkdagen gepland</p>
-                <p className="text-sm mt-1">Voeg werkdagen toe om ze in de kalender te zien</p>
+                <p>Nog geen werkperiodes gepland</p>
+                <p className="text-sm mt-1">Voeg werkperiodes toe om ze in de kalender te zien</p>
               </div>
             )}
           </div>
