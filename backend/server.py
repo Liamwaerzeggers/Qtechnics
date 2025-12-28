@@ -233,7 +233,7 @@ class Project(BaseModel):
     invoice_uploads: List[dict] = []  # [{filename, total_excl_vat, total_incl_vat, vat_amount, upload_date}]
     total_costs: float = 0.0
     total_costs_incl_vat: float = 0.0
-    profit: float = 0.0
+    profit: Optional[float] = 0.0
     profit_margin: float = 0.0
     is_archived: bool = False  # Soft delete - hidden from workers when True
     visible_to_workers: bool = False  # Toggle: show/hide project for workers
