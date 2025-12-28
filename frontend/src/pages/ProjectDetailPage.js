@@ -5,12 +5,13 @@ import { API } from '../App';
 import DashboardLayout from '../components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, FileText, Camera, Folder, Receipt, Briefcase } from 'lucide-react';
+import { ArrowLeft, FileText, Camera, Folder, Receipt, Briefcase, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import ProjectFirstVisitTab from './ProjectFirstVisitTab';
 import Project3DDesignTab from './Project3DDesignTab';
 import ProjectCostsTab from './ProjectCostsTab';
 import ProjectWorkSlipsTab from './ProjectWorkSlipsTab';
+import ProjectPlanningTab from './ProjectPlanningTab';
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams();
