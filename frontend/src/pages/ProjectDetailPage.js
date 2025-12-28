@@ -37,12 +37,12 @@ export default function ProjectDetailPage() {
         const projectQuotes = quotesResponse.data.filter(q => q.lead_id === projectResponse.data.lead_id);
         setQuotes(projectQuotes);
         
-        // Set primary quote - use the MOST RECENT approved quote (sorted by date descending)
-        const approvedQuotes = projectQuotes
+        // Get ALL approved quotes (sorted by date descending)
+        const approved = projectQuotes
           .filter(q => q.status === 'goedgekeurd')
           .sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
         
-        setPrimaryQuote(approvedQuotes.length > 0 ? approvedQuotes[0] : null);
+        setApprovedQuotes(approved);
       }
     } catch (error) {
       console.error('Failed to fetch project:', error);
