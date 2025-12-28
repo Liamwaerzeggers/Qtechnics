@@ -5,7 +5,7 @@ import { API } from '../App';
 import DashboardLayout from '../components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, FileText, Camera, Folder, Receipt, Briefcase, CalendarDays } from 'lucide-react';
+import { ArrowLeft, FileText, Camera, Folder, Receipt, Briefcase, CalendarDays, Users, Copy, Link, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import ProjectFirstVisitTab from './ProjectFirstVisitTab';
 import Project3DDesignTab from './Project3DDesignTab';
