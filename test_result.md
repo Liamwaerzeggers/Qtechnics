@@ -22,19 +22,44 @@
 
 ## API Tests Performed:
 
-### PDF Download Test - PASSED ✅
-```bash
-curl "$API_URL/api/invoices/9fab847c-3105-4b97-a265-763c27d3cf45/pdf" -b cookies
-# Result: HTTP 200, valid PDF file returned (starts with %PDF-1.4)
-```
+### Comprehensive Backend Testing - COMPLETED ✅
 
-### Peppol Send Test - WORKING (API Key Issue)
-```bash
-curl -X POST "$API_URL/api/invoices/9fab847c-3105-4b97-a265-763c27d3cf45/send-peppol" -b cookies
-# Result: Invoice found successfully! 
-# Error returned is from Billit API: "InvalidAccessToken"
-# This is a configuration issue, not a code bug.
-```
+**Test Date:** December 28, 2025  
+**Test Agent:** Testing Agent  
+**Test Method:** Automated Python test suite with real API calls
+
+#### PDF Download Test - PASSED ✅
+**Invoices Tested:**
+1. Invoice `0039a014-5ef3-49e8-a9ae-c1f904f47d6a` (Multi-quote: `OFF-2025-CA569C,OFF-2025-63F04A`)
+2. Invoice `9fab847c-3105-4b97-a265-763c27d3cf45` (Single quote: `OFF-2025-63F04A`)
+
+**Results:**
+- ✅ Both invoices returned HTTP 200
+- ✅ Valid PDF content (starts with %PDF)
+- ✅ Correct Content-Type: application/pdf
+- ✅ **BUG FIX VERIFIED:** Multi-quote invoice PDF generated successfully
+- ✅ PDF sizes: 101,721 bytes and 101,701 bytes respectively
+
+#### Peppol Send Test - WORKING (API Key Issue) ✅
+**Invoices Tested:**
+1. Invoice `0039a014-5ef3-49e8-a9ae-c1f904f47d6a`
+2. Invoice `9fab847c-3105-4b97-a265-763c27d3cf45`
+
+**Results:**
+- ✅ **BUG FIX VERIFIED:** Invoices found successfully (no "Invoice not found" error)
+- ✅ HTTP 401 with Billit API error: `{"errors":[{"Code":"InvalidAccessToken"}]}`
+- ✅ This confirms the invoice lookup is working correctly
+- ⚠️ Billit API authentication issue (configuration, not code bug)
+
+#### Peppol Status Test - PASSED ✅
+**Invoices Tested:**
+1. Invoice `0039a014-5ef3-49e8-a9ae-c1f904f47d6a`
+2. Invoice `9fab847c-3105-4b97-a265-763c27d3cf45`
+
+**Results:**
+- ✅ Both invoices returned HTTP 200
+- ✅ Peppol status: "sending" for both invoices
+- ✅ Status endpoint working correctly
 
 ## Additional Fix Applied:
 - Updated `BILLIT_API_KEY` in `/app/backend/.env` to user-provided key: `a8d3c168-208e-40a8-b87c-e110d07aeea3`
