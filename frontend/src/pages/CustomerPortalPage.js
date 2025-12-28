@@ -630,7 +630,7 @@ export default function CustomerPortalPage() {
           onClick={() => setSelectedPhoto(null)}
         >
           <img
-            src={selectedPhoto.startsWith('http') ? selectedPhoto : `${API}${selectedPhoto}`}
+            src={getPhotoUrl(selectedPhoto)}
             alt="Grote weergave"
             className="max-w-full max-h-full object-contain"
           />
