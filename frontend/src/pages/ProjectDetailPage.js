@@ -20,7 +20,7 @@ export default function ProjectDetailPage() {
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('first-visit');
-  const [primaryQuote, setPrimaryQuote] = useState(null);
+  const [approvedQuotes, setApprovedQuotes] = useState([]); // All approved quotes
 
   useEffect(() => {
     fetchProjectData();
