@@ -2250,7 +2250,7 @@ async def create_invoice(
     request: dict,
     current_user: User = Depends(get_current_user)
 ):
-    """Create a milestone-based customer invoice for a project"""
+    """Create a milestone-based customer invoice for a project - based on ALL approved quotes"""
     logger.info(f"Creating invoice - received data: {request}")
     
     # Validate request data
@@ -2267,37 +2267,53 @@ async def create_invoice(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Get quote
-    quote = await db.quotes.find_one({"id": project["quote_id"]})
-    if not quote:
-        raise HTTPException(status_code=404, detail="Quote not found")
+    # Get ALL approved quotes for this project's lead
+    lead_id = project.get("lead_id")
+    if not lead_id:
+        raise HTTPException(status_code=400, detail="Project has no lead_id")
     
-    # Get line items
-    line_items = await db.line_items.find({"quote_id": quote["id"]}, {"_id": 0}).to_list(1000)
+    approved_quotes = await db.quotes.find({
+        "lead_id": lead_id,
+        "status": "goedgekeurd"
+    }, {"_id": 0}).to_list(1000)
+    
+    if not approved_quotes:
+        raise HTTPException(status_code=404, detail="Geen goedgekeurde offertes gevonden")
+    
+    # Sum up all approved quotes
+    total_subtotal_labor = sum(q.get("subtotal_labor", 0) for q in approved_quotes)
+    total_subtotal_material = sum(q.get("subtotal_material", 0) for q in approved_quotes)
+    total_excl_vat_all = sum(q.get("total_excl_vat", 0) for q in approved_quotes)
+    total_vat_all = sum(q.get("total_vat", 0) for q in approved_quotes)
+    total_incl_vat_all = sum(q.get("total_incl_vat", 0) for q in approved_quotes)
+    
+    # Combine VAT breakdowns from all quotes
+    combined_vat_breakdown = {}
+    for quote in approved_quotes:
+        for vat_rate, amount in quote.get("vat_breakdown", {}).items():
+            if vat_rate not in combined_vat_breakdown:
+                combined_vat_breakdown[vat_rate] = 0.0
+            combined_vat_breakdown[vat_rate] += amount
+    
+    # Get all line items from all approved quotes
+    all_line_items = []
+    for quote in approved_quotes:
+        items = await db.line_items.find({"quote_id": quote["id"]}, {"_id": 0}).to_list(1000)
+        all_line_items.extend(items)
     
     # Calculate invoice amount based on milestone percentage
     percentage = invoice_data.milestone_percentage / 100.0
     
-    invoice_subtotal_labor = quote.get("subtotal_labor", 0) * percentage
-    invoice_subtotal_material = quote.get("subtotal_material", 0) * percentage
+    invoice_subtotal_labor = total_subtotal_labor * percentage
+    invoice_subtotal_material = total_subtotal_material * percentage
+    invoice_total_excl_vat = total_excl_vat_all * percentage
+    invoice_total_vat = total_vat_all * percentage
+    invoice_total_incl_vat = total_incl_vat_all * percentage
     
-    # Support both old and new quote formats
-    if "total_excl_vat" in quote:
-        # New format with VAT breakdown
-        invoice_total_excl_vat = quote.get("total_excl_vat", 0) * percentage
-        invoice_total_vat = quote.get("total_vat", 0) * percentage
-        invoice_total_incl_vat = quote.get("total_incl_vat", 0) * percentage
-        
-        # Calculate VAT breakdown
-        vat_breakdown = {}
-        for vat_rate, amount in quote.get("vat_breakdown", {}).items():
-            vat_breakdown[str(vat_rate)] = amount * percentage
-    else:
-        # Old format - use total_price and calculate basic VAT
-        invoice_total_excl_vat = quote.get("total_price", 0) * percentage / 1.21  # Assume 21% VAT
-        invoice_total_incl_vat = quote.get("total_price", 0) * percentage
-        invoice_total_vat = invoice_total_incl_vat - invoice_total_excl_vat
-        vat_breakdown = {"21": invoice_total_vat}  # Default to 21% for old quotes
+    # Calculate VAT breakdown for invoice
+    vat_breakdown = {}
+    for vat_rate, amount in combined_vat_breakdown.items():
+        vat_breakdown[str(vat_rate)] = amount * percentage
     
     # Generate invoice number
     invoice_number = await generate_invoice_number()
@@ -2308,14 +2324,16 @@ async def create_invoice(
     # Calculate due date (7 days from now)
     due_date = datetime.now(timezone.utc) + timedelta(days=7)
     
-    # Create invoice
+    # Create invoice - quote_id references all approved quotes combined
+    combined_quote_ids = ",".join([q["id"] for q in approved_quotes])
+    
     invoice = Invoice(
         invoice_number=invoice_number,
         project_id=project_id,
-        quote_id=quote["id"],
+        quote_id=combined_quote_ids,  # Store all quote IDs
         milestone=invoice_data.milestone,
         milestone_percentage=invoice_data.milestone_percentage,
-        line_items=line_items,
+        line_items=all_line_items,
         subtotal_labor=invoice_subtotal_labor,
         subtotal_material=invoice_subtotal_material,
         total_excl_vat=invoice_total_excl_vat,
