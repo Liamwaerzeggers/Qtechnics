@@ -276,6 +276,11 @@ export default function CustomerPortalPage() {
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
                   Uw Beoordeling
+                  {project.customer_rating && (
+                    <span className="ml-auto text-xs font-normal text-green-600 bg-green-100 px-2 py-0.5 rounded">
+                      ✓ Opgeslagen
+                    </span>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
@@ -308,6 +313,7 @@ export default function CustomerPortalPage() {
                   disabled={submittingRating || rating === 0}
                   className="w-full text-sm"
                   size="sm"
+                  variant={project.customer_rating ? "outline" : "default"}
                 >
                   {submittingRating ? 'Opslaan...' : 'Beoordeling opslaan'}
                 </Button>
