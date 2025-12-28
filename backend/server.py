@@ -1198,6 +1198,21 @@ async def get_projects(current_user: User = Depends(get_current_user)):
             project["end_date"] = datetime.fromisoformat(project["end_date"])
         if project.get("first_visit_date") and isinstance(project["first_visit_date"], str):
             project["first_visit_date"] = datetime.fromisoformat(project["first_visit_date"])
+        
+        # Calculate profit from approved quotes (only for admins)
+        if current_user.role != "worker":
+            lead_id = project.get("lead_id")
+            if lead_id:
+                approved_quotes = await db.quotes.find({
+                    "lead_id": lead_id,
+                    "status": "goedgekeurd"
+                }, {"_id": 0, "total_incl_vat": 1}).to_list(100)
+                
+                total_sales = sum(q.get("total_incl_vat", 0) for q in approved_quotes)
+                total_costs = project.get("total_costs", 0)
+                project["profit"] = total_sales - total_costs
+            else:
+                project["profit"] = None
     
     return projects
 
