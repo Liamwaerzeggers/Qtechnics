@@ -250,7 +250,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
                             />
                           </div>
                           <div>
-                            <Label className="text-xs">Tot</Label>
+                            <Label className="text-xs">Tot en met</Label>
                             <Input
                               type="date"
                               value={period.end_date}
