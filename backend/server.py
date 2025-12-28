@@ -3898,10 +3898,20 @@ async def submit_customer_rating(access_token: str, rating_data: dict):
         raise HTTPException(status_code=404, detail="Ongeldig toegangslink")
     
     rating = rating_data.get("rating")
+    
+    # Convert to int if string
+    if isinstance(rating, str):
+        try:
+            rating = int(rating)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Rating moet een getal zijn")
+    
     if not rating or not isinstance(rating, int) or rating < 1 or rating > 5:
         raise HTTPException(status_code=400, detail="Rating moet tussen 1 en 5 zijn")
     
-    comment = rating_data.get("comment", "").strip()
+    comment = rating_data.get("comment", "")
+    if comment:
+        comment = str(comment).strip()
     
     await db.projects.update_one(
         {"id": project["id"]},
@@ -3910,6 +3920,8 @@ async def submit_customer_rating(access_token: str, rating_data: dict):
             "customer_rating_comment": comment
         }}
     )
+    
+    logger.info(f"Customer rating saved for project {project['id']}: {rating} stars")
     
     return {"success": True, "message": "Bedankt voor uw beoordeling!"}
 
