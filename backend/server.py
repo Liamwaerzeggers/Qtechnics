@@ -1738,8 +1738,8 @@ async def get_calendar_events(current_user: User = Depends(get_current_user)):
             if event["start"]:
                 events.append(event)
         
-        # 1b. Add scheduled work periods - include them in the project event description
-        # instead of as separate events for cleaner display
+        # 1b. Add scheduled work periods - include them ONLY as metadata in the project event
+        # NOT as separate calendar events (to avoid visual clutter)
         scheduled_days = project.get("scheduled_days", [])
         scheduled_work_list = []
         for period in scheduled_days:
@@ -1759,56 +1759,15 @@ async def get_calendar_events(current_user: User = Depends(get_current_user)):
                     "description": description
                 })
         
-        # Add scheduled work info to the project event if exists
+        # Add scheduled work info to the project event (for tooltip/popup display)
         if scheduled_work_list and events:
-            # Find the project event and add scheduled work info
             for evt in events:
                 if evt.get("project_id") == project["id"] and evt.get("type") == "project":
                     evt["scheduled_work"] = scheduled_work_list
+                    # Update title to show number of scheduled work items
+                    if len(scheduled_work_list) > 0:
+                        evt["title"] = f"{project.get('name', 'Project')} ({len(scheduled_work_list)} 🔧)"
                     break
-        
-        # Also create individual events for scheduled work periods (for better calendar visibility)
-        for period in scheduled_days:
-            start_date = period.get("start_date")
-            end_date = period.get("end_date")
-            
-            if not end_date:
-                end_date = period.get("date", start_date)
-                start_date = period.get("date", start_date)
-            
-            if start_date and end_date:
-                try:
-                    # Parse dates
-                    if 'T' in str(start_date):
-                        start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
-                    else:
-                        start_dt = datetime.strptime(start_date, '%Y-%m-%d')
-                    
-                    if 'T' in str(end_date):
-                        end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
-                    else:
-                        end_dt = datetime.strptime(end_date, '%Y-%m-%d')
-                    
-                    # Add 1 day to end_date for proper calendar display (calendars use exclusive end dates)
-                    end_dt_display = end_dt + timedelta(days=1)
-                    
-                    description = period.get("description", period.get("notes", "Gepland werk"))
-                    
-                    event = {
-                        "id": f"work_{project['id']}_{start_date}",
-                        "title": f"🔧 {description}",
-                        "start": start_dt.isoformat(),
-                        "end": end_dt_display.isoformat(),  # +1 day for inclusive display
-                        "project_id": project["id"],
-                        "project_name": project.get("name", "Project"),
-                        "status": project.get("status", "actief"),
-                        "color": "#F59E0B",  # Orange for scheduled work
-                        "type": "scheduled_work",
-                        "description": description
-                    }
-                    events.append(event)
-                except Exception as e:
-                    logger.error(f"Error parsing scheduled work dates: {e}")
     
     # 2. Get work slip events - all admins see all work slips
     if current_user.role == "admin":
