@@ -399,7 +399,7 @@ export default function CustomerPortalPage() {
                         onClick={() => setSelectedPhoto(photo)}
                       >
                         <img
-                          src={photo.startsWith('http') ? photo : `${API}${photo}`}
+                          src={getPhotoUrl(photo)}
                           alt={`Foto ${idx + 1}`}
                           className="w-full h-full object-cover rounded-lg group-hover:opacity-90 transition"
                         />
