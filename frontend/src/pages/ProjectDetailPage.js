@@ -120,6 +120,7 @@ export default function ProjectDetailPage() {
     { id: 'planning', label: '📅 Planning', icon: CalendarDays },
     { id: 'costs', label: '💰 Financieel', icon: Receipt },
     { id: 'work', label: '📋 Werkbonnen', icon: Briefcase },
+    { id: 'customer', label: '👤 Klantportaal', icon: Users },
   ];
 
   if (loading) {
