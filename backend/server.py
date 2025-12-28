@@ -386,6 +386,14 @@ class Invoice(BaseModel):
     due_date: datetime
     paid_date: Optional[datetime] = None
     
+    # Peppol/Billit integration
+    peppol_status: str = "not_sent"  # not_sent, sending, sent, delivered, failed
+    billit_invoice_id: Optional[str] = None
+    peppol_message_id: Optional[str] = None
+    peppol_sent_at: Optional[datetime] = None
+    peppol_delivered_at: Optional[datetime] = None
+    peppol_error: Optional[str] = None
+    
     # Dates
     invoice_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
