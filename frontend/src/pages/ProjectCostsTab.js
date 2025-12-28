@@ -349,14 +349,46 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                   <span className="font-bold" style={{color: '#EF4444'}}>€{project.total_costs?.toFixed(2) || '0.00'}</span>
                 </div>
                 
+                {/* Approved Quotes List */}
+                {hasApprovedQuotes && (
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="text-sm font-semibold mb-3" style={{color: '#1E40AF'}}>
+                      📄 Goedgekeurde Offertes ({approvedQuotes.length})
+                    </div>
+                    <div className="space-y-2">
+                      {approvedQuotes.map((q) => (
+                        <div key={q.id} className="flex justify-between items-center py-2 border-b border-blue-100 last:border-0">
+                          <div>
+                            <span className="font-medium" style={{color: '#1E293B'}}>{q.quote_number || q.id}</span>
+                            <span className="text-xs ml-2" style={{color: '#64748B'}}>
+                              {new Date(q.date || q.created_at).toLocaleDateString('nl-NL')}
+                            </span>
+                          </div>
+                          <span className="font-bold" style={{color: '#3B82F6'}}>
+                            €{(q.total_incl_vat || 0).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {approvedQuotes.length > 1 && (
+                      <div className="flex justify-between items-center pt-3 mt-2 border-t border-blue-200">
+                        <span className="font-semibold" style={{color: '#1E40AF'}}>Totaal alle offertes:</span>
+                        <span className="font-bold text-lg" style={{color: '#1E40AF'}}>
+                          €{totalSalePrice.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <div className="flex justify-between text-lg">
                   <span className="font-semibold" style={{color: '#64748B'}}>Verkoopprijs (incl. BTW):</span>
                   <span className="font-bold" style={{color: '#3B82F6'}}>
-                    €{quote?.total_incl_vat?.toFixed(2) || '0.00'}
+                    €{totalSalePrice.toFixed(2)}
                   </span>
                 </div>
                 
-                {!hasApprovedQuote && (
+                {!hasApprovedQuotes && (
                   <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                     <p className="text-sm" style={{color: '#92400E'}}>
                       💡 <strong>Let op:</strong> Keur een offerte goed in het "Offertes" tabblad. Alleen goedgekeurde offertes worden gebruikt voor winstberekening.
@@ -366,9 +398,8 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                 
                 {(() => {
                   const totalCosts = project.total_costs || 0;
-                  const salePrice = quote?.total_incl_vat || 0; // Only approved quote
-                  const profit = salePrice - totalCosts;
-                  const profitMargin = salePrice > 0 ? (profit / salePrice) * 100 : 0;
+                  const profit = totalSalePrice - totalCosts;
+                  const profitMargin = totalSalePrice > 0 ? (profit / totalSalePrice) * 100 : 0;
                   
                   return (
                     <>
