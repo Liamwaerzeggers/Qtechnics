@@ -437,16 +437,16 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
               <h4 className="font-semibold mb-3" style={{color: '#1E3A8A'}}>Deelfacturen Aanmaken</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
-                  onClick={() => createInvoice('10_approval', 10)}
-                  disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '10_approval')}
+                  onClick={() => createInvoice('25_approval', 25)}
+                  disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '25_approval')}
                   className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
                   style={{borderColor: '#CBD5E1'}}
                 >
                   <div className="text-left">
-                    <div className="font-semibold" style={{color: '#1E293B'}}>10% Bij Akkoord</div>
+                    <div className="font-semibold" style={{color: '#1E293B'}}>25% Bij Akkoord</div>
                     <div className="text-sm" style={{color: '#64748B'}}>Akkoord offerte</div>
                   </div>
-                  {Array.isArray(invoices) && invoices.some(inv => inv.milestone === '10_approval') && (
+                  {Array.isArray(invoices) && invoices.some(inv => inv.milestone === '25_approval') && (
                     <span className="text-green-600 font-bold">✓</span>
                   )}
                 </button>
@@ -458,7 +458,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                   style={{borderColor: '#CBD5E1'}}
                 >
                   <div className="text-left">
-                    <div className="font-semibold" style={{color: '#1E293B'}}>40% Voor Start</div>
+                    <div className="font-semibold" style={{color: '#1E293B'}}>40% Voor Aanvang</div>
                     <div className="text-sm" style={{color: '#64748B'}}>Een week voor aanvang</div>
                   </div>
                   {Array.isArray(invoices) && invoices.some(inv => inv.milestone === '40_before_start') && (
@@ -467,16 +467,16 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                 </button>
                 
                 <button
-                  onClick={() => createInvoice('40_completion', 40)}
-                  disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '40_completion')}
+                  onClick={() => createInvoice('25_completion', 25)}
+                  disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '25_completion')}
                   className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
                   style={{borderColor: '#CBD5E1'}}
                 >
                   <div className="text-left">
-                    <div className="font-semibold" style={{color: '#1E293B'}}>40% Bij Oplevering</div>
+                    <div className="font-semibold" style={{color: '#1E293B'}}>25% Bij Oplevering</div>
                     <div className="text-sm" style={{color: '#64748B'}}>Werken afgerond</div>
                   </div>
-                  {Array.isArray(invoices) && invoices.some(inv => inv.milestone === '40_completion') && (
+                  {Array.isArray(invoices) && invoices.some(inv => inv.milestone === '25_completion') && (
                     <span className="text-green-600 font-bold">✓</span>
                   )}
                 </button>
