@@ -237,6 +237,29 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
                             {getDaysDiff(period.start_date, period.end_date)} dagen
                           </span>
                         </div>
+                        
+                        {/* Editable date inputs */}
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                          <div>
+                            <Label className="text-xs">Van</Label>
+                            <Input
+                              type="date"
+                              value={period.start_date}
+                              onChange={(e) => handleUpdateWorkPeriod(period.id || period.start_date, 'start_date', e.target.value)}
+                              className="text-sm"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Tot</Label>
+                            <Input
+                              type="date"
+                              value={period.end_date}
+                              onChange={(e) => handleUpdateWorkPeriod(period.id || period.start_date, 'end_date', e.target.value)}
+                              className="text-sm"
+                            />
+                          </div>
+                        </div>
+                        
                         <Input
                           value={period.description || period.notes || ''}
                           onChange={(e) => handleUpdateWorkPeriod(period.id || period.start_date, 'description', e.target.value)}
