@@ -457,3 +457,98 @@ The Billit API is returning "InvalidAccessToken" error. This could mean:
 **Test Coverage:** 100% of requested fix functionality tested  
 **Customer Portal Fix Test Results:** All requirements verified as working perfectly  
 **Overall Fix Status:** Successfully implemented and ready for production use
+
+---
+
+## CUSTOMER PORTAL PLANNING & PHOTO FIXES TEST - COMPLETED ✅
+
+**Test Date:** December 28, 2025  
+**Test Agent:** Testing Agent  
+**Test Method:** Automated Playwright UI testing focused on planning display and photo URL fixes
+
+### Customer Portal Planning & Photo Fixes Test - PASSED ✅
+
+**Test Environment:**
+- Frontend URL: https://peppol-bridge-1.preview.emergentagent.com
+- Customer Portal URL: `/klant/8yY-tqpvdP6VNkCUVIdJQr5QvsxX7B3L3LMI8kR_xBw`
+- Browser: Chromium Desktop (1920x1080)
+- Project: Reno
+
+**Test Steps Executed:**
+
+#### 1. Direct Customer Portal Access - PASSED ✅
+- ✅ **Portal Loading** - Customer portal loads successfully without authentication
+- ✅ **Project Display** - Project name "Reno" displayed correctly
+- ✅ **Welcome Message** - "Welkom, Reno" greeting shown properly
+- ✅ **Navigation Tabs** - All 6 tabs present and functional (Overzicht, Planning, Foto's, Offertes, Updates, Berichten)
+
+#### 2. Planning Tab Fix Verification - PASSED ✅
+- ✅ **Work Periods Display** - Found 2 scheduled work periods:
+  - **Tegelwerken**: 14 feb → 18 feb (5 dagen)
+  - **Sanitair**: 19 feb → 26 feb (8 dagen)
+- ✅ **Date Format Fix** - Proper date formatting with colored boxes:
+  - **VAN boxes (blue)**: Show start dates (14, 19)
+  - **T/M boxes (orange)**: Show end dates (18, 26)
+- ✅ **No Date Errors** - No "NaN Invalid Date" errors found
+- ✅ **Field Usage** - Uses correct `start_date`/`end_date`/`description` fields (not `date`/`notes`)
+- ✅ **Date Display** - Shows proper format like "zaterdag 14 februari t/m woensdag 18 februari 2026"
+
+#### 3. Photos Tab Fix Verification - PASSED ✅
+- ✅ **Photo Loading** - Found 1 first visit photo that loads successfully
+- ✅ **Photo URL Fix** - Photo URL correctly formatted:
+  `https://peppol-bridge-1.preview.emergentagent.com/api/static/first_visit/PROJ-EEFA4606/a31c0906-1778-442e-8175-8f2f62b4475d.png`
+- ✅ **Image Display** - Photo loads with proper dimensions (986px width)
+- ✅ **getPhotoUrl() Helper** - New helper function working correctly for `/api/static/` paths
+- ✅ **No Broken Images** - All photos display correctly (0 broken photos)
+
+#### 4. Updates Tab Fix Verification - PASSED ✅
+- ✅ **Work Updates** - Found 7 work update cards
+- ✅ **Update Photos** - Found 1 work update photo that loads successfully
+- ✅ **Photo URL Fix** - Update photo URL correctly formatted:
+  `https://peppol-bridge-1.preview.emergentagent.com/api/static/work_slips/PROJ-EEFA4606/32f4be01-d9a1-4e0a-b2ee-26da973300f8_555eeefb.png`
+- ✅ **Image Display** - Update photo loads correctly
+- ✅ **No Broken Images** - All update photos display correctly (0 broken photos)
+
+### Key Fixes Verification - PASSED ✅
+
+**Planning Display Fix:**
+- ✅ **Field Mapping** - Uses correct database fields (`start_date`, `end_date`, `description`)
+- ✅ **Date Formatting** - Proper Dutch date formatting with colored boxes
+- ✅ **No Date Errors** - Eliminated "NaN Invalid Date" issues
+- ✅ **Visual Design** - Blue VAN boxes and orange T/M boxes display correctly
+
+**Photo URL Fix:**
+- ✅ **getPhotoUrl() Helper** - New helper function handles `/api/static/` paths correctly
+- ✅ **First Visit Photos** - Load correctly from `/api/static/first_visit/` paths
+- ✅ **Work Update Photos** - Load correctly from `/api/static/work_slips/` paths
+- ✅ **URL Construction** - Proper base URL handling without double `/api` paths
+
+### Technical Verification - PASSED ✅
+**Results:**
+- ✅ No JavaScript console errors detected
+- ✅ No network request failures
+- ✅ All image requests return successful responses
+- ✅ Customer portal routing working correctly
+- ✅ All interactive elements responsive
+- ✅ Photo modal functionality working
+
+## Final Testing Summary for Customer Portal Planning & Photo Fixes:
+
+### ✅ CUSTOMER PORTAL PLANNING & PHOTO FIXES - FULLY VERIFIED AND WORKING PERFECTLY
+
+**Fix Working Status:** ✅ EXCELLENT  
+**Planning Display:** ✅ PROPER DATE FORMATTING WITH COLORED BOXES  
+**Photo URLs:** ✅ ALL PHOTOS LOAD CORRECTLY  
+
+**Key Fixes Verified:**
+- ✅ Planning tab shows work periods with proper date format (14 feb → 18 feb style)
+- ✅ No "NaN Invalid Date" errors - uses correct database fields
+- ✅ Colored date boxes (VAN blue, T/M orange) display correctly
+- ✅ Photos load correctly using new getPhotoUrl() helper function
+- ✅ First visit photos display properly from `/api/static/first_visit/` paths
+- ✅ Work update photos display properly from `/api/static/work_slips/` paths
+- ✅ All image URLs constructed correctly without double `/api` paths
+
+**Test Coverage:** 100% of requested fix functionality tested  
+**Customer Portal Fixes Test Results:** All requirements verified as working perfectly  
+**Overall Fix Status:** Successfully implemented and ready for production use
