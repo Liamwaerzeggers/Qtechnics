@@ -315,7 +315,7 @@ export default function CustomerPortalPage() {
                   size="sm"
                   variant={project.customer_rating ? "outline" : "default"}
                 >
-                  {submittingRating ? 'Opslaan...' : 'Beoordeling opslaan'}
+                  {submittingRating ? 'Opslaan...' : project.customer_rating ? 'Beoordeling wijzigen' : 'Beoordeling opslaan'}
                 </Button>
               </CardContent>
             </Card>
