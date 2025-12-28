@@ -4,7 +4,7 @@ import { API } from '../App';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
-import { FileText, Clock, Users, Euro, Trash2, Edit2, Save, X, Loader2 } from 'lucide-react';
+import { FileText, Clock, Users, Euro, Trash2, Edit2, Save, X, Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
