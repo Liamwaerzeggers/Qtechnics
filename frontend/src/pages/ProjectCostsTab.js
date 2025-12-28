@@ -168,20 +168,19 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
     }
   };
 
-  // Calculate financials - only use approved quote
+  // Calculate financials - sum ALL approved quotes
   const totalCosts = project.total_costs || 0;
-  const salePrice = quote?.total_incl_vat || 0; // Only from approved quote
+  const salePrice = totalSalePrice; // Sum of all approved quotes
   const profit = salePrice - totalCosts;
   const profitMargin = salePrice > 0 ? (profit / salePrice) * 100 : 0;
-  const hasApprovedQuote = quote?.status === 'goedgekeurd';
 
   return (
     <div className="space-y-6">
-      {/* Warning if no approved quote */}
-      {!hasApprovedQuote && (
+      {/* Warning if no approved quotes */}
+      {!hasApprovedQuotes && (
         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-sm font-medium" style={{color: '#92400E'}}>
-            ⚠️ <strong>Let op:</strong> Er is nog geen goedgekeurde offerte. Keur een offerte goed in het "Offertes" tabblad om de verkoopprijs en winst te berekenen.
+            ⚠️ <strong>Let op:</strong> Er zijn nog geen goedgekeurde offertes. Keur een offerte goed in het "Offertes" tabblad om de verkoopprijs en winst te berekenen.
           </p>
         </div>
       )}
