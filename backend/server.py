@@ -237,6 +237,12 @@ class Project(BaseModel):
     profit_margin: float = 0.0
     is_archived: bool = False  # Soft delete - hidden from workers when True
     visible_to_workers: bool = False  # Toggle: show/hide project for workers
+    
+    # NIEUWE SECTIE: Planning
+    scheduled_days: List[dict] = []  # [{date, notes}] - specific work days with notes
+    required_materials: str = ""  # Manual text for additional materials needed
+    material_reminder_sent: bool = False  # Track if reminder was sent
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
 
