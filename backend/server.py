@@ -3624,8 +3624,7 @@ async def get_peppol_status(invoice_id: str, current_user: User = Depends(get_cu
     
     return {
         "peppol_status": invoice.get("peppol_status", "not_sent"),
-        "billit_invoice_id": invoice.get("billit_invoice_id"),
-        "peppol_message_id": invoice.get("peppol_message_id"),
+        "billit_order_id": invoice.get("billit_order_id"),
         "peppol_sent_at": invoice.get("peppol_sent_at"),
         "peppol_delivered_at": invoice.get("peppol_delivered_at"),
         "peppol_error": invoice.get("peppol_error")
@@ -3633,7 +3632,11 @@ async def get_peppol_status(invoice_id: str, current_user: User = Depends(get_cu
 
 @api_router.post("/webhooks/billit")
 async def billit_webhook(request: Request):
-    """Receive webhook updates from Billit about invoice status"""
+    """Receive webhook updates from Billit about invoice/order status.
+    
+    Billit sends webhooks when invoice status changes (delivered, failed, etc.)
+    Configure webhook URL in Billit dashboard: Settings > Webhooks
+    """
     # Verify webhook signature if configured
     if WEBHOOK_SECRET:
         signature = request.headers.get("X-Billit-Signature", "")
@@ -3651,40 +3654,49 @@ async def billit_webhook(request: Request):
     
     try:
         data = await request.json()
-        event_type = data.get("event") or data.get("type")
-        invoice_data = data.get("data") or data.get("invoice") or data
+        logger.info(f"Billit webhook received: {json.dumps(data)}")
         
-        billit_invoice_id = invoice_data.get("invoiceId") or invoice_data.get("id")
-        status = invoice_data.get("status") or invoice_data.get("peppolStatus")
+        # Billit webhook payload can have different structures
+        order_id = data.get("OrderID") or data.get("orderId") or data.get("id")
+        order_status = data.get("OrderStatus") or data.get("status")
         
-        logger.info(f"Billit webhook received: {event_type} for invoice {billit_invoice_id}")
-        
-        if billit_invoice_id:
-            # Find our invoice by billit_invoice_id
+        if order_id:
+            # Find our invoice by billit_order_id
             invoice = await db.invoices.find_one(
-                {"billit_invoice_id": billit_invoice_id},
+                {"billit_order_id": order_id},
                 {"_id": 0}
             )
+            
+            if not invoice:
+                # Try string version of order_id
+                invoice = await db.invoices.find_one(
+                    {"billit_order_id": str(order_id)},
+                    {"_id": 0}
+                )
             
             if invoice:
                 update_data = {}
                 
-                # Map Billit status to our status
-                if status in ["delivered", "accepted"]:
+                # Map Billit/Peppol status to our status
+                status_lower = str(order_status).lower() if order_status else ""
+                
+                if status_lower in ["delivered", "accepted", "received"]:
                     update_data["peppol_status"] = "delivered"
                     update_data["peppol_delivered_at"] = datetime.now(timezone.utc).isoformat()
-                elif status in ["failed", "rejected", "error"]:
+                elif status_lower in ["failed", "rejected", "error"]:
                     update_data["peppol_status"] = "failed"
-                    update_data["peppol_error"] = invoice_data.get("errorMessage", "Unknown error")
-                elif status in ["sent", "pending"]:
+                    update_data["peppol_error"] = data.get("ErrorMessage") or data.get("message", "Unknown error")
+                elif status_lower in ["sent", "pending", "processing"]:
                     update_data["peppol_status"] = "sent"
                 
                 if update_data:
                     await db.invoices.update_one(
-                        {"billit_invoice_id": billit_invoice_id},
+                        {"id": invoice["id"]},
                         {"$set": update_data}
                     )
-                    logger.info(f"Updated invoice status: {update_data}")
+                    logger.info(f"Updated invoice {invoice['id']} status: {update_data}")
+            else:
+                logger.warning(f"No invoice found for Billit order ID: {order_id}")
         
         return {"status": "ok"}
         
