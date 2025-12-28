@@ -206,15 +206,15 @@ export default function CalendarPage() {
           <div className="space-y-4">
             {/* Event Types */}
             <div>
-              <h4 className="text-sm font-medium mb-2" style={{ color: '#64748B' }}>Event Types</h4>
+              <h4 className="text-sm font-medium mb-2" style={{ color: '#64748B' }}>Weergave</h4>
               <div className="flex flex-wrap gap-4">
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 rounded" style={{ backgroundColor: '#1E40AF' }}></div>
                   <span className="text-sm" style={{ color: '#64748B' }}>Project periode</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 rounded border-2 border-dashed" style={{ backgroundColor: '#F59E0B', borderColor: 'white' }}></div>
-                  <span className="text-sm" style={{ color: '#64748B' }}>🔧 Gepland werk</span>
+                  <div className="w-4 h-4 rounded border-2" style={{ backgroundColor: '#1E40AF', borderColor: '#F59E0B' }}></div>
+                  <span className="text-sm" style={{ color: '#64748B' }}>Project met 🔧 geplande werken</span>
                 </div>
               </div>
             </div>
