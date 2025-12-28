@@ -54,7 +54,6 @@ export default function CalendarPage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedEvent, setSelectedEvent] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
