@@ -152,6 +152,34 @@ export default function LeadDetailPage() {
                   <Label>Beschrijving</Label>
                   <Textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={4} />
                 </div>
+                
+                {/* BTW Nummer voor bedrijven (Peppol) */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="font-semibold mb-3" style={{color: '#1E40AF'}}>🏢 Bedrijfsgegevens (voor Peppol facturatie)</h4>
+                  <div className="flex items-center gap-2 mb-3">
+                    <input
+                      type="checkbox"
+                      id="is_business"
+                      checked={formData.is_business}
+                      onChange={(e) => setFormData({...formData, is_business: e.target.checked})}
+                      className="rounded"
+                    />
+                    <Label htmlFor="is_business">Dit is een bedrijfsklant</Label>
+                  </div>
+                  {formData.is_business && (
+                    <div>
+                      <Label>BTW Nummer</Label>
+                      <Input 
+                        value={formData.vat_number} 
+                        onChange={(e) => setFormData({...formData, vat_number: e.target.value})} 
+                        placeholder="BE0123456789"
+                      />
+                      <p className="text-xs mt-1" style={{color: '#64748B'}}>
+                        Nodig voor Peppol e-facturatie naar bedrijven
+                      </p>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <>
