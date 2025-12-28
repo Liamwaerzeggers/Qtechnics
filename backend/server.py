@@ -3354,19 +3354,27 @@ async def delete_admin(admin_id: str, current_user: User = Depends(get_current_u
     return {"message": "Admin deleted successfully"}
 
 # ============= BILLIT / PEPPOL INTEGRATION =============
+# Billit API Documentation: https://docs.billit.be/docs/create-first-invoice
+# Production: https://api.billit.io | Sandbox: https://api.sandbox-billit.xyz
 
 BILLIT_API_KEY = os.environ.get("BILLIT_API_KEY", "")
-BILLIT_BASE_URL = os.environ.get("BILLIT_BASE_URL", "https://api.billit.be")
+# Default to sandbox for safety - switch to https://api.billit.io for production
+BILLIT_BASE_URL = os.environ.get("BILLIT_BASE_URL", "https://api.sandbox-billit.xyz")
 COMPANY_VAT = os.environ.get("COMPANY_VAT", "BE0891533928")
 WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "")
 
-async def send_to_billit(invoice_data: dict) -> dict:
-    """Send invoice to Billit API"""
+async def create_billit_order(invoice_data: dict) -> dict:
+    """Create an order/invoice in Billit via /v1/orders endpoint.
+    Returns the unique OrderID on success."""
     async with httpx.AsyncClient() as client:
         headers = {
             "Authorization": f"Bearer {BILLIT_API_KEY}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Accept": "application/json"
         }
+        
+        logger.info(f"Creating Billit order at {BILLIT_BASE_URL}/v1/orders")
+        logger.debug(f"Request data: {json.dumps(invoice_data, indent=2)}")
         
         response = await client.post(
             f"{BILLIT_BASE_URL}/v1/orders",
@@ -3375,36 +3383,71 @@ async def send_to_billit(invoice_data: dict) -> dict:
             timeout=30.0
         )
         
+        logger.info(f"Billit response status: {response.status_code}")
+        logger.debug(f"Billit response: {response.text}")
+        
         if response.status_code not in [200, 201]:
+            error_text = response.text
+            try:
+                error_json = response.json()
+                if "errors" in error_json:
+                    error_details = ", ".join([e.get("Description", e.get("Code", str(e))) for e in error_json["errors"]])
+                    error_text = error_details
+            except:
+                pass
             raise HTTPException(
                 status_code=response.status_code,
-                detail=f"Billit API error: {response.text}"
+                detail=f"Billit API error: {error_text}"
             )
         
-        return response.json()
+        # Response is the unique OrderID (integer)
+        order_id = response.json()
+        return {"orderId": order_id}
 
-async def send_peppol_command(billit_invoice_id: str) -> dict:
-    """Send Peppol command to Billit to transmit invoice"""
+async def send_billit_command(order_id: int, transport_type: str = "Peppol") -> dict:
+    """Send the invoice via specified transport using /v1/command/send endpoint.
+    TransportTypes: 'Peppol', 'Email', 'Post', etc."""
     async with httpx.AsyncClient() as client:
         headers = {
             "Authorization": f"Bearer {BILLIT_API_KEY}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Accept": "application/json"
         }
         
+        # Command send endpoint with TransportType
+        send_data = {
+            "OrderID": order_id,
+            "TransportType": transport_type
+        }
+        
+        logger.info(f"Sending Billit command to {BILLIT_BASE_URL}/v1/command/send")
+        logger.debug(f"Send data: {send_data}")
+        
         response = await client.post(
-            f"{BILLIT_BASE_URL}/v1/commandSend",
-            json={"invoiceId": billit_invoice_id},
+            f"{BILLIT_BASE_URL}/v1/command/send",
+            json=send_data,
             headers=headers,
             timeout=30.0
         )
         
+        logger.info(f"Billit send response status: {response.status_code}")
+        logger.debug(f"Billit send response: {response.text}")
+        
         if response.status_code not in [200, 201]:
+            error_text = response.text
+            try:
+                error_json = response.json()
+                if "errors" in error_json:
+                    error_details = ", ".join([e.get("Description", e.get("Code", str(e))) for e in error_json["errors"]])
+                    error_text = error_details
+            except:
+                pass
             raise HTTPException(
                 status_code=response.status_code,
-                detail=f"Billit Peppol send error: {response.text}"
+                detail=f"Billit send error: {error_text}"
             )
         
-        return response.json()
+        return response.json() if response.text else {"status": "sent"}
 
 def transform_invoice_to_billit(invoice: dict, lead: dict, project: dict) -> dict:
     """Transform Qtechnics invoice to Billit format"""
