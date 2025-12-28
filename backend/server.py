@@ -103,6 +103,8 @@ class Lead(BaseModel):
     address: str
     project_type: str
     description: str
+    vat_number: Optional[str] = None  # BTW nummer voor bedrijven (optioneel voor particulieren)
+    is_business: bool = False  # True als het een bedrijf is
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
 
@@ -113,6 +115,8 @@ class LeadCreate(BaseModel):
     address: Optional[str] = "Geen adres opgegeven"
     project_type: Optional[str] = "Renovatie"
     description: Optional[str] = ""
+    vat_number: Optional[str] = None
+    is_business: bool = False
 
 class LeadUpdate(BaseModel):
     name: Optional[str] = None
@@ -121,6 +125,8 @@ class LeadUpdate(BaseModel):
     address: Optional[str] = None
     project_type: Optional[str] = None
     description: Optional[str] = None
+    vat_number: Optional[str] = None
+    is_business: Optional[bool] = None
 
 # Quote Models
 class Quote(BaseModel):
