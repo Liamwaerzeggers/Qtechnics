@@ -161,7 +161,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
               <h4 className="font-semibold mb-3" style={{color: '#1E40AF'}}>Nieuwe Werkperiode Toevoegen</h4>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <div>
-                  <Label>Van (begindatum)</Label>
+                  <Label>Van</Label>
                   <Input
                     type="date"
                     value={newWorkStart}
@@ -169,7 +169,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
                   />
                 </div>
                 <div>
-                  <Label>Tot (einddatum)</Label>
+                  <Label>Tot en met</Label>
                   <Input
                     type="date"
                     value={newWorkEnd}
