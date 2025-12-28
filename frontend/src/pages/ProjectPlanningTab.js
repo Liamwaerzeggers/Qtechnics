@@ -220,7 +220,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
                         </div>
                         <div className="text-2xl font-bold" style={{color: '#9CA3AF'}}>→</div>
                         <div className="w-20 h-20 rounded-lg flex flex-col items-center justify-center" style={{backgroundColor: '#10B981'}}>
-                          <span className="text-white text-xs font-semibold">TOT</span>
+                          <span className="text-white text-xs font-semibold">T/M</span>
                           <span className="text-white text-lg font-bold">
                             {new Date(period.end_date).getDate()}
                           </span>
