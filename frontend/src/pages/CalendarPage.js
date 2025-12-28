@@ -125,6 +125,8 @@ export default function CalendarPage() {
       cursor: 'pointer',
       transition: 'all 0.2s',
       boxShadow: isScheduledWork ? '0 1px 2px rgba(0,0,0,0.15)' : '0 1px 3px rgba(0,0,0,0.12)',
+      // CRITICAL: Ensure work events appear ABOVE project events
+      zIndex: isScheduledWork ? 10 : 5,
     };
     
     return { style };
