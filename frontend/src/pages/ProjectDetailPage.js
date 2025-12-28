@@ -436,15 +436,27 @@ function CustomerPortalTab({ project, onUpdate }) {
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
+              <p className="text-xs text-green-600 font-medium">
+                ✅ Deze link vervalt nooit en blijft altijd werken.
+              </p>
               <p className="text-xs text-gray-500">
                 ⚠️ Deel deze link alleen met de klant. Iedereen met deze link kan het project bekijken.
               </p>
-              <Button variant="outline" onClick={generateLink} disabled={generating}>
-                {generating ? 'Genereren...' : 'Nieuwe link genereren'}
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  if (window.confirm('Weet u zeker dat u een nieuwe link wilt genereren? De oude link zal niet meer werken.')) {
+                    generateLink(true);
+                  }
+                }} 
+                disabled={generating}
+                className="text-orange-600 border-orange-300 hover:bg-orange-50"
+              >
+                {generating ? 'Genereren...' : '🔄 Nieuwe link genereren (oude vervalt)'}
               </Button>
             </div>
           ) : (
-            <Button onClick={generateLink} disabled={generating}>
+            <Button onClick={() => generateLink(false)} disabled={generating}>
               {generating ? 'Genereren...' : '🔗 Klantportaal link genereren'}
             </Button>
           )}
