@@ -3719,6 +3719,223 @@ async def billit_webhook(request: Request):
         logger.error(f"Webhook processing error: {str(e)}")
         return {"status": "error", "message": str(e)}
 
+# ============= CUSTOMER PORTAL ENDPOINTS =============
+# These endpoints use access tokens instead of session authentication
+
+@api_router.post("/projects/{project_id}/generate-customer-link")
+async def generate_customer_access_link(project_id: str, current_user: User = Depends(get_current_user)):
+    """Generate a unique access link for customers to view their project"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can generate customer links")
+    
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Generate unique token
+    import secrets
+    token = secrets.token_urlsafe(32)
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"customer_access_token": token}}
+    )
+    
+    return {
+        "token": token,
+        "message": "Klantportaal link gegenereerd"
+    }
+
+@api_router.get("/customer-portal/{access_token}")
+async def get_customer_portal_data(access_token: str):
+    """Get project data for customer portal (no authentication required, uses token)"""
+    # Find project by access token
+    project = await db.projects.find_one(
+        {"customer_access_token": access_token},
+        {"_id": 0}
+    )
+    
+    if not project:
+        raise HTTPException(status_code=404, detail="Ongeldig of verlopen toegangslink")
+    
+    project_id = project["id"]
+    lead_id = project.get("lead_id")
+    
+    # Get lead info (customer name)
+    lead = None
+    if lead_id:
+        lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+    
+    # Get approved quotes for this project (customers can see prices here)
+    quotes = await db.quotes.find({
+        "project_id": project_id,
+        "status": "approved"
+    }, {"_id": 0}).to_list(100)
+    
+    # Get line items for approved quotes
+    for quote in quotes:
+        line_items = await db.line_items.find(
+            {"quote_id": quote["id"]},
+            {"_id": 0}
+        ).to_list(1000)
+        quote["line_items"] = line_items
+    
+    # Get work slips marked as visible to customer (NO financial info)
+    work_slips = await db.work_slips.find({
+        "project_id": project_id,
+        "visible_to_customer": True
+    }, {"_id": 0}).to_list(100)
+    
+    # Filter sensitive data from work slips
+    customer_work_slips = []
+    for slip in work_slips:
+        customer_work_slips.append({
+            "id": slip.get("id"),
+            "date": slip.get("date"),
+            "work_description_nl": slip.get("work_description_nl"),
+            "photos": slip.get("photos", [])
+            # Explicitly NOT including: hours_worked, labor_cost, hourly_rate, etc.
+        })
+    
+    # Build safe project data for customer (NO financial info)
+    customer_project = {
+        "id": project["id"],
+        "name": project.get("name", ""),
+        "status": project.get("status", ""),
+        "start_date": project.get("start_date"),
+        "end_date": project.get("end_date"),
+        # First visit photos
+        "first_visit_photos": project.get("first_visit_photos", []),
+        # 3D designs
+        "design_3d_files": project.get("design_3d_files", []),
+        # Planning
+        "scheduled_days": project.get("scheduled_days", []),
+        "planning_start_date": project.get("planning_start_date"),
+        "planning_end_date": project.get("planning_end_date"),
+        # Messages and rating
+        "customer_messages": project.get("customer_messages", []),
+        "customer_rating": project.get("customer_rating"),
+        "customer_rating_comment": project.get("customer_rating_comment")
+    }
+    
+    return {
+        "project": customer_project,
+        "customer_name": lead.get("name") if lead else "Klant",
+        "approved_quotes": quotes,
+        "work_updates": customer_work_slips
+    }
+
+@api_router.post("/customer-portal/{access_token}/message")
+async def send_customer_message(access_token: str, message: dict):
+    """Customer sends a message/question about their project"""
+    project = await db.projects.find_one(
+        {"customer_access_token": access_token},
+        {"_id": 0}
+    )
+    
+    if not project:
+        raise HTTPException(status_code=404, detail="Ongeldig toegangslink")
+    
+    message_text = message.get("message", "").strip()
+    if not message_text:
+        raise HTTPException(status_code=400, detail="Bericht mag niet leeg zijn")
+    
+    new_message = {
+        "id": str(uuid.uuid4()),
+        "message": message_text,
+        "sender": "customer",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "is_from_customer": True,
+        "is_read": False
+    }
+    
+    await db.projects.update_one(
+        {"id": project["id"]},
+        {"$push": {"customer_messages": new_message}}
+    )
+    
+    return {"success": True, "message_id": new_message["id"]}
+
+@api_router.post("/customer-portal/{access_token}/rating")
+async def submit_customer_rating(access_token: str, rating_data: dict):
+    """Customer submits a satisfaction rating"""
+    project = await db.projects.find_one(
+        {"customer_access_token": access_token},
+        {"_id": 0}
+    )
+    
+    if not project:
+        raise HTTPException(status_code=404, detail="Ongeldig toegangslink")
+    
+    rating = rating_data.get("rating")
+    if not rating or not isinstance(rating, int) or rating < 1 or rating > 5:
+        raise HTTPException(status_code=400, detail="Rating moet tussen 1 en 5 zijn")
+    
+    comment = rating_data.get("comment", "").strip()
+    
+    await db.projects.update_one(
+        {"id": project["id"]},
+        {"$set": {
+            "customer_rating": rating,
+            "customer_rating_comment": comment
+        }}
+    )
+    
+    return {"success": True, "message": "Bedankt voor uw beoordeling!"}
+
+@api_router.post("/projects/{project_id}/customer-messages")
+async def admin_send_message_to_customer(project_id: str, message: dict, current_user: User = Depends(get_current_user)):
+    """Admin sends a message to customer"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can send messages")
+    
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    message_text = message.get("message", "").strip()
+    if not message_text:
+        raise HTTPException(status_code=400, detail="Bericht mag niet leeg zijn")
+    
+    new_message = {
+        "id": str(uuid.uuid4()),
+        "message": message_text,
+        "sender": current_user.username,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "is_from_customer": False,
+        "is_read": True
+    }
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$push": {"customer_messages": new_message}}
+    )
+    
+    return {"success": True, "message_id": new_message["id"]}
+
+@api_router.put("/projects/{project_id}/work-slips/{slip_id}/visibility")
+async def toggle_work_slip_customer_visibility(
+    project_id: str, 
+    slip_id: str, 
+    visibility: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Toggle whether a work slip is visible to customers"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can change visibility")
+    
+    visible = visibility.get("visible_to_customer", False)
+    
+    result = await db.work_slips.update_one(
+        {"id": slip_id, "project_id": project_id},
+        {"$set": {"visible_to_customer": visible}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Werkbon niet gevonden")
+    
+    return {"success": True, "visible_to_customer": visible}
+
 # Mount static files for uploads at /api/uploads BEFORE including router
 # Note: Kubernetes ingress routes /api/* to backend, so this will be accessible
 uploads_dir = ROOT_DIR / "uploads"
