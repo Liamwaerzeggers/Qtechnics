@@ -3347,6 +3347,308 @@ async def delete_admin(admin_id: str, current_user: User = Depends(get_current_u
     
     return {"message": "Admin deleted successfully"}
 
+# ============= BILLIT / PEPPOL INTEGRATION =============
+import httpx
+import hmac
+import hashlib
+
+BILLIT_API_KEY = os.environ.get("BILLIT_API_KEY", "")
+BILLIT_BASE_URL = os.environ.get("BILLIT_BASE_URL", "https://api.billit.be")
+COMPANY_VAT = os.environ.get("COMPANY_VAT", "BE0891533928")
+WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "")
+
+async def send_to_billit(invoice_data: dict) -> dict:
+    """Send invoice to Billit API"""
+    async with httpx.AsyncClient() as client:
+        headers = {
+            "Authorization": f"Bearer {BILLIT_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        response = await client.post(
+            f"{BILLIT_BASE_URL}/v1/orders",
+            json=invoice_data,
+            headers=headers,
+            timeout=30.0
+        )
+        
+        if response.status_code not in [200, 201]:
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=f"Billit API error: {response.text}"
+            )
+        
+        return response.json()
+
+async def send_peppol_command(billit_invoice_id: str) -> dict:
+    """Send Peppol command to Billit to transmit invoice"""
+    async with httpx.AsyncClient() as client:
+        headers = {
+            "Authorization": f"Bearer {BILLIT_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        response = await client.post(
+            f"{BILLIT_BASE_URL}/v1/commandSend",
+            json={"invoiceId": billit_invoice_id},
+            headers=headers,
+            timeout=30.0
+        )
+        
+        if response.status_code not in [200, 201]:
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=f"Billit Peppol send error: {response.text}"
+            )
+        
+        return response.json()
+
+def transform_invoice_to_billit(invoice: dict, lead: dict, project: dict) -> dict:
+    """Transform Qtechnics invoice to Billit format"""
+    # Determine customer type and Peppol identifier
+    customer_identifier = None
+    customer_scheme = None
+    
+    if lead.get("vat_number"):
+        # B2B - use VAT number for Peppol routing
+        customer_identifier = lead["vat_number"].replace(" ", "").upper()
+        # Belgian VAT: BE + 10 digits
+        if customer_identifier.startswith("BE"):
+            customer_scheme = "0208"  # Belgian enterprise number scheme
+        else:
+            customer_scheme = "9925"  # VAT scheme
+    
+    # Build line items for Billit
+    billit_lines = []
+    for idx, item in enumerate(invoice.get("line_items", []), 1):
+        billit_lines.append({
+            "lineNumber": idx,
+            "description": item.get("description", ""),
+            "quantity": item.get("quantity", 1),
+            "unitCode": item.get("unit", "EA"),  # EA = Each
+            "unitPrice": item.get("unit_price", 0),
+            "vatPercentage": item.get("vat_rate", 21),
+            "lineTotal": item.get("total_excl_vat", item.get("quantity", 1) * item.get("unit_price", 0))
+        })
+    
+    # Calculate due date
+    invoice_date = invoice.get("invoice_date")
+    if isinstance(invoice_date, str):
+        invoice_date = datetime.fromisoformat(invoice_date)
+    due_date = invoice.get("due_date")
+    if isinstance(due_date, str):
+        due_date = datetime.fromisoformat(due_date)
+    
+    billit_invoice = {
+        "invoiceNumber": invoice.get("invoice_number", ""),
+        "invoiceDate": invoice_date.strftime("%Y-%m-%d") if invoice_date else datetime.now().strftime("%Y-%m-%d"),
+        "dueDate": due_date.strftime("%Y-%m-%d") if due_date else (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d"),
+        "currency": "EUR",
+        
+        # Seller (your company)
+        "seller": {
+            "name": "Qtechnics",
+            "vatNumber": COMPANY_VAT,
+            "address": {
+                "street": "Uw bedrijfsadres",  # TODO: Configure in settings
+                "city": "Uw stad",
+                "postalCode": "0000",
+                "country": "BE"
+            }
+        },
+        
+        # Buyer (customer)
+        "buyer": {
+            "name": lead.get("name", ""),
+            "email": lead.get("email", ""),
+            "address": {
+                "street": lead.get("address", ""),
+                "city": "",
+                "postalCode": "",
+                "country": "BE"
+            }
+        },
+        
+        # Line items
+        "lines": billit_lines,
+        
+        # Totals
+        "totalExclVat": invoice.get("total_excl_vat", 0),
+        "totalVat": invoice.get("total_vat", 0),
+        "totalInclVat": invoice.get("total_incl_vat", 0),
+        
+        # Payment reference
+        "paymentReference": invoice.get("payment_reference", ""),
+        
+        # Project reference
+        "orderReference": project.get("name", ""),
+        
+        # Peppol specific
+        "sendViaPeppol": True
+    }
+    
+    # Add Peppol identifier if B2B
+    if customer_identifier:
+        billit_invoice["buyer"]["peppolIdentifier"] = {
+            "scheme": customer_scheme,
+            "value": customer_identifier
+        }
+        billit_invoice["buyer"]["vatNumber"] = customer_identifier
+    
+    return billit_invoice
+
+@api_router.post("/invoices/{invoice_id}/send-peppol")
+async def send_invoice_via_peppol(invoice_id: str, current_user: User = Depends(get_current_user)):
+    """Send an invoice via Peppol through Billit"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can send Peppol invoices")
+    
+    # Get invoice
+    invoice = await db.customer_invoices.find_one({"id": invoice_id}, {"_id": 0})
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    # Check if already sent
+    if invoice.get("peppol_status") == "sent":
+        raise HTTPException(status_code=400, detail="Invoice already sent via Peppol")
+    
+    # Get project and lead info
+    project = await db.projects.find_one({"id": invoice["project_id"]}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    lead = await db.leads.find_one({"id": project.get("lead_id")}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    try:
+        # Transform invoice to Billit format
+        billit_data = transform_invoice_to_billit(invoice, lead, project)
+        
+        # Update status to sending
+        await db.customer_invoices.update_one(
+            {"id": invoice_id},
+            {"$set": {"peppol_status": "sending"}}
+        )
+        
+        # Send to Billit
+        billit_response = await send_to_billit(billit_data)
+        billit_invoice_id = billit_response.get("id") or billit_response.get("invoiceId")
+        
+        # Send via Peppol
+        peppol_response = await send_peppol_command(billit_invoice_id)
+        
+        # Update invoice with Peppol info
+        await db.customer_invoices.update_one(
+            {"id": invoice_id},
+            {"$set": {
+                "peppol_status": "sent",
+                "billit_invoice_id": billit_invoice_id,
+                "peppol_message_id": peppol_response.get("messageId"),
+                "peppol_sent_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        logger.info(f"Invoice {invoice_id} sent via Peppol, Billit ID: {billit_invoice_id}")
+        
+        return {
+            "success": True,
+            "message": "Factuur verstuurd via Peppol",
+            "billit_invoice_id": billit_invoice_id,
+            "peppol_message_id": peppol_response.get("messageId")
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Update status to failed
+        await db.customer_invoices.update_one(
+            {"id": invoice_id},
+            {"$set": {
+                "peppol_status": "failed",
+                "peppol_error": str(e)
+            }}
+        )
+        logger.error(f"Peppol send failed for invoice {invoice_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Peppol verzending mislukt: {str(e)}")
+
+@api_router.get("/invoices/{invoice_id}/peppol-status")
+async def get_peppol_status(invoice_id: str, current_user: User = Depends(get_current_user)):
+    """Get Peppol status for an invoice"""
+    invoice = await db.customer_invoices.find_one({"id": invoice_id}, {"_id": 0})
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    return {
+        "peppol_status": invoice.get("peppol_status", "not_sent"),
+        "billit_invoice_id": invoice.get("billit_invoice_id"),
+        "peppol_message_id": invoice.get("peppol_message_id"),
+        "peppol_sent_at": invoice.get("peppol_sent_at"),
+        "peppol_delivered_at": invoice.get("peppol_delivered_at"),
+        "peppol_error": invoice.get("peppol_error")
+    }
+
+@api_router.post("/webhooks/billit")
+async def billit_webhook(request: Request):
+    """Receive webhook updates from Billit about invoice status"""
+    # Verify webhook signature if configured
+    if WEBHOOK_SECRET:
+        signature = request.headers.get("X-Billit-Signature", "")
+        body = await request.body()
+        
+        expected_signature = hmac.new(
+            WEBHOOK_SECRET.encode(),
+            body,
+            hashlib.sha256
+        ).hexdigest()
+        
+        if not hmac.compare_digest(signature, expected_signature):
+            logger.warning("Invalid webhook signature")
+            raise HTTPException(status_code=401, detail="Invalid signature")
+    
+    try:
+        data = await request.json()
+        event_type = data.get("event") or data.get("type")
+        invoice_data = data.get("data") or data.get("invoice") or data
+        
+        billit_invoice_id = invoice_data.get("invoiceId") or invoice_data.get("id")
+        status = invoice_data.get("status") or invoice_data.get("peppolStatus")
+        
+        logger.info(f"Billit webhook received: {event_type} for invoice {billit_invoice_id}")
+        
+        if billit_invoice_id:
+            # Find our invoice by billit_invoice_id
+            invoice = await db.customer_invoices.find_one(
+                {"billit_invoice_id": billit_invoice_id},
+                {"_id": 0}
+            )
+            
+            if invoice:
+                update_data = {}
+                
+                # Map Billit status to our status
+                if status in ["delivered", "accepted"]:
+                    update_data["peppol_status"] = "delivered"
+                    update_data["peppol_delivered_at"] = datetime.now(timezone.utc).isoformat()
+                elif status in ["failed", "rejected", "error"]:
+                    update_data["peppol_status"] = "failed"
+                    update_data["peppol_error"] = invoice_data.get("errorMessage", "Unknown error")
+                elif status in ["sent", "pending"]:
+                    update_data["peppol_status"] = "sent"
+                
+                if update_data:
+                    await db.customer_invoices.update_one(
+                        {"billit_invoice_id": billit_invoice_id},
+                        {"$set": update_data}
+                    )
+                    logger.info(f"Updated invoice status: {update_data}")
+        
+        return {"status": "ok"}
+        
+    except Exception as e:
+        logger.error(f"Webhook processing error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
 # Mount static files for uploads at /api/uploads BEFORE including router
 # Note: Kubernetes ingress routes /api/* to backend, so this will be accessible
 uploads_dir = ROOT_DIR / "uploads"
