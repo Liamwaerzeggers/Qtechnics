@@ -295,6 +295,19 @@ export default function ProjectWorkSlipsTab({ project, onUpdate }) {
                           </span>
                         )}
                       </td>
+                      <td className="p-4 text-center">
+                        <button
+                          onClick={() => toggleCustomerVisibility(slip.id, slip.visible_to_customer)}
+                          className={`p-2 rounded-full transition-colors ${
+                            slip.visible_to_customer 
+                              ? 'bg-green-100 text-green-600 hover:bg-green-200' 
+                              : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                          }`}
+                          title={slip.visible_to_customer ? 'Zichtbaar voor klant - klik om te verbergen' : 'Verborgen voor klant - klik om zichtbaar te maken'}
+                        >
+                          {slip.visible_to_customer ? <Eye size={18} /> : <EyeOff size={18} />}
+                        </button>
+                      </td>
                       <td className="p-4 text-right">
                         {editingId === slip.id ? (
                           <div className="flex items-center justify-end space-x-2">
