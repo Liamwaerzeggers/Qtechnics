@@ -300,7 +300,7 @@ export default function ProjectDetailPage() {
           {activeTab === 'costs' && (
             <ProjectCostsTab 
               project={project} 
-              quote={primaryQuote} 
+              approvedQuotes={approvedQuotes} 
               onUpdate={fetchProjectData} 
             />
           )}
