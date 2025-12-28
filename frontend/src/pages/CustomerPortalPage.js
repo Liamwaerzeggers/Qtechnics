@@ -302,35 +302,57 @@ export default function CustomerPortalPage() {
         {activeTab === 'calendar' && (
           <Card>
             <CardHeader>
-              <CardTitle>📅 Planning</CardTitle>
+              <CardTitle>📅 Geplande Werkperiodes</CardTitle>
             </CardHeader>
             <CardContent>
               {project.scheduled_days && project.scheduled_days.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {project.scheduled_days
-                    .sort((a, b) => new Date(a.date) - new Date(b.date))
-                    .map((day, idx) => (
-                      <div key={idx} className="flex items-start gap-4 p-3 bg-blue-50 rounded-lg">
-                        <div className="text-center min-w-[60px]">
-                          <p className="text-2xl font-bold text-blue-600">
-                            {new Date(day.date).getDate()}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(day.date).toLocaleDateString('nl-BE', { month: 'short' })}
-                          </p>
+                    .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
+                    .map((period, idx) => {
+                      const startDate = new Date(period.start_date);
+                      const endDate = new Date(period.end_date);
+                      const diffTime = Math.abs(endDate - startDate);
+                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                      
+                      return (
+                        <div key={idx} className="flex items-center gap-4 p-4 bg-white border rounded-lg shadow-sm">
+                          {/* Start Date */}
+                          <div className="text-center min-w-[70px] bg-blue-500 text-white rounded-lg p-2">
+                            <p className="text-xs font-medium">VAN</p>
+                            <p className="text-2xl font-bold">{startDate.getDate()}</p>
+                            <p className="text-xs">{startDate.toLocaleDateString('nl-BE', { month: 'short' })}</p>
+                          </div>
+                          
+                          {/* Arrow */}
+                          <span className="text-gray-400">→</span>
+                          
+                          {/* End Date */}
+                          <div className="text-center min-w-[70px] bg-orange-500 text-white rounded-lg p-2">
+                            <p className="text-xs font-medium">T/M</p>
+                            <p className="text-2xl font-bold">{endDate.getDate()}</p>
+                            <p className="text-xs">{endDate.toLocaleDateString('nl-BE', { month: 'short' })}</p>
+                          </div>
+                          
+                          {/* Days badge */}
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                            {diffDays} {diffDays === 1 ? 'dag' : 'dagen'}
+                          </span>
+                          
+                          {/* Description */}
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-800">{period.description || 'Werkzaamheden'}</p>
+                            <p className="text-sm text-gray-500">
+                              {startDate.toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long' })} t/m {endDate.toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">
-                            {new Date(day.date).toLocaleDateString('nl-BE', { weekday: 'long' })}
-                          </p>
-                          {day.notes && <p className="text-sm text-gray-600">{day.notes}</p>}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               ) : (
                 <p className="text-gray-500 text-center py-8">
-                  Nog geen specifieke werkdagen ingepland
+                  Nog geen werkperiodes ingepland
                 </p>
               )}
               
