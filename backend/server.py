@@ -251,6 +251,12 @@ class Project(BaseModel):
     required_materials: str = ""  # Manual text for additional materials needed
     material_reminder_sent: bool = False  # Track if reminder was sent
     
+    # NIEUWE SECTIE: Klantportaal
+    customer_access_token: Optional[str] = None  # Unique token for customer portal access
+    customer_messages: List[dict] = []  # [{id, message, sender, timestamp, is_from_customer}]
+    customer_rating: Optional[int] = None  # 1-5 stars
+    customer_rating_comment: Optional[str] = None  # Optional comment with rating
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
 
