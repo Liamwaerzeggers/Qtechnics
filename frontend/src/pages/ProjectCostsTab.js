@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Loader2, Upload, Trash2 } from 'lucide-react';
+import { Loader2, Upload, Trash2, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate }) {
@@ -18,6 +18,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
   });
   const [invoices, setInvoices] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [sendingPeppol, setSendingPeppol] = useState(null); // Track which invoice is being sent
 
   // Calculate total sale price from ALL approved quotes
   const totalSalePrice = approvedQuotes.reduce((sum, q) => sum + (q.total_incl_vat || 0), 0);
