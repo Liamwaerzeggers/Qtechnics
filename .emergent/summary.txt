@@ -1,0 +1,205 @@
+<analysis>**original_problem_statement:**
+The user wants to integrate their application with Billit to send e-invoices using the Peppol network.
+
+**PRODUCT REQUIREMENTS:**
+1.  Add a Verstuur via Peppol (Send via Peppol) button next to each generated invoice in the Financieel (Financial) tab.
+2.  Use the Billit API key provided by the user: .
+3.  The user's own company VAT number is .
+4.  Add an optional field for the customer's VAT number in the lead/project details, as many clients are private individuals without one.
+5.  Implement a webhook to receive real-time status updates from Billit (e.g., delivered, viewed).
+6.  The user has reported two critical bugs with the initial implementation:
+    *   Clicking the Verstuur via Peppol button results in an invoice not found error.
+    *   Downloading the PDF for an invoice results in a script error.
+
+**User's preferred language**: Dutch (Nederlands)
+
+**what currently exists?**
+The application is a full-stack platform for managing construction projects. Key features include project and lead management, quoting, financial overviews, work slips, and a project planning calendar.
+
+An initial version of the Billit/Peppol integration has been implemented:
+-   **Backend:**
+    -   Billit API credentials have been added to the  file.
+    -   The  and  models in  have been updated with Peppol-related fields (e.g., , ).
+    -   New endpoints ( and ) have been created in .
+-   **Frontend:**
+    -   A Verstuur via Peppol button and status badges have been added to the invoice list in .
+    -   A VAT number input field has been added to the lead details page ().
+
+However, this implementation is currently broken.
+
+**Last working item**:
+-   **Last item agent was working:** The agent was debugging two critical, user-reported bugs that arose immediately after the initial Peppol integration was deployed.
+    1.  An invoice not found error when trying to send an invoice via Peppol.
+    2.  A script error when trying to download an invoice PDF.
+-   **Status:** IN PROGRESS
+-   **Agent Testing Done:** N
+-   **Which testing method agent to use?** backend testing agent for the API fixes, followed by the frontend testing agent to verify the end-to-end user flows for both sending via Peppol and downloading PDFs.
+-   **User Testing Done:** N
+
+**All Pending/In progress Issue list**:
+-   **Issue 1: Invoice not found on Peppol send (P0)**
+-   **Issue 2: Script error on invoice PDF download (P0)**
+-   **Issue 3: Backend API Route Instability (P1)**
+
+**Issues Detail**:
+-   **Issue 1: Invoice not found on Peppol send**
+    -   **Attempted fixes:** None. The previous agent only identified the likely cause: the Peppol endpoint is searching in the wrong database collection for the invoice.
+    -   **Next debug checklist:**
+        1.  Examine the  function tied to the  endpoint in .
+        2.  Invoices are stored in the  collection. Verify that the function is querying  and not another collection like .
+        3.  Ensure the correct identifier is being used to find the invoice.
+        4.  Correct the database query to target the  collection.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a critical blocker for the user's primary feature request (Peppol integration).
+    -   **Status:** IN PROGRESS
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on other issue:** No.
+
+-   **Issue 2: Script error on invoice PDF download**
+    -   **Attempted fixes:** None. This issue has not been investigated yet.
+    -   **Next debug checklist:**
+        1.  Identify the API endpoint called when the user clicks the PDF download icon in .
+        2.  Trace this back to the corresponding function in  that generates the PDF.
+        3.  Check the backend logs () and browser console for specific error messages when the download is attempted.
+        4.  The error could be in the data being passed to the PDF generator or within the PDF library itself.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a core functionality regression. Users must be able to download and view their invoices.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on other issue:** No.
+
+-   **Issue 3: Backend API Route Instability**
+    -   **Attempted fixes:** Restarting the backend service (backend: stopped
+backend: started) is the only known workaround.
+    -   **Next debug checklist:** After fixing the P0 issues, monitor backend logs for errors that could cause routes to be deregistered. Review FastAPI application setup and middleware in .
+    -   **Why fix this issue and what will be achieved with the fix?** To improve application stability and user experience by eliminating the need for manual restarts.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** backend
+    -   **Blocked on other issue:** No.
+
+**In progress Task List**:
+-   **Task 1: Finalize Billit/Peppol Integration (P0)**
+    -   **Where to resume:** Start by fixing the two critical bugs (Issue 1 and Issue 2).
+    -   **What will be achieved with this?** A fully functional, tested, and user-verified Peppol e-invoicing feature.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** Both
+    -   **Blocked on something:** Blocked by Issue 1: Invoice not found and Issue 2: Script error on PDF download.
+
+**Upcoming and Future Tasks**
+-   None. All focus is on completing the Peppol integration and fixing the associated bugs.
+
+**Completed work in this session**
+-   **Financials Tab Overhaul:**
+    -   The financial overview now sums the total of **all** approved quotes for a project, rather than just using the most recent one.
+    -   A list of all individual approved quotes is now displayed in the financial tab.
+-   **Invoicing Logic Update:**
+    -   Invoice generation is now correctly based on the aggregated total of all approved quotes.
+    -   The invoicing milestone percentages were updated to 25%, 40%, 25%, and 10% as requested.
+-   **Project Profit Display:**
+    -   The backend now calculates the total profit for each project.
+    -   This profit is displayed on the project cards on the main , visible only to admin users.
+-   **Project Planning & Calendar Feature:**
+    -   A new Planning tab was created () allowing users to define a project's start/end date and schedule specific work periods (e.g., Tiling: Feb 14 - Feb 18).
+    -   These work periods are now displayed on the main calendar () as distinct bars overlaid on top of the main project duration bar, providing a clear visual schedule.
+-   **Material Reminders:**
+    -   A backend mechanism was added to identify projects starting within the next month, and a notification for material ordering now appears on the dashboard.
+-   **Initial Peppol/Billit Integration:**
+    -   The basic backend and frontend scaffolding for the Billit integration was put in place, including environment variables, new API endpoints, and UI elements.
+
+**Earlier issues found/mentioned but not fixed**
+-   **Issue 1: Backend API Route Instability**
+    -   **Debug checklist:** See All Pending/In progress Issue list.
+    -   **Why to solve this issue and what will be achieved with this?** To create a stable and reliable application that doesn't require periodic manual restarts.
+    -   **Should Test frontend/backend/both after fix:** backend
+    -   **Is recurring issue?** Y
+
+**Known issue recurrence from previous fork**
+-   None.
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+-   **Frontend:** React, Tailwind CSS
+-   **Backend:** FastAPI, Motor (async MongoDB driver)
+-   **Database:** MongoDB
+-   **3rd Party:** Billit (for Peppol)
+
+**key DB schema**
+-   : 
+-   : 
+-   : 
+
+**changes in tech stack**
+-   Added  to the backend for making API calls to Billit.
+
+**All files of reference**
+-   : Contains the logic for the two broken features (Peppol sending, PDF generation). The new Billit endpoints are near the bottom of the file.
+-   : Contains the frontend UI for the broken buttons (Verstuur via Peppol, PDF download icon).
+-   : Modified to include the customer VAT number field.
+-   : Contains the new .
+-   : Newly created file for the planning feature.
+-   : Heavily modified to support the new calendar view requirements.
+
+**Areas that need refactoring**:
+-    is now extremely large and complex after adding multiple features and the Billit integration. It urgently needs to be broken down into a structured package with separate files for models, routers (e.g., , ), and services (e.g., ).
+
+**key api endpoints**
+-   : **(BROKEN)** Endpoint to send an invoice via Billit.
+-   : Endpoint to receive status updates from Billit.
+-   : Creates a customer invoice.
+-   : Provides events for the calendar view.
+-   : Provides data for the dashboard, including material reminders.
+
+**Critical Info for New Agent**
+-   **Your immediate priority is to fix the two critical bugs reported by the user.**
+    1.  **Peppol invoice not found error:** The previous agent suspected the endpoint is querying the wrong database collection. Invoices are in . Check the  function in  to confirm it's querying .
+    2.  **PDF download script error:** This is a new regression. You must investigate the entire flow from the frontend button click in  to the backend PDF generation logic. Check browser and backend logs for specific errors.
+-   The backend has a known instability issue, which might require a service restart (backend: stopped
+backend: started) if APIs become unresponsive during your work.
+
+**documents and test reports created in this job**
+-   
+-   
+-   
+-   
+-   
+-   
+-   
+
+**Last 10 User Messages and any pending HUMAN messages**
+1.  **User:** Requests Peppol integration via Billit and provides a diagram. (PENDING)
+2.  **Agent:** Asks for clarification on API keys, VAT numbers, and UI. (Handled)
+3.  **User:** Provides API key, VAT details, and confirms UI/webhook requirements. (Handled)
+4.  **Agent:** Implements the feature. (Handled)
+5.  **Agent:** Runs tests and summarizes the (supposedly) completed feature. (Handled)
+6.  **User:** Reports invoice not found error when clicking Send via Peppol. (PENDING)
+7.  **User:** Reports a script error when downloading the invoice PDF. (PENDING)
+8.  **Agent:** Acknowledges the bugs and forms a hypothesis for the invoice not found error. (IN PROGRESS)
+9.  (The agent's work was interrupted here before a fix was implemented).
+
+**Project Health Check:**
+-   **Broken:**
+    -   The core functionality of sending an e-invoice via Peppol is non-functional (invoice not found).
+    -   The core functionality of downloading a generated invoice as a PDF is non-functional (script error).
+-   **Mocked:**
+    -   None.
+
+**3rd Party Integrations**
+-   **Billit:** Used for Peppol e-invoicing. Requires a User API key, which is configured in .
+
+**Testing status**
+-   **Testing agent used after significant changes:** YES (but it missed the critical bugs).
+-   **Troubleshoot agent used after agent stuck in loop:** NO
+-   **Test files created:** None.
+-   **Known regressions:** PDF invoice downloads are broken.
+
+**Credentials to test flow:**
+-   **Username:** 
+-   **Password:** 
+-   **Username:** 
+-   **Password:** 
+
+**What agent forgot to execute**
+The previous agent successfully implemented the initial scaffolding for the Peppol integration but failed to deliver a working feature. It introduced two critical regressions (broken Peppol sending and broken PDF downloads) and did not fix them before the session ended. The agent's testing was insufficient as it did not catch these bugs.</analysis>
