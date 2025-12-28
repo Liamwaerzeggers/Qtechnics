@@ -567,9 +567,13 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                             OGM: {invoice.structured_communication}
                           </div>
                         )}
+                        {/* Peppol Status Badge */}
+                        <div className="mt-1">
+                          {getPeppolStatusBadge(invoice)}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
+                      <div className="flex items-center gap-2">
+                        <div className="text-right mr-2">
                           <div className="font-bold" style={{color: '#1E293B'}}>
                             €{invoice.total_incl_vat.toFixed(2)}
                           </div>
@@ -583,6 +587,23 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                           size="sm"
                         >
                           📄 PDF
+                        </Button>
+                        {/* Peppol Send Button */}
+                        <Button
+                          onClick={() => sendViaPeppol(invoice.id)}
+                          disabled={sendingPeppol === invoice.id || invoice.peppol_status === 'sent' || invoice.peppol_status === 'delivered'}
+                          size="sm"
+                          style={{
+                            backgroundColor: invoice.peppol_status === 'sent' || invoice.peppol_status === 'delivered' ? '#D1FAE5' : '#1E40AF',
+                            color: invoice.peppol_status === 'sent' || invoice.peppol_status === 'delivered' ? '#065F46' : 'white'
+                          }}
+                        >
+                          {sendingPeppol === invoice.id ? (
+                            <Loader2 size={14} className="animate-spin mr-1" />
+                          ) : (
+                            <Send size={14} className="mr-1" />
+                          )}
+                          {invoice.peppol_status === 'sent' || invoice.peppol_status === 'delivered' ? 'Verstuurd' : 'Peppol'}
                         </Button>
                       </div>
                     </div>
