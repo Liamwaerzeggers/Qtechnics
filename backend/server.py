@@ -3779,9 +3779,10 @@ async def get_customer_portal_data(access_token: str):
         lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
     
     # Get approved quotes for this project (customers can see prices here)
+    # Status can be "approved" or "goedgekeurd" (Dutch)
     quotes = await db.quotes.find({
         "project_id": project_id,
-        "status": "approved"
+        "status": {"$in": ["approved", "goedgekeurd"]}
     }, {"_id": 0}).to_list(100)
     
     # Get line items for approved quotes
