@@ -368,6 +368,7 @@ class DailyReportUpdate(BaseModel):
     work_description_uk: Optional[str] = None
     office_feedback_nl: Optional[str] = None
     office_feedback_uk: Optional[str] = None
+    visible_to_customer: Optional[bool] = None  # NEW: Toggle customer visibility
 
 # Invoice Models
 class Invoice(BaseModel):
