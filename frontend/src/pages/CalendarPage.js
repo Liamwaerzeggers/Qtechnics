@@ -67,7 +67,13 @@ export default function CalendarPage() {
       );
       
       // Transform events for react-big-calendar
-      const calendarEvents = response.data.map(event => ({
+      // Sort so scheduled_work appears FIRST (on top), then project
+      const sortedData = [...response.data].sort((a, b) => {
+        const typeOrder = { 'scheduled_work': 0, 'workslip': 2, 'project': 1 };
+        return (typeOrder[a.type] ?? 1) - (typeOrder[b.type] ?? 1);
+      });
+      
+      const calendarEvents = sortedData.map(event => ({
         id: event.id,
         title: event.title,
         start: new Date(event.start),
