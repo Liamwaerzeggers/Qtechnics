@@ -145,6 +145,10 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
       );
       
       toast.success(`Offerte ${response.data.quote_id} gegenereerd! ${response.data.line_items_count} werk items toegevoegd. Nu kunt u materialen toevoegen.`);
+      
+      // Clear measurements in local state (backend also clears them)
+      setMeasurements([]);
+      
       onUpdate();
       
       // Optionally navigate to quote
