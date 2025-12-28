@@ -203,6 +203,21 @@ export default function LeadDetailPage() {
                   <div className="text-sm font-semibold" style={{color: '#64748B'}}>Beschrijving</div>
                   <div style={{color: '#1E293B'}}>{lead.description}</div>
                 </div>
+                
+                {/* BTW Nummer weergave */}
+                {(lead.is_business || lead.vat_number) && (
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="font-semibold mb-2" style={{color: '#1E40AF'}}>🏢 Bedrijfsgegevens</h4>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-1 rounded text-xs font-medium" style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}>
+                        {lead.is_business ? 'Bedrijfsklant' : 'Particulier'}
+                      </span>
+                      {lead.vat_number && (
+                        <span className="font-mono" style={{color: '#1E293B'}}>{lead.vat_number}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </CardContent>
