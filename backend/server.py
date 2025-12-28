@@ -340,6 +340,9 @@ class DailyReport(BaseModel):
     # Photos
     photos: List[str] = []
     
+    # Customer visibility - NEW
+    visible_to_customer: bool = False  # Toggle: show/hide work slip for customer portal
+    
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
