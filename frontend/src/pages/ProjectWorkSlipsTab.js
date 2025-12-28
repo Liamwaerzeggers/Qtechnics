@@ -95,6 +95,21 @@ export default function ProjectWorkSlipsTab({ project, onUpdate }) {
     }
   };
 
+  const toggleCustomerVisibility = async (slipId, currentVisibility) => {
+    try {
+      await axios.put(
+        `${API}/projects/${project.id}/work-slips/${slipId}/visibility`,
+        { visible_to_customer: !currentVisibility },
+        { withCredentials: true }
+      );
+      toast.success(currentVisibility ? 'Werkbon verborgen voor klant' : 'Werkbon zichtbaar voor klant');
+      fetchWorkSlips();
+    } catch (error) {
+      console.error('Failed to toggle visibility:', error);
+      toast.error('Kon zichtbaarheid niet wijzigen');
+    }
+  };
+
   // Calculate totals
   const totalLaborCost = workSlips.reduce((sum, slip) => sum + (slip.labor_cost || 0), 0);
   const totalManHours = workSlips.reduce((sum, slip) => 
