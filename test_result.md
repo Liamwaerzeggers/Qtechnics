@@ -36,7 +36,7 @@ Verify that when a quote is approved ("goedgekeurd"), it correctly appears in th
 
 ## Test Results - December 28, 2025
 
-### ✅ TEST PASSED - All Requirements Met
+### ✅ TEST PASSED - All Requirements Met (Previous Test)
 
 **Test Execution Summary:**
 - **Date:** December 28, 2025 10:15 AM
@@ -70,3 +70,55 @@ Verify that when a quote is approved ("goedgekeurd"), it correctly appears in th
 
 **Conclusion:**
 The Financieel tab functionality is working perfectly. The issue with incorrect quote selection has been resolved, and the most recent approved quote is now correctly displayed with accurate financial calculations.
+
+---
+
+## NEW TEST RESULTS - December 28, 2025 (Updated Implementation)
+
+### ✅ TEST PASSED - ALL APPROVED QUOTES SUMMED CORRECTLY
+
+**Test Execution Summary:**
+- **Date:** December 28, 2025 10:22 AM
+- **Test Status:** SUCCESSFUL
+- **New Requirement:** Sum ALL approved quotes instead of using only the most recent one
+- **All Validation Criteria:** PASSED
+
+**Detailed Results:**
+1. ✅ **Login Process:** Successfully logged in with test/test123 credentials
+2. ✅ **Project Navigation:** Successfully navigated to project "Reno" (PROJ-EEFA4606)
+3. ✅ **Financieel Tab Access:** Successfully accessed the Financieel tab
+4. ✅ **Blue Section Present:** Found "📄 Goedgekeurde Offertes (2)" section
+5. ✅ **Individual Quote Amounts:** Both quotes displayed with correct amounts:
+   - OFF-2025-63F04A: €3132.30
+   - OFF-2025-CA569C: €1908.00
+6. ✅ **Total Calculation:** "Totaal alle offertes: €5040.30" correctly displayed
+7. ✅ **Verkoopprijs:** Shows €5040.30 (sum of all approved quotes)
+8. ✅ **Winst Calculation:** Shows €3870.30 (€5040.30 - €1170.00)
+9. ✅ **Winstmarge:** Shows 76.8% profit margin
+
+**Visual Verification:**
+- The Financieel tab displays three main financial cards:
+  - Totale Kosten: €1170.00 (red)
+  - Verkoopprijs: €5040.30 (blue) - **UPDATED TO SUM ALL QUOTES**
+  - Winst: €3870.30 with 76.8% marge (green) - **UPDATED CALCULATION**
+- Blue section "📄 Goedgekeurde Offertes (2)" clearly visible
+- Individual quotes listed with their respective amounts
+- "Totaal alle offertes: €5040.30" prominently displayed
+- All calculations are mathematically correct
+
+**Technical Implementation Verification:**
+- ProjectCostsTab.js correctly sums ALL approved quotes using `totalSalePrice = approvedQuotes.reduce((sum, q) => sum + (q.total_incl_vat || 0), 0)`
+- Both approved quotes are properly displayed in the blue section
+- Financial calculations use the sum of all quotes, not just the most recent one
+- UI displays all values correctly without errors
+- No warning messages about missing approved quotes
+
+**Key Changes Verified:**
+- ✅ Multiple approved quotes are now summed together
+- ✅ Individual quote amounts are visible in the list
+- ✅ Total of all quotes is clearly displayed
+- ✅ Verkoopprijs reflects the sum of all approved quotes
+- ✅ Profit calculation is based on the total of all quotes
+
+**Conclusion:**
+The updated Financieel tab functionality is working perfectly. The implementation now correctly sums ALL approved quotes instead of using only the most recent one. All financial calculations are accurate and the UI clearly displays both individual quote amounts and their total.
