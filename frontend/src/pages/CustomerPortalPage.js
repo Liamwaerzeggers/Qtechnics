@@ -454,26 +454,40 @@ export default function CustomerPortalPage() {
           </div>
         )}
 
-        {/* Quotes Tab */}
+        {/* Quotes Tab - Mobile Optimized */}
         {activeTab === 'quotes' && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {approved_quotes && approved_quotes.length > 0 ? (
               approved_quotes.map(quote => (
                 <Card key={quote.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
+                  <CardHeader className="pb-2 sm:pb-4">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                       <div>
-                        <CardTitle>Offerte {quote.quote_number}</CardTitle>
-                        <p className="text-sm text-gray-500">{formatDate(quote.date)}</p>
+                        <CardTitle className="text-base sm:text-lg">Offerte {quote.quote_number}</CardTitle>
+                        <p className="text-xs sm:text-sm text-gray-500">{formatDate(quote.date)}</p>
                       </div>
-                      <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                      <span className="self-start px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs sm:text-sm font-medium">
                         Goedgekeurd
                       </span>
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    {/* Line Items */}
-                    <div className="overflow-x-auto">
+                  <CardContent className="pt-0">
+                    {/* Line Items - Mobile Card View */}
+                    <div className="space-y-3 sm:hidden">
+                      {quote.line_items?.map((item, idx) => (
+                        <div key={idx} className="p-3 bg-gray-50 rounded-lg">
+                          <p className="font-medium text-sm text-gray-800">{item.description}</p>
+                          <div className="flex justify-between mt-2 text-xs text-gray-600">
+                            <span>{item.quantity} {item.unit}</span>
+                            <span>€{item.unit_price?.toFixed(2)}/st</span>
+                          </div>
+                          <p className="text-right mt-1 font-semibold text-sm">€{item.total_incl_vat?.toFixed(2)}</p>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Line Items - Desktop Table */}
+                    <div className="hidden sm:block overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b">
@@ -499,14 +513,14 @@ export default function CustomerPortalPage() {
                     </div>
                     
                     {/* Totals */}
-                    <div className="mt-4 pt-4 border-t space-y-1 text-right">
+                    <div className="mt-4 pt-4 border-t space-y-1 text-right text-sm sm:text-base">
                       <p className="text-gray-600">
                         Subtotaal excl. BTW: <span className="font-medium">€{quote.total_excl_vat?.toFixed(2)}</span>
                       </p>
                       <p className="text-gray-600">
                         BTW: <span className="font-medium">€{quote.total_vat?.toFixed(2)}</span>
                       </p>
-                      <p className="text-lg font-bold">
+                      <p className="text-base sm:text-lg font-bold">
                         Totaal incl. BTW: €{quote.total_incl_vat?.toFixed(2)}
                       </p>
                     </div>
@@ -515,7 +529,7 @@ export default function CustomerPortalPage() {
               ))
             ) : (
               <Card>
-                <CardContent className="py-8 text-center text-gray-500">
+                <CardContent className="py-6 text-center text-gray-500 text-sm">
                   Nog geen goedgekeurde offertes
                 </CardContent>
               </Card>
