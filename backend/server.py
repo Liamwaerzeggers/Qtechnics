@@ -2562,8 +2562,13 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
         raise HTTPException(status_code=403, detail="Not authorized")
     
     # Get quote and lead for customer info
-    quote = await db.quotes.find_one({"id": invoice["quote_id"]})
-    lead = await db.leads.find_one({"id": quote["lead_id"], "user_id": current_user.id})
+    # quote_id can contain multiple IDs separated by comma (when multiple approved quotes)
+    quote_ids = invoice["quote_id"].split(",")
+    first_quote_id = quote_ids[0].strip()
+    quote = await db.quotes.find_one({"id": first_quote_id})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    lead = await db.leads.find_one({"id": quote["lead_id"]})
     
     # Create PDF
     buffer = io.BytesIO()
