@@ -94,14 +94,20 @@ export default function CustomerPortalPage() {
     
     setSubmittingRating(true);
     try {
-      await axios.post(`${API}/customer-portal/${accessToken}/rating`, {
-        rating,
+      const response = await axios.post(`${API}/customer-portal/${accessToken}/rating`, {
+        rating: rating,
         comment: ratingComment
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
+      console.log('Rating response:', response.data);
       toast.success('Bedankt voor uw beoordeling!');
       fetchPortalData();
     } catch (err) {
-      toast.error('Kon beoordeling niet opslaan');
+      console.error('Rating error:', err.response?.data || err.message);
+      toast.error(err.response?.data?.detail || 'Kon beoordeling niet opslaan');
     } finally {
       setSubmittingRating(false);
     }
