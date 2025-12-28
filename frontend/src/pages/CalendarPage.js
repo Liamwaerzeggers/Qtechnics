@@ -173,6 +173,13 @@ export default function CalendarPage() {
                 eventPropGetter={eventStyleGetter}
                 views={['month', 'week', 'day', 'agenda']}
                 defaultView="month"
+                // Sort events: scheduled_work FIRST (appears on top), then project
+                eventOrder={(a, b) => {
+                  const typeOrder = { 'scheduled_work': 0, 'workslip': 1, 'project': 2 };
+                  const aOrder = typeOrder[a.resource?.type] ?? 1;
+                  const bOrder = typeOrder[b.resource?.type] ?? 1;
+                  return aOrder - bOrder;
+                }}
                 messages={{
                   today: 'Vandaag',
                   previous: 'Vorige',
