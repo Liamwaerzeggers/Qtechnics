@@ -212,6 +212,7 @@ export default function ProjectWorkSlipsTab({ project, onUpdate }) {
                     <th className="text-left p-4 font-semibold" style={{color: '#64748B'}}>Uurtarief</th>
                     <th className="text-left p-4 font-semibold" style={{color: '#64748B'}}>Arbeidskosten</th>
                     <th className="text-left p-4 font-semibold" style={{color: '#64748B'}}>Beschrijving</th>
+                    <th className="text-center p-4 font-semibold" style={{color: '#64748B'}}>Klant</th>
                     <th className="text-right p-4 font-semibold" style={{color: '#64748B'}}>Acties</th>
                   </tr>
                 </thead>
