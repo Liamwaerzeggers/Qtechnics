@@ -96,7 +96,8 @@ The Billit API is returning "InvalidAccessToken" error. This could mean:
 1. ~~Full backend API testing~~ ✅ COMPLETED
 2. ~~Full frontend flow test for PDF download~~ ✅ COMPLETED
 3. ~~Full frontend flow test for Peppol send button~~ ✅ COMPLETED
-4. Verify Billit API credentials with user
+4. ~~Measurements cleared after quote generation feature~~ ✅ COMPLETED
+5. Verify Billit API credentials with user
 
 ## Test Credentials:
 - Username: `test`
