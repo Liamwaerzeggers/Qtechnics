@@ -1,0 +1,612 @@
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import axios from 'axios';
+import { API } from '../App';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Textarea } from '../components/ui/textarea';
+import { 
+  Calendar, 
+  Image, 
+  FileText, 
+  MessageCircle, 
+  Star, 
+  Camera,
+  Clock,
+  CheckCircle,
+  Send,
+  Home,
+  Hammer,
+  Eye
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+export default function CustomerPortalPage() {
+  const { accessToken } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [data, setData] = useState(null);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [newMessage, setNewMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [ratingComment, setRatingComment] = useState('');
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+
+  useEffect(() => {
+    fetchPortalData();
+  }, [accessToken]);
+
+  const fetchPortalData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API}/customer-portal/${accessToken}`);
+      setData(response.data);
+      if (response.data.project?.customer_rating) {
+        setRating(response.data.project.customer_rating);
+        setRatingComment(response.data.project.customer_rating_comment || '');
+      }
+    } catch (err) {
+      console.error('Portal error:', err);
+      setError(err.response?.data?.detail || 'Kon projectgegevens niet laden');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!newMessage.trim()) return;
+    
+    setSendingMessage(true);
+    try {
+      await axios.post(`${API}/customer-portal/${accessToken}/message`, {
+        message: newMessage
+      });
+      toast.success('Bericht verzonden!');
+      setNewMessage('');
+      fetchPortalData(); // Refresh to show new message
+    } catch (err) {
+      toast.error('Kon bericht niet verzenden');
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  const submitRating = async () => {
+    if (rating === 0) {
+      toast.error('Selecteer eerst een rating');
+      return;
+    }
+    
+    setSubmittingRating(true);
+    try {
+      await axios.post(`${API}/customer-portal/${accessToken}/rating`, {
+        rating,
+        comment: ratingComment
+      });
+      toast.success('Bedankt voor uw beoordeling!');
+      fetchPortalData();
+    } catch (err) {
+      toast.error('Kon beoordeling niet opslaan');
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('nl-BE', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const formatShortDate = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('nl-BE', {
+      day: 'numeric',
+      month: 'short'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Project laden...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 text-center">
+            <div className="text-red-500 text-5xl mb-4">⚠️</div>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Toegang geweigerd</h2>
+            <p className="text-gray-600">{error}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const { project, customer_name, approved_quotes, work_updates } = data;
+
+  const tabs = [
+    { id: 'overview', label: 'Overzicht', icon: Home },
+    { id: 'calendar', label: 'Planning', icon: Calendar },
+    { id: 'photos', label: "Foto's", icon: Camera },
+    { id: 'quotes', label: 'Offertes', icon: FileText },
+    { id: 'updates', label: 'Updates', icon: Hammer },
+    { id: 'messages', label: 'Berichten', icon: MessageCircle },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">Uw Project</h1>
+              <p className="text-gray-500">Welkom, {customer_name}</p>
+            </div>
+            <div className="text-right">
+              <p className="font-semibold text-gray-800">{project.name}</p>
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                project.status === 'completed' ? 'bg-green-100 text-green-700' :
+                project.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                {project.status === 'completed' ? 'Voltooid' :
+                 project.status === 'in_progress' ? 'In uitvoering' :
+                 project.status === 'planning' ? 'Planning' : project.status}
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation Tabs */}
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-4">
+          <nav className="flex space-x-1 overflow-x-auto">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      {/* Content */}
+      <main className="max-w-6xl mx-auto px-4 py-6">
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* Project Status Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-blue-600" />
+                  Project Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-gray-500">Start datum</p>
+                    <p className="font-medium">{formatDate(project.planning_start_date || project.start_date)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Verwachte einddatum</p>
+                    <p className="font-medium">{formatDate(project.planning_end_date || project.end_date)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Stats */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-green-600" />
+                  In één oogopslag
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Foto's eerste bezoek</span>
+                    <span className="font-medium">{project.first_visit_photos?.length || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">3D Ontwerpen</span>
+                    <span className="font-medium">{project.design_3d_files?.length || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Goedgekeurde offertes</span>
+                    <span className="font-medium">{approved_quotes?.length || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Werk updates</span>
+                    <span className="font-medium">{work_updates?.length || 0}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Rating Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="w-5 h-5 text-yellow-500" />
+                  Uw Beoordeling
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-1 mb-3">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <button
+                      key={star}
+                      onClick={() => setRating(star)}
+                      className="focus:outline-none"
+                    >
+                      <Star
+                        className={`w-8 h-8 transition-colors ${
+                          star <= rating
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-gray-300 hover:text-yellow-300'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <Textarea
+                  placeholder="Optioneel: laat een opmerking achter..."
+                  value={ratingComment}
+                  onChange={(e) => setRatingComment(e.target.value)}
+                  className="mb-3"
+                  rows={2}
+                />
+                <Button 
+                  onClick={submitRating} 
+                  disabled={submittingRating || rating === 0}
+                  className="w-full"
+                >
+                  {submittingRating ? 'Opslaan...' : 'Beoordeling opslaan'}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Calendar Tab */}
+        {activeTab === 'calendar' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>📅 Planning</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {project.scheduled_days && project.scheduled_days.length > 0 ? (
+                <div className="space-y-3">
+                  {project.scheduled_days
+                    .sort((a, b) => new Date(a.date) - new Date(b.date))
+                    .map((day, idx) => (
+                      <div key={idx} className="flex items-start gap-4 p-3 bg-blue-50 rounded-lg">
+                        <div className="text-center min-w-[60px]">
+                          <p className="text-2xl font-bold text-blue-600">
+                            {new Date(day.date).getDate()}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(day.date).toLocaleDateString('nl-BE', { month: 'short' })}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="font-medium">
+                            {new Date(day.date).toLocaleDateString('nl-BE', { weekday: 'long' })}
+                          </p>
+                          {day.notes && <p className="text-sm text-gray-600">{day.notes}</p>}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-8">
+                  Nog geen specifieke werkdagen ingepland
+                </p>
+              )}
+              
+              {(project.planning_start_date || project.planning_end_date) && (
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium mb-2">Projectperiode</h4>
+                  <p className="text-sm text-gray-600">
+                    {formatDate(project.planning_start_date)} - {formatDate(project.planning_end_date)}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Photos Tab */}
+        {activeTab === 'photos' && (
+          <div className="space-y-6">
+            {/* First Visit Photos */}
+            <Card>
+              <CardHeader>
+                <CardTitle>📸 Foto's Eerste Bezoek</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {project.first_visit_photos && project.first_visit_photos.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {project.first_visit_photos.map((photo, idx) => (
+                      <div 
+                        key={idx} 
+                        className="relative aspect-square cursor-pointer group"
+                        onClick={() => setSelectedPhoto(photo)}
+                      >
+                        <img
+                          src={photo.startsWith('http') ? photo : `${API}${photo}`}
+                          alt={`Foto ${idx + 1}`}
+                          className="w-full h-full object-cover rounded-lg group-hover:opacity-90 transition"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition rounded-lg flex items-center justify-center">
+                          <Eye className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">Nog geen foto's van het eerste bezoek</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 3D Designs */}
+            <Card>
+              <CardHeader>
+                <CardTitle>🏠 3D Ontwerpen</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {project.design_3d_files && project.design_3d_files.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {project.design_3d_files.map((design, idx) => (
+                      <a
+                        key={idx}
+                        href={design.url?.startsWith('http') ? design.url : `${API}${design.url}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                      >
+                        <FileText className="w-10 h-10 text-blue-600" />
+                        <div>
+                          <p className="font-medium">{design.filename || `Ontwerp ${idx + 1}`}</p>
+                          <p className="text-sm text-gray-500">Klik om te bekijken</p>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-8">Nog geen 3D ontwerpen beschikbaar</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Quotes Tab */}
+        {activeTab === 'quotes' && (
+          <div className="space-y-6">
+            {approved_quotes && approved_quotes.length > 0 ? (
+              approved_quotes.map(quote => (
+                <Card key={quote.id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle>Offerte {quote.quote_number}</CardTitle>
+                        <p className="text-sm text-gray-500">{formatDate(quote.date)}</p>
+                      </div>
+                      <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                        Goedgekeurd
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {/* Line Items */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-2">Omschrijving</th>
+                            <th className="text-right py-2">Aantal</th>
+                            <th className="text-right py-2">Eenheid</th>
+                            <th className="text-right py-2">Prijs</th>
+                            <th className="text-right py-2">Totaal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {quote.line_items?.map((item, idx) => (
+                            <tr key={idx} className="border-b">
+                              <td className="py-2">{item.description}</td>
+                              <td className="text-right py-2">{item.quantity}</td>
+                              <td className="text-right py-2">{item.unit}</td>
+                              <td className="text-right py-2">€{item.unit_price?.toFixed(2)}</td>
+                              <td className="text-right py-2 font-medium">€{item.total_incl_vat?.toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    {/* Totals */}
+                    <div className="mt-4 pt-4 border-t space-y-1 text-right">
+                      <p className="text-gray-600">
+                        Subtotaal excl. BTW: <span className="font-medium">€{quote.total_excl_vat?.toFixed(2)}</span>
+                      </p>
+                      <p className="text-gray-600">
+                        BTW: <span className="font-medium">€{quote.total_vat?.toFixed(2)}</span>
+                      </p>
+                      <p className="text-lg font-bold">
+                        Totaal incl. BTW: €{quote.total_incl_vat?.toFixed(2)}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center text-gray-500">
+                  Nog geen goedgekeurde offertes
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* Work Updates Tab */}
+        {activeTab === 'updates' && (
+          <div className="space-y-4">
+            {work_updates && work_updates.length > 0 ? (
+              work_updates
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .map(update => (
+                  <Card key={update.id}>
+                    <CardContent className="pt-6">
+                      <div className="flex items-start gap-4">
+                        <div className="bg-blue-100 p-3 rounded-full">
+                          <Hammer className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-500">{formatDate(update.date)}</p>
+                          <p className="mt-2 text-gray-800">{update.work_description_nl || 'Werkzaamheden uitgevoerd'}</p>
+                          
+                          {/* Work Photos */}
+                          {update.photos && update.photos.length > 0 && (
+                            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+                              {update.photos.map((photo, idx) => (
+                                <img
+                                  key={idx}
+                                  src={photo.startsWith('http') ? photo : `${API}${photo}`}
+                                  alt={`Werk foto ${idx + 1}`}
+                                  className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-90"
+                                  onClick={() => setSelectedPhoto(photo)}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center text-gray-500">
+                  Nog geen updates beschikbaar
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* Messages Tab */}
+        {activeTab === 'messages' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>💬 Berichten</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Messages List */}
+              <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
+                {project.customer_messages && project.customer_messages.length > 0 ? (
+                  project.customer_messages
+                    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+                    .map(msg => (
+                      <div
+                        key={msg.id}
+                        className={`p-3 rounded-lg ${
+                          msg.is_from_customer
+                            ? 'bg-blue-100 ml-8'
+                            : 'bg-gray-100 mr-8'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="text-xs font-medium text-gray-600">
+                            {msg.is_from_customer ? 'U' : msg.sender || 'Qtechnics'}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {new Date(msg.timestamp).toLocaleString('nl-BE')}
+                          </span>
+                        </div>
+                        <p className="text-gray-800">{msg.message}</p>
+                      </div>
+                    ))
+                ) : (
+                  <p className="text-gray-500 text-center py-4">
+                    Nog geen berichten. Stel gerust een vraag!
+                  </p>
+                )}
+              </div>
+
+              {/* New Message Input */}
+              <div className="flex gap-2">
+                <Textarea
+                  placeholder="Typ uw vraag of opmerking..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  className="flex-1"
+                  rows={2}
+                />
+                <Button
+                  onClick={sendMessage}
+                  disabled={sendingMessage || !newMessage.trim()}
+                  className="self-end"
+                >
+                  {sendingMessage ? '...' : <Send className="w-4 h-4" />}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </main>
+
+      {/* Photo Modal */}
+      {selectedPhoto && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <img
+            src={selectedPhoto.startsWith('http') ? selectedPhoto : `${API}${selectedPhoto}`}
+            alt="Grote weergave"
+            className="max-w-full max-h-full object-contain"
+          />
+          <button
+            onClick={() => setSelectedPhoto(null)}
+            className="absolute top-4 right-4 text-white text-xl bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-70"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
