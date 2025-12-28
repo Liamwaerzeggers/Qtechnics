@@ -3349,9 +3349,6 @@ async def delete_admin(admin_id: str, current_user: User = Depends(get_current_u
     return {"message": "Admin deleted successfully"}
 
 # ============= BILLIT / PEPPOL INTEGRATION =============
-import httpx
-import hmac
-import hashlib
 
 BILLIT_API_KEY = os.environ.get("BILLIT_API_KEY", "")
 BILLIT_BASE_URL = os.environ.get("BILLIT_BASE_URL", "https://api.billit.be")
