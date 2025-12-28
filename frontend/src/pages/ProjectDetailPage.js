@@ -350,17 +350,22 @@ function CustomerPortalTab({ project, onUpdate }) {
     }
   }, [project.customer_access_token]);
 
-  const generateLink = async () => {
+  const generateLink = async (forceNew = false) => {
     setGenerating(true);
     try {
       const response = await axios.post(
-        `${API}/projects/${project.id}/generate-customer-link`,
+        `${API}/projects/${project.id}/generate-customer-link?force_new=${forceNew}`,
         {},
         { withCredentials: true }
       );
       const baseUrl = window.location.origin;
       setCustomerLink(`${baseUrl}/klant/${response.data.token}`);
-      toast.success('Klantportaal link gegenereerd!');
+      
+      if (response.data.is_existing) {
+        toast.success('Bestaande link opgehaald');
+      } else {
+        toast.success('Nieuwe klantportaal link gegenereerd!');
+      }
       onUpdate();
     } catch (error) {
       toast.error('Kon link niet genereren');
