@@ -3501,8 +3501,8 @@ async def send_invoice_via_peppol(invoice_id: str, current_user: User = Depends(
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can send Peppol invoices")
     
-    # Get invoice
-    invoice = await db.customer_invoices.find_one({"id": invoice_id}, {"_id": 0})
+    # Get invoice - invoices are stored in 'invoices' collection
+    invoice = await db.invoices.find_one({"id": invoice_id}, {"_id": 0})
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
     
@@ -3524,7 +3524,7 @@ async def send_invoice_via_peppol(invoice_id: str, current_user: User = Depends(
         billit_data = transform_invoice_to_billit(invoice, lead, project)
         
         # Update status to sending
-        await db.customer_invoices.update_one(
+        await db.invoices.update_one(
             {"id": invoice_id},
             {"$set": {"peppol_status": "sending"}}
         )
@@ -3537,7 +3537,7 @@ async def send_invoice_via_peppol(invoice_id: str, current_user: User = Depends(
         peppol_response = await send_peppol_command(billit_invoice_id)
         
         # Update invoice with Peppol info
-        await db.customer_invoices.update_one(
+        await db.invoices.update_one(
             {"id": invoice_id},
             {"$set": {
                 "peppol_status": "sent",
@@ -3560,7 +3560,7 @@ async def send_invoice_via_peppol(invoice_id: str, current_user: User = Depends(
         raise
     except Exception as e:
         # Update status to failed
-        await db.customer_invoices.update_one(
+        await db.invoices.update_one(
             {"id": invoice_id},
             {"$set": {
                 "peppol_status": "failed",
