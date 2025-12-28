@@ -163,16 +163,16 @@ export default function CustomerPortalPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
+      {/* Header - Mobile Optimized */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+        <div className="px-4 py-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Uw Project</h1>
-              <p className="text-gray-500">Welkom, {customer_name}</p>
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-800">Uw Project</h1>
+              <p className="text-sm text-gray-500">Welkom, {customer_name}</p>
             </div>
-            <div className="text-right">
-              <p className="font-semibold text-gray-800">{project.name}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-gray-800 text-sm sm:text-base">{project.name}</p>
               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                 project.status === 'completed' ? 'bg-green-100 text-green-700' :
                 project.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
@@ -180,33 +180,31 @@ export default function CustomerPortalPage() {
               }`}>
                 {project.status === 'completed' ? 'Voltooid' :
                  project.status === 'in_progress' ? 'In uitvoering' :
-                 project.status === 'planning' ? 'Planning' : project.status}
+                 project.status === 'planning' ? 'Planning' : project.status || 'Gepland'}
               </span>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Navigation Tabs */}
+      {/* Navigation Tabs - Scrollable on Mobile */}
       <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4">
-          <nav className="flex space-x-1 overflow-x-auto">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
+        <nav className="flex overflow-x-auto scrollbar-hide">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${
+                activeTab === tab.id
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              <span className="hidden sm:inline">{tab.label}</span>
+            </button>
+          ))}
+        </nav>
       </div>
 
       {/* Content */}
