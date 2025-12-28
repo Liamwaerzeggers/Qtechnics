@@ -8,7 +8,7 @@ import { Label } from '../components/ui/label';
 import { Loader2, Upload, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function ProjectCostsTab({ project, quote, onUpdate }) {
+export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate }) {
   const [editingCosts, setEditingCosts] = useState(false);
   const [costData, setCostData] = useState({
     labor_cost_per_hour: 0,
@@ -18,6 +18,10 @@ export default function ProjectCostsTab({ project, quote, onUpdate }) {
   });
   const [invoices, setInvoices] = useState([]);
   const [uploading, setUploading] = useState(false);
+
+  // Calculate total sale price from ALL approved quotes
+  const totalSalePrice = approvedQuotes.reduce((sum, q) => sum + (q.total_incl_vat || 0), 0);
+  const hasApprovedQuotes = approvedQuotes.length > 0;
 
   useEffect(() => {
     setCostData({
