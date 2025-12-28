@@ -388,17 +388,17 @@ export default function CustomerPortalPage() {
           </Card>
         )}
 
-        {/* Photos Tab */}
+        {/* Photos Tab - Mobile Optimized */}
         {activeTab === 'photos' && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* First Visit Photos */}
             <Card>
-              <CardHeader>
-                <CardTitle>📸 Foto's Eerste Bezoek</CardTitle>
+              <CardHeader className="pb-2 sm:pb-4">
+                <CardTitle className="text-base sm:text-lg">📸 Foto's Eerste Bezoek</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 {project.first_visit_photos && project.first_visit_photos.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
                     {project.first_visit_photos.map((photo, idx) => (
                       <div 
                         key={idx} 
@@ -411,43 +411,43 @@ export default function CustomerPortalPage() {
                           className="w-full h-full object-cover rounded-lg group-hover:opacity-90 transition"
                         />
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition rounded-lg flex items-center justify-center">
-                          <Eye className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition" />
+                          <Eye className="w-6 h-6 sm:w-8 sm:h-8 text-white opacity-0 group-hover:opacity-100 transition" />
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-8">Nog geen foto's van het eerste bezoek</p>
+                  <p className="text-gray-500 text-center py-6 text-sm">Nog geen foto's van het eerste bezoek</p>
                 )}
               </CardContent>
             </Card>
 
             {/* 3D Designs */}
             <Card>
-              <CardHeader>
-                <CardTitle>🏠 3D Ontwerpen</CardTitle>
+              <CardHeader className="pb-2 sm:pb-4">
+                <CardTitle className="text-base sm:text-lg">🏠 3D Ontwerpen</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 {project.design_3d_files && project.design_3d_files.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {project.design_3d_files.map((design, idx) => (
                       <a
                         key={idx}
                         href={getPhotoUrl(design.url)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
                       >
-                        <FileText className="w-10 h-10 text-blue-600" />
-                        <div>
-                          <p className="font-medium">{design.filename || `Ontwerp ${idx + 1}`}</p>
-                          <p className="text-sm text-gray-500">Klik om te bekijken</p>
+                        <FileText className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm sm:text-base truncate">{design.filename || `Ontwerp ${idx + 1}`}</p>
+                          <p className="text-xs sm:text-sm text-gray-500">Klik om te bekijken</p>
                         </div>
                       </a>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-8">Nog geen 3D ontwerpen beschikbaar</p>
+                  <p className="text-gray-500 text-center py-6 text-sm">Nog geen 3D ontwerpen beschikbaar</p>
                 )}
               </CardContent>
             </Card>
