@@ -94,6 +94,206 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
     }
   }, [workItemSearch, workItems]);
 
+  // Calculate area based on surface type
+  const calculateArea = (room) => {
+    const length = parseFloat(room.length) || 0;
+    const width = parseFloat(room.width) || 0;
+    const height = parseFloat(room.height) || 0;
+    
+    if (room.surface_type === 'vloer' || room.surface_type === 'plafond') {
+      return length * width;
+    } else if (room.surface_type === 'muur') {
+      // For walls: perimeter * height = 2*(length + width) * height
+      return 2 * (length + width) * height;
+    }
+    return 0;
+  };
+
+  // Calculate total for a room measurement
+  const calculateRoomTotal = (room) => {
+    const area = calculateArea(room);
+    return room.work_items.reduce((sum, wi) => sum + (area * wi.price), 0);
+  };
+
+  // Add work item to new room
+  const addWorkItemToRoom = (workItem) => {
+    if (newRoom.work_items.find(wi => wi.id === workItem.id)) {
+      toast.error('Dit werk item is al toegevoegd');
+      return;
+    }
+    setNewRoom({
+      ...newRoom,
+      work_items: [...newRoom.work_items, { ...workItem, vat_rate: 6 }]
+    });
+    setRoomWorkSearch('');
+    setShowRoomWorkDropdown(false);
+  };
+
+  // Remove work item from new room
+  const removeWorkItemFromRoom = (workItemId) => {
+    setNewRoom({
+      ...newRoom,
+      work_items: newRoom.work_items.filter(wi => wi.id !== workItemId)
+    });
+  };
+
+  // Save room measurement
+  const handleSaveRoomMeasurement = async () => {
+    if (!newRoom.room_name.trim()) {
+      toast.error('Vul een ruimte naam in');
+      return;
+    }
+    if (!newRoom.length || !newRoom.width) {
+      toast.error('Vul lengte en breedte in');
+      return;
+    }
+    if (newRoom.surface_type === 'muur' && !newRoom.height) {
+      toast.error('Vul de hoogte in voor muren');
+      return;
+    }
+    if (newRoom.work_items.length === 0) {
+      toast.error('Voeg minstens één werk item toe');
+      return;
+    }
+
+    try {
+      const roomData = {
+        id: editingRoomId || `room_${Date.now()}`,
+        room_name: newRoom.room_name,
+        surface_type: newRoom.surface_type,
+        length: parseFloat(newRoom.length),
+        width: parseFloat(newRoom.width),
+        height: newRoom.surface_type === 'muur' ? parseFloat(newRoom.height) : null,
+        area: calculateArea(newRoom),
+        work_items: newRoom.work_items.map(wi => ({
+          id: wi.id,
+          title: wi.title,
+          unit: wi.unit,
+          price: wi.price,
+          vat_rate: wi.vat_rate || 6
+        }))
+      };
+
+      // Save to backend
+      await axios.put(
+        `${API}/projects/${project.id}`,
+        { 
+          room_measurements: editingRoomId 
+            ? roomMeasurements.map(rm => rm.id === editingRoomId ? roomData : rm)
+            : [...roomMeasurements, roomData]
+        },
+        { withCredentials: true }
+      );
+
+      toast.success(editingRoomId ? 'Meting bijgewerkt!' : 'Ruimte meting toegevoegd!');
+      
+      // Reset form
+      setNewRoom({
+        room_name: '',
+        surface_type: 'vloer',
+        length: '',
+        width: '',
+        height: '',
+        work_items: []
+      });
+      setShowRoomForm(false);
+      setEditingRoomId(null);
+      onUpdate();
+    } catch (error) {
+      toast.error('Kon meting niet opslaan');
+    }
+  };
+
+  // Edit room measurement
+  const handleEditRoom = (room) => {
+    setNewRoom({
+      room_name: room.room_name,
+      surface_type: room.surface_type,
+      length: room.length.toString(),
+      width: room.width.toString(),
+      height: room.height ? room.height.toString() : '',
+      work_items: room.work_items || []
+    });
+    setEditingRoomId(room.id);
+    setShowRoomForm(true);
+  };
+
+  // Delete room measurement
+  const handleDeleteRoom = async (roomId) => {
+    try {
+      await axios.put(
+        `${API}/projects/${project.id}`,
+        { room_measurements: roomMeasurements.filter(rm => rm.id !== roomId) },
+        { withCredentials: true }
+      );
+      toast.success('Meting verwijderd');
+      onUpdate();
+    } catch (error) {
+      toast.error('Kon meting niet verwijderen');
+    }
+  };
+
+  // Generate quote from room measurements
+  const handleGenerateQuoteFromRooms = async () => {
+    if (roomMeasurements.length === 0) {
+      toast.error('Voeg eerst ruimte metingen toe');
+      return;
+    }
+
+    setGeneratingQuote(true);
+    try {
+      // Convert room measurements to regular measurements format
+      const measurementsToAdd = [];
+      for (const room of roomMeasurements) {
+        for (const workItem of room.work_items) {
+          measurementsToAdd.push({
+            work_item_id: workItem.id,
+            title: `${room.room_name} - ${room.surface_type} - ${workItem.title}`,
+            quantity: room.area,
+            unit: workItem.unit,
+            price: workItem.price,
+            vat_rate: workItem.vat_rate || 6,
+            item_type: 'arbeid'
+          });
+        }
+      }
+
+      // Add all measurements
+      for (const m of measurementsToAdd) {
+        await axios.post(
+          `${API}/projects/${project.id}/measurements`,
+          m,
+          { withCredentials: true }
+        );
+      }
+
+      // Generate quote
+      const response = await axios.post(
+        `${API}/projects/${project.id}/generate-quote`,
+        {},
+        { withCredentials: true }
+      );
+      
+      // Clear room measurements
+      await axios.put(
+        `${API}/projects/${project.id}`,
+        { room_measurements: [] },
+        { withCredentials: true }
+      );
+
+      toast.success(`Offerte ${response.data.quote_id} gegenereerd!`);
+      onUpdate();
+      
+      setTimeout(() => {
+        window.location.href = `/quotes/${response.data.quote_id}`;
+      }, 2000);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Kon offerte niet genereren');
+    } finally {
+      setGeneratingQuote(false);
+    }
+  };
+
   const handleAddMeasurement = async () => {
     if (!selectedWorkItem || !quantity || parseFloat(quantity) <= 0) {
       toast.error('Selecteer een werk item en voer een hoeveelheid in');
