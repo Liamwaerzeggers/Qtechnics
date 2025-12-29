@@ -4,7 +4,7 @@ import { API } from '../App';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Card, CardContent } from '../components/ui/card';
-import { Camera, Upload, Trash2, Save, Loader2, X, Download, ZoomIn } from 'lucide-react';
+import { Camera, Upload, Trash2, Save, Loader2, X, Download, ZoomIn, Plus, Edit2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Helper function to construct full image URL with cache busting
