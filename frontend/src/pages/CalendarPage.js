@@ -773,6 +773,7 @@ export default function CalendarPage() {
                     value={newTask.start_date}
                     onChange={(e) => setNewTask({ ...newTask, start_date: e.target.value })}
                     className="bg-white"
+                    placeholder="Optioneel"
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -782,6 +783,7 @@ export default function CalendarPage() {
                     value={newTask.end_date}
                     onChange={(e) => setNewTask({ ...newTask, end_date: e.target.value })}
                     className="bg-white"
+                    placeholder="Optioneel"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -797,6 +799,7 @@ export default function CalendarPage() {
                   </Button>
                 </div>
               </div>
+              <p className="text-xs text-gray-500 mt-2">💡 Datums zijn optioneel. Taken zonder datum kun je naar de kalender slepen.</p>
             </CardContent>
           </Card>
         )}
