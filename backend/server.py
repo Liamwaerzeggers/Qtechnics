@@ -426,6 +426,31 @@ class InvoiceUpdate(BaseModel):
     payment_status: Optional[str] = None
     paid_date: Optional[datetime] = None
 
+# Quick Tasks - standalone tasks not tied to a project
+class QuickTask(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    description: Optional[str] = None
+    start_date: str  # YYYY-MM-DD
+    end_date: str  # YYYY-MM-DD
+    team_name: Optional[str] = None  # Assigned team
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    user_id: str
+
+class QuickTaskCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    start_date: str
+    end_date: str
+
+class QuickTaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    team_name: Optional[str] = None
+
 # ============= AUTH DEPENDENCIES =============
 
 async def get_current_user(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)) -> User:
