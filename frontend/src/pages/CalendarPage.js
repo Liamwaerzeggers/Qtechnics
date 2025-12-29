@@ -590,16 +590,17 @@ export default function CalendarPage() {
         }
       });
     });
-    // Add quick tasks without team
+    // Add quick tasks without team OR without dates (need to be scheduled)
     quickTasks.forEach(task => {
-      if (!task.team_name) {
+      if (!task.team_name || !task.start_date || !task.end_date) {
         work.push({
           ...task,
           project: null,
           projectName: task.title,
           description: task.description,
           address: '',
-          isQuickTask: true
+          isQuickTask: true,
+          needsDate: !task.start_date || !task.end_date
         });
       }
     });
