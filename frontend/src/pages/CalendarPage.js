@@ -444,19 +444,55 @@ export default function CalendarPage() {
     return work;
   };
 
-  const prevWeek = () => {
-    const newDate = new Date(currentWeek);
-    newDate.setDate(newDate.getDate() - 7);
-    setCurrentWeek(newDate);
+  const prevPeriod = () => {
+    const newDate = new Date(currentDate);
+    switch (viewMode) {
+      case VIEW_MODES.DAY:
+        newDate.setDate(newDate.getDate() - 1);
+        break;
+      case VIEW_MODES.WEEK:
+        newDate.setDate(newDate.getDate() - 7);
+        break;
+      case VIEW_MODES.MONTH:
+        newDate.setMonth(newDate.getMonth() - 1);
+        break;
+      case VIEW_MODES.QUARTER:
+        newDate.setMonth(newDate.getMonth() - 3);
+        break;
+      case VIEW_MODES.YEAR:
+        newDate.setFullYear(newDate.getFullYear() - 1);
+        break;
+      default:
+        newDate.setDate(newDate.getDate() - 7);
+    }
+    setCurrentDate(newDate);
   };
 
-  const nextWeek = () => {
-    const newDate = new Date(currentWeek);
-    newDate.setDate(newDate.getDate() + 7);
-    setCurrentWeek(newDate);
+  const nextPeriod = () => {
+    const newDate = new Date(currentDate);
+    switch (viewMode) {
+      case VIEW_MODES.DAY:
+        newDate.setDate(newDate.getDate() + 1);
+        break;
+      case VIEW_MODES.WEEK:
+        newDate.setDate(newDate.getDate() + 7);
+        break;
+      case VIEW_MODES.MONTH:
+        newDate.setMonth(newDate.getMonth() + 1);
+        break;
+      case VIEW_MODES.QUARTER:
+        newDate.setMonth(newDate.getMonth() + 3);
+        break;
+      case VIEW_MODES.YEAR:
+        newDate.setFullYear(newDate.getFullYear() + 1);
+        break;
+      default:
+        newDate.setDate(newDate.getDate() + 7);
+    }
+    setCurrentDate(newDate);
   };
 
-  const goToToday = () => setCurrentWeek(new Date());
+  const goToToday = () => setCurrentDate(new Date());
 
   // Navigate to week containing a date
   const goToDate = (dateStr) => {
