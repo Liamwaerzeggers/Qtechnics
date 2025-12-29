@@ -392,7 +392,7 @@ export default function CalendarPage() {
     e.preventDefault();
     if (!draggedItem) return;
 
-    const { project, period } = draggedItem;
+    const { project, period, isQuickTask } = draggedItem;
     
     // Calculate the difference in days
     const oldStart = new Date(period.start_date);
@@ -404,21 +404,29 @@ export default function CalendarPage() {
     const newEnd = new Date(oldEnd);
     newEnd.setDate(newEnd.getDate() + diffDays);
     
-    const updatedScheduledDays = project.scheduled_days.map(p => 
-      p.id === period.id 
-        ? { 
-            ...p, 
-            start_date: formatDateForInput(newStart),
-            end_date: formatDateForInput(newEnd)
-          } 
-        : p
-    );
-
-    await updateScheduledWork(project.id, updatedScheduledDays);
+    if (isQuickTask) {
+      await updateQuickTask(period.id, {
+        start_date: formatDateForInput(newStart),
+        end_date: formatDateForInput(newEnd)
+      });
+      fetchQuickTasks();
+    } else {
+      const updatedScheduledDays = project.scheduled_days.map(p => 
+        p.id === period.id 
+          ? { 
+              ...p, 
+              start_date: formatDateForInput(newStart),
+              end_date: formatDateForInput(newEnd)
+            } 
+          : p
+      );
+      await updateScheduledWork(project.id, updatedScheduledDays);
+      fetchProjects();
+    }
+    
     setDraggedItem(null);
     setDragOverDate(null);
     toast.success(`Planning aangepast naar ${formatDate(newStart)} - ${formatDate(newEnd)}`);
-    fetchProjects();
   };
 
   const handleDragOver = (e) => {
@@ -435,7 +443,7 @@ export default function CalendarPage() {
     setDragOverDate(null);
   };
 
-  // Get ALL work for a team (not filtered by week)
+  // Get ALL work for a team (not filtered by week) - includes quick tasks
   const getWorkByTeam = (teamName) => {
     const work = [];
     projects.forEach(project => {
