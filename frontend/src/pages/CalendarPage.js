@@ -420,10 +420,24 @@ export default function CalendarPage() {
     if (!draggedItem) return;
 
     const { project, period, isQuickTask, projectId } = draggedItem;
-    
-    // Calculate the difference in days
-    const oldStart = new Date(period.start_date);
     const newStart = new Date(targetDate);
+    
+    // Check if this is a quick task without dates (needs initial date assignment)
+    if (isQuickTask && (!period.start_date || !period.end_date)) {
+      // Set both start and end to the dropped date (single day task)
+      await updateQuickTask(period.id, {
+        start_date: formatDateForInput(newStart),
+        end_date: formatDateForInput(newStart)
+      });
+      toast.success(`Taak ingepland op ${formatDate(newStart)}`);
+      fetchQuickTasks();
+      setDraggedItem(null);
+      setDragOverDate(null);
+      return;
+    }
+    
+    // Calculate the difference in days for existing scheduled items
+    const oldStart = new Date(period.start_date);
     const diffDays = Math.round((newStart - oldStart) / (1000 * 60 * 60 * 24));
     
     // Calculate new end date
