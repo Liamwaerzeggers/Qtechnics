@@ -41,6 +41,17 @@ const getTeamColorByIndex = (index) => {
   return COLOR_PALETTE[index % COLOR_PALETTE.length];
 };
 
+// Create a function to get team color by name using the teams array
+const createGetTeamColor = (teams) => (teamName) => {
+  const index = teams.indexOf(teamName);
+  if (index === -1) {
+    // If team not found, use hash of team name for consistent color
+    const hash = teamName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return COLOR_PALETTE[hash % COLOR_PALETTE.length];
+  }
+  return COLOR_PALETTE[index % COLOR_PALETTE.length];
+};
+
 // Format date
 const formatDate = (dateStr) => {
   if (!dateStr) return '';
