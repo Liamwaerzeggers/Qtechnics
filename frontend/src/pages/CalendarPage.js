@@ -210,6 +210,9 @@ export default function CalendarPage() {
   const [dragOverDate, setDragOverDate] = useState(null);
   const navigate = useNavigate();
 
+  // Create getTeamColor function that uses current teams array
+  const getTeamColor = useMemo(() => createGetTeamColor(teams), [teams]);
+
   const viewDates = useMemo(() => getDatesForView(currentDate, viewMode), [currentDate, viewMode]);
   const monthsData = useMemo(() => getMonthsData(currentDate, viewMode), [currentDate, viewMode]);
   // Keep weekDates for backwards compatibility
