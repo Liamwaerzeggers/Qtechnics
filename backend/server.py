@@ -247,7 +247,8 @@ class Project(BaseModel):
     visible_to_workers: bool = False  # Toggle: show/hide project for workers
     
     # NIEUWE SECTIE: Planning
-    scheduled_days: List[dict] = []  # [{date, notes}] - specific work days with notes
+    # scheduled_days format: [{id, start_date, end_date, description, team_name}]
+    scheduled_days: List[dict] = []  # Work periods with team assignment
     required_materials: str = ""  # Manual text for additional materials needed
     material_reminder_sent: bool = False  # Track if reminder was sent
     
