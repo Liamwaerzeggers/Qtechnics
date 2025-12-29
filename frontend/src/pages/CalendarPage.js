@@ -690,88 +690,294 @@ export default function CalendarPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-blue-600" />
-                Weekagenda
+                Agenda
               </CardTitle>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={prevWeek}>
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={goToToday} className="text-xs px-3">
-                  Vandaag
-                </Button>
-                <span className="text-sm font-medium min-w-[180px] text-center">{getWeekLabel()}</span>
-                <Button variant="outline" size="sm" onClick={nextWeek}>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                {/* View Mode Selector */}
+                <div className="flex rounded-lg border overflow-hidden">
+                  {[
+                    { mode: VIEW_MODES.DAY, label: 'Dag' },
+                    { mode: VIEW_MODES.WEEK, label: 'Week' },
+                    { mode: VIEW_MODES.MONTH, label: 'Maand' },
+                    { mode: VIEW_MODES.QUARTER, label: 'Kwartaal' },
+                    { mode: VIEW_MODES.YEAR, label: 'Jaar' }
+                  ].map(({ mode, label }) => (
+                    <button
+                      key={mode}
+                      onClick={() => setViewMode(mode)}
+                      className={`px-2 sm:px-3 py-1 text-xs font-medium transition-colors ${
+                        viewMode === mode 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-white text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {/* Navigation */}
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="sm" onClick={prevPeriod}>
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={goToToday} className="text-xs px-2">
+                    Vandaag
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={nextPeriod}>
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+                <span className="text-sm font-medium min-w-[120px] text-center">{getViewLabel()}</span>
               </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {/* Calendar Header */}
-            <div className="grid grid-cols-7 border-b bg-gray-50">
-              {weekDates.map((date, idx) => (
-                <div 
-                  key={idx} 
-                  className={`p-2 text-center border-r last:border-r-0 ${isToday(date) ? 'bg-blue-100' : ''}`}
-                >
-                  <p className="text-xs text-gray-500">
-                    {date.toLocaleDateString('nl-BE', { weekday: 'short' })}
+            {/* Day View */}
+            {viewMode === VIEW_MODES.DAY && (
+              <div className="min-h-[300px]">
+                <div className={`p-3 text-center border-b ${isToday(viewDates[0]) ? 'bg-blue-100' : 'bg-gray-50'}`}>
+                  <p className="text-sm text-gray-500">
+                    {viewDates[0].toLocaleDateString('nl-BE', { weekday: 'long' })}
                   </p>
-                  <p className={`text-lg font-bold ${isToday(date) ? 'text-blue-600' : 'text-gray-800'}`}>
-                    {date.getDate()}
+                  <p className={`text-2xl font-bold ${isToday(viewDates[0]) ? 'text-blue-600' : 'text-gray-800'}`}>
+                    {viewDates[0].getDate()}
                   </p>
-                  <p className="text-[10px] text-gray-400">
-                    {date.toLocaleDateString('nl-BE', { month: 'short' })}
+                  <p className="text-sm text-gray-400">
+                    {viewDates[0].toLocaleDateString('nl-BE', { month: 'long', year: 'numeric' })}
                   </p>
                 </div>
-              ))}
-            </div>
+                <div 
+                  className={`p-3 min-h-[200px] ${dragOverDate === formatDateForInput(viewDates[0]) ? 'bg-blue-100' : ''}`}
+                  onDragOver={(e) => handleDragOverDate(e, viewDates[0])}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDropOnDate(e, viewDates[0])}
+                >
+                  {getWorkForView()
+                    .filter(item => isDateInRange(viewDates[0], item.start_date, item.end_date))
+                    .map((item, idx) => {
+                      const teamColor = getTeamColor(item.team_name);
+                      return (
+                        <div
+                          key={idx}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, item.project, item)}
+                          onClick={() => navigate(`/projects/${item.project.id}`)}
+                          className={`${teamColor.bg} text-white p-3 mb-2 rounded-lg cursor-grab hover:opacity-90`}
+                        >
+                          <p className="font-semibold">{item.projectName}</p>
+                          {item.description && <p className="text-sm opacity-90">{item.description}</p>}
+                          {item.address && <p className="text-xs opacity-75 flex items-center gap-1"><MapPin className="w-3 h-3" />{item.address}</p>}
+                          <p className="text-xs opacity-75 mt-1">{formatDate(item.start_date)} - {formatDate(item.end_date)}</p>
+                        </div>
+                      );
+                    })}
+                  {getWorkForView().filter(item => isDateInRange(viewDates[0], item.start_date, item.end_date)).length === 0 && (
+                    <p className="text-center text-gray-400 py-8">Geen werk gepland voor deze dag</p>
+                  )}
+                </div>
+              </div>
+            )}
 
-            {/* Calendar Body - Drop zones */}
-            <div className="grid grid-cols-7 min-h-[200px]">
-              {weekDates.map((date, idx) => {
-                const dateStr = formatDateForInput(date);
-                const isDropTarget = dragOverDate === dateStr;
-                
-                return (
-                  <div 
-                    key={idx}
-                    className={`border-r last:border-r-0 p-1 min-h-[200px] transition-colors ${
-                      isDropTarget ? 'bg-blue-100' : isToday(date) ? 'bg-blue-50/50' : 'bg-white'
-                    }`}
-                    onDragOver={(e) => handleDragOverDate(e, date)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDropOnDate(e, date)}
-                  >
-                    {/* Work blocks for this day */}
-                    {weekWork
-                      .filter(item => isDateInRange(date, item.start_date, item.end_date))
-                      .map((item, workIdx) => {
-                        const teamColor = getTeamColor(item.team_name);
-                        const isStart = formatDateForInput(new Date(item.start_date)) === dateStr;
+            {/* Week View */}
+            {viewMode === VIEW_MODES.WEEK && (
+              <>
+                <div className="grid grid-cols-7 border-b bg-gray-50">
+                  {viewDates.map((date, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`p-2 text-center border-r last:border-r-0 ${isToday(date) ? 'bg-blue-100' : ''}`}
+                    >
+                      <p className="text-xs text-gray-500">
+                        {date.toLocaleDateString('nl-BE', { weekday: 'short' })}
+                      </p>
+                      <p className={`text-lg font-bold ${isToday(date) ? 'text-blue-600' : 'text-gray-800'}`}>
+                        {date.getDate()}
+                      </p>
+                      <p className="text-[10px] text-gray-400">
+                        {date.toLocaleDateString('nl-BE', { month: 'short' })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 min-h-[200px]">
+                  {viewDates.map((date, idx) => {
+                    const dateStr = formatDateForInput(date);
+                    const isDropTarget = dragOverDate === dateStr;
+                    
+                    return (
+                      <div 
+                        key={idx}
+                        className={`border-r last:border-r-0 p-1 min-h-[200px] transition-colors ${
+                          isDropTarget ? 'bg-blue-100' : isToday(date) ? 'bg-blue-50/50' : 'bg-white'
+                        }`}
+                        onDragOver={(e) => handleDragOverDate(e, date)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDropOnDate(e, date)}
+                      >
+                        {getWorkForView()
+                          .filter(item => isDateInRange(date, item.start_date, item.end_date))
+                          .map((item, workIdx) => {
+                            const teamColor = getTeamColor(item.team_name);
+                            const isStart = formatDateForInput(new Date(item.start_date)) === dateStr;
+                            
+                            return (
+                              <div
+                                key={workIdx}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, item.project, item)}
+                                onClick={() => navigate(`/projects/${item.project.id}`)}
+                                className={`${teamColor.bg} text-white text-[10px] p-1 mb-1 rounded cursor-grab hover:opacity-90 active:cursor-grabbing ${
+                                  isStart ? 'rounded-l-lg' : ''
+                                }`}
+                                title={`${item.projectName} - ${item.description}\n${item.address}\n${formatDate(item.start_date)} - ${formatDate(item.end_date)}`}
+                              >
+                                <p className="font-semibold truncate">{item.projectName}</p>
+                                {isStart && item.description && (
+                                  <p className="truncate opacity-90">{item.description}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* Month View */}
+            {viewMode === VIEW_MODES.MONTH && monthsData.length > 0 && (
+              <div className="p-2">
+                <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+                  {['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'].map((day) => (
+                    <div key={day} className="bg-gray-50 p-2 text-center text-xs font-semibold text-gray-600">
+                      {day}
+                    </div>
+                  ))}
+                  {monthsData[0].weeks.flat().map((date, idx) => {
+                    const dateStr = formatDateForInput(date);
+                    const isCurrentMonth = date.getMonth() === monthsData[0].month;
+                    const isDropTarget = dragOverDate === dateStr;
+                    const dayWork = getWorkForView().filter(item => isDateInRange(date, item.start_date, item.end_date));
+                    
+                    return (
+                      <div
+                        key={idx}
+                        className={`min-h-[80px] p-1 transition-colors ${
+                          isDropTarget ? 'bg-blue-100' : isToday(date) ? 'bg-blue-50' : isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+                        }`}
+                        onDragOver={(e) => handleDragOverDate(e, date)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDropOnDate(e, date)}
+                      >
+                        <p className={`text-xs font-medium ${isToday(date) ? 'text-blue-600' : isCurrentMonth ? 'text-gray-800' : 'text-gray-400'}`}>
+                          {date.getDate()}
+                        </p>
+                        <div className="space-y-px mt-1">
+                          {dayWork.slice(0, 3).map((item, workIdx) => {
+                            const teamColor = getTeamColor(item.team_name);
+                            return (
+                              <div
+                                key={workIdx}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, item.project, item)}
+                                onClick={() => navigate(`/projects/${item.project.id}`)}
+                                className={`${teamColor.bg} text-white text-[8px] px-1 rounded truncate cursor-pointer hover:opacity-90`}
+                                title={`${item.projectName} - ${item.description}`}
+                              >
+                                {item.projectName}
+                              </div>
+                            );
+                          })}
+                          {dayWork.length > 3 && (
+                            <p className="text-[8px] text-gray-500">+{dayWork.length - 3} meer</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Quarter View */}
+            {viewMode === VIEW_MODES.QUARTER && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
+                {monthsData.map((monthData, mIdx) => (
+                  <div key={mIdx} className="border rounded-lg overflow-hidden">
+                    <div className="bg-gray-100 p-2 text-center font-semibold text-sm">
+                      {new Date(monthData.year, monthData.month).toLocaleDateString('nl-BE', { month: 'long' })}
+                    </div>
+                    <div className="grid grid-cols-7 gap-px bg-gray-200">
+                      {['M', 'D', 'W', 'D', 'V', 'Z', 'Z'].map((day, i) => (
+                        <div key={i} className="bg-gray-50 p-1 text-center text-[10px] text-gray-500">{day}</div>
+                      ))}
+                      {monthData.weeks.flat().map((date, idx) => {
+                        const isCurrentMonth = date.getMonth() === monthData.month;
+                        const dayWork = getWorkForView().filter(item => isDateInRange(date, item.start_date, item.end_date));
+                        const hasWork = dayWork.length > 0;
+                        const teamColor = hasWork ? getTeamColor(dayWork[0].team_name) : null;
                         
                         return (
                           <div
-                            key={workIdx}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, item.project, item)}
-                            onClick={() => navigate(`/projects/${item.project.id}`)}
-                            className={`${teamColor.bg} text-white text-[10px] p-1 mb-1 rounded cursor-grab hover:opacity-90 active:cursor-grabbing ${
-                              isStart ? 'rounded-l-lg' : ''
-                            }`}
-                            title={`${item.projectName} - ${item.description}\n${item.address}\n${formatDate(item.start_date)} - ${formatDate(item.end_date)}\nSleep om datum aan te passen`}
+                            key={idx}
+                            onClick={() => hasWork && navigate(`/projects/${dayWork[0].project.id}`)}
+                            className={`p-1 text-center text-[10px] ${
+                              isToday(date) ? 'bg-blue-100 font-bold' : isCurrentMonth ? 'bg-white' : 'bg-gray-50 text-gray-400'
+                            } ${hasWork ? `${teamColor.light} cursor-pointer hover:opacity-80` : ''}`}
+                            title={hasWork ? dayWork.map(w => w.projectName).join(', ') : ''}
                           >
-                            <p className="font-semibold truncate">{item.projectName}</p>
-                            {isStart && item.description && (
-                              <p className="truncate opacity-90">{item.description}</p>
-                            )}
+                            {date.getDate()}
+                            {hasWork && <div className={`w-1 h-1 ${teamColor.bg} rounded-full mx-auto mt-px`}></div>}
                           </div>
                         );
                       })}
+                    </div>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
+
+            {/* Year View */}
+            {viewMode === VIEW_MODES.YEAR && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-4">
+                {monthsData.map((monthData, mIdx) => (
+                  <div 
+                    key={mIdx} 
+                    className="border rounded-lg overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => {
+                      setCurrentDate(new Date(monthData.year, monthData.month, 1));
+                      setViewMode(VIEW_MODES.MONTH);
+                    }}
+                  >
+                    <div className="bg-gray-100 p-1 text-center font-semibold text-xs">
+                      {new Date(monthData.year, monthData.month).toLocaleDateString('nl-BE', { month: 'short' })}
+                    </div>
+                    <div className="grid grid-cols-7 gap-px text-[8px] p-1">
+                      {monthData.weeks.flat().slice(0, 35).map((date, idx) => {
+                        const isCurrentMonth = date.getMonth() === monthData.month;
+                        const dayWork = getWorkForView().filter(item => isDateInRange(date, item.start_date, item.end_date));
+                        const hasWork = dayWork.length > 0;
+                        const teamColor = hasWork ? getTeamColor(dayWork[0].team_name) : null;
+                        
+                        return (
+                          <div
+                            key={idx}
+                            className={`w-4 h-4 flex items-center justify-center rounded-sm ${
+                              isToday(date) ? 'bg-blue-600 text-white' : 
+                              hasWork ? teamColor.bg + ' text-white' : 
+                              isCurrentMonth ? '' : 'text-gray-300'
+                            }`}
+                          >
+                            {date.getDate()}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
