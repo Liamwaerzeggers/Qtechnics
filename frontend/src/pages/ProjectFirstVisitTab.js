@@ -39,6 +39,21 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
   const [showWorkItemDropdown, setShowWorkItemDropdown] = useState(false);
   const [workItemSearch, setWorkItemSearch] = useState('');
   const [filteredWorkItems, setFilteredWorkItems] = useState([]);
+  
+  // NEW: Room-based measurement system
+  const [roomMeasurements, setRoomMeasurements] = useState(project.room_measurements || []);
+  const [newRoom, setNewRoom] = useState({
+    room_name: '',
+    surface_type: 'vloer', // vloer, muur, plafond
+    length: '',
+    width: '',
+    height: '', // for walls
+    work_items: [] // selected work items for this surface
+  });
+  const [showRoomForm, setShowRoomForm] = useState(false);
+  const [editingRoomId, setEditingRoomId] = useState(null);
+  const [roomWorkSearch, setRoomWorkSearch] = useState('');
+  const [showRoomWorkDropdown, setShowRoomWorkDropdown] = useState(false);
 
   // Update state when project prop changes
   // useEffect(() => {
