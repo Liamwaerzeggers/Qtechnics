@@ -115,7 +115,7 @@ The Billit API is returning "InvalidAccessToken" error. This could mean:
 
 ### Login & Navigation Test - PASSED ✅
 **Test Steps:**
-1. ✅ Navigated to https://peppol-bridge-1.preview.emergentagent.com
+1. ✅ Navigated to https://build-portal-5.preview.emergentagent.com
 2. ✅ Clicked "Beheerder Login (gebruikersnaam)" button
 3. ✅ Entered credentials: username: `test`, password: `test123`
 4. ✅ Successfully logged in and reached dashboard
@@ -210,7 +210,7 @@ The Billit API is returning "InvalidAccessToken" error. This could mean:
 ### Feature Test: Measurements Cleared After Quote Generation - PASSED ✅
 
 **Test Environment:**
-- Frontend URL: https://peppol-bridge-1.preview.emergentagent.com
+- Frontend URL: https://build-portal-5.preview.emergentagent.com
 - Login: test/test123 via Beheerder Login (gebruikersnaam)
 - Browser: Chromium Desktop (1920x1080)
 
@@ -285,7 +285,7 @@ The Billit API is returning "InvalidAccessToken" error. This could mean:
 ### Customer Portal Feature Test - PASSED ✅
 
 **Test Environment:**
-- Frontend URL: https://peppol-bridge-1.preview.emergentagent.com
+- Frontend URL: https://build-portal-5.preview.emergentagent.com
 - Login: test/test123 via Beheerder Login (gebruikersnaam)
 - Browser: Chromium Desktop (1920x1080)
 - Project: Reno (PROJ-EEFA4606)
@@ -308,7 +308,7 @@ The Billit API is returning "InvalidAccessToken" error. This could mean:
 #### 3. Customer Portal Link Generation - PASSED ✅
 - ✅ **Generate Button** - "🔗 Klantportaal link genereren" button found and functional
 - ✅ **Link Generation** - Successfully generated unique customer portal link:
-  `https://peppol-bridge-1.preview.emergentagent.com/klant/8yY-tqpvdP6VNkCUVIdJQr5QvsxX7B3L3LMI8kR_xBw`
+  `https://build-portal-5.preview.emergentagent.com/klant/8yY-tqpvdP6VNkCUVIdJQr5QvsxX7B3L3LMI8kR_xBw`
 - ✅ **Link Display** - Generated link displayed in green box with readonly input
 - ✅ **Success Feedback** - "Klantportaal link gegenereerd!" toast notification shown
 - ⚠️ **Copy Button** - Copy functionality present but icon selector needs refinement
@@ -388,7 +388,7 @@ The Billit API is returning "InvalidAccessToken" error. This could mean:
 ### Customer Portal Link Expiration Fix Test - PASSED ✅
 
 **Test Environment:**
-- Frontend URL: https://peppol-bridge-1.preview.emergentagent.com
+- Frontend URL: https://build-portal-5.preview.emergentagent.com
 - Login: test/test123 via Beheerder Login (gebruikersnaam)
 - Browser: Chromium Desktop (1920x1080)
 - Project: Reno (PROJ-EEFA4606)
@@ -400,7 +400,7 @@ The Billit API is returning "InvalidAccessToken" error. This could mean:
 - ✅ **Project Navigation** - Found and accessed "Reno" project successfully
 - ✅ **Customer Portal Tab** - Successfully navigated to 👤 Klantportaal tab
 - ✅ **Existing Link Found** - Customer portal link already exists:
-  `https://peppol-bridge-1.preview.emergentagent.com/klant/8yY-tqpvdP6VNkCUVIdJQr5QvsxX7B3L3LMI8kR_xBw`
+  `https://build-portal-5.preview.emergentagent.com/klant/8yY-tqpvdP6VNkCUVIdJQr5QvsxX7B3L3LMI8kR_xBw`
 - ✅ **Non-Expiration Message** - Found "vervalt nooit" text confirming link doesn't expire
 - ✅ **Link Preservation** - Existing links are preserved and don't expire
 
@@ -469,7 +469,7 @@ The Billit API is returning "InvalidAccessToken" error. This could mean:
 ### Customer Portal Planning & Photo Fixes Test - PASSED ✅
 
 **Test Environment:**
-- Frontend URL: https://peppol-bridge-1.preview.emergentagent.com
+- Frontend URL: https://build-portal-5.preview.emergentagent.com
 - Customer Portal URL: `/klant/8yY-tqpvdP6VNkCUVIdJQr5QvsxX7B3L3LMI8kR_xBw`
 - Browser: Chromium Desktop (1920x1080)
 - Project: Reno
@@ -496,7 +496,7 @@ The Billit API is returning "InvalidAccessToken" error. This could mean:
 #### 3. Photos Tab Fix Verification - PASSED ✅
 - ✅ **Photo Loading** - Found 1 first visit photo that loads successfully
 - ✅ **Photo URL Fix** - Photo URL correctly formatted:
-  `https://peppol-bridge-1.preview.emergentagent.com/api/static/first_visit/PROJ-EEFA4606/a31c0906-1778-442e-8175-8f2f62b4475d.png`
+  `https://build-portal-5.preview.emergentagent.com/api/static/first_visit/PROJ-EEFA4606/a31c0906-1778-442e-8175-8f2f62b4475d.png`
 - ✅ **Image Display** - Photo loads with proper dimensions (986px width)
 - ✅ **getPhotoUrl() Helper** - New helper function working correctly for `/api/static/` paths
 - ✅ **No Broken Images** - All photos display correctly (0 broken photos)
@@ -505,7 +505,7 @@ The Billit API is returning "InvalidAccessToken" error. This could mean:
 - ✅ **Work Updates** - Found 7 work update cards
 - ✅ **Update Photos** - Found 1 work update photo that loads successfully
 - ✅ **Photo URL Fix** - Update photo URL correctly formatted:
-  `https://peppol-bridge-1.preview.emergentagent.com/api/static/work_slips/PROJ-EEFA4606/32f4be01-d9a1-4e0a-b2ee-26da973300f8_555eeefb.png`
+  `https://build-portal-5.preview.emergentagent.com/api/static/work_slips/PROJ-EEFA4606/32f4be01-d9a1-4e0a-b2ee-26da973300f8_555eeefb.png`
 - ✅ **Image Display** - Update photo loads correctly
 - ✅ **No Broken Images** - All update photos display correctly (0 broken photos)
 
@@ -564,7 +564,7 @@ The Billit API is returning "InvalidAccessToken" error. This could mean:
 ### Team Planning Calendar Page Test - PASSED ✅
 
 **Test Environment:**
-- Frontend URL: https://peppol-bridge-1.preview.emergentagent.com
+- Frontend URL: https://build-portal-5.preview.emergentagent.com
 - Login: test/test123 via Beheerder Login (gebruikersnaam)
 - Browser: Chromium Desktop (1920x1080)
 - Navigation: Dashboard → Kalender

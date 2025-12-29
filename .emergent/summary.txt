@@ -1,111 +1,93 @@
 <analysis>**original_problem_statement:**
-The user wants to integrate their application with Billit to send e-invoices using the Peppol network.
-
-**PRODUCT REQUIREMENTS:**
-1.  Add a Verstuur via Peppol (Send via Peppol) button next to each generated invoice in the Financieel (Financial) tab.
-2.  Use the Billit API key provided by the user: .
-3.  The user's own company VAT number is .
-4.  Add an optional field for the customer's VAT number in the lead/project details, as many clients are private individuals without one.
-5.  Implement a webhook to receive real-time status updates from Billit (e.g., delivered, viewed).
-6.  The user has reported two critical bugs with the initial implementation:
-    *   Clicking the Verstuur via Peppol button results in an invoice not found error.
-    *   Downloading the PDF for an invoice results in a script error.
+The user initially requested to integrate Billit for Peppol e-invoicing, which led to the discovery and fixing of several bugs. Subsequently, the user requested multiple new features and enhancements:
+1.  After generating a quote, the measurement work items from the First Visit tab should be cleared.
+2.  A new customer portal should be created with a unique, non-expiring link for each project.
+3.  The customer portal must display the project calendar, photos, 3D designs, approved quotes, and specific work slips.
+4.  The portal should include a messaging system and a star-rating feature for customer feedback.
+5.  Multiple bugs in the customer portal were reported and fixed, including data visibility, expiring links, broken image URLs, and mobile responsiveness.
+6.  The main project calendar should be replaced with a team-based planning board.
+7.  The team planning board was implemented but had issues with tasks disappearing. The user then requested to add a traditional calendar view *below* the team board, with tasks displayed as draggable blocks spanning multiple days.
 
 **User's preferred language**: Dutch (Nederlands)
 
 **what currently exists?**
-The application is a full-stack platform for managing construction projects. Key features include project and lead management, quoting, financial overviews, work slips, and a project planning calendar.
-
-An initial version of the Billit/Peppol integration has been implemented:
--   **Backend:**
-    -   Billit API credentials have been added to the  file.
-    -   The  and  models in  have been updated with Peppol-related fields (e.g., , ).
-    -   New endpoints ( and ) have been created in .
--   **Frontend:**
-    -   A Verstuur via Peppol button and status badges have been added to the invoice list in .
-    -   A VAT number input field has been added to the lead details page ().
-
-However, this implementation is currently broken.
+The application is a full-stack project management tool for construction. A significant amount of work has been done to add a comprehensive, mobile-friendly customer portal with features for viewing project progress, messaging, and leaving ratings. The original calendar has been replaced with a team planning board. The initial Billit/Peppol integration has been refactored and its internal bugs fixed, but it remains blocked due to an external API authentication issue.
 
 **Last working item**:
--   **Last item agent was working:** The agent was debugging two critical, user-reported bugs that arose immediately after the initial Peppol integration was deployed.
-    1.  An invoice not found error when trying to send an invoice via Peppol.
-    2.  A script error when trying to download an invoice PDF.
+-   **Last item agent was working:** The user reported that on the new team planning board (), dragging a task to a team caused it to disappear (due to a date filter). The user also requested to re-introduce a calendar view below the team board, showing tasks as draggable blocks. The agent's last action was to completely overwrite  with a new implementation to address all these requirements.
 -   **Status:** IN PROGRESS
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** backend testing agent for the API fixes, followed by the frontend testing agent to verify the end-to-end user flows for both sending via Peppol and downloading PDFs.
+-   **Which testing method agent to use?** Frontend testing agent. The change is a complete rewrite of a core UI component with complex state and drag-and-drop interactions.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Invoice not found on Peppol send (P0)**
--   **Issue 2: Script error on invoice PDF download (P0)**
--   **Issue 3: Backend API Route Instability (P1)**
+-   **Issue 1: Team planning board functionality is unverified and potentially broken (P0)**
+-   **Issue 2: Billit API Integration is blocked (P1)**
+-   **Issue 3: Backend API Route Instability (P2)**
 
 **Issues Detail**:
--   **Issue 1: Invoice not found on Peppol send**
-    -   **Attempted fixes:** None. The previous agent only identified the likely cause: the Peppol endpoint is searching in the wrong database collection for the invoice.
+-   **Issue 1: Team planning board functionality is unverified and potentially broken**
+    -   **Attempted fixes:** The file  was completely overwritten with a new implementation intended to fix the disappearing tasks and add the secondary calendar view.
     -   **Next debug checklist:**
-        1.  Examine the  function tied to the  endpoint in .
-        2.  Invoices are stored in the  collection. Verify that the function is querying  and not another collection like .
-        3.  Ensure the correct identifier is being used to find the invoice.
-        4.  Correct the database query to target the  collection.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a critical blocker for the user's primary feature request (Peppol integration).
+        1.  Thoroughly test the new implementation in .
+        2.  Verify that assigning a task to a team does not make it disappear, regardless of its date.
+        3.  Confirm that a calendar grid is displayed below the team planning board.
+        4.  Ensure tasks are rendered as blocks spanning their correct start and end dates on this calendar.
+        5.  Test the drag-and-drop functionality on the calendar blocks to ensure dates can be updated.
+    -   **Why fix this issue and what will be achieved with the fix?** This is the user's current highest priority. Fixing it will complete the new planning feature.
     -   **Status:** IN PROGRESS
     -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Should Test frontend/backend/both after fix?** Frontend.
     -   **Blocked on other issue:** No.
 
--   **Issue 2: Script error on invoice PDF download**
-    -   **Attempted fixes:** None. This issue has not been investigated yet.
-    -   **Next debug checklist:**
-        1.  Identify the API endpoint called when the user clicks the PDF download icon in .
-        2.  Trace this back to the corresponding function in  that generates the PDF.
-        3.  Check the backend logs () and browser console for specific error messages when the download is attempted.
-        4.  The error could be in the data being passed to the PDF generator or within the PDF library itself.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a core functionality regression. Users must be able to download and view their invoices.
-    -   **Status:** NOT STARTED
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Both.
+-   **Issue 2: Billit API Integration is blocked**
+    -   **Attempted fixes:** The internal invoice not found bug was fixed. The entire integration was refactored to use the correct Billit API structure (, ). Multiple API keys (production/sandbox) and URLs have been tried. The integration consistently fails with an  error from the Billit server.
+    -   **Next debug checklist:** This issue is **BLOCKED**. The user has contacted Billit support for a valid API key and confirmation of the correct endpoint URL. No further action can be taken until the user provides these credentials.
+    -   **Why fix this issue and what will be achieved with the fix?** This was the original feature request for the project.
+    -   **Status:** BLOCKED
+    -   **Is recurring issue?** Y (The authentication failure is recurring).
+    -   **Should Test frontend/backend/both after fix?** Backend.
     -   **Blocked on other issue:** No.
 
 -   **Issue 3: Backend API Route Instability**
-    -   **Attempted fixes:** Restarting the backend service (backend: stopped
-backend: started) is the only known workaround.
-    -   **Next debug checklist:** After fixing the P0 issues, monitor backend logs for errors that could cause routes to be deregistered. Review FastAPI application setup and middleware in .
-    -   **Why fix this issue and what will be achieved with the fix?** To improve application stability and user experience by eliminating the need for manual restarts.
+    -   **Attempted fixes:** None. The only known workaround is backend: stopped
+backend: started.
+    -   **Next debug checklist:** After resolving the P0 planning board issue, investigate the backend logs for potential causes of route failures during high load or specific operations. Review the FastAPI app setup in .
+    -   **Why fix this issue and what will be achieved with the fix?** To improve overall application stability and prevent random API failures.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** backend
+    -   **Should Test frontend/backend/both after fix?** Backend.
     -   **Blocked on other issue:** No.
 
 **In progress Task List**:
--   **Task 1: Finalize Billit/Peppol Integration (P0)**
-    -   **Where to resume:** Start by fixing the two critical bugs (Issue 1 and Issue 2).
-    -   **What will be achieved with this?** A fully functional, tested, and user-verified Peppol e-invoicing feature.
+-   **Task 1: Complete and Verify the Team Planning Board (P0)**
+    -   **Where to resume:** Test the new implementation of .
+    -   **What will be achieved with this?** A fully functional team planning system with both a team-based assignment view and a draggable calendar agenda, as requested by the user.
     -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Both
-    -   **Blocked on something:** Blocked by Issue 1: Invoice not found and Issue 2: Script error on PDF download.
+    -   **Should Test frontend/backend/both after fix?** Frontend
+    -   **Blocked on something:** No.
 
 **Upcoming and Future Tasks**
--   None. All focus is on completing the Peppol integration and fixing the associated bugs.
+-   **Upcoming Tasks:**
+    -   **Finalize Billit/Peppol Integration (P1 - BLOCKED):** Once the user provides a working API key from Billit, test and finalize the e-invoicing feature.
+-   **Future Tasks:**
+    -   **Refactor  (P2):** The main backend file has become a large monolith. It needs to be broken down into a proper package structure (e.g., , , ) for better maintainability.
 
 **Completed work in this session**
--   **Financials Tab Overhaul:**
-    -   The financial overview now sums the total of **all** approved quotes for a project, rather than just using the most recent one.
-    -   A list of all individual approved quotes is now displayed in the financial tab.
--   **Invoicing Logic Update:**
-    -   Invoice generation is now correctly based on the aggregated total of all approved quotes.
-    -   The invoicing milestone percentages were updated to 25%, 40%, 25%, and 10% as requested.
--   **Project Profit Display:**
-    -   The backend now calculates the total profit for each project.
-    -   This profit is displayed on the project cards on the main , visible only to admin users.
--   **Project Planning & Calendar Feature:**
-    -   A new Planning tab was created () allowing users to define a project's start/end date and schedule specific work periods (e.g., Tiling: Feb 14 - Feb 18).
-    -   These work periods are now displayed on the main calendar () as distinct bars overlaid on top of the main project duration bar, providing a clear visual schedule.
--   **Material Reminders:**
-    -   A backend mechanism was added to identify projects starting within the next month, and a notification for material ordering now appears on the dashboard.
--   **Initial Peppol/Billit Integration:**
-    -   The basic backend and frontend scaffolding for the Billit integration was put in place, including environment variables, new API endpoints, and UI elements.
+-   **Bug Fix (Invoicing):** Fixed invoice not found and PDF generation errors by consolidating all invoice logic to use the  database collection.
+-   **Feature (Quotes):** Implemented clearing of measurement work items from the First Visit tab after a quote is successfully generated.
+-   **Feature (Customer Portal):**
+    -   Built a full customer portal at a unique, non-expiring URL per project.
+    -   Implemented backend endpoints and frontend UI ().
+    -   Added functionality for customers to view planning, photos, quotes, and work slips.
+    -   Added a customer messaging and star-rating system.
+-   **Bug Fixes (Customer Portal):**
+    -   Corrected data fetching to show all relevant project data.
+    -   Fixed broken image URLs.
+    -   Made the portal layout mobile-first and responsive.
+    -   Fixed an issue preventing customer ratings from being saved.
+-   **Feature (Planning):** Replaced the original calendar with an interactive team planning board.
+-   **Backend Refactor (Billit):** Rewrote the Billit integration to match their official API documentation, although it remains blocked on authentication.
 
 **Earlier issues found/mentioned but not fixed**
 -   **Issue 1: Backend API Route Instability**
@@ -115,91 +97,84 @@ backend: started) is the only known workaround.
     -   **Is recurring issue?** Y
 
 **Known issue recurrence from previous fork**
--   None.
+-   **Issue recurrence in previous fork:** Backend API Route Instability.
+-   **Recurrence count:** 2+ forks.
+-   **Status:** NOT STARTED
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Frontend:** React, Tailwind CSS
--   **Backend:** FastAPI, Motor (async MongoDB driver)
--   **Database:** MongoDB
--   **3rd Party:** Billit (for Peppol)
+-   **Frontend:** React, Tailwind CSS,  (for team planning board).
+-   **Backend:** FastAPI, Motor (async MongoDB driver).
+-   **Database:** MongoDB.
+-   **3rd Party:** Billit (for Peppol) - **BLOCKED**.
 
 **key DB schema**
 -   : 
 -   : 
--   : 
+-    (Work Slips): 
 
 **changes in tech stack**
--   Added  to the backend for making API calls to Billit.
+-   Likely added  or a similar drag-and-drop library for the new .
 
 **All files of reference**
--   : Contains the logic for the two broken features (Peppol sending, PDF generation). The new Billit endpoints are near the bottom of the file.
--   : Contains the frontend UI for the broken buttons (Verstuur via Peppol, PDF download icon).
--   : Modified to include the customer VAT number field.
--   : Contains the new .
--   : Newly created file for the planning feature.
--   : Heavily modified to support the new calendar view requirements.
+-   : **Highest priority.** This file was just overwritten and its new functionality must be tested immediately.
+-   : Contains all backend logic, including the new customer portal and planning endpoints, and the blocked Billit integration.
+-   : The new, feature-rich, and mobile-responsive customer portal.
+-   : Contains the Billit sandbox API key and URL. Do not change until the user provides new, verified credentials.
 
 **Areas that need refactoring**:
--    is now extremely large and complex after adding multiple features and the Billit integration. It urgently needs to be broken down into a structured package with separate files for models, routers (e.g., , ), and services (e.g., ).
+-    is critically oversized and monolithic. It should be a high-priority future task to break it into a proper package structure (routers, models, services).
 
 **key api endpoints**
--   : **(BROKEN)** Endpoint to send an invoice via Billit.
--   : Endpoint to receive status updates from Billit.
--   : Creates a customer invoice.
--   : Provides events for the calendar view.
--   : Provides data for the dashboard, including material reminders.
+-   : Updates a scheduled work item with a team name.
+-   : Generates/retrieves the customer portal access link.
+-   : Fetches all data for the public customer portal page.
+-   : Allows a customer to submit their project rating.
+-   : **(BLOCKED)** Endpoint for sending an invoice via Peppol. The internal logic is fixed, but it's blocked by Billit API authentication.
 
 **Critical Info for New Agent**
--   **Your immediate priority is to fix the two critical bugs reported by the user.**
-    1.  **Peppol invoice not found error:** The previous agent suspected the endpoint is querying the wrong database collection. Invoices are in . Check the  function in  to confirm it's querying .
-    2.  **PDF download script error:** This is a new regression. You must investigate the entire flow from the frontend button click in  to the backend PDF generation logic. Check browser and backend logs for specific errors.
--   The backend has a known instability issue, which might require a service restart (backend: stopped
-backend: started) if APIs become unresponsive during your work.
+-   Your immediate and highest priority is to **test the new team planning board**. The file  was just completely overwritten. You must verify if it now correctly shows tasks after being assigned, includes a calendar view below the board, and supports drag-and-drop for rescheduling.
+-   The **Billit/Peppol integration is BLOCKED**. Do not attempt to fix the  error. The user has escalated this to Billit support. Await new, verified credentials from the user before touching this feature. The current  is configured for the **Billit Sandbox**.
+-   The backend instability issue is a known, recurring problem that should be addressed once the current high-priority tasks are completed.
 
 **documents and test reports created in this job**
--   
--   
--   
--   
--   
--   
--   
+-   None.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Requests Peppol integration via Billit and provides a diagram. (PENDING)
-2.  **Agent:** Asks for clarification on API keys, VAT numbers, and UI. (Handled)
-3.  **User:** Provides API key, VAT details, and confirms UI/webhook requirements. (Handled)
-4.  **Agent:** Implements the feature. (Handled)
-5.  **Agent:** Runs tests and summarizes the (supposedly) completed feature. (Handled)
-6.  **User:** Reports invoice not found error when clicking Send via Peppol. (PENDING)
-7.  **User:** Reports a script error when downloading the invoice PDF. (PENDING)
-8.  **Agent:** Acknowledges the bugs and forms a hypothesis for the invoice not found error. (IN PROGRESS)
-9.  (The agent's work was interrupted here before a fix was implemented).
+1.  **User:** Reports that dragged items on the new planning board disappear. Requests the calendar view be added back below the board with draggable blocks. (IN PROGRESS)
+2.  **User:** Provides specific requirements for the planning board (labels, includes address). (Handled)
+3.  **User:** Requests the calendar be replaced with a team-based planning board. (Handled)
+4.  **User:** Reports that the customer rating cannot be saved in the portal. (COMPLETED)
+5.  **User:** Reports the customer portal is not mobile-friendly. (COMPLETED)
+6.  **User:** Reports that the customer portal planning view is incorrect and photos are not visible. (COMPLETED)
+7.  **User:** Reports that the customer portal link expires and is missing data. (COMPLETED)
+8.  **User:** Adds messaging and star rating requirements to the customer portal request. (COMPLETED)
+9.  **User:** Requests a new customer portal feature. (COMPLETED)
+10. **User:** Asks to clear measurements from the First Visit tab after generating a quote. (COMPLETED)
 
 **Project Health Check:**
 -   **Broken:**
-    -   The core functionality of sending an e-invoice via Peppol is non-functional (invoice not found).
-    -   The core functionality of downloading a generated invoice as a PDF is non-functional (script error).
+    -   The core functionality of the Team Planning Board () is in an unknown state after a complete file overwrite and must be tested.
 -   **Mocked:**
     -   None.
+-   **Blocked:**
+    -   The Billit/Peppol integration is non-functional, pending valid API credentials from the user/Billit support.
 
 **3rd Party Integrations**
--   **Billit:** Used for Peppol e-invoicing. Requires a User API key, which is configured in .
+-   **Billit:** Used for Peppol e-invoicing. Requires a User API Key. The integration is currently **BLOCKED** due to a persistent  error from the Billit server.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES (but it missed the critical bugs).
+-   **Testing agent used after significant changes:** YES (for customer portal features).
 -   **Troubleshoot agent used after agent stuck in loop:** NO
 -   **Test files created:** None.
--   **Known regressions:** PDF invoice downloads are broken.
+-   **Known regressions:** None currently active, but the new  is a potential source of regressions.
 
 **Credentials to test flow:**
 -   **Username:** 
 -   **Password:** 
--   **Username:** 
--   **Password:** 
 
 **What agent forgot to execute**
-The previous agent successfully implemented the initial scaffolding for the Peppol integration but failed to deliver a working feature. It introduced two critical regressions (broken Peppol sending and broken PDF downloads) and did not fix them before the session ended. The agent's testing was insufficient as it did not catch these bugs.</analysis>
+-   The agent has not yet tested the complete rewrite of .
+-   The agent has not addressed the long-standing Backend API Route Instability issue mentioned in the initial handoff.</analysis>
