@@ -256,16 +256,17 @@ export default function CalendarPage() {
       return;
     }
     try {
-      // Only include dates if they are set
+      // Include team and dates if they are set
       const taskData = {
         title: newTask.title,
         description: newTask.description || null,
         start_date: newTask.start_date || null,
-        end_date: newTask.end_date || newTask.start_date || null // If only start_date, use same for end
+        end_date: newTask.end_date || newTask.start_date || null, // If only start_date, use same for end
+        team_name: newTask.team_name || null
       };
       await axios.post(`${API}/quick-tasks`, taskData, { withCredentials: true });
       toast.success('Taak toegevoegd');
-      setNewTask({ title: '', description: '', start_date: '', end_date: '' });
+      setNewTask({ title: '', description: '', start_date: '', end_date: '', team_name: null, multi_day: false });
       setShowAddTask(false);
       fetchQuickTasks();
     } catch (error) {
