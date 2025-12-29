@@ -755,18 +755,34 @@ export default function CalendarPage() {
               <div className="flex flex-wrap gap-2">
                 {unassignedWork.map((item, idx) => (
                   <div
-                    key={idx}
+                    key={item.id || idx}
                     draggable
-                    onDragStart={(e) => handleDragStart(e, item.project, item)}
-                    className="bg-white border border-orange-300 rounded-lg p-2 cursor-grab hover:shadow-md transition-shadow active:cursor-grabbing"
+                    onDragStart={(e) => handleDragStart(e, item.project, item, item.isQuickTask)}
+                    className={`bg-white border rounded-lg p-2 cursor-grab hover:shadow-md transition-shadow active:cursor-grabbing ${
+                      item.isQuickTask ? 'border-purple-300' : 'border-orange-300'
+                    }`}
                   >
                     <div className="flex items-center gap-2">
                       <GripVertical className="w-4 h-4 text-gray-400" />
-                      <div>
-                        <p className="font-medium text-sm">{item.projectName}</p>
-                        <p className="text-xs text-blue-600">{item.description}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-1">
+                          {item.isQuickTask && <Briefcase className="w-3 h-3 text-purple-500" />}
+                          <p className="font-medium text-sm">{item.projectName}</p>
+                        </div>
+                        {item.description && <p className="text-xs text-blue-600">{item.description}</p>}
                         <p className="text-xs text-gray-400">{formatDate(item.start_date)} - {formatDate(item.end_date)}</p>
                       </div>
+                      {item.isQuickTask && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteQuickTask(item.id);
+                          }}
+                          className="text-gray-400 hover:text-red-500 p-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
