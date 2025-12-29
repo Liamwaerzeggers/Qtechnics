@@ -648,6 +648,11 @@ export default function CalendarPage() {
     return date.toDateString() === today.toDateString();
   };
 
+  // Get today's date formatted for input default
+  const getTodayForInput = () => {
+    return new Date().toISOString().split('T')[0];
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -673,7 +678,69 @@ export default function CalendarPage() {
             </h1>
             <p className="text-gray-500 text-sm mt-1">Sleep werk naar teams en pas datums aan in de agenda</p>
           </div>
+          <Button onClick={() => setShowAddTask(true)} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Taak toevoegen
+          </Button>
         </div>
+
+        {/* Add Task Modal */}
+        {showAddTask && (
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader className="py-3">
+              <CardTitle className="text-base flex items-center gap-2 text-blue-700">
+                <Briefcase className="w-5 h-5" />
+                Nieuwe taak toevoegen
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <Input
+                  placeholder="Titel *"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  className="bg-white"
+                />
+                <Input
+                  placeholder="Beschrijving"
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                  className="bg-white"
+                />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">Van:</span>
+                  <Input
+                    type="date"
+                    value={newTask.start_date}
+                    onChange={(e) => setNewTask({ ...newTask, start_date: e.target.value })}
+                    className="bg-white"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">Tot:</span>
+                  <Input
+                    type="date"
+                    value={newTask.end_date}
+                    onChange={(e) => setNewTask({ ...newTask, end_date: e.target.value })}
+                    className="bg-white"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={addQuickTask} className="flex-1">
+                    <Plus className="w-4 h-4 mr-1" />
+                    Toevoegen
+                  </Button>
+                  <Button variant="outline" onClick={() => {
+                    setShowAddTask(false);
+                    setNewTask({ title: '', description: '', start_date: '', end_date: '' });
+                  }}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Unassigned Work */}
         {unassignedWork.length > 0 && (
