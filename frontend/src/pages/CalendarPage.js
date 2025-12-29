@@ -1196,8 +1196,8 @@ export default function CalendarPage() {
                         <p className={`text-xs font-medium mb-1 ${isToday(date) ? 'text-blue-600' : isCurrentMonth ? 'text-gray-800' : 'text-gray-400'}`}>
                           {date.getDate()}
                         </p>
-                        <div className="space-y-1">
-                          {dayWork.slice(0, 2).map((item, workIdx) => {
+                        <div className="space-y-1 max-h-[100px] overflow-y-auto">
+                          {dayWork.map((item, workIdx) => {
                             const teamColor = getTeamColor(item.team_name);
                             return (
                               <div
@@ -1220,9 +1220,6 @@ export default function CalendarPage() {
                               </div>
                             );
                           })}
-                          {dayWork.length > 2 && (
-                            <p className="text-[8px] text-gray-500 pl-0.5">+{dayWork.length - 2} meer</p>
-                          )}
                         </div>
                       </div>
                     );
