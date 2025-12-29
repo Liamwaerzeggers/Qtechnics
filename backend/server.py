@@ -432,8 +432,8 @@ class QuickTask(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
     description: Optional[str] = None
-    start_date: str  # YYYY-MM-DD
-    end_date: str  # YYYY-MM-DD
+    start_date: Optional[str] = None  # YYYY-MM-DD, optional for small tasks
+    end_date: Optional[str] = None  # YYYY-MM-DD, optional for small tasks
     team_name: Optional[str] = None  # Assigned team
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
@@ -441,8 +441,8 @@ class QuickTask(BaseModel):
 class QuickTaskCreate(BaseModel):
     title: str
     description: Optional[str] = None
-    start_date: str
-    end_date: str
+    start_date: Optional[str] = None  # Optional - can be set later by dragging to calendar
+    end_date: Optional[str] = None  # Optional - can be set later by dragging to calendar
 
 class QuickTaskUpdate(BaseModel):
     title: Optional[str] = None
