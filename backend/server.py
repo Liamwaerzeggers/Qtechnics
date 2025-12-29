@@ -4024,6 +4024,7 @@ async def create_quick_task(task: QuickTaskCreate, current_user: User = Depends(
         description=task.description,
         start_date=task.start_date,
         end_date=task.end_date,
+        team_name=task.team_name,
         user_id=current_user.id
     )
     
