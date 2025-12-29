@@ -210,6 +210,9 @@ export default function CalendarPage() {
   const [newTeamName, setNewTeamName] = useState('');
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverDate, setDragOverDate] = useState(null);
+  const [quickTasks, setQuickTasks] = useState([]);
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [newTask, setNewTask] = useState({ title: '', description: '', start_date: '', end_date: '' });
   const navigate = useNavigate();
 
   // Create getTeamColor function that uses current teams array
@@ -222,6 +225,7 @@ export default function CalendarPage() {
 
   useEffect(() => {
     fetchProjects();
+    fetchQuickTasks();
     loadTeams();
   }, []);
 
@@ -235,6 +239,54 @@ export default function CalendarPage() {
   const saveTeams = (newTeams) => {
     localStorage.setItem('planning_teams', JSON.stringify(newTeams));
     setTeams(newTeams);
+  };
+
+  const fetchQuickTasks = async () => {
+    try {
+      const response = await axios.get(`${API}/quick-tasks`, { withCredentials: true });
+      setQuickTasks(response.data);
+    } catch (error) {
+      console.error('Failed to fetch quick tasks:', error);
+    }
+  };
+
+  const addQuickTask = async () => {
+    if (!newTask.title.trim() || !newTask.start_date || !newTask.end_date) {
+      toast.error('Vul titel en datums in');
+      return;
+    }
+    try {
+      await axios.post(`${API}/quick-tasks`, newTask, { withCredentials: true });
+      toast.success('Taak toegevoegd');
+      setNewTask({ title: '', description: '', start_date: '', end_date: '' });
+      setShowAddTask(false);
+      fetchQuickTasks();
+    } catch (error) {
+      console.error('Failed to add quick task:', error);
+      toast.error('Kon taak niet toevoegen');
+    }
+  };
+
+  const updateQuickTask = async (taskId, updates) => {
+    try {
+      await axios.put(`${API}/quick-tasks/${taskId}`, updates, { withCredentials: true });
+      fetchQuickTasks();
+    } catch (error) {
+      console.error('Failed to update quick task:', error);
+      toast.error('Kon taak niet bijwerken');
+    }
+  };
+
+  const deleteQuickTask = async (taskId) => {
+    if (!window.confirm('Weet u zeker dat u deze taak wilt verwijderen?')) return;
+    try {
+      await axios.delete(`${API}/quick-tasks/${taskId}`, { withCredentials: true });
+      toast.success('Taak verwijderd');
+      fetchQuickTasks();
+    } catch (error) {
+      console.error('Failed to delete quick task:', error);
+      toast.error('Kon taak niet verwijderen');
+    }
   };
 
   const fetchProjects = async () => {
