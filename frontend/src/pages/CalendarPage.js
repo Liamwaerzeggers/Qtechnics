@@ -1118,20 +1118,19 @@ export default function CalendarPage() {
                   {viewDates.map((date, idx) => {
                     const dateStr = formatDateForInput(date);
                     const isDropTarget = dragOverDate === dateStr;
+                    const dayWork = getWorkForView().filter(item => isDateInRange(date, item.start_date, item.end_date));
                     
                     return (
                       <div 
                         key={idx}
-                        className={`border-r last:border-r-0 p-1 min-h-[250px] transition-colors ${
+                        className={`border-r last:border-r-0 p-1 min-h-[250px] max-h-[300px] overflow-y-auto transition-colors ${
                           isDropTarget ? 'bg-blue-100' : isToday(date) ? 'bg-blue-50/50' : 'bg-white'
                         }`}
                         onDragOver={(e) => handleDragOverDate(e, date)}
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDropOnDate(e, date)}
                       >
-                        {getWorkForView()
-                          .filter(item => isDateInRange(date, item.start_date, item.end_date))
-                          .map((item, workIdx) => {
+                        {dayWork.map((item, workIdx) => {
                             const teamColor = getTeamColor(item.team_name);
                             
                             return (
