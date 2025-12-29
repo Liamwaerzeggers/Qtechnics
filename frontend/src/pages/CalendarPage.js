@@ -1,253 +1,463 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
-import moment from 'moment';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import DashboardLayout from '../components/DashboardLayout';
-import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { 
+  Calendar, 
+  ChevronLeft, 
+  ChevronRight, 
+  Plus, 
+  Users, 
+  MapPin, 
+  Clock,
+  Edit2,
+  Trash2,
+  GripVertical,
+  X
+} from 'lucide-react';
+import { toast } from 'sonner';
 
-// Custom CSS for better event display
-const calendarStyles = `
-  .rbc-event {
-    padding: 2px 5px !important;
-    border-radius: 4px !important;
-    font-size: 11px !important;
-    line-height: 1.3 !important;
-  }
-  
-  .rbc-event:hover {
-    opacity: 0.8 !important;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
-  }
-  
-  .rbc-event-content {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  
-  .rbc-day-slot .rbc-event {
-    border: none !important;
-  }
-  
-  .rbc-selected {
-    background-color: inherit !important;
-  }
-`;
+const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
-// Configure moment for Dutch locale
-moment.locale('nl', {
-  months: 'januari_februari_maart_april_mei_juni_juli_augustus_september_oktober_november_december'.split('_'),
-  monthsShort: 'jan_feb_mrt_apr_mei_jun_jul_aug_sep_okt_nov_dec'.split('_'),
-  weekdays: 'zondag_maandag_dinsdag_woensdag_donderdag_vrijdag_zaterdag'.split('_'),
-  weekdaysShort: 'zo_ma_di_wo_do_vr_za'.split('_'),
-  weekdaysMin: 'Zo_Ma_Di_Wo_Do_Vr_Za'.split('_'),
-});
+// Predefined team colors
+const TEAM_COLORS = [
+  { name: 'Blauw', bg: 'bg-blue-500', border: 'border-blue-600', light: 'bg-blue-50' },
+  { name: 'Groen', bg: 'bg-green-500', border: 'border-green-600', light: 'bg-green-50' },
+  { name: 'Oranje', bg: 'bg-orange-500', border: 'border-orange-600', light: 'bg-orange-50' },
+  { name: 'Paars', bg: 'bg-purple-500', border: 'border-purple-600', light: 'bg-purple-50' },
+  { name: 'Rood', bg: 'bg-red-500', border: 'border-red-600', light: 'bg-red-50' },
+  { name: 'Geel', bg: 'bg-yellow-500', border: 'border-yellow-600', light: 'bg-yellow-50' },
+  { name: 'Roze', bg: 'bg-pink-500', border: 'border-pink-600', light: 'bg-pink-50' },
+  { name: 'Cyaan', bg: 'bg-cyan-500', border: 'border-cyan-600', light: 'bg-cyan-50' },
+];
 
-const localizer = momentLocalizer(moment);
+// Get color for team based on team name hash
+const getTeamColor = (teamName) => {
+  if (!teamName) return TEAM_COLORS[0];
+  let hash = 0;
+  for (let i = 0; i < teamName.length; i++) {
+    hash = teamName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return TEAM_COLORS[Math.abs(hash) % TEAM_COLORS.length];
+};
+
+// Format date for display
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' });
+};
+
+// Get week dates
+const getWeekDates = (date) => {
+  const start = new Date(date);
+  start.setDate(start.getDate() - start.getDay() + 1); // Monday
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    dates.push(d);
+  }
+  return dates;
+};
+
+// Check if date is in range
+const isDateInRange = (date, startDate, endDate) => {
+  const d = new Date(date).setHours(0, 0, 0, 0);
+  const s = new Date(startDate).setHours(0, 0, 0, 0);
+  const e = new Date(endDate).setHours(0, 0, 0, 0);
+  return d >= s && d <= e;
+};
 
 export default function CalendarPage() {
-  const [events, setEvents] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentWeek, setCurrentWeek] = useState(new Date());
+  const [teams, setTeams] = useState(['Team 1', 'Team 2', 'Team 3']);
+  const [showAddTeam, setShowAddTeam] = useState(false);
+  const [newTeamName, setNewTeamName] = useState('');
+  const [editingBlock, setEditingBlock] = useState(null);
+  const [draggedItem, setDraggedItem] = useState(null);
   const navigate = useNavigate();
 
+  const weekDates = useMemo(() => getWeekDates(currentWeek), [currentWeek]);
+
   useEffect(() => {
-    fetchEvents();
+    fetchProjects();
+    loadTeams();
   }, []);
 
-  const fetchEvents = async () => {
+  const loadTeams = () => {
+    const savedTeams = localStorage.getItem('planning_teams');
+    if (savedTeams) {
+      setTeams(JSON.parse(savedTeams));
+    }
+  };
+
+  const saveTeams = (newTeams) => {
+    localStorage.setItem('planning_teams', JSON.stringify(newTeams));
+    setTeams(newTeams);
+  };
+
+  const fetchProjects = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/calendar/events`,
-        { withCredentials: true }
-      );
+      const response = await axios.get(`${API}/projects`, { withCredentials: true });
       
-      // Transform events for react-big-calendar
-      // Sort so scheduled_work appears FIRST (on top), then project
-      const sortedData = [...response.data].sort((a, b) => {
-        const typeOrder = { 'scheduled_work': 0, 'workslip': 2, 'project': 1 };
-        return (typeOrder[a.type] ?? 1) - (typeOrder[b.type] ?? 1);
+      // Also fetch leads for addresses
+      const leadsResponse = await axios.get(`${API}/leads`, { withCredentials: true });
+      const leadsMap = {};
+      leadsResponse.data.forEach(lead => {
+        leadsMap[lead.id] = lead;
       });
       
-      const calendarEvents = sortedData.map(event => ({
-        id: event.id,
-        title: event.title,
-        start: new Date(event.start),
-        end: event.end ? new Date(event.end) : new Date(event.start),
-        resource: event,
+      // Enrich projects with lead info
+      const enrichedProjects = response.data.map(project => ({
+        ...project,
+        lead: leadsMap[project.lead_id] || null
       }));
       
-      setEvents(calendarEvents);
+      setProjects(enrichedProjects);
     } catch (error) {
-      console.error('Failed to fetch calendar events:', error);
+      console.error('Failed to fetch projects:', error);
+      toast.error('Kon projecten niet laden');
     } finally {
       setLoading(false);
     }
   };
 
-  // Get project color (use custom color or status-based)
-  const getProjectColor = (event) => {
-    const type = event.resource.type;
-    const status = event.resource.status;
-    const customColor = event.resource.color;
-    
-    // Scheduled work gets orange color
-    if (type === 'scheduled_work') {
-      return '#F59E0B';
+  const addTeam = () => {
+    if (!newTeamName.trim()) return;
+    const newTeams = [...teams, newTeamName.trim()];
+    saveTeams(newTeams);
+    setNewTeamName('');
+    setShowAddTeam(false);
+    toast.success(`Team "${newTeamName}" toegevoegd`);
+  };
+
+  const removeTeam = (teamName) => {
+    if (!window.confirm(`Weet u zeker dat u "${teamName}" wilt verwijderen?`)) return;
+    const newTeams = teams.filter(t => t !== teamName);
+    saveTeams(newTeams);
+    toast.success(`Team "${teamName}" verwijderd`);
+  };
+
+  const updateScheduledWork = async (projectId, updatedScheduledDays) => {
+    try {
+      await axios.put(
+        `${API}/projects/${projectId}`,
+        { scheduled_days: updatedScheduledDays },
+        { withCredentials: true }
+      );
+      fetchProjects();
+    } catch (error) {
+      console.error('Failed to update schedule:', error);
+      toast.error('Kon planning niet bijwerken');
     }
-    
-    // Special colors for status
-    if (status === 'voltooid') return '#10B981'; // Green for completed
-    if (status === 'geannuleerd') return '#6B7280'; // Gray for cancelled
-    
-    // Use custom project color
-    return customColor || '#1E40AF'; // Default blue
   };
 
-  const handleSelectEvent = (event) => {
-    // Navigate to project for all event types
-    navigate(`/projects/${event.resource.project_id}`);
+  const handleDragStart = (e, project, period) => {
+    setDraggedItem({ project, period });
+    e.dataTransfer.effectAllowed = 'move';
   };
 
-  const eventStyleGetter = (event) => {
-    const backgroundColor = getProjectColor(event);
-    const isWorkSlip = event.resource.type === 'workslip';
-    const isScheduledWork = event.resource.type === 'scheduled_work';
+  const handleDrop = async (e, targetTeam, targetDate) => {
+    e.preventDefault();
+    if (!draggedItem) return;
+
+    const { project, period } = draggedItem;
     
-    const style = {
-      backgroundColor: backgroundColor,
-      borderRadius: isScheduledWork ? '4px' : '6px',
-      opacity: isScheduledWork ? 0.95 : 0.8,
-      color: 'white',
-      border: isScheduledWork ? '1px solid rgba(255,255,255,0.8)' : isWorkSlip ? '2px solid rgba(255,255,255,0.5)' : 'none',
-      display: 'block',
-      fontSize: isScheduledWork ? '11px' : '12px',
-      padding: isScheduledWork ? '1px 4px' : '2px 6px',
-      fontWeight: isScheduledWork ? '500' : '600',
-      cursor: 'pointer',
-      transition: 'all 0.2s',
-      boxShadow: isScheduledWork ? '0 1px 2px rgba(0,0,0,0.15)' : '0 1px 3px rgba(0,0,0,0.12)',
-      // CRITICAL: Ensure work events appear ABOVE project events
-      zIndex: isScheduledWork ? 10 : 5,
-    };
-    
-    return { style };
+    // Update the team name for this period
+    const updatedScheduledDays = project.scheduled_days.map(p => 
+      p.id === period.id 
+        ? { ...p, team_name: targetTeam }
+        : p
+    );
+
+    await updateScheduledWork(project.id, updatedScheduledDays);
+    setDraggedItem(null);
+    toast.success(`Werk toegewezen aan ${targetTeam}`);
   };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  // Get all scheduled work periods grouped by team
+  const getWorkByTeam = (teamName) => {
+    const work = [];
+    projects.forEach(project => {
+      (project.scheduled_days || []).forEach(period => {
+        if (period.team_name === teamName) {
+          // Check if period overlaps with current week
+          const periodStart = new Date(period.start_date);
+          const periodEnd = new Date(period.end_date);
+          const weekStart = weekDates[0];
+          const weekEnd = weekDates[6];
+          
+          if (periodEnd >= weekStart && periodStart <= weekEnd) {
+            work.push({
+              ...period,
+              project,
+              projectName: project.name,
+              address: project.lead?.address || ''
+            });
+          }
+        }
+      });
+    });
+    return work.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+  };
+
+  // Get unassigned work (no team)
+  const getUnassignedWork = () => {
+    const work = [];
+    projects.forEach(project => {
+      (project.scheduled_days || []).forEach(period => {
+        if (!period.team_name) {
+          work.push({
+            ...period,
+            project,
+            projectName: project.name,
+            address: project.lead?.address || ''
+          });
+        }
+      });
+    });
+    return work;
+  };
+
+  const prevWeek = () => {
+    const newDate = new Date(currentWeek);
+    newDate.setDate(newDate.getDate() - 7);
+    setCurrentWeek(newDate);
+  };
+
+  const nextWeek = () => {
+    const newDate = new Date(currentWeek);
+    newDate.setDate(newDate.getDate() + 7);
+    setCurrentWeek(newDate);
+  };
+
+  const goToToday = () => {
+    setCurrentWeek(new Date());
+  };
+
+  const getWeekLabel = () => {
+    const start = weekDates[0];
+    const end = weekDates[6];
+    const startMonth = start.toLocaleDateString('nl-BE', { month: 'long' });
+    const endMonth = end.toLocaleDateString('nl-BE', { month: 'long' });
+    const year = end.getFullYear();
+    
+    if (startMonth === endMonth) {
+      return `${start.getDate()} - ${end.getDate()} ${startMonth} ${year}`;
+    }
+    return `${start.getDate()} ${startMonth} - ${end.getDate()} ${endMonth} ${year}`;
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const unassignedWork = getUnassignedWork();
 
   return (
     <DashboardLayout>
-      <style>{calendarStyles}</style>
-      <div className="space-y-6">
+      <div className="p-4 sm:p-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 sm:p-3 rounded-xl" style={{ backgroundColor: '#DBEAFE' }}>
-              <CalendarIcon size={24} className="sm:w-7 sm:h-7" style={{ color: '#1E40AF' }} />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif', color: '#1E3A8A' }}>
-                Kalender
-              </h1>
-              <p className="text-sm" style={{ color: '#64748B', fontFamily: 'Inter, sans-serif' }}>
-                Overzicht van alle geplande projecten
-              </p>
-            </div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-2">
+              <Calendar className="w-7 h-7 text-blue-600" />
+              Team Planning
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">Plan en wijs werk toe aan teams</p>
+          </div>
+          
+          {/* Week Navigation */}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={prevWeek}>
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={goToToday}>
+              Vandaag
+            </Button>
+            <Button variant="outline" size="sm" onClick={nextWeek}>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
         </div>
 
-        {/* Calendar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="animate-spin" size={32} style={{ color: '#1E40AF' }} />
-            </div>
-          ) : (
-            <div style={{ height: '500px' }} className="sm:h-[600px] lg:h-[700px]">
-              <Calendar
-                localizer={localizer}
-                events={events}
-                startAccessor="start"
-                endAccessor="end"
-                style={{ height: '100%' }}
-                date={currentDate}
-                onNavigate={(newDate) => setCurrentDate(newDate)}
-                onSelectEvent={handleSelectEvent}
-                eventPropGetter={eventStyleGetter}
-                views={['month', 'week', 'day', 'agenda']}
-                defaultView="month"
-                // Sort events: scheduled_work FIRST (appears on top), then project
-                eventOrder={(a, b) => {
-                  const typeOrder = { 'scheduled_work': 0, 'workslip': 1, 'project': 2 };
-                  const aOrder = typeOrder[a.resource?.type] ?? 1;
-                  const bOrder = typeOrder[b.resource?.type] ?? 1;
-                  return aOrder - bOrder;
-                }}
-                messages={{
-                  today: 'Vandaag',
-                  previous: 'Vorige',
-                  next: 'Volgende',
-                  month: 'Maand',
-                  week: 'Week',
-                  day: 'Dag',
-                  agenda: 'Agenda',
-                  date: 'Datum',
-                  time: 'Tijd',
-                  event: 'Project',
-                  noEventsInRange: 'Geen projecten in deze periode.',
-                  showMore: (total) => `+ ${total} meer`,
-                }}
-              />
-            </div>
-          )}
+        {/* Week Label */}
+        <div className="text-center mb-4">
+          <h2 className="text-lg font-semibold text-gray-700">{getWeekLabel()}</h2>
         </div>
 
-        {/* Legend */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="font-semibold mb-3" style={{ color: '#1E3A8A' }}>Legenda & Info</h3>
-          <div className="space-y-4">
-            {/* Event Types */}
-            <div>
-              <h4 className="text-sm font-medium mb-2" style={{ color: '#64748B' }}>Weergave</h4>
-              <div className="flex flex-wrap gap-4">
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#1E40AF', opacity: 0.8 }}></div>
-                  <span className="text-sm" style={{ color: '#64748B' }}>Project periode</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#F59E0B' }}></div>
-                  <span className="text-sm" style={{ color: '#64748B' }}>🔧 Geplande werken</span>
+        {/* Unassigned Work */}
+        {unassignedWork.length > 0 && (
+          <Card className="mb-6 border-orange-200 bg-orange-50">
+            <CardHeader className="py-3">
+              <CardTitle className="text-base flex items-center gap-2 text-orange-700">
+                <Clock className="w-5 h-5" />
+                Niet toegewezen werk ({unassignedWork.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="py-2">
+              <div className="flex flex-wrap gap-2">
+                {unassignedWork.map((item, idx) => (
+                  <div
+                    key={idx}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, item.project, item)}
+                    className="bg-white border border-orange-300 rounded-lg p-2 cursor-move hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-center gap-2">
+                      <GripVertical className="w-4 h-4 text-gray-400" />
+                      <div>
+                        <p className="font-medium text-sm">{item.projectName}</p>
+                        <p className="text-xs text-gray-500">{item.description}</p>
+                        <p className="text-xs text-gray-400">{formatDate(item.start_date)} - {formatDate(item.end_date)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Team Columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {teams.map((teamName) => {
+            const teamColor = getTeamColor(teamName);
+            const teamWork = getWorkByTeam(teamName);
+            
+            return (
+              <Card 
+                key={teamName} 
+                className={`${teamColor.light} border-2 ${teamColor.border} min-h-[300px]`}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, teamName, null)}
+              >
+                <CardHeader className={`${teamColor.bg} text-white py-3 rounded-t-lg`}>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Users className="w-5 h-5" />
+                      {teamName}
+                    </CardTitle>
+                    <button
+                      onClick={() => removeTeam(teamName)}
+                      className="text-white/70 hover:text-white transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-white/80 mt-1">
+                    {teamWork.length} {teamWork.length === 1 ? 'taak' : 'taken'} deze week
+                  </p>
+                </CardHeader>
+                <CardContent className="p-3 space-y-2">
+                  {teamWork.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400 text-sm">
+                      <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      Sleep werk hierheen
+                    </div>
+                  ) : (
+                    teamWork.map((item, idx) => (
+                      <div
+                        key={idx}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, item.project, item)}
+                        onClick={() => navigate(`/projects/${item.project.id}`)}
+                        className="bg-white rounded-lg p-3 shadow-sm border cursor-pointer hover:shadow-md transition-all"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm text-gray-800 truncate">
+                              {item.projectName}
+                            </p>
+                            {item.description && (
+                              <p className="text-xs text-blue-600 font-medium mt-0.5">
+                                {item.description}
+                              </p>
+                            )}
+                            {item.address && (
+                              <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                                <MapPin className="w-3 h-3" />
+                                <span className="truncate">{item.address}</span>
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-400 mt-1">
+                              📅 {formatDate(item.start_date)} → {formatDate(item.end_date)}
+                            </p>
+                          </div>
+                          <GripVertical className="w-4 h-4 text-gray-300 flex-shrink-0 cursor-move" />
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+
+          {/* Add Team Card */}
+          <Card className="border-2 border-dashed border-gray-300 bg-gray-50 min-h-[300px] flex items-center justify-center">
+            {showAddTeam ? (
+              <div className="p-4 w-full">
+                <Input
+                  placeholder="Team naam..."
+                  value={newTeamName}
+                  onChange={(e) => setNewTeamName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addTeam()}
+                  className="mb-2"
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={addTeam} className="flex-1">
+                    Toevoegen
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setShowAddTeam(false)}>
+                    Annuleren
+                  </Button>
                 </div>
               </div>
-            </div>
-            
-            {/* Status Colors */}
-            <div>
-              <h4 className="text-sm font-medium mb-2" style={{ color: '#64748B' }}>Status</h4>
-              <div className="flex flex-wrap gap-4">
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#10B981' }}></div>
-                  <span className="text-sm" style={{ color: '#64748B' }}>Voltooid</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 rounded" style={{ backgroundColor: '#6B7280' }}></div>
-                  <span className="text-sm" style={{ color: '#64748B' }}>Geannuleerd</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Project Colors Info */}
-            <div>
-              <h4 className="text-sm font-medium mb-2" style={{ color: '#64748B' }}>Geplande Werken</h4>
-              <p className="text-xs" style={{ color: '#94A3B8' }}>
-                Oranje balken tonen de geplande werkperiodes binnen elk project. Klik op een balk om naar het project te gaan.
-              </p>
-            </div>
-          </div>
+            ) : (
+              <button
+                onClick={() => setShowAddTeam(true)}
+                className="text-gray-400 hover:text-gray-600 transition-colors flex flex-col items-center gap-2"
+              >
+                <Plus className="w-10 h-10" />
+                <span className="text-sm font-medium">Team toevoegen</span>
+              </button>
+            )}
+          </Card>
         </div>
+
+        {/* Legend / Help */}
+        <Card className="mt-6">
+          <CardContent className="py-4">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+              <span className="font-medium">💡 Tip:</span>
+              <span>Sleep werkblokken naar een team om toe te wijzen</span>
+              <span>•</span>
+              <span>Klik op een blok om naar het project te gaan</span>
+              <span>•</span>
+              <span>Teams worden lokaal opgeslagen</span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );
