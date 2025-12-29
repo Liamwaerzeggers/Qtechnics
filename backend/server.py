@@ -443,6 +443,7 @@ class QuickTaskCreate(BaseModel):
     description: Optional[str] = None
     start_date: Optional[str] = None  # Optional - can be set later by dragging to calendar
     end_date: Optional[str] = None  # Optional - can be set later by dragging to calendar
+    team_name: Optional[str] = None  # Optional - can assign team at creation
 
 class QuickTaskUpdate(BaseModel):
     title: Optional[str] = None
