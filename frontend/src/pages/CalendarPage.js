@@ -494,17 +494,36 @@ export default function CalendarPage() {
 
   const goToToday = () => setCurrentDate(new Date());
 
-  // Navigate to week containing a date
+  // Navigate to period containing a date
   const goToDate = (dateStr) => {
     const date = new Date(dateStr);
-    setCurrentWeek(date);
+    setCurrentDate(date);
   };
 
-  const getWeekLabel = () => {
-    const start = weekDates[0];
-    const end = weekDates[6];
-    return `${start.getDate()} ${start.toLocaleDateString('nl-BE', { month: 'short' })} - ${end.getDate()} ${end.toLocaleDateString('nl-BE', { month: 'short', year: 'numeric' })}`;
+  const getViewLabel = () => {
+    const d = new Date(currentDate);
+    switch (viewMode) {
+      case VIEW_MODES.DAY:
+        return d.toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      case VIEW_MODES.WEEK:
+        const weekStart = new Date(d);
+        weekStart.setDate(d.getDate() - d.getDay() + 1);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        return `${weekStart.getDate()} ${weekStart.toLocaleDateString('nl-BE', { month: 'short' })} - ${weekEnd.getDate()} ${weekEnd.toLocaleDateString('nl-BE', { month: 'short', year: 'numeric' })}`;
+      case VIEW_MODES.MONTH:
+        return d.toLocaleDateString('nl-BE', { month: 'long', year: 'numeric' });
+      case VIEW_MODES.QUARTER:
+        const quarter = Math.floor(d.getMonth() / 3) + 1;
+        return `Q${quarter} ${d.getFullYear()}`;
+      case VIEW_MODES.YEAR:
+        return d.getFullYear().toString();
+      default:
+        return '';
+    }
   };
+
+  const getWeekLabel = getViewLabel;
 
   const isToday = (date) => {
     const today = new Date();
