@@ -829,7 +829,11 @@ export default function CalendarPage() {
                           <p className="font-medium text-sm">{item.projectName}</p>
                         </div>
                         {item.description && <p className="text-xs text-blue-600">{item.description}</p>}
-                        <p className="text-xs text-gray-400">{formatDate(item.start_date)} - {formatDate(item.end_date)}</p>
+                        {item.needsDate ? (
+                          <p className="text-xs text-orange-500 font-medium">📅 Sleep naar kalender voor datum</p>
+                        ) : (
+                          <p className="text-xs text-gray-400">{formatDate(item.start_date)} - {formatDate(item.end_date)}</p>
+                        )}
                       </div>
                       {item.isQuickTask && (
                         <button
