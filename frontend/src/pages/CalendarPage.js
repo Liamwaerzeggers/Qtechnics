@@ -360,7 +360,9 @@ export default function CalendarPage() {
 
   // Drag handlers for team assignment
   const handleDragStart = (e, project, period, isQuickTask = false) => {
-    setDraggedItem({ project, period, isQuickTask });
+    // Store the original project ID for reference when project might be null
+    const projectId = project?.id || period.project?.id || null;
+    setDraggedItem({ project, period, isQuickTask, projectId });
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -368,7 +370,7 @@ export default function CalendarPage() {
     e.preventDefault();
     if (!draggedItem) return;
 
-    const { project, period, isQuickTask } = draggedItem;
+    const { project, period, isQuickTask, projectId } = draggedItem;
     
     if (isQuickTask) {
       // Update quick task team
@@ -376,11 +378,29 @@ export default function CalendarPage() {
       toast.success(`Taak toegewezen aan ${targetTeam}`);
       fetchQuickTasks();
     } else {
+      // Find the project - it might be in the draggedItem or we need to find it
+      let targetProject = project;
+      if (!targetProject && projectId) {
+        targetProject = projects.find(p => p.id === projectId);
+      }
+      if (!targetProject) {
+        // Try to find the project from the period's project reference
+        targetProject = projects.find(p => 
+          (p.scheduled_days || []).some(sd => sd.id === period.id)
+        );
+      }
+      
+      if (!targetProject) {
+        toast.error('Kon project niet vinden');
+        setDraggedItem(null);
+        return;
+      }
+      
       // Update project scheduled work
-      const updatedScheduledDays = project.scheduled_days.map(p => 
+      const updatedScheduledDays = (targetProject.scheduled_days || []).map(p => 
         p.id === period.id ? { ...p, team_name: targetTeam } : p
       );
-      await updateScheduledWork(project.id, updatedScheduledDays);
+      await updateScheduledWork(targetProject.id, updatedScheduledDays);
       toast.success(`Werk toegewezen aan ${targetTeam}`);
       fetchProjects();
     }
