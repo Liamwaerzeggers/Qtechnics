@@ -341,9 +341,16 @@ export default function CustomerPortalPage() {
                       
                       return (
                         <div key={idx} className="bg-white border rounded-lg p-3 sm:p-4 shadow-sm">
-                          {/* Description - Mobile First */}
+                          {/* Description and Team - Mobile First */}
                           <div className="mb-3">
-                            <h4 className="font-semibold text-gray-800 text-base sm:text-lg">{period.description || 'Werkzaamheden'}</h4>
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="font-semibold text-gray-800 text-base sm:text-lg">{period.description || 'Werkzaamheden'}</h4>
+                              {period.team_name && (
+                                <span className="flex-shrink-0 px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
+                                  👥 {period.team_name}
+                                </span>
+                              )}
+                            </div>
                             <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
                               {diffDays} {diffDays === 1 ? 'dag' : 'dagen'}
                             </span>
