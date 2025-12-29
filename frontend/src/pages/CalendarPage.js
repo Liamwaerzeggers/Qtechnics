@@ -1129,7 +1129,7 @@ export default function CalendarPage() {
                     return (
                       <div
                         key={idx}
-                        className={`min-h-[80px] p-1 transition-colors ${
+                        className={`min-h-[90px] p-1 transition-colors ${
                           isDropTarget ? 'bg-blue-100' : isToday(date) ? 'bg-blue-50' : isCurrentMonth ? 'bg-white' : 'bg-gray-50'
                         }`}
                         onDragOver={(e) => handleDragOverDate(e, date)}
@@ -1139,24 +1139,24 @@ export default function CalendarPage() {
                         <p className={`text-xs font-medium ${isToday(date) ? 'text-blue-600' : isCurrentMonth ? 'text-gray-800' : 'text-gray-400'}`}>
                           {date.getDate()}
                         </p>
-                        <div className="space-y-px mt-1">
-                          {dayWork.slice(0, 3).map((item, workIdx) => {
+                        <div className="space-y-0.5 mt-1">
+                          {dayWork.slice(0, 2).map((item, workIdx) => {
                             const teamColor = getTeamColor(item.team_name);
                             return (
                               <div
                                 key={workIdx}
                                 draggable
-                                onDragStart={(e) => handleDragStart(e, item.project, item)}
-                                onClick={() => navigate(`/projects/${item.project.id}`)}
-                                className={`${teamColor.bg} text-white text-[8px] px-1 rounded truncate cursor-pointer hover:opacity-90`}
-                                title={`${item.projectName} - ${item.description}`}
+                                onDragStart={(e) => handleDragStart(e, item.project, item, item.isQuickTask)}
+                                onClick={() => item.project && navigate(`/projects/${item.project.id}`)}
+                                className={`${teamColor.light} border ${teamColor.border} text-[9px] p-0.5 rounded cursor-pointer hover:shadow-sm`}
+                                title={`${item.projectName} - ${item.description}\n${item.team_name}`}
                               >
-                                {item.projectName}
+                                <p className={`${teamColor.text} font-medium truncate`}>{item.projectName}</p>
                               </div>
                             );
                           })}
-                          {dayWork.length > 3 && (
-                            <p className="text-[8px] text-gray-500">+{dayWork.length - 3} meer</p>
+                          {dayWork.length > 2 && (
+                            <p className="text-[8px] text-gray-500 pl-0.5">+{dayWork.length - 2} meer</p>
                           )}
                         </div>
                       </div>
