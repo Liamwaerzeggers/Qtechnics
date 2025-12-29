@@ -212,7 +212,7 @@ export default function CalendarPage() {
   const [dragOverDate, setDragOverDate] = useState(null);
   const [quickTasks, setQuickTasks] = useState([]);
   const [showAddTask, setShowAddTask] = useState(false);
-  const [newTask, setNewTask] = useState({ title: '', description: '', start_date: '', end_date: '' });
+  const [newTask, setNewTask] = useState({ title: '', description: '', start_date: '', end_date: '', team_name: null, multi_day: false });
   const navigate = useNavigate();
 
   // Create getTeamColor function that uses current teams array
