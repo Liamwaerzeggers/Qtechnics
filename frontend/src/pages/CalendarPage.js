@@ -1004,25 +1004,31 @@ export default function CalendarPage() {
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDropOnDate(e, viewDates[0])}
                 >
-                  {getWorkForView()
-                    .filter(item => isDateInRange(viewDates[0], item.start_date, item.end_date))
-                    .map((item, idx) => {
-                      const teamColor = getTeamColor(item.team_name);
-                      return (
-                        <div
-                          key={idx}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, item.project, item)}
-                          onClick={() => navigate(`/projects/${item.project.id}`)}
-                          className={`${teamColor.bg} text-white p-3 mb-2 rounded-lg cursor-grab hover:opacity-90`}
-                        >
-                          <p className="font-semibold">{item.projectName}</p>
-                          {item.description && <p className="text-sm opacity-90">{item.description}</p>}
-                          {item.address && <p className="text-xs opacity-75 flex items-center gap-1"><MapPin className="w-3 h-3" />{item.address}</p>}
-                          <p className="text-xs opacity-75 mt-1">{formatDate(item.start_date)} - {formatDate(item.end_date)}</p>
-                        </div>
-                      );
-                    })}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {getWorkForView()
+                      .filter(item => isDateInRange(viewDates[0], item.start_date, item.end_date))
+                      .map((item, idx) => {
+                        const teamColor = getTeamColor(item.team_name);
+                        return (
+                          <div
+                            key={idx}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, item.project, item, item.isQuickTask)}
+                            onClick={() => item.project && navigate(`/projects/${item.project.id}`)}
+                            className={`${teamColor.light} border-2 ${teamColor.border} rounded-lg p-3 cursor-grab hover:shadow-md transition-all`}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              {item.isQuickTask && <Briefcase className={`w-4 h-4 ${teamColor.text}`} />}
+                              <p className={`font-semibold ${teamColor.text}`}>{item.projectName}</p>
+                            </div>
+                            {item.description && <p className="text-sm text-blue-600 font-medium">{item.description}</p>}
+                            {item.address && <p className="text-xs text-gray-500 flex items-center gap-1 mt-1"><MapPin className="w-3 h-3" />{item.address}</p>}
+                            <p className="text-xs text-gray-400 mt-2">📅 {formatDate(item.start_date)} → {formatDate(item.end_date)}</p>
+                            <p className={`text-xs ${teamColor.text} font-medium mt-1`}>👥 {item.team_name}</p>
+                          </div>
+                        );
+                      })}
+                  </div>
                   {getWorkForView().filter(item => isDateInRange(viewDates[0], item.start_date, item.end_date)).length === 0 && (
                     <p className="text-center text-gray-400 py-8">Geen werk gepland voor deze dag</p>
                   )}
