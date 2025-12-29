@@ -676,3 +676,54 @@ The Billit API is returning "InvalidAccessToken" error. This could mean:
 **Test Coverage:** 100% of requested Team Planning functionality tested  
 **Team Planning Test Results:** All requirements verified as working perfectly  
 **Overall Feature Status:** Ready for production use and replaces old calendar successfully
+
+---
+
+## Team Planning Calendar View Modes - Test Session
+**Test Date:** December 29, 2025  
+**Feature:** Multiple view modes for Team Planning Calendar (Dag, Week, Maand, Kwartaal, Jaar)
+
+### Tests Required:
+
+#### 1. View Mode Selector
+- Test switching between all 5 views (Dag, Week, Maand, Kwartaal, Jaar)
+- Verify active state styling on selected view button
+
+#### 2. Navigation Controls
+- Test Vandaag button resets to current date
+- Test prev/next navigation for each view mode
+- Test view label updates correctly for each mode
+
+#### 3. Day View
+- Verify single day display with date info
+- Check task blocks display for scheduled days
+- Test empty state message for days without work
+
+#### 4. Week View (Already verified)
+- Verify 7-day grid display
+- Check task blocks span multiple days correctly
+- Test drag and drop between dates
+
+#### 5. Month View
+- Verify calendar grid with day headers
+- Check task indicators on days with work
+- Test month navigation
+
+#### 6. Quarter View
+- Verify 3 months displayed side by side
+- Check task day indicators
+- Test quarter navigation
+
+#### 7. Year View
+- Verify 12 months in grid
+- Check click on month switches to month view
+- Test year navigation
+
+#### 8. Team Planning Board
+- Verify team columns display correctly
+- Test drag and drop tasks to teams
+- Verify "Toon in agenda" link navigates to correct date
+
+### Incorporate User Feedback:
+- User requested view modes: Dag, Week, Maand, Kwartaal, Jaar
+- All views should support navigation and show scheduled work
