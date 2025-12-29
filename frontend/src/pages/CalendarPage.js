@@ -753,7 +753,7 @@ export default function CalendarPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="py-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
                 <Input
                   placeholder="Titel *"
                   value={newTask.title}
@@ -766,25 +766,52 @@ export default function CalendarPage() {
                   onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                   className="bg-white"
                 />
+                <select
+                  value={newTask.team_name || ''}
+                  onChange={(e) => setNewTask({ ...newTask, team_name: e.target.value || null })}
+                  className="bg-white border rounded-md px-3 py-2 text-sm"
+                >
+                  <option value="">-- Kies team --</option>
+                  {teams.map((team) => (
+                    <option key={team} value={team}>{team}</option>
+                  ))}
+                </select>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">Van:</span>
+                  <span className="text-xs text-gray-500 whitespace-nowrap">Datum:</span>
                   <Input
                     type="date"
                     value={newTask.start_date}
-                    onChange={(e) => setNewTask({ ...newTask, start_date: e.target.value })}
+                    onChange={(e) => setNewTask({ 
+                      ...newTask, 
+                      start_date: e.target.value,
+                      end_date: newTask.multi_day ? newTask.end_date : e.target.value 
+                    })}
                     className="bg-white"
-                    placeholder="Optioneel"
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">Tot:</span>
-                  <Input
-                    type="date"
-                    value={newTask.end_date}
-                    onChange={(e) => setNewTask({ ...newTask, end_date: e.target.value })}
-                    className="bg-white"
-                    placeholder="Optioneel"
-                  />
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newTask.multi_day || false}
+                      onChange={(e) => setNewTask({ 
+                        ...newTask, 
+                        multi_day: e.target.checked,
+                        end_date: e.target.checked ? newTask.end_date : newTask.start_date
+                      })}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-xs text-gray-600 whitespace-nowrap">Meerdere dagen</span>
+                  </label>
+                  {newTask.multi_day && (
+                    <Input
+                      type="date"
+                      value={newTask.end_date}
+                      onChange={(e) => setNewTask({ ...newTask, end_date: e.target.value })}
+                      className="bg-white"
+                      min={newTask.start_date}
+                    />
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={addQuickTask} className="flex-1">
@@ -793,13 +820,13 @@ export default function CalendarPage() {
                   </Button>
                   <Button variant="outline" onClick={() => {
                     setShowAddTask(false);
-                    setNewTask({ title: '', description: '', start_date: '', end_date: '' });
+                    setNewTask({ title: '', description: '', start_date: '', end_date: '', team_name: null, multi_day: false });
                   }}>
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">💡 Datums zijn optioneel. Taken zonder datum kun je naar de kalender slepen.</p>
+              <p className="text-xs text-gray-500 mt-2">💡 Kies een team en datum om direct in te plannen, of laat leeg en sleep later naar de kalender.</p>
             </CardContent>
           </Card>
         )}
