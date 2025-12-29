@@ -548,9 +548,9 @@ export default function CalendarPage() {
       });
     });
     
-    // Add quick tasks with team
+    // Add quick tasks with team AND dates
     quickTasks.forEach(task => {
-      if (task.team_name) {
+      if (task.team_name && task.start_date && task.end_date) {
         const taskStart = new Date(task.start_date);
         const taskEnd = new Date(task.end_date);
         
@@ -573,7 +573,7 @@ export default function CalendarPage() {
   // Legacy function kept for compatibility
   const getWorkForWeek = () => getWorkForView();
 
-  // Get unassigned work - includes quick tasks without team
+  // Get unassigned work - includes quick tasks without team OR without dates
   const getUnassignedWork = () => {
     const work = [];
     // Add project scheduled work without team
