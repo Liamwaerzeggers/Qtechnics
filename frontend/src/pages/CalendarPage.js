@@ -177,10 +177,6 @@ const getMonthsData = (date, viewMode) => {
   }
   return months;
 };
-    }
-  }
-  return months;
-};
 
 export default function CalendarPage() {
   const [projects, setProjects] = useState([]);
