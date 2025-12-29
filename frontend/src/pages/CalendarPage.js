@@ -446,6 +446,7 @@ export default function CalendarPage() {
   // Get ALL work for a team (not filtered by week) - includes quick tasks
   const getWorkByTeam = (teamName) => {
     const work = [];
+    // Add project scheduled work
     projects.forEach(project => {
       (project.scheduled_days || []).forEach(period => {
         if (period.team_name === teamName) {
@@ -453,15 +454,29 @@ export default function CalendarPage() {
             ...period,
             project,
             projectName: project.name,
-            address: project.lead?.address || ''
+            address: project.lead?.address || '',
+            isQuickTask: false
           });
         }
       });
     });
+    // Add quick tasks
+    quickTasks.forEach(task => {
+      if (task.team_name === teamName) {
+        work.push({
+          ...task,
+          project: null,
+          projectName: task.title,
+          description: task.description,
+          address: '',
+          isQuickTask: true
+        });
+      }
+    });
     return work.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
   };
 
-  // Get work for calendar view (current view dates)
+  // Get work for calendar view (current view dates) - includes quick tasks
   const getWorkForView = () => {
     const work = [];
     if (viewDates.length === 0) return work;
