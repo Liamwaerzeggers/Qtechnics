@@ -395,18 +395,21 @@ export default function CalendarPage() {
     return work.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
   };
 
-  // Get work for calendar view (current week)
-  const getWorkForWeek = () => {
+  // Get work for calendar view (current view dates)
+  const getWorkForView = () => {
     const work = [];
+    if (viewDates.length === 0) return work;
+    
+    const viewStart = viewDates[0];
+    const viewEnd = viewDates[viewDates.length - 1];
+    
     projects.forEach(project => {
       (project.scheduled_days || []).forEach(period => {
         if (period.team_name) {
           const periodStart = new Date(period.start_date);
           const periodEnd = new Date(period.end_date);
-          const weekStart = weekDates[0];
-          const weekEnd = weekDates[6];
           
-          if (periodEnd >= weekStart && periodStart <= weekEnd) {
+          if (periodEnd >= viewStart && periodStart <= viewEnd) {
             work.push({
               ...period,
               project,
@@ -419,6 +422,9 @@ export default function CalendarPage() {
     });
     return work;
   };
+
+  // Legacy function kept for compatibility
+  const getWorkForWeek = () => getWorkForView();
 
   // Get unassigned work
   const getUnassignedWork = () => {
