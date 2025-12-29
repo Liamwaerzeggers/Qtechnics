@@ -589,8 +589,8 @@ export default function CalendarPage() {
 
         {/* Team Columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {teams.map((teamName) => {
-            const teamColor = getTeamColor(teamName);
+          {teams.map((teamName, teamIndex) => {
+            const teamColor = getTeamColorByIndex(teamIndex);
             const teamWork = getWorkByTeam(teamName);
             
             return (
