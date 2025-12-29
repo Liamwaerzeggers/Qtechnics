@@ -412,7 +412,7 @@ export default function CalendarPage() {
     e.preventDefault();
     if (!draggedItem) return;
 
-    const { project, period, isQuickTask } = draggedItem;
+    const { project, period, isQuickTask, projectId } = draggedItem;
     
     // Calculate the difference in days
     const oldStart = new Date(period.start_date);
@@ -431,7 +431,24 @@ export default function CalendarPage() {
       });
       fetchQuickTasks();
     } else {
-      const updatedScheduledDays = project.scheduled_days.map(p => 
+      // Find the project - it might be in the draggedItem or we need to find it
+      let targetProject = project;
+      if (!targetProject && projectId) {
+        targetProject = projects.find(p => p.id === projectId);
+      }
+      if (!targetProject) {
+        targetProject = projects.find(p => 
+          (p.scheduled_days || []).some(sd => sd.id === period.id)
+        );
+      }
+      
+      if (!targetProject) {
+        toast.error('Kon project niet vinden');
+        setDraggedItem(null);
+        return;
+      }
+      
+      const updatedScheduledDays = (targetProject.scheduled_days || []).map(p => 
         p.id === period.id 
           ? { 
               ...p, 
@@ -440,7 +457,7 @@ export default function CalendarPage() {
             } 
           : p
       );
-      await updateScheduledWork(project.id, updatedScheduledDays);
+      await updateScheduledWork(targetProject.id, updatedScheduledDays);
       fetchProjects();
     }
     
