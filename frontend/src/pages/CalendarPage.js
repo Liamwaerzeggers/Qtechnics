@@ -1129,17 +1129,17 @@ export default function CalendarPage() {
                     return (
                       <div
                         key={idx}
-                        className={`min-h-[90px] p-1 transition-colors ${
+                        className={`min-h-[120px] p-1 transition-colors ${
                           isDropTarget ? 'bg-blue-100' : isToday(date) ? 'bg-blue-50' : isCurrentMonth ? 'bg-white' : 'bg-gray-50'
                         }`}
                         onDragOver={(e) => handleDragOverDate(e, date)}
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDropOnDate(e, date)}
                       >
-                        <p className={`text-xs font-medium ${isToday(date) ? 'text-blue-600' : isCurrentMonth ? 'text-gray-800' : 'text-gray-400'}`}>
+                        <p className={`text-xs font-medium mb-1 ${isToday(date) ? 'text-blue-600' : isCurrentMonth ? 'text-gray-800' : 'text-gray-400'}`}>
                           {date.getDate()}
                         </p>
-                        <div className="space-y-0.5 mt-1">
+                        <div className="space-y-1">
                           {dayWork.slice(0, 2).map((item, workIdx) => {
                             const teamColor = getTeamColor(item.team_name);
                             return (
@@ -1148,10 +1148,18 @@ export default function CalendarPage() {
                                 draggable
                                 onDragStart={(e) => handleDragStart(e, item.project, item, item.isQuickTask)}
                                 onClick={() => item.project && navigate(`/projects/${item.project.id}`)}
-                                className={`${teamColor.light} border ${teamColor.border} text-[9px] p-0.5 rounded cursor-pointer hover:shadow-sm`}
-                                title={`${item.projectName} - ${item.description}\n${item.team_name}`}
+                                className={`${teamColor.light} border ${teamColor.border} rounded p-1 cursor-grab hover:shadow-md transition-all active:cursor-grabbing`}
                               >
-                                <p className={`${teamColor.text} font-medium truncate`}>{item.projectName}</p>
+                                <div className="flex items-center gap-0.5">
+                                  {item.isQuickTask && <Briefcase className={`w-2.5 h-2.5 ${teamColor.text} flex-shrink-0`} />}
+                                  <p className={`${teamColor.text} font-semibold text-[10px] truncate`}>{item.projectName}</p>
+                                </div>
+                                {item.description && (
+                                  <p className="text-[9px] text-blue-600 font-medium truncate">{item.description}</p>
+                                )}
+                                <p className="text-[8px] text-gray-400 mt-0.5">
+                                  📅 {formatDate(item.start_date)} → {formatDate(item.end_date)}
+                                </p>
                               </div>
                             );
                           })}
