@@ -654,13 +654,361 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
             💡 Tip: Deze notities helpen bij het opstellen van de offerte en zijn intern zichtbaar
           </p>
 
-          {/* NIEUWE SECTIE: Metingen & Werk Items */}
+          {/* NIEUWE SECTIE: Ruimte-gebaseerde Metingen */}
           <div className="mt-8 pt-8 border-t">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h4 className="text-lg font-bold" style={{color: '#1E3A8A'}}>
+                  📐 Ruimte Metingen (Nieuw)
+                </h4>
+                <p className="text-sm" style={{color: '#64748B'}}>
+                  Voer afmetingen in per oppervlak (vloer, muur, plafond) en selecteer het gewenste werk.
+                </p>
+              </div>
+              {!showRoomForm && (
+                <Button
+                  onClick={() => setShowRoomForm(true)}
+                  style={{backgroundColor: '#3B82F6'}}
+                >
+                  <Plus className="mr-2" size={20} />
+                  Nieuwe Meting
+                </Button>
+              )}
+            </div>
+
+            {/* Room Measurement Form */}
+            {showRoomForm && (
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-xl border border-blue-200 mb-4">
+                <h5 className="font-bold mb-4" style={{color: '#1E3A8A'}}>
+                  {editingRoomId ? '✏️ Meting Bewerken' : '➕ Nieuwe Ruimte Meting'}
+                </h5>
+                
+                {/* Row 1: Room name and Surface type */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                      Ruimte / Omschrijving
+                    </label>
+                    <input
+                      type="text"
+                      value={newRoom.room_name}
+                      onChange={(e) => setNewRoom({...newRoom, room_name: e.target.value})}
+                      placeholder="Bijv: Keuken, Badkamer, Woonkamer..."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                      Type Oppervlak
+                    </label>
+                    <select
+                      value={newRoom.surface_type}
+                      onChange={(e) => setNewRoom({...newRoom, surface_type: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="vloer">🟫 Vloer</option>
+                      <option value="muur">🧱 Muur (alle wanden)</option>
+                      <option value="plafond">⬜ Plafond</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Row 2: Dimensions */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                      Lengte (m)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newRoom.length}
+                      onChange={(e) => setNewRoom({...newRoom, length: e.target.value})}
+                      placeholder="5.00"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                      Breedte (m)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newRoom.width}
+                      onChange={(e) => setNewRoom({...newRoom, width: e.target.value})}
+                      placeholder="4.00"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  {newRoom.surface_type === 'muur' && (
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                        Hoogte (m)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={newRoom.height}
+                        onChange={(e) => setNewRoom({...newRoom, height: e.target.value})}
+                        placeholder="2.80"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Calculated Area */}
+                {(newRoom.length && newRoom.width) && (
+                  <div className="bg-white p-3 rounded-lg border mb-4">
+                    <span className="text-sm" style={{color: '#64748B'}}>Berekend oppervlak: </span>
+                    <span className="font-bold text-lg" style={{color: '#1E3A8A'}}>
+                      {calculateArea(newRoom).toFixed(2)} m²
+                    </span>
+                    {newRoom.surface_type === 'muur' && (
+                      <span className="text-xs ml-2" style={{color: '#94A3B8'}}>
+                        (omtrek × hoogte)
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Work Items Selection */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                    Selecteer Werk (meerdere mogelijk)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Zoek werk (tegels, schilderwerk, stucwerk...)..."
+                      value={roomWorkSearch}
+                      onChange={(e) => {
+                        setRoomWorkSearch(e.target.value);
+                        setShowRoomWorkDropdown(true);
+                      }}
+                      onFocus={() => setShowRoomWorkDropdown(true)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    />
+                    {showRoomWorkDropdown && (
+                      <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {workItems
+                          .filter(w => 
+                            !roomWorkSearch || 
+                            w.title.toLowerCase().includes(roomWorkSearch.toLowerCase())
+                          )
+                          .slice(0, 20)
+                          .map((item) => (
+                            <div
+                              key={item.id}
+                              className="p-3 hover:bg-blue-50 cursor-pointer border-b"
+                              onClick={() => addWorkItemToRoom(item)}
+                            >
+                              <div className="font-semibold" style={{color: '#1E293B'}}>{item.title}</div>
+                              <div className="text-sm" style={{color: '#64748B'}}>
+                                €{item.price.toFixed(2)}/{item.unit}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Selected Work Items */}
+                {newRoom.work_items.length > 0 && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                      Geselecteerde Werken ({newRoom.work_items.length})
+                    </label>
+                    <div className="space-y-2">
+                      {newRoom.work_items.map((wi) => {
+                        const area = calculateArea(newRoom);
+                        const subtotal = area * wi.price;
+                        return (
+                          <div key={wi.id} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                            <div className="flex-1">
+                              <div className="font-semibold" style={{color: '#1E293B'}}>{wi.title}</div>
+                              <div className="text-sm" style={{color: '#64748B'}}>
+                                {area.toFixed(2)} {wi.unit} × €{wi.price.toFixed(2)} = <strong>€{subtotal.toFixed(2)}</strong>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={wi.vat_rate}
+                                onChange={(e) => {
+                                  setNewRoom({
+                                    ...newRoom,
+                                    work_items: newRoom.work_items.map(w => 
+                                      w.id === wi.id ? {...w, vat_rate: parseInt(e.target.value)} : w
+                                    )
+                                  });
+                                }}
+                                className="px-2 py-1 border rounded text-sm"
+                              >
+                                <option value="6">6%</option>
+                                <option value="21">21%</option>
+                              </select>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => removeWorkItemFromRoom(wi.id)}
+                              >
+                                <Trash2 size={14} />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Subtotal for this room */}
+                    <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <span className="text-sm" style={{color: '#166534'}}>Subtotaal deze meting: </span>
+                      <span className="font-bold" style={{color: '#166534'}}>
+                        €{calculateRoomTotal(newRoom).toFixed(2)}
+                      </span>
+                      <span className="text-xs ml-1" style={{color: '#64748B'}}>(excl BTW)</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Form Buttons */}
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleSaveRoomMeasurement}
+                    disabled={!newRoom.room_name || !newRoom.length || !newRoom.width || newRoom.work_items.length === 0}
+                    style={{backgroundColor: '#10B981'}}
+                    className="flex-1"
+                  >
+                    <Check className="mr-2" size={18} />
+                    {editingRoomId ? 'Opslaan' : 'Meting Toevoegen'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowRoomForm(false);
+                      setEditingRoomId(null);
+                      setNewRoom({
+                        room_name: '',
+                        surface_type: 'vloer',
+                        length: '',
+                        width: '',
+                        height: '',
+                        work_items: []
+                      });
+                    }}
+                  >
+                    <X className="mr-2" size={18} />
+                    Annuleren
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Room Measurements List */}
+            {roomMeasurements.length > 0 && (
+              <div className="space-y-3 mb-4">
+                <h5 className="font-semibold text-sm" style={{color: '#1E3A8A'}}>
+                  📋 Toegevoegde Ruimte Metingen ({roomMeasurements.length})
+                </h5>
+                {roomMeasurements.map((room) => (
+                  <div key={room.id} className="p-4 bg-gray-50 rounded-xl border">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-lg" style={{color: '#1E293B'}}>{room.room_name}</span>
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                            {room.surface_type === 'vloer' ? '🟫 Vloer' : room.surface_type === 'muur' ? '🧱 Muur' : '⬜ Plafond'}
+                          </span>
+                        </div>
+                        <div className="text-sm" style={{color: '#64748B'}}>
+                          {room.length}m × {room.width}m {room.height ? `× ${room.height}m hoogte` : ''} = <strong>{room.area?.toFixed(2) || calculateArea(room).toFixed(2)} m²</strong>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => handleEditRoom(room)}>
+                          <Edit2 size={14} className="mr-1" /> Bewerk
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleDeleteRoom(room.id)}>
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {/* Work items for this room */}
+                    <div className="space-y-1">
+                      {room.work_items?.map((wi, idx) => {
+                        const subtotal = (room.area || calculateArea(room)) * wi.price;
+                        return (
+                          <div key={idx} className="flex justify-between text-sm py-1 px-2 bg-white rounded">
+                            <span>{wi.title}</span>
+                            <span className="font-medium">€{subtotal.toFixed(2)} ({wi.vat_rate}% BTW)</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    <div className="mt-2 pt-2 border-t text-right">
+                      <span className="font-bold" style={{color: '#166534'}}>
+                        Subtotaal: €{(room.work_items?.reduce((sum, wi) => sum + ((room.area || calculateArea(room)) * wi.price), 0) || 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Grand Total */}
+                <div className="p-4 bg-green-100 rounded-xl border border-green-300">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-lg" style={{color: '#166534'}}>💰 Totaal Alle Metingen:</span>
+                    <span className="font-bold text-2xl" style={{color: '#166534'}}>
+                      €{roomMeasurements.reduce((total, room) => {
+                        return total + (room.work_items?.reduce((sum, wi) => sum + ((room.area || calculateArea(room)) * wi.price), 0) || 0);
+                      }, 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <p className="text-xs mt-1" style={{color: '#166534'}}>(excl BTW)</p>
+                </div>
+
+                {/* Generate Quote Button */}
+                <Button
+                  onClick={handleGenerateQuoteFromRooms}
+                  disabled={generatingQuote}
+                  className="w-full"
+                  style={{backgroundColor: '#10B981', fontSize: '1.1rem', padding: '1.5rem'}}
+                >
+                  {generatingQuote ? (
+                    <>
+                      <Loader2 className="animate-spin mr-2" size={24} />
+                      Offerte Genereren...
+                    </>
+                  ) : (
+                    <>
+                      📋 Genereer Offerte uit Ruimte Metingen
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {roomMeasurements.length === 0 && !showRoomForm && (
+              <div className="text-center py-8 border-2 border-dashed rounded-xl" style={{borderColor: '#E5E7EB'}}>
+                <span className="text-4xl mb-2 block">📐</span>
+                <p style={{color: '#64748B'}}>Nog geen ruimte metingen. Klik op "Nieuwe Meting" om te beginnen.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Divider */}
+          <div className="my-8 border-t-2 border-dashed" style={{borderColor: '#CBD5E1'}}></div>
+          
+          {/* BESTAANDE SECTIE: Metingen & Werk Items (Handmatig) */}
+          <div className="mt-8">
             <h4 className="text-lg font-bold mb-4" style={{color: '#1E3A8A'}}>
-              📏 Metingen & Werk Items
+              📏 Handmatige Metingen (Speciale Gevallen)
             </h4>
             <p className="text-sm mb-4" style={{color: '#64748B'}}>
-              Selecteer werk items uit de prijslijst en voer hoeveelheden in. Dit wordt automatisch een offerte waar u daarna materialen aan kunt toevoegen.
+              Voor speciale situaties: selecteer werk items uit de prijslijst en voer hoeveelheden handmatig in.
             </p>
 
             {/* Voeg Werk Item Toe */}
