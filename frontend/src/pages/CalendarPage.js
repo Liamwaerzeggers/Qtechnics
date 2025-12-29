@@ -541,7 +541,7 @@ export default function CalendarPage() {
   }
 
   const unassignedWork = getUnassignedWork();
-  const weekWork = getWorkForWeek();
+  const viewWork = getWorkForView();
 
   return (
     <DashboardLayout>
