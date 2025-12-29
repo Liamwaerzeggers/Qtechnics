@@ -806,3 +806,44 @@ The Billit API is returning "InvalidAccessToken" error. This could mean:
 - ✅ All views support navigation and show scheduled work correctly
 - ✅ February 2026 tasks (14-18 feb and 19-26 feb) display correctly
 - ✅ Team board interaction ready for drag-and-drop functionality
+
+---
+
+## Quick Tasks & Tile Calendar View - Test Session
+**Test Date:** December 29, 2025  
+**Features:** 
+1. Quick tasks toevoegen functionaliteit
+2. Tegel-stijl weergave in kalender
+3. Bug fix: drag-and-drop tussen teams
+
+### Tests Required:
+
+#### 1. Quick Task Creation
+- Click "Taak toevoegen" button
+- Fill in title, description, start date, end date
+- Click "Toevoegen" button
+- Verify task appears in "Niet toegewezen" list
+
+#### 2. Quick Task Assignment
+- Drag quick task to a team column
+- Verify it moves to that team
+- Verify it appears in calendar on correct dates
+
+#### 3. Drag Between Teams (Bug Fix)
+- Drag a task from Team 1 to Team 2
+- Should NOT produce an error
+- Task should move to Team 2
+
+#### 4. Calendar Tile Style
+- Week view should show tasks as tiles (not bars)
+- Tiles should have: project name, description, address, dates
+- Tiles should be in team color (light background with border)
+
+#### 5. Delete Quick Task
+- Click trash icon on quick task
+- Confirm deletion
+- Task should be removed
+
+### Credentials:
+- Username: test
+- Password: test123
