@@ -4004,6 +4004,66 @@ async def toggle_work_slip_customer_visibility(
     
     return {"success": True, "visible_to_customer": visible}
 
+# ============= QUICK TASKS ENDPOINTS =============
+
+@api_router.get("/quick-tasks")
+async def get_quick_tasks(current_user: User = Depends(get_current_user)):
+    """Get all quick tasks for team planning"""
+    tasks = await db.quick_tasks.find({"user_id": current_user.id}, {"_id": 0}).to_list(1000)
+    return tasks
+
+@api_router.post("/quick-tasks")
+async def create_quick_task(task: QuickTaskCreate, current_user: User = Depends(get_current_user)):
+    """Create a new quick task"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can create quick tasks")
+    
+    new_task = QuickTask(
+        title=task.title,
+        description=task.description,
+        start_date=task.start_date,
+        end_date=task.end_date,
+        user_id=current_user.id
+    )
+    
+    await db.quick_tasks.insert_one(new_task.model_dump())
+    return new_task
+
+@api_router.put("/quick-tasks/{task_id}")
+async def update_quick_task(task_id: str, task_update: QuickTaskUpdate, current_user: User = Depends(get_current_user)):
+    """Update a quick task (including team assignment)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can update quick tasks")
+    
+    update_data = {k: v for k, v in task_update.model_dump().items() if v is not None}
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No data to update")
+    
+    result = await db.quick_tasks.update_one(
+        {"id": task_id, "user_id": current_user.id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Taak niet gevonden")
+    
+    updated_task = await db.quick_tasks.find_one({"id": task_id}, {"_id": 0})
+    return updated_task
+
+@api_router.delete("/quick-tasks/{task_id}")
+async def delete_quick_task(task_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a quick task"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete quick tasks")
+    
+    result = await db.quick_tasks.delete_one({"id": task_id, "user_id": current_user.id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Taak niet gevonden")
+    
+    return {"success": True}
+
 # Mount static files for uploads at /api/uploads BEFORE including router
 # Note: Kubernetes ingress routes /api/* to backend, so this will be accessible
 uploads_dir = ROOT_DIR / "uploads"
