@@ -66,10 +66,149 @@ const formatDateForInput = (date) => {
   return d.toISOString().split('T')[0];
 };
 
+// View modes
+const VIEW_MODES = {
+  DAY: 'day',
+  WEEK: 'week',
+  MONTH: 'month',
+  QUARTER: 'quarter',
+  YEAR: 'year'
+};
+
+// Get dates for different view modes
+const getDatesForView = (date, viewMode) => {
+  const dates = [];
+  const d = new Date(date);
+  
+  switch (viewMode) {
+    case VIEW_MODES.DAY:
+      dates.push(new Date(d));
+      break;
+    case VIEW_MODES.WEEK:
+      d.setDate(d.getDate() - d.getDay() + 1); // Monday
+      for (let i = 0; i < 7; i++) {
+        const newD = new Date(d);
+        newD.setDate(d.getDate() + i);
+        dates.push(newD);
+      }
+      break;
+    case VIEW_MODES.MONTH:
+      d.setDate(1);
+      const month = d.getMonth();
+      while (d.getMonth() === month) {
+        dates.push(new Date(d));
+        d.setDate(d.getDate() + 1);
+      }
+      break;
+    case VIEW_MODES.QUARTER:
+      const quarterStart = Math.floor(d.getMonth() / 3) * 3;
+      d.setMonth(quarterStart, 1);
+      const quarterEnd = quarterStart + 3;
+      while (d.getMonth() < quarterEnd && d.getMonth() >= quarterStart) {
+        dates.push(new Date(d));
+        d.setDate(d.getDate() + 1);
+      }
+      break;
+    case VIEW_MODES.YEAR:
+      d.setMonth(0, 1);
+      const year = d.getFullYear();
+      while (d.getFullYear() === year) {
+        dates.push(new Date(d));
+        d.setDate(d.getDate() + 1);
+      }
+      break;
+    default:
+      d.setDate(d.getDate() - d.getDay() + 1);
+      for (let i = 0; i < 7; i++) {
+        const newD = new Date(d);
+        newD.setDate(d.getDate() + i);
+        dates.push(newD);
+      }
+  }
+  return dates;
+};
+
+// Get month data for month/quarter/year views
+const getMonthsData = (date, viewMode) => {
+  const months = [];
+  const d = new Date(date);
+  
+  if (viewMode === VIEW_MODES.MONTH) {
+    d.setDate(1);
+    const weeks = [];
+    const month = d.getMonth();
+    // Get the first day of the week containing the 1st of the month
+    const firstDay = new Date(d);
+    firstDay.setDate(firstDay.getDate() - ((firstDay.getDay() + 6) % 7));
+    
+    let currentWeek = [];
+    const tempD = new Date(firstDay);
+    while (tempD.getMonth() === month || currentWeek.length > 0) {
+      currentWeek.push(new Date(tempD));
+      if (currentWeek.length === 7) {
+        if (currentWeek.some(wd => wd.getMonth() === month)) {
+          weeks.push([...currentWeek]);
+        }
+        currentWeek = [];
+      }
+      tempD.setDate(tempD.getDate() + 1);
+      if (tempD.getMonth() !== month && currentWeek.length === 0) break;
+    }
+    months.push({ month: d.getMonth(), year: d.getFullYear(), weeks });
+  } else if (viewMode === VIEW_MODES.QUARTER) {
+    const quarterStart = Math.floor(d.getMonth() / 3) * 3;
+    for (let m = quarterStart; m < quarterStart + 3; m++) {
+      const monthDate = new Date(d.getFullYear(), m, 1);
+      const weeks = [];
+      const firstDay = new Date(monthDate);
+      firstDay.setDate(firstDay.getDate() - ((firstDay.getDay() + 6) % 7));
+      
+      let currentWeek = [];
+      const tempD = new Date(firstDay);
+      while (tempD.getMonth() === m || currentWeek.length > 0) {
+        currentWeek.push(new Date(tempD));
+        if (currentWeek.length === 7) {
+          if (currentWeek.some(wd => wd.getMonth() === m)) {
+            weeks.push([...currentWeek]);
+          }
+          currentWeek = [];
+        }
+        tempD.setDate(tempD.getDate() + 1);
+        if (tempD.getMonth() !== m && currentWeek.length === 0) break;
+      }
+      months.push({ month: m, year: d.getFullYear(), weeks });
+    }
+  } else if (viewMode === VIEW_MODES.YEAR) {
+    for (let m = 0; m < 12; m++) {
+      const monthDate = new Date(d.getFullYear(), m, 1);
+      const weeks = [];
+      const firstDay = new Date(monthDate);
+      firstDay.setDate(firstDay.getDate() - ((firstDay.getDay() + 6) % 7));
+      
+      let currentWeek = [];
+      const tempD = new Date(firstDay);
+      while (tempD.getMonth() === m || currentWeek.length > 0) {
+        currentWeek.push(new Date(tempD));
+        if (currentWeek.length === 7) {
+          if (currentWeek.some(wd => wd.getMonth() === m)) {
+            weeks.push([...currentWeek]);
+          }
+          currentWeek = [];
+        }
+        tempD.setDate(tempD.getDate() + 1);
+        if (tempD.getMonth() !== m && currentWeek.length === 0) break;
+      }
+      months.push({ month: m, year: d.getFullYear(), weeks });
+    }
+  }
+  return months;
+};
+
 export default function CalendarPage() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentWeek, setCurrentWeek] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState(VIEW_MODES.WEEK);
   const [teams, setTeams] = useState(['Team 1', 'Team 2', 'Team 3']);
   const [showAddTeam, setShowAddTeam] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
@@ -77,7 +216,10 @@ export default function CalendarPage() {
   const [dragOverDate, setDragOverDate] = useState(null);
   const navigate = useNavigate();
 
-  const weekDates = useMemo(() => getWeekDates(currentWeek), [currentWeek]);
+  const viewDates = useMemo(() => getDatesForView(currentDate, viewMode), [currentDate, viewMode]);
+  const monthsData = useMemo(() => getMonthsData(currentDate, viewMode), [currentDate, viewMode]);
+  // Keep weekDates for backwards compatibility
+  const weekDates = useMemo(() => getDatesForView(currentDate, VIEW_MODES.WEEK), [currentDate]);
 
   useEffect(() => {
     fetchProjects();
