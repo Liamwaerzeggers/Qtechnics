@@ -251,12 +251,19 @@ export default function CalendarPage() {
   };
 
   const addQuickTask = async () => {
-    if (!newTask.title.trim() || !newTask.start_date || !newTask.end_date) {
-      toast.error('Vul titel en datums in');
+    if (!newTask.title.trim()) {
+      toast.error('Vul een titel in');
       return;
     }
     try {
-      await axios.post(`${API}/quick-tasks`, newTask, { withCredentials: true });
+      // Only include dates if they are set
+      const taskData = {
+        title: newTask.title,
+        description: newTask.description || null,
+        start_date: newTask.start_date || null,
+        end_date: newTask.end_date || newTask.start_date || null // If only start_date, use same for end
+      };
+      await axios.post(`${API}/quick-tasks`, taskData, { withCredentials: true });
       toast.success('Taak toegevoegd');
       setNewTask({ title: '', description: '', start_date: '', end_date: '' });
       setShowAddTask(false);
