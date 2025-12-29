@@ -359,8 +359,8 @@ export default function CalendarPage() {
   };
 
   // Drag handlers for team assignment
-  const handleDragStart = (e, project, period) => {
-    setDraggedItem({ project, period });
+  const handleDragStart = (e, project, period, isQuickTask = false) => {
+    setDraggedItem({ project, period, isQuickTask });
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -368,16 +368,23 @@ export default function CalendarPage() {
     e.preventDefault();
     if (!draggedItem) return;
 
-    const { project, period } = draggedItem;
+    const { project, period, isQuickTask } = draggedItem;
     
-    const updatedScheduledDays = project.scheduled_days.map(p => 
-      p.id === period.id ? { ...p, team_name: targetTeam } : p
-    );
-
-    await updateScheduledWork(project.id, updatedScheduledDays);
+    if (isQuickTask) {
+      // Update quick task team
+      await updateQuickTask(period.id, { team_name: targetTeam });
+      toast.success(`Taak toegewezen aan ${targetTeam}`);
+      fetchQuickTasks();
+    } else {
+      // Update project scheduled work
+      const updatedScheduledDays = project.scheduled_days.map(p => 
+        p.id === period.id ? { ...p, team_name: targetTeam } : p
+      );
+      await updateScheduledWork(project.id, updatedScheduledDays);
+      toast.success(`Werk toegewezen aan ${targetTeam}`);
+      fetchProjects();
+    }
     setDraggedItem(null);
-    toast.success(`Werk toegewezen aan ${targetTeam}`);
-    fetchProjects();
   };
 
   // Drag handlers for date adjustment in calendar
