@@ -484,6 +484,7 @@ export default function CalendarPage() {
     const viewStart = viewDates[0];
     const viewEnd = viewDates[viewDates.length - 1];
     
+    // Add project scheduled work
     projects.forEach(project => {
       (project.scheduled_days || []).forEach(period => {
         if (period.team_name) {
@@ -495,21 +496,43 @@ export default function CalendarPage() {
               ...period,
               project,
               projectName: project.name,
-              address: project.lead?.address || ''
+              address: project.lead?.address || '',
+              isQuickTask: false
             });
           }
         }
       });
     });
+    
+    // Add quick tasks with team
+    quickTasks.forEach(task => {
+      if (task.team_name) {
+        const taskStart = new Date(task.start_date);
+        const taskEnd = new Date(task.end_date);
+        
+        if (taskEnd >= viewStart && taskStart <= viewEnd) {
+          work.push({
+            ...task,
+            project: null,
+            projectName: task.title,
+            description: task.description,
+            address: '',
+            isQuickTask: true
+          });
+        }
+      }
+    });
+    
     return work;
   };
 
   // Legacy function kept for compatibility
   const getWorkForWeek = () => getWorkForView();
 
-  // Get unassigned work
+  // Get unassigned work - includes quick tasks without team
   const getUnassignedWork = () => {
     const work = [];
+    // Add project scheduled work without team
     projects.forEach(project => {
       (project.scheduled_days || []).forEach(period => {
         if (!period.team_name) {
@@ -517,10 +540,24 @@ export default function CalendarPage() {
             ...period,
             project,
             projectName: project.name,
-            address: project.lead?.address || ''
+            address: project.lead?.address || '',
+            isQuickTask: false
           });
         }
       });
+    });
+    // Add quick tasks without team
+    quickTasks.forEach(task => {
+      if (!task.team_name) {
+        work.push({
+          ...task,
+          project: null,
+          projectName: task.title,
+          description: task.description,
+          address: '',
+          isQuickTask: true
+        });
+      }
     });
     return work;
   };
