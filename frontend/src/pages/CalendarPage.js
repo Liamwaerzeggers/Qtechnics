@@ -1051,7 +1051,7 @@ export default function CalendarPage() {
                     </div>
                   ))}
                 </div>
-                <div className="grid grid-cols-7 min-h-[200px]">
+                <div className="grid grid-cols-7 min-h-[250px]">
                   {viewDates.map((date, idx) => {
                     const dateStr = formatDateForInput(date);
                     const isDropTarget = dragOverDate === dateStr;
@@ -1059,7 +1059,7 @@ export default function CalendarPage() {
                     return (
                       <div 
                         key={idx}
-                        className={`border-r last:border-r-0 p-1 min-h-[200px] transition-colors ${
+                        className={`border-r last:border-r-0 p-1 min-h-[250px] transition-colors ${
                           isDropTarget ? 'bg-blue-100' : isToday(date) ? 'bg-blue-50/50' : 'bg-white'
                         }`}
                         onDragOver={(e) => handleDragOverDate(e, date)}
@@ -1070,23 +1070,31 @@ export default function CalendarPage() {
                           .filter(item => isDateInRange(date, item.start_date, item.end_date))
                           .map((item, workIdx) => {
                             const teamColor = getTeamColor(item.team_name);
-                            const isStart = formatDateForInput(new Date(item.start_date)) === dateStr;
                             
                             return (
                               <div
                                 key={workIdx}
                                 draggable
-                                onDragStart={(e) => handleDragStart(e, item.project, item)}
-                                onClick={() => navigate(`/projects/${item.project.id}`)}
-                                className={`${teamColor.bg} text-white text-[10px] p-1 mb-1 rounded cursor-grab hover:opacity-90 active:cursor-grabbing ${
-                                  isStart ? 'rounded-l-lg' : ''
-                                }`}
-                                title={`${item.projectName} - ${item.description}\n${item.address}\n${formatDate(item.start_date)} - ${formatDate(item.end_date)}`}
+                                onDragStart={(e) => handleDragStart(e, item.project, item, item.isQuickTask)}
+                                onClick={() => item.project && navigate(`/projects/${item.project.id}`)}
+                                className={`${teamColor.light} border ${teamColor.border} rounded-lg p-1.5 mb-1.5 cursor-grab hover:shadow-md transition-all active:cursor-grabbing`}
                               >
-                                <p className="font-semibold truncate">{item.projectName}</p>
-                                {isStart && item.description && (
-                                  <p className="truncate opacity-90">{item.description}</p>
+                                <div className="flex items-center gap-1 mb-0.5">
+                                  {item.isQuickTask && <Briefcase className={`w-3 h-3 ${teamColor.text} flex-shrink-0`} />}
+                                  <p className={`font-semibold text-[11px] ${teamColor.text} truncate`}>{item.projectName}</p>
+                                </div>
+                                {item.description && (
+                                  <p className="text-[10px] text-blue-600 font-medium truncate">{item.description}</p>
                                 )}
+                                {item.address && (
+                                  <p className="text-[9px] text-gray-500 flex items-center gap-0.5 truncate">
+                                    <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
+                                    {item.address}
+                                  </p>
+                                )}
+                                <p className="text-[9px] text-gray-400 mt-0.5">
+                                  📅 {formatDate(item.start_date)} → {formatDate(item.end_date)}
+                                </p>
                               </div>
                             );
                           })}
