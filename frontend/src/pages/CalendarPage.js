@@ -20,16 +20,25 @@ import { toast } from 'sonner';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
-// Team colors
-const TEAM_COLORS = {
-  'Team 1': { bg: 'bg-orange-500', light: 'bg-orange-100', border: 'border-orange-300', text: 'text-orange-700' },
-  'Team 2': { bg: 'bg-green-500', light: 'bg-green-100', border: 'border-green-300', text: 'text-green-700' },
-  'Team 3': { bg: 'bg-blue-500', light: 'bg-blue-100', border: 'border-blue-300', text: 'text-blue-700' },
-  'default': { bg: 'bg-purple-500', light: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-700' },
-};
+// Color palette for teams - each new team gets a different color based on index
+const COLOR_PALETTE = [
+  { bg: 'bg-orange-500', light: 'bg-orange-100', border: 'border-orange-300', text: 'text-orange-700' },
+  { bg: 'bg-green-500', light: 'bg-green-100', border: 'border-green-300', text: 'text-green-700' },
+  { bg: 'bg-blue-500', light: 'bg-blue-100', border: 'border-blue-300', text: 'text-blue-700' },
+  { bg: 'bg-purple-500', light: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-700' },
+  { bg: 'bg-pink-500', light: 'bg-pink-100', border: 'border-pink-300', text: 'text-pink-700' },
+  { bg: 'bg-cyan-500', light: 'bg-cyan-100', border: 'border-cyan-300', text: 'text-cyan-700' },
+  { bg: 'bg-amber-500', light: 'bg-amber-100', border: 'border-amber-300', text: 'text-amber-700' },
+  { bg: 'bg-teal-500', light: 'bg-teal-100', border: 'border-teal-300', text: 'text-teal-700' },
+  { bg: 'bg-indigo-500', light: 'bg-indigo-100', border: 'border-indigo-300', text: 'text-indigo-700' },
+  { bg: 'bg-rose-500', light: 'bg-rose-100', border: 'border-rose-300', text: 'text-rose-700' },
+  { bg: 'bg-lime-500', light: 'bg-lime-100', border: 'border-lime-300', text: 'text-lime-700' },
+  { bg: 'bg-sky-500', light: 'bg-sky-100', border: 'border-sky-300', text: 'text-sky-700' },
+];
 
-const getTeamColor = (teamName) => {
-  return TEAM_COLORS[teamName] || TEAM_COLORS['default'];
+// Get team color based on index in the teams array
+const getTeamColorByIndex = (index) => {
+  return COLOR_PALETTE[index % COLOR_PALETTE.length];
 };
 
 // Format date
