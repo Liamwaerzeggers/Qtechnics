@@ -285,6 +285,7 @@ class ProjectUpdate(BaseModel):
     lead_id: Optional[str] = None  # Allow updating lead_id
     scheduled_days: Optional[List[dict]] = None  # Planning days with notes
     required_materials: Optional[str] = None  # Manual materials text
+    room_measurements: Optional[List[dict]] = None  # Room-based measurements
 
 class InvoiceUpload(BaseModel):
     filename: str
