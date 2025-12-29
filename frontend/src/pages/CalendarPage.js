@@ -824,12 +824,26 @@ export default function CalendarPage() {
                   ) : (
                     teamWork.map((item, idx) => (
                       <div
-                        key={idx}
+                        key={item.id || idx}
                         draggable
-                        onDragStart={(e) => handleDragStart(e, item.project, item)}
+                        onDragStart={(e) => handleDragStart(e, item.project, item, item.isQuickTask)}
                         className="bg-white rounded-lg p-2 shadow-sm border cursor-grab hover:shadow-md transition-all active:cursor-grabbing"
                       >
-                        <p className="font-semibold text-xs text-gray-800 truncate">{item.projectName}</p>
+                        <div className="flex items-center gap-1">
+                          {item.isQuickTask && <Briefcase className="w-3 h-3 text-purple-500 flex-shrink-0" />}
+                          <p className="font-semibold text-xs text-gray-800 truncate">{item.projectName}</p>
+                          {item.isQuickTask && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteQuickTask(item.id);
+                              }}
+                              className="ml-auto text-gray-400 hover:text-red-500"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
                         {item.description && (
                           <p className="text-xs text-blue-600 font-medium truncate">{item.description}</p>
                         )}
