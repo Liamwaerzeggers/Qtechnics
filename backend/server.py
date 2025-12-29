@@ -228,6 +228,7 @@ class Project(BaseModel):
     
     # NIEUWE SECTIE: Metingen & Werk Items (voor offerte generatie)
     measurements: List[dict] = []  # [{work_item_id, title, quantity, unit, price, vat_rate}]
+    room_measurements: List[dict] = []  # [{id, room_name, surface_type, length, width, height, area, work_items}]
     
     # NIEUWE SECTIE: 3D Ontwerpen
     design_3d_files: List[dict] = []  # [{filename, url, upload_date}]
