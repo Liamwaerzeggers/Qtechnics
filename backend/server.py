@@ -26,7 +26,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from openpyxl import Workbook
 
 # AI imports for floor plan analysis
-from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContent
+from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContent, ImageContent
 import httpx
 import hmac
 import tempfile
