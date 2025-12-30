@@ -632,8 +632,12 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
   };
 
   const calculateSurfaceTotal = (surface) => {
-    const area = surface.net_area_m2 || surface.area_m2 || 0;
-    return surface.work_items.reduce((sum, wi) => sum + (area * wi.price), 0);
+    const surfaceArea = surface.net_area_m2 || surface.area_m2 || 0;
+    return surface.work_items.reduce((sum, wi) => {
+      // Use custom_area if set, otherwise use surface area
+      const workArea = wi.custom_area !== undefined ? wi.custom_area : surfaceArea;
+      return sum + (workArea * wi.price);
+    }, 0);
   };
 
   const calculateAnalysisTotal = (analysis) => {
