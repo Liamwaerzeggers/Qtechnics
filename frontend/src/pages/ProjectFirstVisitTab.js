@@ -632,6 +632,58 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
     }
   };
 
+  // Edit an existing floor plan analysis
+  const editFloorPlanAnalysis = (analysis) => {
+    setEditingAnalysisId(analysis.id);
+    setCurrentAnalysis({ ...analysis });
+    // Scroll to the edit section
+    setTimeout(() => {
+      document.getElementById('floor-plan-edit-section')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  // Update an existing floor plan analysis
+  const updateFloorPlanAnalysis = async () => {
+    if (!currentAnalysis || !editingAnalysisId) return;
+    
+    try {
+      const updatedAnalyses = floorPlanAnalyses.map(a => 
+        a.id === editingAnalysisId ? currentAnalysis : a
+      );
+      
+      await axios.put(
+        `${API}/projects/${project.id}`,
+        { floor_plan_analyses: updatedAnalyses },
+        { withCredentials: true }
+      );
+      
+      toast.success('Grondplan analyse bijgewerkt!');
+      setCurrentAnalysis(null);
+      setEditingAnalysisId(null);
+      onUpdate();
+    } catch (error) {
+      toast.error('Kon analyse niet bijwerken');
+    }
+  };
+
+  // Update analysis title
+  const updateAnalysisTitle = (title) => {
+    if (!currentAnalysis) return;
+    setCurrentAnalysis({
+      ...currentAnalysis,
+      analysis_result: {
+        ...currentAnalysis.analysis_result,
+        room_name: title
+      }
+    });
+  };
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setCurrentAnalysis(null);
+    setEditingAnalysisId(null);
+  };
+
   const calculateSurfaceTotal = (surface) => {
     const surfaceArea = surface.net_area_m2 || surface.area_m2 || 0;
     return surface.work_items.reduce((sum, wi) => {
