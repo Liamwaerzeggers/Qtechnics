@@ -7,6 +7,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import json
+import base64
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
@@ -23,6 +24,9 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from openpyxl import Workbook
+
+# AI imports for floor plan analysis
+from emergentintegrations.llm.chat import LlmChat, UserMessage, ImageContent
 import httpx
 import hmac
 import tempfile
