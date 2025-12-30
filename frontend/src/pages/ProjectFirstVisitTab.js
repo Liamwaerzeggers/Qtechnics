@@ -476,6 +476,9 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
 
   const addWorkItemToSurface = (surfaceId, workItem) => {
     if (!currentAnalysis) return;
+    const surface = currentAnalysis.surfaces.find(s => s.id === surfaceId);
+    const surfaceArea = surface ? (surface.net_area_m2 || surface.area_m2 || 0) : 0;
+    
     setCurrentAnalysis({
       ...currentAnalysis,
       surfaces: currentAnalysis.surfaces.map(s => {
@@ -486,7 +489,11 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
           }
           return {
             ...s,
-            work_items: [...s.work_items, { ...workItem, vat_rate: 6 }]
+            work_items: [...s.work_items, { 
+              ...workItem, 
+              vat_rate: 6,
+              custom_area: surfaceArea  // Default to surface area, user can adjust
+            }]
           };
         }
         return s;
@@ -494,6 +501,83 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
     });
     setFloorPlanWorkSearch('');
     setShowFloorPlanWorkDropdown(null);
+  };
+
+  // Add custom work item (typed manually) and auto-add to catalog
+  const addCustomWorkItemToSurface = async (surfaceId, title, price, unit = 'm²') => {
+    if (!currentAnalysis || !title.trim()) return;
+    
+    const surface = currentAnalysis.surfaces.find(s => s.id === surfaceId);
+    const surfaceArea = surface ? (surface.net_area_m2 || surface.area_m2 || 0) : 0;
+    
+    try {
+      // Auto-add to work items catalog
+      const params = new URLSearchParams({
+        title: title.trim(),
+        unit: unit,
+        price: parseFloat(price) || 0
+      });
+      const response = await axios.post(`${API}/work-items/auto-add?${params.toString()}`, {}, { withCredentials: true });
+      
+      const workItem = response.data.work_item;
+      if (response.data.created) {
+        toast.success(`"${title}" toegevoegd aan werk items catalogus`);
+      }
+      
+      // Add to surface
+      setCurrentAnalysis({
+        ...currentAnalysis,
+        surfaces: currentAnalysis.surfaces.map(s => {
+          if (s.id === surfaceId) {
+            if (s.work_items.find(wi => wi.title.toLowerCase() === title.trim().toLowerCase())) {
+              toast.error('Dit werk item is al toegevoegd aan dit oppervlak');
+              return s;
+            }
+            return {
+              ...s,
+              work_items: [...s.work_items, { 
+                ...workItem, 
+                vat_rate: 6,
+                custom_area: surfaceArea
+              }]
+            };
+          }
+          return s;
+        })
+      });
+      
+      // Refresh work items list
+      const workItemsResponse = await axios.get(`${API}/work-items`, { withCredentials: true });
+      setWorkItems(workItemsResponse.data.work_items || []);
+      
+    } catch (error) {
+      toast.error('Kon werk item niet toevoegen');
+      console.error(error);
+    }
+    
+    setFloorPlanWorkSearch('');
+    setShowFloorPlanWorkDropdown(null);
+    setShowCustomWorkForm(null);
+  };
+
+  // Update custom area for a work item within a surface
+  const updateWorkItemArea = (surfaceId, workItemId, newArea) => {
+    if (!currentAnalysis) return;
+    setCurrentAnalysis({
+      ...currentAnalysis,
+      surfaces: currentAnalysis.surfaces.map(s =>
+        s.id === surfaceId
+          ? { 
+              ...s, 
+              work_items: s.work_items.map(wi => 
+                wi.id === workItemId 
+                  ? { ...wi, custom_area: parseFloat(newArea) || 0 }
+                  : wi
+              )
+            }
+          : s
+      )
+    });
   };
 
   const removeWorkItemFromSurface = (surfaceId, workItemId) => {
