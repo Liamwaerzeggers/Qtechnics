@@ -4110,7 +4110,7 @@ Identificeer alle afmetingen die je kunt lezen en bereken:
 3. Plafondoppervlak
 
 Geef het resultaat als JSON object zoals gespecificeerd.""",
-            file_contents=[file_content]
+            file_contents=[image_content]
         )
         
         # Send message and get response
