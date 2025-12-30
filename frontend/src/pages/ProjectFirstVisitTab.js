@@ -382,7 +382,6 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
     setPhotos(project.first_visit_photos || []);
     setMeasurements(project.measurements || []);
     setRoomMeasurements(project.room_measurements || []);
-    console.log('Project photos updated:', project.first_visit_photos);
   }, [project.first_visit_notes, project.first_visit_photos, project.measurements, project.room_measurements]);
 
   const handlePhotoUpload = async (e) => {
