@@ -45,6 +45,8 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
   const [currentAnalysis, setCurrentAnalysis] = useState(null);
   const [floorPlanWorkSearch, setFloorPlanWorkSearch] = useState('');
   const [showFloorPlanWorkDropdown, setShowFloorPlanWorkDropdown] = useState(null); // surface id
+  const [showCustomWorkForm, setShowCustomWorkForm] = useState(null); // surface id for custom work item form
+  const [customWorkItem, setCustomWorkItem] = useState({ title: '', price: '', unit: 'm²' });
   
   // NEW: Room-based measurement system
   const [roomMeasurements, setRoomMeasurements] = useState(project.room_measurements || []);
