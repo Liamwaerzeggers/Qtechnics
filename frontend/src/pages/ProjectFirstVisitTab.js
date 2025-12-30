@@ -1291,11 +1291,11 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                       style={{backgroundColor: '#10B981'}}
                     >
                       <Save className="mr-2" size={18} />
-                      Analyse Opslaan
+                      {editingAnalysisId ? 'Wijzigingen Opslaan' : 'Analyse Opslaan'}
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => setCurrentAnalysis(null)}
+                      onClick={editingAnalysisId ? cancelEditing : () => setCurrentAnalysis(null)}
                     >
                       <X className="mr-2" size={18} />
                       Annuleren
