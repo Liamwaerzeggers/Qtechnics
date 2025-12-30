@@ -816,12 +816,319 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
             💡 Tip: Deze notities helpen bij het opstellen van de offerte en zijn intern zichtbaar
           </p>
 
-          {/* NIEUWE SECTIE: Ruimte-gebaseerde Metingen */}
+          {/* NIEUWE SECTIE: Grondplan Analyse (AI) */}
+          <div className="mt-8 pt-8 border-t">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h4 className="text-lg font-bold flex items-center gap-2" style={{color: '#7C3AED'}}>
+                  <Sparkles className="w-5 h-5" />
+                  🏗️ Grondplan Analyse (AI)
+                </h4>
+                <p className="text-sm" style={{color: '#64748B'}}>
+                  Upload een grondplan of tekening en laat AI automatisch de oppervlaktes berekenen.
+                </p>
+              </div>
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFloorPlanUpload}
+                  className="hidden"
+                  disabled={analyzingFloorPlan}
+                />
+                <Button disabled={analyzingFloorPlan} asChild style={{backgroundColor: '#7C3AED'}}>
+                  <span>
+                    {analyzingFloorPlan ? (
+                      <>
+                        <Loader2 className="animate-spin mr-2" size={20} />
+                        Analyseren...
+                      </>
+                    ) : (
+                      <>
+                        <FileImage className="mr-2" size={20} />
+                        Upload Grondplan
+                      </>
+                    )}
+                  </span>
+                </Button>
+              </label>
+            </div>
+
+            {/* Current Analysis Result */}
+            {currentAnalysis && (
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 rounded-xl border-2 border-purple-200 mb-4">
+                <div className="flex items-start gap-4 mb-4">
+                  {/* Image Preview */}
+                  <div className="w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden border-2 border-purple-300">
+                    <img
+                      src={currentAnalysis.image_data}
+                      alt="Grondplan"
+                      className="w-full h-full object-contain bg-white"
+                    />
+                  </div>
+                  
+                  {/* Analysis Info */}
+                  <div className="flex-1">
+                    <h5 className="font-bold text-lg mb-2" style={{color: '#7C3AED'}}>
+                      ✨ AI Analyse Resultaat
+                    </h5>
+                    {currentAnalysis.analysis_result.room_name && (
+                      <p className="text-sm mb-1">
+                        <strong>Ruimte:</strong> {currentAnalysis.analysis_result.room_name}
+                      </p>
+                    )}
+                    {currentAnalysis.analysis_result.total_floor_area_m2 > 0 && (
+                      <p className="text-sm mb-1">
+                        <strong>Totaal vloeroppervlak:</strong> {currentAnalysis.analysis_result.total_floor_area_m2.toFixed(2)} m²
+                      </p>
+                    )}
+                    {currentAnalysis.analysis_result.analysis_notes && (
+                      <p className="text-xs mt-2 p-2 bg-white rounded" style={{color: '#64748B'}}>
+                        💡 {currentAnalysis.analysis_result.analysis_notes}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Detected Surfaces */}
+                <h6 className="font-semibold mb-3" style={{color: '#1E3A8A'}}>
+                  Gevonden Oppervlakken ({currentAnalysis.surfaces.length})
+                </h6>
+                <div className="space-y-4">
+                  {currentAnalysis.surfaces.map((surface) => (
+                    <div key={surface.id} className="bg-white p-4 rounded-lg border">
+                      {/* Surface Header */}
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="text-2xl">
+                          {surface.type === 'vloer' ? '🟫' : surface.type === 'muur' ? '🧱' : '⬜'}
+                        </span>
+                        <input
+                          type="text"
+                          value={surface.title}
+                          onChange={(e) => updateSurfaceTitle(surface.id, e.target.value)}
+                          className="flex-1 font-bold text-lg border-b-2 border-transparent hover:border-purple-300 focus:border-purple-500 outline-none px-1"
+                          style={{color: '#1E293B'}}
+                        />
+                        <div className="flex items-center gap-2 bg-purple-100 px-3 py-1 rounded-full">
+                          <span className="text-sm">Oppervlak:</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={surface.net_area_m2 || surface.area_m2 || ''}
+                            onChange={(e) => updateSurfaceArea(surface.id, e.target.value)}
+                            className="w-20 font-bold text-center border rounded px-2 py-1"
+                          />
+                          <span className="text-sm font-bold">m²</span>
+                        </div>
+                      </div>
+
+                      {/* Surface Notes */}
+                      {surface.notes && (
+                        <p className="text-xs mb-3 px-2 py-1 bg-gray-50 rounded" style={{color: '#64748B'}}>
+                          📝 {surface.notes}
+                        </p>
+                      )}
+
+                      {/* Work Items Selection */}
+                      <div className="mb-3">
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="🔍 Zoek werk om toe te voegen..."
+                            value={showFloorPlanWorkDropdown === surface.id ? floorPlanWorkSearch : ''}
+                            onChange={(e) => {
+                              setFloorPlanWorkSearch(e.target.value);
+                              setShowFloorPlanWorkDropdown(surface.id);
+                            }}
+                            onFocus={() => setShowFloorPlanWorkDropdown(surface.id)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                          />
+                          {showFloorPlanWorkDropdown === surface.id && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                              {workItems
+                                .filter(w => 
+                                  !floorPlanWorkSearch || 
+                                  w.title.toLowerCase().includes(floorPlanWorkSearch.toLowerCase())
+                                )
+                                .slice(0, 15)
+                                .map((item) => (
+                                  <div
+                                    key={item.id}
+                                    className="p-2 hover:bg-purple-50 cursor-pointer border-b text-sm"
+                                    onClick={() => addWorkItemToSurface(surface.id, item)}
+                                  >
+                                    <span className="font-medium">{item.title}</span>
+                                    <span className="ml-2 text-gray-500">€{item.price.toFixed(2)}/{item.unit}</span>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Selected Work Items */}
+                      {surface.work_items.length > 0 && (
+                        <div className="space-y-2">
+                          {surface.work_items.map((wi) => {
+                            const area = surface.net_area_m2 || surface.area_m2 || 0;
+                            const subtotal = area * wi.price;
+                            return (
+                              <div key={wi.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
+                                <div className="flex-1">
+                                  <span className="font-medium">{wi.title}</span>
+                                  <span className="ml-2 text-gray-500">
+                                    {area.toFixed(2)} {wi.unit} × €{wi.price.toFixed(2)} = <strong>€{subtotal.toFixed(2)}</strong>
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <select
+                                    value={wi.vat_rate}
+                                    onChange={(e) => {
+                                      setCurrentAnalysis({
+                                        ...currentAnalysis,
+                                        surfaces: currentAnalysis.surfaces.map(s =>
+                                          s.id === surface.id
+                                            ? { ...s, work_items: s.work_items.map(w => w.id === wi.id ? {...w, vat_rate: parseInt(e.target.value)} : w) }
+                                            : s
+                                        )
+                                      });
+                                    }}
+                                    className="px-2 py-1 border rounded text-xs"
+                                  >
+                                    <option value="6">6%</option>
+                                    <option value="21">21%</option>
+                                  </select>
+                                  <button
+                                    onClick={() => removeWorkItemFromSurface(surface.id, wi.id)}
+                                    className="text-red-500 hover:text-red-700 p-1"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          
+                          {/* Surface Subtotal */}
+                          <div className="text-right pt-2 border-t">
+                            <span className="font-semibold" style={{color: '#166534'}}>
+                              Subtotaal: €{calculateSurfaceTotal(surface).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Analysis Total & Actions */}
+                <div className="mt-4 p-4 bg-green-100 rounded-xl border border-green-300">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="font-bold text-lg" style={{color: '#166534'}}>💰 Totaal Grondplan:</span>
+                    <span className="font-bold text-2xl" style={{color: '#166534'}}>
+                      €{calculateAnalysisTotal(currentAnalysis).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={saveFloorPlanAnalysis}
+                      className="flex-1"
+                      style={{backgroundColor: '#10B981'}}
+                    >
+                      <Save className="mr-2" size={18} />
+                      Analyse Opslaan
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setCurrentAnalysis(null)}
+                    >
+                      <X className="mr-2" size={18} />
+                      Annuleren
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Saved Floor Plan Analyses */}
+            {floorPlanAnalyses.length > 0 && (
+              <div className="space-y-4 mb-4">
+                <h5 className="font-semibold text-sm" style={{color: '#7C3AED'}}>
+                  📋 Opgeslagen Grondplan Analyses ({floorPlanAnalyses.length})
+                </h5>
+                {floorPlanAnalyses.map((analysis) => (
+                  <div key={analysis.id} className="p-4 bg-purple-50 rounded-xl border border-purple-200">
+                    <div className="flex items-start gap-4">
+                      {/* Thumbnail */}
+                      {analysis.image_data && (
+                        <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden border">
+                          <img
+                            src={analysis.image_data}
+                            alt="Grondplan"
+                            className="w-full h-full object-contain bg-white"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Analysis Summary */}
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-bold" style={{color: '#7C3AED'}}>
+                            {analysis.analysis_result?.room_name || analysis.filename || 'Grondplan'}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => deleteFloorPlanAnalysis(analysis.id)}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </div>
+                        
+                        {/* Surfaces Summary */}
+                        <div className="space-y-1">
+                          {analysis.surfaces?.map((s, idx) => (
+                            <div key={idx} className="flex justify-between text-sm py-1 px-2 bg-white rounded">
+                              <span>{s.title}</span>
+                              <span className="font-medium">
+                                {(s.net_area_m2 || s.area_m2 || 0).toFixed(2)} m² - €{calculateSurfaceTotal(s).toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Total */}
+                        <div className="mt-2 pt-2 border-t text-right">
+                          <span className="font-bold" style={{color: '#166534'}}>
+                            Totaal: €{calculateAnalysisTotal(analysis).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Empty State */}
+            {floorPlanAnalyses.length === 0 && !currentAnalysis && (
+              <div className="text-center py-8 border-2 border-dashed rounded-xl mb-4" style={{borderColor: '#C4B5FD'}}>
+                <span className="text-4xl mb-2 block">🏗️</span>
+                <p style={{color: '#7C3AED'}}>Upload een grondplan om automatisch oppervlaktes te berekenen</p>
+                <p className="text-xs mt-1" style={{color: '#A78BFA'}}>Ondersteunt hand- en computergetekende plannen</p>
+              </div>
+            )}
+          </div>
+
+          {/* Divider */}
+          <div className="my-8 border-t-2 border-dashed" style={{borderColor: '#CBD5E1'}}></div>
+
+          {/* BESTAANDE SECTIE: Ruimte-gebaseerde Metingen (Handmatig) */}
           <div className="mt-8 pt-8 border-t">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h4 className="text-lg font-bold" style={{color: '#1E3A8A'}}>
-                  📐 Ruimte Metingen (Nieuw)
+                  📐 Ruimte Metingen (Handmatig)
                 </h4>
                 <p className="text-sm" style={{color: '#64748B'}}>
                   Voer afmetingen in per oppervlak (vloer, muur, plafond) en selecteer het gewenste werk.
