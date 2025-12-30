@@ -179,6 +179,25 @@ export default function QuoteDetailPage() {
   const handleAddItem = async (e) => {
     e.preventDefault();
     try {
+      // If this is a custom work item (not from dropdown), auto-add to catalog
+      if (formData.item_type === 'werk' && useCustomMaterial && formData.description && formData.unit_price) {
+        try {
+          // Try to auto-add to work items catalog
+          const params = new URLSearchParams({
+            title: formData.description,
+            unit: formData.unit || 'm²',
+            price: parseFloat(formData.unit_price)
+          });
+          const autoAddResponse = await axios.post(`${API}/work-items/auto-add?${params.toString()}`, {}, { withCredentials: true });
+          if (autoAddResponse.data.created) {
+            toast.info(`"${formData.description}" toegevoegd aan werk items catalogus`);
+          }
+        } catch (autoAddError) {
+          // Silently fail - the item might already exist or there was an error
+          console.log('Auto-add work item:', autoAddError?.response?.data?.detail || autoAddError.message);
+        }
+      }
+
       await axios.post(`${API}/quotes/${quoteId}/items`, {
         ...formData,
         quantity: parseFloat(formData.quantity),
