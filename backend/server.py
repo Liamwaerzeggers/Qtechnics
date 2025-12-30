@@ -4099,8 +4099,14 @@ Houd rekening met:
 Als je bepaalde afmetingen niet kunt aflezen, geef dan 0 en vermeld dit in de notes."""
         ).with_model("openai", "gpt-4o")
         
-        # Create message with image
-        image_content = ImageContent(image_base64=image_base64)
+        # Determine content type from file
+        content_type = file.content_type or "image/jpeg"
+        
+        # Create message with image using FileContent
+        file_content = FileContent(
+            content_type=content_type,
+            file_content_base64=image_base64
+        )
         user_message = UserMessage(
             text="""Analyseer dit grondplan/tekening. 
             
@@ -4110,7 +4116,7 @@ Identificeer alle afmetingen die je kunt lezen en bereken:
 3. Plafondoppervlak
 
 Geef het resultaat als JSON object zoals gespecificeerd.""",
-            image_contents=[image_content]
+            file_contents=[file_content]
         )
         
         # Send message and get response
