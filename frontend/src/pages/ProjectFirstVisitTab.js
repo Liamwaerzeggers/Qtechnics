@@ -1022,17 +1022,31 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                         <div className="relative">
                           <input
                             type="text"
-                            placeholder="🔍 Zoek werk om toe te voegen..."
+                            placeholder="🔍 Zoek of typ nieuw werk item..."
                             value={showFloorPlanWorkDropdown === surface.id ? floorPlanWorkSearch : ''}
                             onChange={(e) => {
                               setFloorPlanWorkSearch(e.target.value);
                               setShowFloorPlanWorkDropdown(surface.id);
+                              setShowCustomWorkForm(null);
                             }}
                             onFocus={() => setShowFloorPlanWorkDropdown(surface.id)}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
                           />
                           {showFloorPlanWorkDropdown === surface.id && (
-                            <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                            <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                              {/* Option to add custom work item */}
+                              {floorPlanWorkSearch && (
+                                <div
+                                  className="p-3 hover:bg-green-50 cursor-pointer border-b bg-green-50 text-sm"
+                                  onClick={() => {
+                                    setShowCustomWorkForm(surface.id);
+                                    setCustomWorkItem({ title: floorPlanWorkSearch, price: '', unit: 'm²' });
+                                    setShowFloorPlanWorkDropdown(null);
+                                  }}
+                                >
+                                  <span className="font-medium text-green-700">➕ "{floorPlanWorkSearch}" als nieuw werk item toevoegen</span>
+                                </div>
+                              )}
                               {workItems
                                 .filter(w => 
                                   !floorPlanWorkSearch || 
@@ -1049,9 +1063,69 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                                     <span className="ml-2 text-gray-500">€{item.price.toFixed(2)}/{item.unit}</span>
                                   </div>
                                 ))}
+                              {workItems.filter(w => !floorPlanWorkSearch || w.title.toLowerCase().includes(floorPlanWorkSearch.toLowerCase())).length === 0 && !floorPlanWorkSearch && (
+                                <div className="p-3 text-gray-500 text-sm text-center">
+                                  Geen werk items gevonden. Typ om een nieuw item toe te voegen.
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
+                        
+                        {/* Custom Work Item Form */}
+                        {showCustomWorkForm === surface.id && (
+                          <div className="mt-2 p-3 bg-green-50 border-2 border-green-200 rounded-lg">
+                            <div className="text-sm font-semibold text-green-700 mb-2">Nieuw werk item toevoegen:</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                              <div className="sm:col-span-2">
+                                <input
+                                  type="text"
+                                  placeholder="Titel"
+                                  value={customWorkItem.title}
+                                  onChange={(e) => setCustomWorkItem({...customWorkItem, title: e.target.value})}
+                                  className="w-full px-3 py-1.5 border rounded text-sm"
+                                />
+                              </div>
+                              <div>
+                                <select
+                                  value={customWorkItem.unit}
+                                  onChange={(e) => setCustomWorkItem({...customWorkItem, unit: e.target.value})}
+                                  className="w-full px-2 py-1.5 border rounded text-sm"
+                                >
+                                  <option value="m²">m²</option>
+                                  <option value="m">m</option>
+                                  <option value="stuk">stuk</option>
+                                  <option value="uur">uur</option>
+                                </select>
+                              </div>
+                              <div>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  placeholder="€ Prijs"
+                                  value={customWorkItem.price}
+                                  onChange={(e) => setCustomWorkItem({...customWorkItem, price: e.target.value})}
+                                  className="w-full px-3 py-1.5 border rounded text-sm"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex gap-2 mt-2 justify-end">
+                              <button
+                                onClick={() => setShowCustomWorkForm(null)}
+                                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                              >
+                                Annuleren
+                              </button>
+                              <button
+                                onClick={() => addCustomWorkItemToSurface(surface.id, customWorkItem.title, customWorkItem.price, customWorkItem.unit)}
+                                className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                              >
+                                Toevoegen
+                              </button>
+                            </div>
+                            <p className="text-xs text-green-600 mt-1">💡 Dit werk item wordt automatisch aan je catalogus toegevoegd</p>
+                          </div>
+                        )}
                       </div>
 
                       {/* Selected Work Items */}
