@@ -564,10 +564,6 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {/* Debug: Show the URLs being used */}
-              <div className="col-span-full text-xs text-gray-500 mb-2">
-                Debug URLs: {photos.map(p => getFullImageUrl(p)).join(', ')}
-              </div>
               {photos.map((photo, idx) => (
                 <div key={idx} className="relative group">
                   {/* Square thumbnail with rounded corners */}
@@ -580,12 +576,10 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                       alt={`Eerste bezoek ${idx + 1}`}
                       className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
                       onError={(e) => {
-                        console.error('Image load error for URL:', getFullImageUrl(photo));
                         e.target.onerror = null; // Prevent infinite loop
                         e.target.style.display = 'none';
                         e.target.nextSibling && (e.target.nextSibling.style.display = 'flex');
                       }}
-                      onLoad={() => console.log('Image loaded successfully:', getFullImageUrl(photo))}
                       loading="lazy"
                     />
                     <div className="hidden items-center justify-center h-full text-gray-400 absolute inset-0">
