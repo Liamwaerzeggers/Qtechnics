@@ -1004,7 +1004,15 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
 
             {/* Current Analysis Result */}
             {currentAnalysis && (
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-3 sm:p-5 rounded-xl border-2 border-purple-200 mb-4">
+              <div id="floor-plan-edit-section" className="bg-gradient-to-r from-purple-50 to-indigo-50 p-3 sm:p-5 rounded-xl border-2 border-purple-200 mb-4">
+                {/* Edit Mode Header */}
+                {editingAnalysisId && (
+                  <div className="flex items-center gap-2 mb-3 p-2 bg-purple-100 rounded-lg">
+                    <Edit2 size={16} className="text-purple-600" />
+                    <span className="text-sm font-medium text-purple-700">Bewerkmodus - Pas de analyse aan en klik op Opslaan</span>
+                  </div>
+                )}
+                
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-4">
                   {/* Image Preview */}
                   <div className="w-full sm:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden border-2 border-purple-300">
@@ -1018,19 +1026,28 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                   {/* Analysis Info */}
                   <div className="flex-1 w-full text-center sm:text-left">
                     <h5 className="font-bold text-lg mb-2" style={{color: '#7C3AED'}}>
-                      ✨ AI Analyse Resultaat
+                      {editingAnalysisId ? '✏️ Bewerk Analyse' : '✨ AI Analyse Resultaat'}
                     </h5>
-                    {currentAnalysis.analysis_result.room_name && (
-                      <p className="text-sm mb-1">
-                        <strong>Ruimte:</strong> {currentAnalysis.analysis_result.room_name}
-                      </p>
-                    )}
-                    {currentAnalysis.analysis_result.total_floor_area_m2 > 0 && (
+                    
+                    {/* Editable Title */}
+                    <div className="mb-2">
+                      <label className="text-xs font-medium text-gray-500">Titel / Ruimtenaam:</label>
+                      <input
+                        type="text"
+                        value={currentAnalysis.analysis_result?.room_name || ''}
+                        onChange={(e) => updateAnalysisTitle(e.target.value)}
+                        placeholder="Bijv. Woonkamer, Badkamer, Keuken..."
+                        className="w-full mt-1 px-3 py-2 border-2 border-purple-200 rounded-lg text-sm font-medium focus:border-purple-500 outline-none"
+                        style={{color: '#1E293B'}}
+                      />
+                    </div>
+                    
+                    {currentAnalysis.analysis_result?.total_floor_area_m2 > 0 && (
                       <p className="text-sm mb-1">
                         <strong>Totaal vloeroppervlak:</strong> {currentAnalysis.analysis_result.total_floor_area_m2.toFixed(2)} m²
                       </p>
                     )}
-                    {currentAnalysis.analysis_result.analysis_notes && (
+                    {currentAnalysis.analysis_result?.analysis_notes && (
                       <p className="text-xs mt-2 p-2 bg-white rounded" style={{color: '#64748B'}}>
                         💡 {currentAnalysis.analysis_result.analysis_notes}
                       </p>
