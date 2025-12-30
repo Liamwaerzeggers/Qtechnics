@@ -4019,6 +4019,133 @@ async def get_quick_tasks(current_user: User = Depends(get_current_user)):
     tasks = await db.quick_tasks.find({"user_id": current_user.id}, {"_id": 0}).to_list(1000)
     return tasks
 
+# ============= FLOOR PLAN ANALYSIS ENDPOINT =============
+
+@api_router.post("/projects/{project_id}/analyze-floor-plan")
+async def analyze_floor_plan(
+    project_id: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Analyze a floor plan image using AI to extract measurements and calculate surface areas"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can analyze floor plans")
+    
+    # Verify project exists
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    # Read and encode the image
+    try:
+        content = await file.read()
+        image_base64 = base64.b64encode(content).decode('utf-8')
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Kon afbeelding niet lezen: {str(e)}")
+    
+    # Get API key
+    api_key = os.environ.get('EMERGENT_LLM_KEY')
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI configuratie ontbreekt")
+    
+    # Create AI chat for analysis
+    try:
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"floor-plan-{project_id}-{uuid.uuid4()}",
+            system_message="""Je bent een expert in het analyseren van grondplannen en bouwtekeningen.
+            
+Je taak is om uit een grondplan/tekening de afmetingen te extraheren en oppervlaktes te berekenen.
+
+BELANGRIJK: Analyseer de tekening zorgvuldig en geef ALLEEN de informatie die je kunt aflezen uit de tekening.
+
+Geef je antwoord ALLEEN als een JSON object in dit exacte formaat (geen andere tekst):
+{
+    "success": true,
+    "room_name": "naam van de ruimte indien zichtbaar",
+    "total_floor_area_m2": 0.0,
+    "total_wall_area_m2": 0.0,
+    "ceiling_height_m": 0.0,
+    "surfaces": [
+        {
+            "id": "unieke_id",
+            "type": "vloer|muur|plafond",
+            "title": "beschrijving van dit oppervlak",
+            "length_m": 0.0,
+            "width_m": 0.0,
+            "height_m": 0.0,
+            "area_m2": 0.0,
+            "deductions_m2": 0.0,
+            "net_area_m2": 0.0,
+            "notes": "opmerkingen zoals openingen, aftrek etc"
+        }
+    ],
+    "detected_dimensions": [
+        {"description": "wat je hebt gemeten", "value": "de waarde"}
+    ],
+    "analysis_notes": "algemene opmerkingen over de tekening"
+}
+
+Houd rekening met:
+- Scheidingsmuren en openingen
+- Ramen en deuren (aftrek van muuroppervlak)
+- Verschillende vloerniveaus indien aanwezig
+- Onregelmatige vormen
+
+Als je bepaalde afmetingen niet kunt aflezen, geef dan 0 en vermeld dit in de notes."""
+        ).with_model("openai", "gpt-4o")
+        
+        # Create message with image
+        image_content = ImageContent(image_base64=image_base64)
+        user_message = UserMessage(
+            text="""Analyseer dit grondplan/tekening. 
+            
+Identificeer alle afmetingen die je kunt lezen en bereken:
+1. Vloeroppervlak (totaal en per zone indien van toepassing)
+2. Muuroppervlak (rekening houdend met openingen/deuren/ramen)
+3. Plafondoppervlak
+
+Geef het resultaat als JSON object zoals gespecificeerd.""",
+            image_contents=[image_content]
+        )
+        
+        # Send message and get response
+        response = await chat.send_message(user_message)
+        
+        # Parse JSON from response
+        # Try to extract JSON from the response
+        response_text = response.strip()
+        
+        # Find JSON in response
+        if response_text.startswith('{'):
+            json_str = response_text
+        elif '```json' in response_text:
+            json_str = response_text.split('```json')[1].split('```')[0].strip()
+        elif '```' in response_text:
+            json_str = response_text.split('```')[1].split('```')[0].strip()
+        else:
+            json_str = response_text
+            
+        result = json.loads(json_str)
+        
+        # Add IDs if not present
+        for i, surface in enumerate(result.get('surfaces', [])):
+            if 'id' not in surface:
+                surface['id'] = f"surface_{i}_{uuid.uuid4().hex[:8]}"
+        
+        return result
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON parse error: {e}, response: {response_text[:500]}")
+        return {
+            "success": False,
+            "error": "Kon analyse resultaat niet verwerken",
+            "raw_response": response_text[:1000]
+        }
+    except Exception as e:
+        logger.error(f"Floor plan analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Analyse mislukt: {str(e)}")
+
 @api_router.post("/quick-tasks")
 async def create_quick_task(task: QuickTaskCreate, current_user: User = Depends(get_current_user)):
     """Create a new quick task"""
