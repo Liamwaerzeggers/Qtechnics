@@ -389,7 +389,170 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
     setPhotos(project.first_visit_photos || []);
     setMeasurements(project.measurements || []);
     setRoomMeasurements(project.room_measurements || []);
-  }, [project.first_visit_notes, project.first_visit_photos, project.measurements, project.room_measurements]);
+    setFloorPlanAnalyses(project.floor_plan_analyses || []);
+  }, [project.first_visit_notes, project.first_visit_photos, project.measurements, project.room_measurements, project.floor_plan_analyses]);
+
+  // Floor Plan Analysis Functions
+  const handleFloorPlanUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Selecteer een afbeelding (JPG, PNG, etc.)');
+      return;
+    }
+    
+    setAnalyzingFloorPlan(true);
+    toast.info('Grondplan wordt geanalyseerd door AI...');
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await axios.post(
+        `${API}/projects/${project.id}/analyze-floor-plan`,
+        formData,
+        { 
+          withCredentials: true,
+          headers: { 'Content-Type': 'multipart/form-data' }
+        }
+      );
+      
+      if (response.data.success) {
+        // Create analysis object with image preview
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          const newAnalysis = {
+            id: `analysis_${Date.now()}`,
+            image_data: event.target.result,
+            filename: file.name,
+            analysis_result: response.data,
+            surfaces: response.data.surfaces.map(s => ({
+              ...s,
+              work_items: []
+            })),
+            created_at: new Date().toISOString()
+          };
+          
+          setCurrentAnalysis(newAnalysis);
+          toast.success('Grondplan geanalyseerd! Controleer de resultaten en voeg werk toe.');
+        };
+        reader.readAsDataURL(file);
+      } else {
+        toast.error(response.data.error || 'Analyse mislukt');
+        if (response.data.raw_response) {
+          console.log('Raw AI response:', response.data.raw_response);
+        }
+      }
+    } catch (error) {
+      console.error('Floor plan analysis error:', error);
+      toast.error(error.response?.data?.detail || 'Kon grondplan niet analyseren');
+    } finally {
+      setAnalyzingFloorPlan(false);
+      e.target.value = '';
+    }
+  };
+
+  const updateSurfaceTitle = (surfaceId, newTitle) => {
+    if (!currentAnalysis) return;
+    setCurrentAnalysis({
+      ...currentAnalysis,
+      surfaces: currentAnalysis.surfaces.map(s =>
+        s.id === surfaceId ? { ...s, title: newTitle } : s
+      )
+    });
+  };
+
+  const updateSurfaceArea = (surfaceId, newArea) => {
+    if (!currentAnalysis) return;
+    setCurrentAnalysis({
+      ...currentAnalysis,
+      surfaces: currentAnalysis.surfaces.map(s =>
+        s.id === surfaceId ? { ...s, net_area_m2: parseFloat(newArea) || 0 } : s
+      )
+    });
+  };
+
+  const addWorkItemToSurface = (surfaceId, workItem) => {
+    if (!currentAnalysis) return;
+    setCurrentAnalysis({
+      ...currentAnalysis,
+      surfaces: currentAnalysis.surfaces.map(s => {
+        if (s.id === surfaceId) {
+          if (s.work_items.find(wi => wi.id === workItem.id)) {
+            toast.error('Dit werk item is al toegevoegd');
+            return s;
+          }
+          return {
+            ...s,
+            work_items: [...s.work_items, { ...workItem, vat_rate: 6 }]
+          };
+        }
+        return s;
+      })
+    });
+    setFloorPlanWorkSearch('');
+    setShowFloorPlanWorkDropdown(null);
+  };
+
+  const removeWorkItemFromSurface = (surfaceId, workItemId) => {
+    if (!currentAnalysis) return;
+    setCurrentAnalysis({
+      ...currentAnalysis,
+      surfaces: currentAnalysis.surfaces.map(s =>
+        s.id === surfaceId
+          ? { ...s, work_items: s.work_items.filter(wi => wi.id !== workItemId) }
+          : s
+      )
+    });
+  };
+
+  const saveFloorPlanAnalysis = async () => {
+    if (!currentAnalysis) return;
+    
+    try {
+      const updatedAnalyses = [...floorPlanAnalyses, currentAnalysis];
+      
+      await axios.put(
+        `${API}/projects/${project.id}`,
+        { floor_plan_analyses: updatedAnalyses },
+        { withCredentials: true }
+      );
+      
+      toast.success('Grondplan analyse opgeslagen!');
+      setCurrentAnalysis(null);
+      onUpdate();
+    } catch (error) {
+      toast.error('Kon analyse niet opslaan');
+    }
+  };
+
+  const deleteFloorPlanAnalysis = async (analysisId) => {
+    try {
+      const updatedAnalyses = floorPlanAnalyses.filter(a => a.id !== analysisId);
+      
+      await axios.put(
+        `${API}/projects/${project.id}`,
+        { floor_plan_analyses: updatedAnalyses },
+        { withCredentials: true }
+      );
+      
+      toast.success('Analyse verwijderd');
+      onUpdate();
+    } catch (error) {
+      toast.error('Kon analyse niet verwijderen');
+    }
+  };
+
+  const calculateSurfaceTotal = (surface) => {
+    const area = surface.net_area_m2 || surface.area_m2 || 0;
+    return surface.work_items.reduce((sum, wi) => sum + (area * wi.price), 0);
+  };
+
+  const calculateAnalysisTotal = (analysis) => {
+    return analysis.surfaces.reduce((sum, s) => sum + calculateSurfaceTotal(s), 0);
+  };
 
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
