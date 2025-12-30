@@ -234,6 +234,9 @@ class Project(BaseModel):
     measurements: List[dict] = []  # [{work_item_id, title, quantity, unit, price, vat_rate}]
     room_measurements: List[dict] = []  # [{id, room_name, surface_type, length, width, height, area, work_items}]
     
+    # NIEUWE SECTIE: Grondplan Analyses (AI)
+    floor_plan_analyses: List[dict] = []  # [{id, image_url, analysis_result, surfaces_with_work, created_at}]
+    
     # NIEUWE SECTIE: 3D Ontwerpen
     design_3d_files: List[dict] = []  # [{filename, url, upload_date}]
     
