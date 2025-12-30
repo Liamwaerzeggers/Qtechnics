@@ -39,6 +39,13 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
   const [workItemSearch, setWorkItemSearch] = useState('');
   const [filteredWorkItems, setFilteredWorkItems] = useState([]);
   
+  // NEW: Floor plan AI analysis system
+  const [floorPlanAnalyses, setFloorPlanAnalyses] = useState(project.floor_plan_analyses || []);
+  const [analyzingFloorPlan, setAnalyzingFloorPlan] = useState(false);
+  const [currentAnalysis, setCurrentAnalysis] = useState(null);
+  const [floorPlanWorkSearch, setFloorPlanWorkSearch] = useState('');
+  const [showFloorPlanWorkDropdown, setShowFloorPlanWorkDropdown] = useState(null); // surface id
+  
   // NEW: Room-based measurement system
   const [roomMeasurements, setRoomMeasurements] = useState(project.room_measurements || []);
   const [newRoom, setNewRoom] = useState({
