@@ -18,7 +18,6 @@ const getFullImageUrl = (photoPath) => {
   // Add cache busting parameter to force reload
   const cacheBuster = `?v=${Date.now()}`;
   const fullUrl = `${baseUrl}${photoPath}${cacheBuster}`;
-  console.log('Image URL constructed:', fullUrl, 'from path:', photoPath);
   return fullUrl;
 };
 
