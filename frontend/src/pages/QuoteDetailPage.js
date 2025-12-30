@@ -181,7 +181,7 @@ export default function QuoteDetailPage() {
     e.preventDefault();
     try {
       // If this is a custom work item (not from dropdown), auto-add to catalog
-      if (formData.item_type === 'werk' && useCustomMaterial && formData.description && formData.unit_price) {
+      if (formData.item_type === 'arbeid' && useCustomMaterial && formData.description && formData.unit_price) {
         try {
           // Try to auto-add to work items catalog
           const params = new URLSearchParams({
