@@ -1390,11 +1390,33 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                           ))}
                         </div>
                         
-                        {/* Total */}
-                        <div className="mt-2 pt-2 border-t text-right">
+                        {/* Total & Generate Quote Button */}
+                        <div className="mt-3 pt-3 border-t flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                           <span className="font-bold" style={{color: '#166534'}}>
                             Totaal: €{calculateAnalysisTotal(analysis).toFixed(2)}
                           </span>
+                          {/* Check if analysis has work items */}
+                          {analysis.surfaces?.some(s => s.work_items?.length > 0) && (
+                            <Button
+                              size="sm"
+                              onClick={() => generateQuoteFromAnalysis(analysis.id)}
+                              disabled={generatingQuoteFromAnalysis}
+                              style={{backgroundColor: '#1E40AF'}}
+                              className="w-full sm:w-auto"
+                            >
+                              {generatingQuoteFromAnalysis ? (
+                                <>
+                                  <Loader2 className="animate-spin mr-2" size={14} />
+                                  Genereren...
+                                </>
+                              ) : (
+                                <>
+                                  <FileText size={14} className="mr-2" />
+                                  Naar Offerte
+                                </>
+                              )}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
