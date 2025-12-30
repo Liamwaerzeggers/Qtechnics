@@ -3394,6 +3394,141 @@ async def generate_quote_from_measurements(project_id: str, current_user: User =
         "measurements_cleared": True
     }
 
+@api_router.post("/projects/{project_id}/generate-quote-from-analysis/{analysis_id}")
+async def generate_quote_from_floor_plan_analysis(
+    project_id: str, 
+    analysis_id: str, 
+    current_user: User = Depends(get_current_user)
+):
+    """Generate quote from floor plan analysis - creates individual editable line items"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can generate quotes")
+    
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Find the specific floor plan analysis
+    floor_plan_analyses = project.get('floor_plan_analyses', [])
+    analysis = next((a for a in floor_plan_analyses if a.get('id') == analysis_id), None)
+    
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Floor plan analysis not found")
+    
+    surfaces = analysis.get('surfaces', [])
+    if not surfaces:
+        raise HTTPException(status_code=400, detail="No surfaces in analysis to generate quote from")
+    
+    # Check if any surface has work items
+    has_work_items = any(s.get('work_items', []) for s in surfaces)
+    if not has_work_items:
+        raise HTTPException(status_code=400, detail="No work items in analysis to generate quote from")
+    
+    # Check if lead exists
+    lead_id = project.get('lead_id')
+    if not lead_id:
+        raise HTTPException(status_code=400, detail="Project must have a lead to generate quote")
+    
+    # Create quote first
+    quote_id = f"OFF-{datetime.now(timezone.utc).year}-{str(uuid.uuid4())[:6].upper()}"
+    
+    # Create line items from floor plan analysis
+    line_items_to_insert = []
+    
+    for surface in surfaces:
+        surface_area = float(surface.get('net_area_m2') or surface.get('area_m2') or 0)
+        surface_title = surface.get('title', 'Oppervlak')
+        
+        for wi in surface.get('work_items', []):
+            # Use custom_area if set, otherwise use surface area
+            work_area = float(wi.get('custom_area', surface_area))
+            unit_price = float(wi.get('price', 0))
+            vat_rate = int(wi.get('vat_rate', 6))
+            
+            total_excl = work_area * unit_price
+            vat_amount = total_excl * (vat_rate / 100)
+            total_incl = total_excl + vat_amount
+            
+            # Create description with surface info
+            description = f"{wi.get('title', '')} - {surface_title}"
+            
+            line_item_doc = {
+                "id": str(uuid.uuid4()),
+                "quote_id": quote_id,
+                "description": description,
+                "quantity": work_area,
+                "unit": wi.get('unit', 'm²'),
+                "unit_price": unit_price,
+                "vat_rate": float(vat_rate),
+                "item_type": "arbeid",
+                "total_excl_vat": total_excl,
+                "vat_amount": vat_amount,
+                "total_incl_vat": total_incl,
+                "total": total_incl,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            line_items_to_insert.append(line_item_doc)
+    
+    if not line_items_to_insert:
+        raise HTTPException(status_code=400, detail="No work items to add to quote")
+    
+    # Insert all line items into the separate collection
+    await db.line_items.insert_many(line_items_to_insert)
+    
+    # Calculate totals
+    total_excl_vat = sum(item['total_excl_vat'] for item in line_items_to_insert)
+    
+    # VAT breakdown
+    vat_breakdown = {}
+    for item in line_items_to_insert:
+        vat_key = str(int(item['vat_rate']))
+        if vat_key not in vat_breakdown:
+            vat_breakdown[vat_key] = 0.0
+        vat_breakdown[vat_key] += item['vat_amount']
+    
+    total_vat = sum(vat_breakdown.values())
+    total_incl_vat = total_excl_vat + total_vat
+    
+    # Get analysis title for quote
+    analysis_title = analysis.get('analysis_result', {}).get('room_name') or 'Grondplan Analyse'
+    
+    # Create quote document
+    quote = {
+        "id": quote_id,
+        "lead_id": lead_id,
+        "project_id": project_id,
+        "quote_number": quote_id,
+        "date": datetime.now(timezone.utc).isoformat(),
+        "status": "concept",
+        "description": f"Offerte gegenereerd vanuit: {analysis_title}",
+        "line_items": [],
+        "subtotal_labor": total_excl_vat,
+        "subtotal_material": 0,
+        "total_excl_vat": total_excl_vat,
+        "vat_breakdown": vat_breakdown,
+        "total_vat": total_vat,
+        "total_incl_vat": total_incl_vat,
+        "total_price": total_incl_vat,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "user_id": current_user.id
+    }
+    
+    await db.quotes.insert_one(quote)
+    
+    # Update project with quote_id
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"quote_id": quote_id}}
+    )
+    
+    return {
+        "message": "Quote generated from floor plan analysis",
+        "quote_id": quote_id,
+        "total_incl_vat": total_incl_vat,
+        "line_items_count": len(line_items_to_insert),
+        "analysis_title": analysis_title
+    }
+
 async def upload_design_file(
     project_id: str,
     file: UploadFile = File(...),
