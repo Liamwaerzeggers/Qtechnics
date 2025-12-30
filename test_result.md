@@ -88,8 +88,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Floor Plan Analysis - Custom Work Item Input"
-    - "Floor Plan Analysis - Editable m² per Work Item"
+    - "Edit Floor Plan Analysis"
   stuck_tasks: []
   test_priority: "high_first"
 
