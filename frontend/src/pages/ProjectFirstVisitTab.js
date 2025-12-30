@@ -1289,14 +1289,14 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
             )}
 
             {/* Saved Floor Plan Analyses */}
-            {floorPlanAnalyses.length > 0 && (
+            {floorPlanAnalyses.length > 0 && !currentAnalysis && (
               <div className="space-y-4 mb-4">
                 <h5 className="font-semibold text-sm" style={{color: '#7C3AED'}}>
                   📋 Opgeslagen Grondplan Analyses ({floorPlanAnalyses.length})
                 </h5>
                 {floorPlanAnalyses.map((analysis) => (
                   <div key={analysis.id} className="p-4 bg-purple-50 rounded-xl border border-purple-200">
-                    <div className="flex items-start gap-4">
+                    <div className="flex flex-col sm:flex-row items-start gap-4">
                       {/* Thumbnail */}
                       {analysis.image_data && (
                         <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden border">
@@ -1309,18 +1309,29 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                       )}
                       
                       {/* Analysis Summary */}
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
+                      <div className="flex-1 w-full">
+                        <div className="flex items-center justify-between mb-2 gap-2">
                           <span className="font-bold" style={{color: '#7C3AED'}}>
-                            {analysis.analysis_result?.room_name || analysis.filename || 'Grondplan'}
+                            {analysis.analysis_result?.room_name || analysis.filename || 'Onbekend'}
                           </span>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => deleteFloorPlanAnalysis(analysis.id)}
-                          >
-                            <Trash2 size={14} />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => editFloorPlanAnalysis(analysis)}
+                              className="text-purple-600 border-purple-300 hover:bg-purple-100"
+                            >
+                              <Edit2 size={14} className="mr-1" />
+                              Bewerk
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => deleteFloorPlanAnalysis(analysis.id)}
+                            >
+                              <Trash2 size={14} />
+                            </Button>
+                          </div>
                         </div>
                         
                         {/* Surfaces Summary */}
