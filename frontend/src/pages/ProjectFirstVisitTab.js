@@ -598,6 +598,11 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
   const saveFloorPlanAnalysis = async () => {
     if (!currentAnalysis) return;
     
+    // If editing, use update function instead
+    if (editingAnalysisId) {
+      return updateFloorPlanAnalysis();
+    }
+    
     try {
       const updatedAnalyses = [...floorPlanAnalyses, currentAnalysis];
       
