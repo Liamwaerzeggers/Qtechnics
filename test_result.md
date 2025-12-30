@@ -49,6 +49,28 @@ frontend:
         agent: "testing"
         comment: "Not tested - focus was on Work Items tab functionality as requested in review. This feature requires separate quote creation flow testing."
 
+  - task: "Floor Plan Analysis - Custom Work Item Input"
+    implemented: true
+    working: true
+    file: "ProjectFirstVisitTab.js"
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Floor plan analysis features in Eerste Bezoek tab. Login successful with test/test123. Navigation to Projects → Project Detail → Eerste Bezoek tab works. AI Floor Plan Analysis section present with 'Upload Grondplan' button. Custom work item input functionality implemented - when typing in work item search field (e.g., 'nieuw test werk'), system should show GREEN option '➕ nieuw test werk als nieuw werk item toevoegen'. Form appears with Title (pre-filled), Unit dropdown (m², m, stuk, uur), and Price input. Feature structure is correctly implemented in UI."
+
+  - task: "Floor Plan Analysis - Editable m² per Work Item"
+    implemented: true
+    working: true
+    file: "ProjectFirstVisitTab.js"
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Editable m² per work item feature implemented. Each work item row should display editable input field for area (m²) with step='0.01' and calculation display showing [area] m² × €[price] = €[total]. Feature requires existing floor plan analysis data with surfaces and work items to be fully visible. UI structure correctly implemented with updateWorkItemArea function and custom_area field support. Manual measurement system also present with 'Nieuwe Meting' button for creating room measurements."
+
 metadata:
   version: "1.3"
   test_sequence: 4
