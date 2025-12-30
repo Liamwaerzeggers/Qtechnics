@@ -856,10 +856,10 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
 
             {/* Current Analysis Result */}
             {currentAnalysis && (
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-5 rounded-xl border-2 border-purple-200 mb-4">
-                <div className="flex items-start gap-4 mb-4">
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-3 sm:p-5 rounded-xl border-2 border-purple-200 mb-4">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-4">
                   {/* Image Preview */}
-                  <div className="w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden border-2 border-purple-300">
+                  <div className="w-full sm:w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden border-2 border-purple-300">
                     <img
                       src={currentAnalysis.image_data}
                       alt="Grondplan"
@@ -868,7 +868,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                   </div>
                   
                   {/* Analysis Info */}
-                  <div className="flex-1">
+                  <div className="flex-1 w-full text-center sm:text-left">
                     <h5 className="font-bold text-lg mb-2" style={{color: '#7C3AED'}}>
                       ✨ AI Analyse Resultaat
                     </h5>
@@ -896,29 +896,31 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                 </h6>
                 <div className="space-y-4">
                   {currentAnalysis.surfaces.map((surface) => (
-                    <div key={surface.id} className="bg-white p-4 rounded-lg border">
+                    <div key={surface.id} className="bg-white p-3 sm:p-4 rounded-lg border">
                       {/* Surface Header */}
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className="text-2xl">
-                          {surface.type === 'vloer' ? '🟫' : surface.type === 'muur' ? '🧱' : '⬜'}
-                        </span>
-                        <input
-                          type="text"
-                          value={surface.title}
-                          onChange={(e) => updateSurfaceTitle(surface.id, e.target.value)}
-                          className="flex-1 font-bold text-lg border-b-2 border-transparent hover:border-purple-300 focus:border-purple-500 outline-none px-1"
-                          style={{color: '#1E293B'}}
-                        />
-                        <div className="flex items-center gap-2 bg-purple-100 px-3 py-1 rounded-full">
-                          <span className="text-sm">Oppervlak:</span>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="text-xl sm:text-2xl flex-shrink-0">
+                            {surface.type === 'vloer' ? '🟫' : surface.type === 'muur' ? '🧱' : '⬜'}
+                          </span>
+                          <input
+                            type="text"
+                            value={surface.title}
+                            onChange={(e) => updateSurfaceTitle(surface.id, e.target.value)}
+                            className="flex-1 min-w-0 font-bold text-base sm:text-lg border-b-2 border-transparent hover:border-purple-300 focus:border-purple-500 outline-none px-1"
+                            style={{color: '#1E293B'}}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 bg-purple-100 px-3 py-1.5 rounded-lg sm:rounded-full self-start sm:self-auto flex-shrink-0">
+                          <span className="text-xs sm:text-sm">Oppervlak:</span>
                           <input
                             type="number"
                             step="0.01"
                             value={surface.net_area_m2 || surface.area_m2 || ''}
                             onChange={(e) => updateSurfaceArea(surface.id, e.target.value)}
-                            className="w-20 font-bold text-center border rounded px-2 py-1"
+                            className="w-16 sm:w-20 font-bold text-center border rounded px-1 sm:px-2 py-1 text-sm"
                           />
-                          <span className="text-sm font-bold">m²</span>
+                          <span className="text-xs sm:text-sm font-bold">m²</span>
                         </div>
                       </div>
 
