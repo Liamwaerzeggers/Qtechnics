@@ -702,6 +702,33 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
     return analysis.surfaces.reduce((sum, s) => sum + calculateSurfaceTotal(s), 0);
   };
 
+  // Generate quote from floor plan analysis
+  const [generatingQuoteFromAnalysis, setGeneratingQuoteFromAnalysis] = useState(false);
+  
+  const generateQuoteFromAnalysis = async (analysisId) => {
+    setGeneratingQuoteFromAnalysis(true);
+    try {
+      const response = await axios.post(
+        `${API}/projects/${project.id}/generate-quote-from-analysis/${analysisId}`,
+        {},
+        { withCredentials: true }
+      );
+      
+      toast.success(`Offerte ${response.data.quote_id} aangemaakt met ${response.data.line_items_count} werk items!`);
+      
+      onUpdate();
+      
+      // Navigate to quote after short delay
+      setTimeout(() => {
+        window.location.href = `/quotes/${response.data.quote_id}`;
+      }, 2000);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Kon offerte niet genereren');
+    } finally {
+      setGeneratingQuoteFromAnalysis(false);
+    }
+  };
+
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
     setUploading(true);
