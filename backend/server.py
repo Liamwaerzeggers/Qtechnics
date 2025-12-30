@@ -1220,6 +1220,132 @@ async def get_work_items(skip: int = 0, limit: int = 100, current_user: User = D
     
     return {"work_items": work_items, "total": total}
 
+@api_router.get("/work-items/all")
+async def get_all_work_items(current_user: User = Depends(get_current_user)):
+    """Get ALL work items without pagination for full list view"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can view all work items")
+    
+    work_items = await db.work_items.find({}, {"_id": 0}).to_list(10000)
+    
+    # Clean work items - remove NaN/Infinity values
+    import math
+    for item in work_items:
+        if 'price' in item and (math.isnan(item['price']) or math.isinf(item['price'])):
+            item['price'] = 0.0
+    
+    return {"work_items": work_items, "total": len(work_items)}
+
+@api_router.post("/work-items")
+async def create_work_item(
+    title: str,
+    unit: str,
+    price: float,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new work item manually"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can create work items")
+    
+    # Check if work item with same title already exists
+    existing = await db.work_items.find_one({"title": title})
+    if existing:
+        raise HTTPException(status_code=400, detail="Werk item met deze titel bestaat al")
+    
+    work_item = {
+        "id": str(uuid.uuid4()),
+        "title": title,
+        "unit": unit,
+        "price": price,
+        "user_id": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.work_items.insert_one(work_item)
+    
+    # Remove _id before returning
+    work_item.pop("_id", None)
+    return work_item
+
+@api_router.put("/work-items/{work_item_id}")
+async def update_work_item(
+    work_item_id: str,
+    title: str = None,
+    unit: str = None,
+    price: float = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Update a work item"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can update work items")
+    
+    # Find work item
+    work_item = await db.work_items.find_one({"id": work_item_id})
+    if not work_item:
+        raise HTTPException(status_code=404, detail="Werk item niet gevonden")
+    
+    # Build update
+    update_data = {}
+    if title is not None:
+        update_data["title"] = title
+    if unit is not None:
+        update_data["unit"] = unit
+    if price is not None:
+        update_data["price"] = price
+    
+    if update_data:
+        await db.work_items.update_one({"id": work_item_id}, {"$set": update_data})
+    
+    # Return updated item
+    updated = await db.work_items.find_one({"id": work_item_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/work-items/{work_item_id}")
+async def delete_work_item(work_item_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a work item"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete work items")
+    
+    result = await db.work_items.delete_one({"id": work_item_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Werk item niet gevonden")
+    
+    return {"message": "Werk item verwijderd"}
+
+@api_router.post("/work-items/auto-add")
+async def auto_add_work_item(
+    title: str,
+    unit: str,
+    price: float,
+    current_user: User = Depends(get_current_user)
+):
+    """Auto-add a work item if it doesn't exist (called when creating quotes)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can add work items")
+    
+    # Check if work item with same title already exists (case-insensitive)
+    existing = await db.work_items.find_one({"title": {"$regex": f"^{title}$", "$options": "i"}})
+    if existing:
+        # Return the existing item
+        existing.pop("_id", None)
+        return {"work_item": existing, "created": False}
+    
+    # Create new work item
+    work_item = {
+        "id": str(uuid.uuid4()),
+        "title": title,
+        "unit": unit,
+        "price": price,
+        "user_id": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "auto_added": True  # Flag to indicate this was auto-added from quote
+    }
+    
+    await db.work_items.insert_one(work_item)
+    work_item.pop("_id", None)
+    
+    return {"work_item": work_item, "created": True}
+
 # ===== PROJECTS ENDPOINTS =====
 @api_router.post("/projects", response_model=Project)
 async def create_project(project_create: ProjectCreate, current_user: User = Depends(get_current_user)):
