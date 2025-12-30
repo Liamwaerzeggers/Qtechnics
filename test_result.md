@@ -88,8 +88,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Edit Floor Plan Analysis"
-  stuck_tasks: []
+    - "Generate Quote from Floor Plan Analysis"
+  stuck_tasks: 
+    - "Project Navigation UI - Cards not clickable"
   test_priority: "high_first"
 
 agent_communication:
