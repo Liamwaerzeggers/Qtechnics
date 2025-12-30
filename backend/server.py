@@ -293,6 +293,7 @@ class ProjectUpdate(BaseModel):
     scheduled_days: Optional[List[dict]] = None  # Planning days with notes
     required_materials: Optional[str] = None  # Manual materials text
     room_measurements: Optional[List[dict]] = None  # Room-based measurements
+    floor_plan_analyses: Optional[List[dict]] = None  # AI floor plan analyses
 
 class InvoiceUpload(BaseModel):
     filename: str
