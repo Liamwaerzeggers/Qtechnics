@@ -27,7 +27,8 @@ export default function QuoteDetailPage() {
     quantity: '',
     unit_price: '',
     item_type: 'materiaal',
-    vat_rate: 21
+    vat_rate: 21,
+    unit: 'm²'  // Added for custom work items
   });
   const [materials, setMaterials] = useState([]);
   const [materialSearch, setMaterialSearch] = useState('');
