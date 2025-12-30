@@ -1612,6 +1612,7 @@ def main():
         test_results.append(("Workers Management", tester.test_workers_management()))
         test_results.append(("Peppol Bug Fixes", tester.test_peppol_bug_fixes()))
         test_results.append(("Quote Generation from Measurements", tester.test_quote_generation_from_measurements()))
+        test_results.append(("AI Floor Plan Analysis", tester.test_ai_floor_plan_analysis()))
         
         # Print results summary
         print("\n" + "=" * 50)
