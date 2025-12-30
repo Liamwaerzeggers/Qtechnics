@@ -1132,17 +1132,31 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                       {surface.work_items.length > 0 && (
                         <div className="space-y-2">
                           {surface.work_items.map((wi) => {
-                            const area = surface.net_area_m2 || surface.area_m2 || 0;
-                            const subtotal = area * wi.price;
+                            const surfaceArea = surface.net_area_m2 || surface.area_m2 || 0;
+                            const workArea = wi.custom_area !== undefined ? wi.custom_area : surfaceArea;
+                            const subtotal = workArea * wi.price;
                             return (
-                              <div key={wi.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                                <div className="flex-1">
+                              <div key={wi.id} className="flex flex-col sm:flex-row sm:items-center gap-2 p-2 bg-gray-50 rounded text-sm">
+                                <div className="flex-1 min-w-0">
                                   <span className="font-medium">{wi.title}</span>
-                                  <span className="ml-2 text-gray-500">
-                                    {area.toFixed(2)} {wi.unit} × €{wi.price.toFixed(2)} = <strong>€{subtotal.toFixed(2)}</strong>
-                                  </span>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {/* Editable area */}
+                                  <div className="flex items-center gap-1 bg-white border rounded px-2 py-1">
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={workArea}
+                                      onChange={(e) => updateWorkItemArea(surface.id, wi.id, e.target.value)}
+                                      className="w-14 text-center text-sm font-medium border-none outline-none"
+                                      title="Pas m² aan voor dit werk"
+                                    />
+                                    <span className="text-gray-500 text-xs">{wi.unit}</span>
+                                  </div>
+                                  <span className="text-gray-400">×</span>
+                                  <span className="text-gray-600">€{wi.price.toFixed(2)}</span>
+                                  <span className="text-gray-400">=</span>
+                                  <strong className="text-green-700">€{subtotal.toFixed(2)}</strong>
                                   <select
                                     value={wi.vat_rate}
                                     onChange={(e) => {
