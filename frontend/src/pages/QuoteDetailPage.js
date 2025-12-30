@@ -700,6 +700,30 @@ Q Technics`;
                         required 
                       />
                     </div>
+                    
+                    {/* Unit selector for custom work items */}
+                    {useCustomMaterial && formData.item_type === 'arbeid' && (
+                      <div>
+                        <Label>Eenheid</Label>
+                        <select
+                          value={formData.unit}
+                          onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                          className="w-full h-10 px-3 border rounded-md text-sm"
+                          style={{borderColor: '#E2E8F0'}}
+                        >
+                          <option value="m²">m² (vierkante meter)</option>
+                          <option value="m">m (lopende meter)</option>
+                          <option value="stuk">stuk</option>
+                          <option value="uur">uur</option>
+                          <option value="dag">dag</option>
+                          <option value="forfait">forfait</option>
+                        </select>
+                        <p className="text-xs mt-1" style={{color: '#64748B'}}>
+                          Dit werk item wordt automatisch aan je catalogus toegevoegd
+                        </p>
+                      </div>
+                    )}
+
                     <div>
                       <Label>Aantal</Label>
                       <Input 
