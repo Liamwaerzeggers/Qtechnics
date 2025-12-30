@@ -4099,14 +4099,8 @@ Houd rekening met:
 Als je bepaalde afmetingen niet kunt aflezen, geef dan 0 en vermeld dit in de notes."""
         ).with_model("openai", "gpt-4o")
         
-        # Determine content type from file
-        content_type = file.content_type or "image/jpeg"
-        
-        # Create message with image using FileContent
-        file_content = FileContent(
-            content_type=content_type,
-            file_content_base64=image_base64
-        )
+        # Create message with image using ImageContent (specifically for images)
+        image_content = ImageContent(image_base64=image_base64)
         user_message = UserMessage(
             text="""Analyseer dit grondplan/tekening. 
             
