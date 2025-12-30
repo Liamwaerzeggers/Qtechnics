@@ -77,9 +77,10 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Quote Page - Auto-add Work Items" 
+    - "Floor Plan Analysis - Custom Work Item Input"
+    - "Floor Plan Analysis - Editable m² per Work Item"
   stuck_tasks: []
-  test_priority: "medium_first"
+  test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
