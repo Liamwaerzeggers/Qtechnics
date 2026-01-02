@@ -426,6 +426,7 @@ function App() {
             <Route path="/finances" element={<ProtectedRoute><FinancesPage /></ProtectedRoute>} />
             <Route path="/workers" element={<ProtectedRoute><WorkersPage /></ProtectedRoute>} />
             <Route path="/admins" element={<ProtectedRoute><AdminsPage /></ProtectedRoute>} />
+            <Route path="/configurator" element={<ProtectedRoute><RoomConfiguratorPrototype /></ProtectedRoute>} />
             {/* Customer Portal - No authentication, uses access token */}
             <Route path="/klant/:accessToken" element={<CustomerPortalPage />} />
           </Routes>
