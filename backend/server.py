@@ -4100,13 +4100,37 @@ async def get_customer_portal_data(access_token: str):
             if q["id"] not in existing_ids:
                 quotes.append(q)
     
-    # Get line items for approved quotes
+    # Get line items for approved quotes - FILTER OUT unit prices for customers
     for quote in quotes:
         line_items = await db.line_items.find(
             {"quote_id": quote["id"]},
             {"_id": 0}
         ).to_list(1000)
-        quote["line_items"] = line_items
+        
+        # Remove sensitive pricing info from line items for customer view
+        customer_line_items = []
+        for item in line_items:
+            customer_line_items.append({
+                "id": item.get("id"),
+                "description": item.get("description"),
+                "quantity": item.get("quantity"),
+                "unit": item.get("unit"),
+                "item_type": item.get("item_type"),
+                # NOT including: unit_price, total_excl_vat, vat_amount, total_incl_vat
+            })
+        quote["line_items"] = customer_line_items
+        
+        # Keep only the grand total for customers
+        quote_totals = {
+            "total_incl_vat": quote.get("total_incl_vat") or quote.get("total_price", 0)
+        }
+        # Remove detailed price breakdowns
+        quote.pop("subtotal_labor", None)
+        quote.pop("subtotal_material", None)
+        quote.pop("total_excl_vat", None)
+        quote.pop("total_vat", None)
+        quote.pop("vat_breakdown", None)
+        quote["total_incl_vat"] = quote_totals["total_incl_vat"]
     
     # Get work slips marked as visible to customer (NO financial info)
     work_slips = await db.work_slips.find({
