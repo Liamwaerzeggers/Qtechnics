@@ -469,6 +469,7 @@ Q Technics`;
                   <SelectItem value="verzonden">Verzonden</SelectItem>
                   <SelectItem value="goedgekeurd">Goedgekeurd</SelectItem>
                   <SelectItem value="afgewezen">Afgewezen</SelectItem>
+                  <SelectItem value="gesplitst">Gesplitst</SelectItem>
                 </SelectContent>
               </Select>
             </div>
