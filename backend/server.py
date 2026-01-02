@@ -3354,6 +3354,26 @@ async def serve_static_file(file_type: str, project_id: str, filename: str):
     
     return FileResponse(file_path, media_type=content_type)
 
+@api_router.get("/static/materials/{filename}")
+async def serve_material_image(filename: str):
+    """Serve material/product images"""
+    file_path = ROOT_DIR / "uploads" / "materials" / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    suffix = file_path.suffix.lower()
+    content_types = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+    }
+    content_type = content_types.get(suffix, "image/jpeg")
+    
+    return FileResponse(file_path, media_type=content_type)
+
 @api_router.put("/projects/{project_id}/first-visit/notes")
 async def update_first_visit_notes(
     project_id: str,
