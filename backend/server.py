@@ -3013,40 +3013,91 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
     labor_items = [item for item in invoice["line_items"] if item.get("item_type") == "arbeid"]
     material_items = [item for item in invoice["line_items"] if item.get("item_type") == "materiaal"]
     
-    table_data = [['Omschrijving', 'Aantal', 'Prijs excl.', 'BTW%', 'Totaal excl.', 'Totaal incl.']]
-    
+    # === ARBEID SECTIE MET DETAILS MAAR ZONDER EENHEIDSPRIJZEN ===
     if labor_items:
+        elements.append(Paragraph("<b>Arbeid</b>", styles['Heading3']))
+        elements.append(Spacer(1, 5))
+        
         labor_total_excl = sum(item.get("total_excl_vat", 0) for item in labor_items) * percentage
         labor_total_incl = sum(item.get("total_incl_vat", 0) for item in labor_items) * percentage
         labor_vat_rate = labor_items[0].get("vat_rate", 6) if labor_items else 6
+        labor_vat = labor_total_excl * (labor_vat_rate / 100)
         
-        table_data.append([
-            'Arbeid totaal',
-            '',
-            '',
-            f'{labor_vat_rate}%',
-            f'€{labor_total_excl:.2f}',
-            f'€{labor_total_incl:.2f}'
-        ])
-    
-    # Individual material items
-    for item in material_items:
-        qty = item.get("quantity", 0)
-        price = item.get("unit_price", 0)
-        vat_rate = item.get("vat_rate", 21)
-        total_excl = item.get("total_excl_vat", 0) * percentage
-        total_incl = item.get("total_incl_vat", 0) * percentage
+        # Create labor table showing items with quantity and unit (NO unit price)
+        labor_table_data = [['Omschrijving', 'Hoeveelheid', 'Eenheid']]
         
-        table_data.append([
-            item.get("description", ""),
-            str(int(qty * percentage)),
-            f'€{price:.2f}',
-            f'{vat_rate}%',
-            f'€{total_excl:.2f}',
-            f'€{total_incl:.2f}'
+        for item in labor_items:
+            unit = item.get('unit', 'm²')
+            if unit in ['m2', 'vierkante meter']:
+                unit = 'm²'
+            elif unit in ['lm', 'lopende meter']:
+                unit = 'm'
+            
+            qty = item.get("quantity", 0) * percentage
+            labor_table_data.append([
+                item.get('description', '')[:50],
+                f"{qty:.2f}" if qty else '-',
+                unit
+            ])
+        
+        # Add labor total rows
+        labor_table_data.append([
+            'Subtotaal Arbeid',
+            '',
+            f"€{labor_total_excl:.2f} excl. BTW"
         ])
+        labor_table_data.append([
+            f'BTW {labor_vat_rate}%',
+            '',
+            f"€{labor_vat:.2f}"
+        ])
+        labor_table_data.append([
+            'Totaal Arbeid incl. BTW',
+            '',
+            f"€{labor_total_incl:.2f}"
+        ])
+        
+        labor_table = Table(labor_table_data, colWidths=[250, 80, 100])
+        labor_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E5E7EB')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1E40AF')),
+            ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('TOPPADDING', (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+            ('BACKGROUND', (0, -3), (-1, -1), colors.HexColor('#D1FAE5')),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB'))
+        ]))
+        elements.append(labor_table)
+        elements.append(Spacer(1, 15))
     
-    table = Table(table_data, colWidths=[180, 40, 60, 40, 70, 70])
+    # === MATERIALEN SECTIE (met prijzen) ===
+    if material_items:
+        elements.append(Paragraph("<b>Materialen</b>", styles['Heading3']))
+        elements.append(Spacer(1, 5))
+        
+        table_data = [['Omschrijving', 'Aantal', 'Prijs excl.', 'BTW%', 'Totaal excl.', 'Totaal incl.']]
+        
+        for item in material_items:
+            qty = item.get("quantity", 0) * percentage
+            price = item.get("unit_price", 0)
+            vat_rate = item.get("vat_rate", 21)
+            total_excl = item.get("total_excl_vat", 0) * percentage
+            total_incl = item.get("total_incl_vat", 0) * percentage
+            
+            table_data.append([
+                item.get("description", "")[:35],
+                f"{qty:.1f}",
+                f'€{price:.2f}',
+                f'{vat_rate}%',
+                f'€{total_excl:.2f}',
+                f'€{total_incl:.2f}'
+            ])
+        
+        table = Table(table_data, colWidths=[180, 40, 60, 40, 70, 70])
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
