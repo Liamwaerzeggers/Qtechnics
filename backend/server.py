@@ -196,9 +196,13 @@ class Material(BaseModel):
     sku: str
     name: str
     description: Optional[str] = None
-    category: Optional[str] = None
+    category: Optional[str] = None  # e.g., "Vloer", "Muur", "Meubel"
+    subcategory: Optional[str] = None  # e.g., "Tegels", "Parket", "Kast"
     brand: Optional[str] = None
     price: float
+    unit: Optional[str] = "stuk"  # m², stuk, lm
+    image_url: Optional[str] = None  # URL to product image
+    colors: Optional[List[str]] = None  # Available colors for this material
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
 
@@ -209,6 +213,7 @@ class WorkItem(BaseModel):
     title: str  # Titel van het werk
     unit: str  # Eenheid: m², lm, stuks, uur
     price: float  # Verkoopprijs ex BTW
+    category: Optional[str] = None  # e.g., "Vloer", "Muur", "Plafond"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
 
