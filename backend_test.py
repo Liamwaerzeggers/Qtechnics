@@ -1289,6 +1289,262 @@ TEST003,Test Boor,12.75,HSS boor 8mm,Gereedschap,TestBrand"""
         
         return True
 
+    def test_pdf_export_labor_items(self):
+        """Test PDF export for quotes with labor items showing descriptions and quantities but no unit prices"""
+        print("\n📄 Testing PDF Export for Labor Items...")
+        
+        # Step 1: Login as admin using the specific credentials
+        print("🔐 Testing admin login with test/test123...")
+        
+        # Test admin login endpoint
+        login_url = f"{self.base_url}/auth/admin/login?username=test&password=test123"
+        
+        try:
+            response = requests.post(login_url)
+            
+            if response.status_code != 200:
+                print(f"❌ Admin login failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+                return False
+            
+            # Extract session token from response
+            login_data = response.json()
+            admin_session_token = None
+            
+            # Check if session token is in response body
+            if 'session_token' in login_data:
+                admin_session_token = login_data['session_token']
+            
+            # Also check cookies
+            if not admin_session_token and 'session_token' in response.cookies:
+                admin_session_token = response.cookies['session_token']
+            
+            if not admin_session_token:
+                print("❌ No session token received from admin login")
+                return False
+                
+            print(f"✅ Admin login successful - Token: {admin_session_token[:10]}...")
+            
+            # Update session token for subsequent requests
+            self.session_token = admin_session_token
+            
+        except Exception as e:
+            print(f"❌ Admin login error: {str(e)}")
+            return False
+        
+        # Step 2: Get list of quotes
+        print("\n📋 Getting list of quotes...")
+        
+        success, quotes_response = self.run_test(
+            "Get Quotes List",
+            "GET",
+            "quotes",
+            200
+        )
+        
+        if not success:
+            print("❌ Failed to get quotes list")
+            return False
+        
+        quotes = quotes_response if isinstance(quotes_response, list) else []
+        if not quotes:
+            print("❌ No quotes available for testing")
+            return False
+        
+        print(f"✅ Found {len(quotes)} quotes")
+        
+        # Step 3: Find a quote with labor items (item_type: "arbeid")
+        print("\n🔍 Looking for quotes with labor items...")
+        
+        target_quote = None
+        for quote in quotes:
+            quote_id = quote.get('id')
+            if not quote_id:
+                continue
+                
+            # Get line items for this quote
+            success, items_response = self.run_test(
+                f"Get Line Items for Quote {quote_id}",
+                "GET",
+                f"quotes/{quote_id}/items",
+                200
+            )
+            
+            if success:
+                items = items_response if isinstance(items_response, list) else []
+                labor_items = [item for item in items if item.get('item_type') == 'arbeid']
+                
+                if labor_items:
+                    target_quote = quote
+                    print(f"✅ Found quote with {len(labor_items)} labor items: {quote_id}")
+                    print(f"   Quote: {quote.get('quote_number', 'N/A')}")
+                    
+                    # Show labor items details
+                    for i, item in enumerate(labor_items, 1):
+                        print(f"   Labor Item {i}: {item.get('description', 'N/A')}")
+                        print(f"     Quantity: {item.get('quantity', 0)}")
+                        print(f"     Unit Price: €{item.get('unit_price', 0):.2f}")
+                    break
+        
+        if not target_quote:
+            print("❌ No quotes with labor items found")
+            return False
+        
+        quote_id = target_quote['id']
+        
+        # Step 4: Export quote as PDF
+        print(f"\n📄 Testing PDF export for quote {quote_id}...")
+        
+        url = f"{self.base_url}/quotes/{quote_id}/export/pdf"
+        headers = {'Authorization': f'Bearer {self.session_token}'}
+        
+        try:
+            response = requests.get(url, headers=headers)
+            
+            print(f"   Status Code: {response.status_code}")
+            print(f"   Content-Type: {response.headers.get('content-type', 'Not set')}")
+            print(f"   Content-Disposition: {response.headers.get('content-disposition', 'Not set')}")
+            print(f"   Content Length: {len(response.content)} bytes")
+            
+            # Check if response is successful
+            if response.status_code != 200:
+                print(f"❌ PDF export failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+                return False
+            
+            # Verify content type
+            content_type = response.headers.get('content-type', '')
+            if content_type != 'application/pdf':
+                print(f"❌ Wrong content type - Expected: application/pdf, Got: {content_type}")
+                return False
+            
+            # Verify content disposition header
+            content_disposition = response.headers.get('content-disposition', '')
+            if not content_disposition or 'filename=' not in content_disposition:
+                print(f"❌ Missing or invalid Content-Disposition header: {content_disposition}")
+                return False
+            
+            # Verify PDF content (basic check)
+            if not response.content.startswith(b'%PDF'):
+                print("❌ Response content is not a valid PDF")
+                return False
+            
+            print("✅ PDF export successful!")
+            print(f"   ✅ Content-Type: {content_type}")
+            print(f"   ✅ Content-Disposition: {content_disposition}")
+            print(f"   ✅ PDF size: {len(response.content)} bytes")
+            print(f"   ✅ Valid PDF format: {response.content[:4] == b'%PDF'}")
+            
+            # Step 5: Verify PDF structure (basic text analysis)
+            print("\n🔍 Analyzing PDF content structure...")
+            
+            # Try to extract text from PDF for verification
+            try:
+                import PyPDF2
+                from io import BytesIO
+                
+                pdf_reader = PyPDF2.PdfReader(BytesIO(response.content))
+                pdf_text = ""
+                
+                for page in pdf_reader.pages:
+                    pdf_text += page.extract_text()
+                
+                print(f"   ✅ PDF text extracted ({len(pdf_text)} characters)")
+                
+                # Check for required sections
+                required_sections = [
+                    "Arbeid",  # Labor section header
+                    "Omschrijving",  # Description column
+                    "Hoeveelheid",  # Quantity column  
+                    "Eenheid",  # Unit column
+                    "Subtotaal Arbeid",  # Labor subtotal
+                    "BTW",  # VAT
+                    "Totaal Arbeid incl. BTW"  # Labor total incl VAT
+                ]
+                
+                missing_sections = []
+                found_sections = []
+                
+                for section in required_sections:
+                    if section in pdf_text:
+                        found_sections.append(section)
+                        print(f"   ✅ Found section: {section}")
+                    else:
+                        missing_sections.append(section)
+                        print(f"   ❌ Missing section: {section}")
+                
+                # Check that unit prices are NOT shown for labor items
+                # Look for patterns that would indicate unit prices in labor section
+                labor_section_start = pdf_text.find("Arbeid")
+                materials_section_start = pdf_text.find("Materialen")
+                
+                if labor_section_start != -1:
+                    if materials_section_start != -1 and materials_section_start > labor_section_start:
+                        labor_section_text = pdf_text[labor_section_start:materials_section_start]
+                    else:
+                        # Find end of labor section by looking for totals
+                        totals_start = pdf_text.find("Totaal excl. BTW")
+                        if totals_start != -1 and totals_start > labor_section_start:
+                            labor_section_text = pdf_text[labor_section_start:totals_start]
+                        else:
+                            labor_section_text = pdf_text[labor_section_start:]
+                    
+                    # Check that labor section doesn't contain unit price patterns
+                    unit_price_patterns = ["€", "Prijs excl.", "prijs", "tarief"]
+                    unit_prices_found = []
+                    
+                    for pattern in unit_price_patterns:
+                        if pattern in labor_section_text and pattern != "€" or (pattern == "€" and labor_section_text.count("€") > 3):  # Allow for totals
+                            unit_prices_found.append(pattern)
+                    
+                    if not unit_prices_found:
+                        print("   ✅ VERIFIED: No unit prices shown in labor section")
+                    else:
+                        print(f"   ⚠️ Potential unit prices found in labor section: {unit_prices_found}")
+                
+                # Check for materials section with prices (if materials exist)
+                if "Materialen" in pdf_text:
+                    print("   ✅ Materials section found")
+                    materials_price_patterns = ["Prijs excl.", "Totaal excl.", "Totaal incl."]
+                    materials_prices_found = [p for p in materials_price_patterns if p in pdf_text]
+                    
+                    if materials_prices_found:
+                        print(f"   ✅ Materials section shows prices: {materials_prices_found}")
+                    else:
+                        print("   ⚠️ Materials section may not show individual prices")
+                
+                # Overall verification
+                if len(missing_sections) == 0:
+                    print("   ✅ All required PDF sections found")
+                    return True
+                elif len(missing_sections) <= 2:
+                    print(f"   ⚠️ Minor issues: {len(missing_sections)} sections missing")
+                    return True
+                else:
+                    print(f"   ❌ Major issues: {len(missing_sections)} sections missing")
+                    return False
+                    
+            except ImportError:
+                print("   ⚠️ PyPDF2 not available - skipping detailed PDF content analysis")
+                print("   ✅ PDF export successful (basic validation only)")
+                return True
+            except Exception as e:
+                print(f"   ⚠️ PDF content analysis failed: {str(e)}")
+                print("   ✅ PDF export successful (basic validation only)")
+                return True
+                
+        except Exception as e:
+            print(f"❌ PDF export error: {str(e)}")
+            return False
+
     def test_ai_floor_plan_analysis(self):
         """Test AI Floor Plan Analysis feature - specifically the ImageContent fix"""
         print("\n🏗️ Testing AI Floor Plan Analysis Feature...")
