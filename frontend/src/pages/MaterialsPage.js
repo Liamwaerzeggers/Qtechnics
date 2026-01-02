@@ -138,10 +138,13 @@ export default function MaterialsPage() {
         unit: newWorkItem.unit,
         price: parseFloat(newWorkItem.price)
       });
+      if (newWorkItem.category) {
+        params.append('category', newWorkItem.category);
+      }
       
       await axios.post(`${API}/work-items?${params.toString()}`, {}, { withCredentials: true });
       toast.success('Werk item toegevoegd!');
-      setNewWorkItem({ title: '', unit: 'm²', price: '' });
+      setNewWorkItem({ title: '', unit: 'm²', price: '', category: '' });
       setShowNewForm(false);
       loadAllWorkItems();
     } catch (error) {
