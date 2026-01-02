@@ -787,6 +787,155 @@ async def delete_quote(quote_id: str, current_user: User = Depends(get_current_u
     
     return {"message": "Quote deleted successfully"}
 
+@api_router.post("/quotes/{quote_id}/split")
+async def split_quote_labor_materials(quote_id: str, current_user: User = Depends(get_current_user)):
+    """Split a quote into two separate quotes: one for labor (arbeid) and one for materials (materialen)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can split quotes")
+    
+    # Get original quote
+    original_quote = await db.quotes.find_one({"id": quote_id})
+    if not original_quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    # Get all line items
+    all_items = await db.line_items.find({"quote_id": quote_id}, {"_id": 0}).to_list(1000)
+    
+    labor_items = [item for item in all_items if item.get('item_type') == 'arbeid']
+    material_items = [item for item in all_items if item.get('item_type') != 'arbeid']
+    
+    if not labor_items and not material_items:
+        raise HTTPException(status_code=400, detail="Offerte heeft geen items om te splitsen")
+    
+    if not labor_items:
+        raise HTTPException(status_code=400, detail="Offerte heeft geen arbeid items - splitsen niet nodig")
+    
+    if not material_items:
+        raise HTTPException(status_code=400, detail="Offerte heeft geen materiaal items - splitsen niet nodig")
+    
+    created_quotes = []
+    
+    # Create LABOR quote (Arbeid)
+    labor_quote_id = f"OFF-{datetime.now(timezone.utc).year}-{str(uuid.uuid4())[:6].upper()}-ARB"
+    
+    labor_total_excl = sum(item.get('total_excl_vat', 0) for item in labor_items)
+    labor_vat_6 = sum(item.get('vat_amount', 0) for item in labor_items if item.get('vat_rate', 6) == 6)
+    labor_vat_21 = sum(item.get('vat_amount', 0) for item in labor_items if item.get('vat_rate', 21) == 21)
+    labor_total_vat = labor_vat_6 + labor_vat_21
+    labor_total_incl = labor_total_excl + labor_total_vat
+    
+    labor_vat_breakdown = {}
+    if labor_vat_6 > 0:
+        labor_vat_breakdown["6"] = labor_vat_6
+    if labor_vat_21 > 0:
+        labor_vat_breakdown["21"] = labor_vat_21
+    
+    labor_quote = {
+        "id": labor_quote_id,
+        "lead_id": original_quote["lead_id"],
+        "project_id": original_quote.get("project_id"),
+        "quote_number": labor_quote_id,
+        "date": datetime.now(timezone.utc).isoformat(),
+        "status": "concept",
+        "description": f"Arbeid - Afgesplitst van {original_quote['quote_number']}",
+        "subtotal_labor": labor_total_excl,
+        "subtotal_material": 0,
+        "total_excl_vat": labor_total_excl,
+        "vat_breakdown": labor_vat_breakdown,
+        "total_vat": labor_total_vat,
+        "total_incl_vat": labor_total_incl,
+        "total_price": labor_total_incl,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "user_id": current_user.id,
+        "split_from": quote_id,
+        "quote_type": "arbeid"
+    }
+    
+    await db.quotes.insert_one(labor_quote)
+    
+    # Copy labor line items to new quote
+    for item in labor_items:
+        new_item = {**item}
+        new_item["id"] = str(uuid.uuid4())
+        new_item["quote_id"] = labor_quote_id
+        new_item["created_at"] = datetime.now(timezone.utc).isoformat()
+        await db.line_items.insert_one(new_item)
+    
+    created_quotes.append({
+        "id": labor_quote_id,
+        "type": "arbeid",
+        "total_incl_vat": labor_total_incl,
+        "items_count": len(labor_items)
+    })
+    
+    # Create MATERIALS quote (Materialen)
+    material_quote_id = f"OFF-{datetime.now(timezone.utc).year}-{str(uuid.uuid4())[:6].upper()}-MAT"
+    
+    material_total_excl = sum(item.get('total_excl_vat', 0) for item in material_items)
+    material_vat_6 = sum(item.get('vat_amount', 0) for item in material_items if item.get('vat_rate', 6) == 6)
+    material_vat_21 = sum(item.get('vat_amount', 0) for item in material_items if item.get('vat_rate', 21) == 21)
+    material_total_vat = material_vat_6 + material_vat_21
+    material_total_incl = material_total_excl + material_total_vat
+    
+    material_vat_breakdown = {}
+    if material_vat_6 > 0:
+        material_vat_breakdown["6"] = material_vat_6
+    if material_vat_21 > 0:
+        material_vat_breakdown["21"] = material_vat_21
+    
+    material_quote = {
+        "id": material_quote_id,
+        "lead_id": original_quote["lead_id"],
+        "project_id": original_quote.get("project_id"),
+        "quote_number": material_quote_id,
+        "date": datetime.now(timezone.utc).isoformat(),
+        "status": "concept",
+        "description": f"Materialen - Afgesplitst van {original_quote['quote_number']}",
+        "subtotal_labor": 0,
+        "subtotal_material": material_total_excl,
+        "total_excl_vat": material_total_excl,
+        "vat_breakdown": material_vat_breakdown,
+        "total_vat": material_total_vat,
+        "total_incl_vat": material_total_incl,
+        "total_price": material_total_incl,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "user_id": current_user.id,
+        "split_from": quote_id,
+        "quote_type": "materialen"
+    }
+    
+    await db.quotes.insert_one(material_quote)
+    
+    # Copy material line items to new quote
+    for item in material_items:
+        new_item = {**item}
+        new_item["id"] = str(uuid.uuid4())
+        new_item["quote_id"] = material_quote_id
+        new_item["created_at"] = datetime.now(timezone.utc).isoformat()
+        await db.line_items.insert_one(new_item)
+    
+    created_quotes.append({
+        "id": material_quote_id,
+        "type": "materialen",
+        "total_incl_vat": material_total_incl,
+        "items_count": len(material_items)
+    })
+    
+    # Mark original quote as split
+    await db.quotes.update_one(
+        {"id": quote_id},
+        {"$set": {
+            "status": "gesplitst",
+            "split_into": [labor_quote_id, material_quote_id]
+        }}
+    )
+    
+    return {
+        "message": "Offerte succesvol gesplitst in Arbeid en Materialen",
+        "original_quote_id": quote_id,
+        "created_quotes": created_quotes
+    }
+
 # ============= LINE ITEM ROUTES =============
 
 @api_router.post("/quotes/{quote_id}/items", response_model=LineItem)
