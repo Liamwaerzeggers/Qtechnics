@@ -20,6 +20,17 @@ backend:
         agent: "main"
         comment: "✅ All CRUD endpoints tested via curl: GET /work-items/all, POST /work-items, PUT /work-items/{id}, DELETE /work-items/{id}, POST /work-items/auto-add. All returning correct responses."
 
+  - task: "PDF Export for Quotes - Labor Items with Descriptions and Quantities"
+    implemented: true
+    working: true
+    file: "server.py"
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: PDF export functionality fully working. Login successful with test/test123. Found quotes with labor items (item_type: 'arbeid'). PDF export endpoint GET /api/quotes/{quote_id}/export/pdf returns valid PDF files. VERIFIED PDF STRUCTURE: 1) 'Arbeid' section header present, 2) Table with columns 'Omschrijving', 'Hoeveelheid', 'Eenheid' - NO unit prices shown for labor items, 3) Individual labor items listed with descriptions and quantities only, 4) Subtotal, BTW (6%), and Total rows for labor section, 5) 'Materialen' section (when present) correctly shows individual prices with 'Prijs excl.' column. PERFECT IMPLEMENTATION: Labor section shows quantities only, Materials section shows full pricing details. Tested with quote OFF-2025-C92BA4 containing both labor and material items. PDF content analysis confirms correct structure."
+
 frontend:
   - task: "Catalogus Beheer - Werk Items Tab"
     implemented: true
