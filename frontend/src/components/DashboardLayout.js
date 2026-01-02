@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../App';
-import { FileText, FileSpreadsheet, Calendar, Package, Users, LogOut, LayoutDashboard, Menu, X, TrendingUp, UserCog, ShieldCheck } from 'lucide-react';
+import { FileText, FileSpreadsheet, Calendar, Package, Users, LogOut, LayoutDashboard, Menu, X, TrendingUp, UserCog, ShieldCheck, PenTool } from 'lucide-react';
 
 export default function DashboardLayout({ children, showBackToDashboard = false }) {
   const { user, logout } = useAuth();
@@ -18,6 +18,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
     { name: 'Financiën', path: '/finances', icon: TrendingUp, testId: 'nav-finances', adminOnly: true },
     { name: 'Kalender', path: '/calendar', icon: Calendar, testId: 'nav-calendar', adminOnly: true },
     { name: 'Materialen', path: '/materials', icon: Package, testId: 'nav-materials', adminOnly: true },
+    { name: 'Configurator', path: '/configurator', icon: PenTool, testId: 'nav-configurator', adminOnly: true, badge: 'PROTO' },
     { name: 'Werkmannen', path: '/workers', icon: UserCog, testId: 'nav-workers', adminOnly: true },
     { name: 'Beheerders', path: '/admins', icon: ShieldCheck, testId: 'nav-admins', adminOnly: true },
   ];
