@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
+import { API } from '../App';
 import DashboardLayout from '../components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,60 +8,45 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
   Square, 
-  Move, 
   Trash2, 
   Plus, 
   FileText, 
   Palette,
   Layers,
   Image,
-  ShoppingCart,
   Calculator,
   RotateCcw,
   ZoomIn,
   ZoomOut,
-  Download
+  ChevronRight,
+  Package,
+  Check,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Sample material data (would come from your catalog in real implementation)
-const FLOOR_MATERIALS = [
-  { id: 'parket-eik', name: 'Parket Eik', price: 45, unit: 'm²', color: '#D4A574' },
-  { id: 'parket-walnoot', name: 'Parket Walnoot', price: 55, unit: 'm²', color: '#8B5A2B' },
-  { id: 'laminaat-grijs', name: 'Laminaat Grijs', price: 25, unit: 'm²', color: '#9CA3AF' },
-  { id: 'tegels-wit', name: 'Tegels Wit', price: 35, unit: 'm²', color: '#F3F4F6' },
-  { id: 'tegels-zwart', name: 'Tegels Zwart', price: 38, unit: 'm²', color: '#374151' },
-  { id: 'vinyl-houtlook', name: 'Vinyl Houtlook', price: 22, unit: 'm²', color: '#C4A77D' },
-];
-
-const WALL_MATERIALS = [
-  { id: 'verf-wit', name: 'Verf Wit', price: 12, unit: 'm²', color: '#FFFFFF', border: true },
-  { id: 'verf-grijs', name: 'Verf Grijs', price: 12, unit: 'm²', color: '#E5E7EB' },
-  { id: 'verf-blauw', name: 'Verf Blauw', price: 14, unit: 'm²', color: '#BFDBFE' },
-  { id: 'behang-textuur', name: 'Behang Textuur', price: 28, unit: 'm²', color: '#FEF3C7' },
-  { id: 'tegels-metro', name: 'Metro Tegels', price: 42, unit: 'm²', color: '#F9FAFB' },
-  { id: 'mortex', name: 'Mortex', price: 85, unit: 'm²', color: '#9CA3AF' },
-  { id: 'wandpanelen', name: 'Wandpanelen Hout', price: 55, unit: 'm²', color: '#D4A574' },
-];
-
-const CEILING_MATERIALS = [
-  { id: 'verf-plafond', name: 'Plafondverf Wit', price: 10, unit: 'm²', color: '#FFFFFF', border: true },
-  { id: 'stucwerk', name: 'Stucwerk', price: 35, unit: 'm²', color: '#F3F4F6' },
-  { id: 'plafondpanelen', name: 'Plafondpanelen', price: 28, unit: 'm²', color: '#E5E7EB' },
-  { id: 'spanplafond', name: 'Spanplafond', price: 65, unit: 'm²', color: '#FAFAFA' },
-];
-
-const FURNITURE_CATALOG = [
-  { id: 'kast-1', name: 'Wandkast Modern', price: 450, image: '🗄️', category: 'Kasten' },
-  { id: 'kast-2', name: 'Boekenkast Eik', price: 380, image: '📚', category: 'Kasten' },
-  { id: 'tafel-1', name: 'Eettafel 6p', price: 650, image: '🪑', category: 'Tafels' },
-  { id: 'bank-1', name: 'Hoekbank Grijs', price: 1200, image: '🛋️', category: 'Zetels' },
-  { id: 'bed-1', name: 'Boxspring 180x200', price: 890, image: '🛏️', category: 'Bedden' },
-  { id: 'lamp-1', name: 'Hanglamp Design', price: 175, image: '💡', category: 'Verlichting' },
+// Default colors for materials (visual only, no price impact)
+const DEFAULT_COLORS = [
+  { name: 'Wit', hex: '#FFFFFF' },
+  { name: 'Crème', hex: '#FFFDD0' },
+  { name: 'Grijs', hex: '#9CA3AF' },
+  { name: 'Antraciet', hex: '#374151' },
+  { name: 'Zwart', hex: '#1F2937' },
+  { name: 'Beige', hex: '#D4A574' },
+  { name: 'Bruin', hex: '#8B5A2B' },
+  { name: 'Eik', hex: '#C4A77D' },
+  { name: 'Walnoot', hex: '#5D4037' },
 ];
 
 export default function RoomConfiguratorPrototype() {
   const canvasRef = useRef(null);
+  
+  // Data from backend
+  const [workItems, setWorkItems] = useState([]);
+  const [materials, setMaterials] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Rooms state
   const [rooms, setRooms] = useState([
     { 
       id: 1, 
@@ -69,18 +56,73 @@ export default function RoomConfiguratorPrototype() {
       height: 2.7,
       x: 50, 
       y: 50,
-      floor: FLOOR_MATERIALS[0],
-      walls: WALL_MATERIALS[0],
-      ceiling: CEILING_MATERIALS[0],
-      furniture: []
+      floor: { workItem: null, color: DEFAULT_COLORS[5] },
+      walls: { workItem: null, color: DEFAULT_COLORS[0] },
+      ceiling: { workItem: null, color: DEFAULT_COLORS[0] },
+      products: []  // Meubels/producten
     }
   ]);
   const [selectedRoom, setSelectedRoom] = useState(1);
-  const [activeTab, setActiveTab] = useState('rooms'); // rooms, floor, walls, ceiling, furniture
-  const [draggedFurniture, setDraggedFurniture] = useState(null);
+  const [activeTab, setActiveTab] = useState('rooms');
   const [zoom, setZoom] = useState(1);
   
+  // Selection state for two-step process
+  const [selectedWorkItem, setSelectedWorkItem] = useState(null);
+  
   const currentRoom = rooms.find(r => r.id === selectedRoom);
+
+  // Fetch data from backend
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [workItemsRes, materialsRes] = await Promise.all([
+        axios.get(`${API}/work-items/all`, { withCredentials: true }),
+        axios.get(`${API}/configurator/materials`, { withCredentials: true })
+      ]);
+      
+      setWorkItems(workItemsRes.data.work_items || []);
+      setMaterials(materialsRes.data.materials || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast.error('Kon data niet laden');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Group work items by category
+  const groupedWorkItems = {
+    vloer: workItems.filter(w => 
+      w.category?.toLowerCase().includes('vloer') || 
+      w.title?.toLowerCase().includes('vloer') ||
+      w.title?.toLowerCase().includes('tegels') ||
+      w.title?.toLowerCase().includes('parket') ||
+      w.title?.toLowerCase().includes('laminaat')
+    ),
+    muur: workItems.filter(w => 
+      w.category?.toLowerCase().includes('muur') || 
+      w.title?.toLowerCase().includes('muur') ||
+      w.title?.toLowerCase().includes('verf') ||
+      w.title?.toLowerCase().includes('schilder') ||
+      w.title?.toLowerCase().includes('behang') ||
+      w.title?.toLowerCase().includes('stuc')
+    ),
+    plafond: workItems.filter(w => 
+      w.category?.toLowerCase().includes('plafond') || 
+      w.title?.toLowerCase().includes('plafond')
+    ),
+  };
+
+  // Products/furniture from materials
+  const products = materials.filter(m => 
+    m.category?.toLowerCase().includes('meubel') ||
+    m.category?.toLowerCase().includes('product') ||
+    m.category?.toLowerCase().includes('furniture')
+  );
 
   // Calculate prices
   const calculateRoomPrice = (room) => {
@@ -88,10 +130,10 @@ export default function RoomConfiguratorPrototype() {
     const wallArea = 2 * (room.width + room.length) * room.height;
     const ceilingArea = room.width * room.length;
     
-    const floorPrice = floorArea * (room.floor?.price || 0);
-    const wallPrice = wallArea * (room.walls?.price || 0);
-    const ceilingPrice = ceilingArea * (room.ceiling?.price || 0);
-    const furniturePrice = room.furniture.reduce((sum, f) => sum + f.price, 0);
+    const floorPrice = floorArea * (room.floor?.workItem?.price || 0);
+    const wallPrice = wallArea * (room.walls?.workItem?.price || 0);
+    const ceilingPrice = ceilingArea * (room.ceiling?.workItem?.price || 0);
+    const productsPrice = room.products.reduce((sum, p) => sum + (p.price || 0), 0);
     
     return {
       floorArea,
@@ -100,8 +142,8 @@ export default function RoomConfiguratorPrototype() {
       floorPrice,
       wallPrice,
       ceilingPrice,
-      furniturePrice,
-      total: floorPrice + wallPrice + ceilingPrice + furniturePrice
+      productsPrice,
+      total: floorPrice + wallPrice + ceilingPrice + productsPrice
     };
   };
 
@@ -118,10 +160,10 @@ export default function RoomConfiguratorPrototype() {
       height: 2.7,
       x: 50 + (newId - 1) * 20,
       y: 50 + (newId - 1) * 20,
-      floor: FLOOR_MATERIALS[0],
-      walls: WALL_MATERIALS[0],
-      ceiling: CEILING_MATERIALS[0],
-      furniture: []
+      floor: { workItem: null, color: DEFAULT_COLORS[5] },
+      walls: { workItem: null, color: DEFAULT_COLORS[0] },
+      ceiling: { workItem: null, color: DEFAULT_COLORS[0] },
+      products: []
     }]);
     setSelectedRoom(newId);
   };
@@ -141,23 +183,48 @@ export default function RoomConfiguratorPrototype() {
     }
   };
 
-  const addFurnitureToRoom = (furniture) => {
+  // Select work item for surface
+  const selectWorkItemForSurface = (surfaceType, workItem) => {
     if (!currentRoom) return;
     updateRoom(currentRoom.id, {
-      furniture: [...currentRoom.furniture, { ...furniture, instanceId: Date.now() }]
+      [surfaceType]: { 
+        ...currentRoom[surfaceType], 
+        workItem: workItem 
+      }
     });
-    toast.success(`${furniture.name} toegevoegd!`);
+    setSelectedWorkItem(null);
+    toast.success(`${workItem.title} geselecteerd voor ${surfaceType}`);
   };
 
-  const removeFurnitureFromRoom = (instanceId) => {
+  // Select color for surface
+  const selectColorForSurface = (surfaceType, color) => {
     if (!currentRoom) return;
     updateRoom(currentRoom.id, {
-      furniture: currentRoom.furniture.filter(f => f.instanceId !== instanceId)
+      [surfaceType]: { 
+        ...currentRoom[surfaceType], 
+        color: color 
+      }
+    });
+  };
+
+  // Add product to room
+  const addProductToRoom = (product) => {
+    if (!currentRoom) return;
+    updateRoom(currentRoom.id, {
+      products: [...currentRoom.products, { ...product, instanceId: Date.now() }]
+    });
+    toast.success(`${product.name} toegevoegd!`);
+  };
+
+  const removeProductFromRoom = (instanceId) => {
+    if (!currentRoom) return;
+    updateRoom(currentRoom.id, {
+      products: currentRoom.products.filter(p => p.instanceId !== instanceId)
     });
   };
 
   const generateQuote = () => {
-    toast.success('Offerte gegenereerd! (Prototype - zou naar offerte pagina navigeren)');
+    toast.success('Offerte gegenereerd! (Functionaliteit wordt gekoppeld aan offerte systeem)');
   };
 
   // Draw canvas
@@ -166,9 +233,8 @@ export default function RoomConfiguratorPrototype() {
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
-    const scale = 40 * zoom; // pixels per meter
+    const scale = 40 * zoom;
     
-    // Clear canvas
     ctx.fillStyle = '#F8FAFC';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
@@ -195,8 +261,8 @@ export default function RoomConfiguratorPrototype() {
       const w = room.width * scale;
       const h = room.length * scale;
       
-      // Floor fill
-      ctx.fillStyle = room.floor?.color || '#F3F4F6';
+      // Floor fill with selected color
+      ctx.fillStyle = room.floor?.color?.hex || '#F3F4F6';
       ctx.fillRect(x, y, w, h);
       
       // Room outline
@@ -208,27 +274,169 @@ export default function RoomConfiguratorPrototype() {
       ctx.fillStyle = '#1E293B';
       ctx.font = 'bold 14px Inter, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(room.name, x + w/2, y + h/2 - 10);
+      ctx.fillText(room.name, x + w/2, y + h/2 - 20);
+      
+      // Dimensions
       ctx.font = '12px Inter, sans-serif';
       ctx.fillStyle = '#64748B';
-      ctx.fillText(`${room.width}m × ${room.length}m = ${(room.width * room.length).toFixed(1)}m²`, x + w/2, y + h/2 + 10);
+      ctx.fillText(`${room.width}m × ${room.length}m = ${(room.width * room.length).toFixed(1)}m²`, x + w/2, y + h/2);
       
-      // Furniture icons
-      room.furniture.forEach((f, idx) => {
-        const fx = x + 20 + (idx % 3) * 40;
-        const fy = y + h - 50 + Math.floor(idx / 3) * 30;
-        ctx.font = '24px serif';
-        ctx.fillText(f.image, fx, fy);
-      });
+      // Selected materials
+      ctx.font = '10px Inter, sans-serif';
+      ctx.fillStyle = '#3B82F6';
+      if (room.floor?.workItem) {
+        ctx.fillText(`Vloer: ${room.floor.workItem.title}`, x + w/2, y + h/2 + 15);
+      }
     });
     
-    // Scale indicator
     ctx.fillStyle = '#64748B';
     ctx.font = '11px Inter, sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(`Schaal: 1m = ${scale.toFixed(0)}px`, 10, canvas.height - 10);
     
   }, [rooms, selectedRoom, zoom]);
+
+  // Render work item selection with two-step process
+  const renderWorkItemSelection = (surfaceType, surfaceLabel, icon) => {
+    const surfaceWorkItems = groupedWorkItems[surfaceType] || [];
+    const currentSelection = currentRoom?.[surfaceType];
+    
+    // Calculate area for price preview
+    let area = 0;
+    if (surfaceType === 'vloer' || surfaceType === 'plafond') {
+      area = currentRoom ? currentRoom.width * currentRoom.length : 0;
+    } else if (surfaceType === 'muur') {
+      area = currentRoom ? 2 * (currentRoom.width + currentRoom.length) * currentRoom.height : 0;
+    }
+    
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            {icon} {surfaceLabel}
+          </CardTitle>
+          <p className="text-xs text-gray-500">
+            Kamer: {currentRoom?.name} ({area.toFixed(1)} m²)
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Step 1: Select Work Type (determines price) */}
+          <div>
+            <Label className="text-sm font-semibold flex items-center gap-2 mb-2">
+              <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center">1</span>
+              Kies Type (bepaalt prijs)
+            </Label>
+            <div className="space-y-2 max-h-[200px] overflow-y-auto">
+              {surfaceWorkItems.length > 0 ? (
+                surfaceWorkItems.map(item => (
+                  <div
+                    key={item.id}
+                    onClick={() => selectWorkItemForSurface(surfaceType, item)}
+                    className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      currentSelection?.workItem?.id === item.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{item.title}</p>
+                      <p className="text-xs text-gray-500">€{item.price?.toFixed(2)}/{item.unit}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-green-600">
+                        €{(area * (item.price || 0)).toFixed(2)}
+                      </p>
+                      {currentSelection?.workItem?.id === item.id && (
+                        <Check size={16} className="text-blue-600 ml-auto" />
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-gray-500 text-sm">
+                  <p>Geen werk items gevonden voor {surfaceLabel.toLowerCase()}</p>
+                  <p className="text-xs mt-1">Voeg werk items toe in Catalogusbeheer met categorie "{surfaceType}"</p>
+                </div>
+              )}
+              
+              {/* Show all work items if category-specific ones are empty */}
+              {surfaceWorkItems.length === 0 && workItems.length > 0 && (
+                <div className="border-t pt-2 mt-2">
+                  <p className="text-xs text-gray-500 mb-2">Of kies uit alle werk items:</p>
+                  {workItems.slice(0, 10).map(item => (
+                    <div
+                      key={item.id}
+                      onClick={() => selectWorkItemForSurface(surfaceType, item)}
+                      className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-all text-sm ${
+                        currentSelection?.workItem?.id === item.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <span>{item.title}</span>
+                      <span className="text-green-600">€{(area * (item.price || 0)).toFixed(0)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Step 2: Select Color (no price impact) */}
+          {currentSelection?.workItem && (
+            <div className="border-t pt-4">
+              <Label className="text-sm font-semibold flex items-center gap-2 mb-2">
+                <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center">2</span>
+                Kies Kleur (geen prijsimpact)
+              </Label>
+              <div className="flex flex-wrap gap-2">
+                {DEFAULT_COLORS.map(color => (
+                  <button
+                    key={color.name}
+                    onClick={() => selectColorForSurface(surfaceType, color)}
+                    className={`w-10 h-10 rounded-lg border-2 transition-all ${
+                      currentSelection?.color?.name === color.name
+                        ? 'border-blue-500 ring-2 ring-blue-300'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    style={{ backgroundColor: color.hex }}
+                    title={color.name}
+                  />
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Geselecteerd: {currentSelection?.color?.name || 'Geen'}
+              </p>
+            </div>
+          )}
+
+          {/* Summary */}
+          {currentSelection?.workItem && (
+            <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+              <p className="text-sm font-medium text-green-800">
+                ✓ {currentSelection.workItem.title}
+                {currentSelection.color && ` - ${currentSelection.color.name}`}
+              </p>
+              <p className="text-lg font-bold text-green-700">
+                €{(area * (currentSelection.workItem.price || 0)).toFixed(2)}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout showBackToDashboard={true}>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <span className="ml-2">Data laden...</span>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout showBackToDashboard={true}>
@@ -275,7 +483,7 @@ export default function RoomConfiguratorPrototype() {
                     { id: 'floor', icon: Layers, label: 'Vloer' },
                     { id: 'walls', icon: Palette, label: 'Muren' },
                     { id: 'ceiling', icon: Layers, label: 'Plafond' },
-                    { id: 'furniture', icon: Image, label: 'Meubels' },
+                    { id: 'products', icon: Package, label: 'Producten' },
                   ].map(tab => (
                     <button
                       key={tab.id}
@@ -384,182 +592,90 @@ export default function RoomConfiguratorPrototype() {
               </Card>
             )}
 
-            {/* Floor Materials */}
-            {activeTab === 'floor' && currentRoom && (
+            {/* Floor Selection */}
+            {activeTab === 'floor' && currentRoom && renderWorkItemSelection('vloer', '🟫 Vloer', <Layers size={18} />)}
+
+            {/* Walls Selection */}
+            {activeTab === 'walls' && currentRoom && renderWorkItemSelection('muur', '🧱 Muren', <Palette size={18} />)}
+
+            {/* Ceiling Selection */}
+            {activeTab === 'ceiling' && currentRoom && renderWorkItemSelection('plafond', '⬜ Plafond', <Layers size={18} />)}
+
+            {/* Products/Furniture */}
+            {activeTab === 'products' && currentRoom && (
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">🟫 Vloermateriaal</CardTitle>
+                  <CardTitle className="text-base">🪑 Producten & Meubels</CardTitle>
                   <p className="text-xs text-gray-500">
-                    Kamer: {currentRoom.name} ({(currentRoom.width * currentRoom.length).toFixed(1)} m²)
+                    Uit je materialen catalogus (categorie: "Meubel" of "Product")
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {FLOOR_MATERIALS.map(material => (
-                    <div
-                      key={material.id}
-                      onClick={() => updateRoom(currentRoom.id, { floor: material })}
-                      className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                        currentRoom.floor?.id === material.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div
-                        className="w-10 h-10 rounded border"
-                        style={{ backgroundColor: material.color }}
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{material.name}</p>
-                        <p className="text-xs text-gray-500">€{material.price.toFixed(2)}/{material.unit}</p>
-                      </div>
-                      {currentRoom.floor?.id === material.id && (
-                        <span className="text-xs font-medium text-blue-600">
-                          €{(currentRoom.width * currentRoom.length * material.price).toFixed(2)}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Wall Materials */}
-            {activeTab === 'walls' && currentRoom && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">🧱 Muurafwerking</CardTitle>
-                  <p className="text-xs text-gray-500">
-                    Muuroppervlakte: {(2 * (currentRoom.width + currentRoom.length) * currentRoom.height).toFixed(1)} m²
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-2 max-h-[400px] overflow-y-auto">
-                  {WALL_MATERIALS.map(material => (
-                    <div
-                      key={material.id}
-                      onClick={() => updateRoom(currentRoom.id, { walls: material })}
-                      className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                        currentRoom.walls?.id === material.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div
-                        className="w-10 h-10 rounded"
-                        style={{ 
-                          backgroundColor: material.color,
-                          border: material.border ? '1px solid #E5E7EB' : 'none'
-                        }}
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{material.name}</p>
-                        <p className="text-xs text-gray-500">€{material.price.toFixed(2)}/{material.unit}</p>
-                      </div>
-                      {currentRoom.walls?.id === material.id && (
-                        <span className="text-xs font-medium text-blue-600">
-                          €{(2 * (currentRoom.width + currentRoom.length) * currentRoom.height * material.price).toFixed(2)}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Ceiling Materials */}
-            {activeTab === 'ceiling' && currentRoom && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">⬜ Plafond</CardTitle>
-                  <p className="text-xs text-gray-500">
-                    Oppervlakte: {(currentRoom.width * currentRoom.length).toFixed(1)} m²
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {CEILING_MATERIALS.map(material => (
-                    <div
-                      key={material.id}
-                      onClick={() => updateRoom(currentRoom.id, { ceiling: material })}
-                      className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                        currentRoom.ceiling?.id === material.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div
-                        className="w-10 h-10 rounded"
-                        style={{ 
-                          backgroundColor: material.color,
-                          border: material.border ? '1px solid #E5E7EB' : 'none'
-                        }}
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{material.name}</p>
-                        <p className="text-xs text-gray-500">€{material.price.toFixed(2)}/{material.unit}</p>
-                      </div>
-                      {currentRoom.ceiling?.id === material.id && (
-                        <span className="text-xs font-medium text-blue-600">
-                          €{(currentRoom.width * currentRoom.length * material.price).toFixed(2)}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Furniture Catalog */}
-            {activeTab === 'furniture' && currentRoom && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">🪑 Meubel Catalogus</CardTitle>
-                  <p className="text-xs text-gray-500">
-                    Klik om toe te voegen aan {currentRoom.name}
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-2 max-h-[300px] overflow-y-auto">
-                  {FURNITURE_CATALOG.map(item => (
-                    <div
-                      key={item.id}
-                      onClick={() => addFurnitureToRoom(item)}
-                      className="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 hover:border-green-400 hover:bg-green-50 cursor-pointer transition-all"
-                    >
-                      <span className="text-3xl">{item.image}</span>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{item.name}</p>
-                        <p className="text-xs text-gray-500">{item.category}</p>
-                      </div>
-                      <span className="font-medium text-green-600">€{item.price}</span>
-                    </div>
-                  ))}
-                </CardContent>
-                
-                {/* Selected Furniture */}
-                {currentRoom.furniture.length > 0 && (
-                  <div className="border-t pt-3 mt-3 px-4 pb-4">
-                    <p className="text-xs font-medium text-gray-500 mb-2">In deze kamer:</p>
-                    <div className="space-y-1">
-                      {currentRoom.furniture.map(f => (
-                        <div key={f.instanceId} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
-                          <span>{f.image} {f.name}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-green-600">€{f.price}</span>
-                            <button
-                              onClick={() => removeFurnitureFromRoom(f.instanceId)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                  {products.length > 0 ? (
+                    <div className="space-y-2 max-h-[250px] overflow-y-auto">
+                      {products.map(product => (
+                        <div
+                          key={product.id}
+                          onClick={() => addProductToRoom(product)}
+                          className="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 hover:border-green-400 hover:bg-green-50 cursor-pointer transition-all"
+                        >
+                          {product.image_url ? (
+                            <img 
+                              src={product.image_url.startsWith('http') ? product.image_url : `${API.replace('/api', '')}${product.image_url}`}
+                              alt={product.name}
+                              className="w-12 h-12 object-cover rounded"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-2xl">
+                              📦
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{product.name}</p>
+                            <p className="text-xs text-gray-500">{product.category}</p>
                           </div>
+                          <span className="font-bold text-green-600">€{product.price?.toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="text-center py-6 text-gray-500">
+                      <Package size={32} className="mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Geen producten gevonden</p>
+                      <p className="text-xs mt-1">
+                        Voeg materialen toe in Catalogusbeheer met categorie "Meubel" of "Product"
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Selected Products */}
+                  {currentRoom.products.length > 0 && (
+                    <div className="border-t pt-3 mt-3">
+                      <p className="text-xs font-medium text-gray-500 mb-2">In {currentRoom.name}:</p>
+                      <div className="space-y-1">
+                        {currentRoom.products.map(p => (
+                          <div key={p.instanceId} className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded">
+                            <span className="truncate flex-1">{p.name}</span>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <span className="text-green-600">€{p.price?.toFixed(2)}</span>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); removeProductFromRoom(p.instanceId); }}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
               </Card>
             )}
           </div>
 
-          {/* Center - Canvas */}
+          {/* Center - Canvas & Summary */}
           <div className="lg:col-span-2 space-y-4">
             {/* Canvas Controls */}
             <Card>
@@ -573,18 +689,19 @@ export default function RoomConfiguratorPrototype() {
                     <ZoomIn size={16} />
                   </Button>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => {
-                    setRooms([{
-                      id: 1, name: 'Woonkamer', width: 5, length: 4, height: 2.7,
-                      x: 50, y: 50, floor: FLOOR_MATERIALS[0], walls: WALL_MATERIALS[0],
-                      ceiling: CEILING_MATERIALS[0], furniture: []
-                    }]);
-                    setSelectedRoom(1);
-                  }}>
-                    <RotateCcw size={16} className="mr-1" /> Reset
-                  </Button>
-                </div>
+                <Button variant="outline" size="sm" onClick={() => {
+                  setRooms([{
+                    id: 1, name: 'Woonkamer', width: 5, length: 4, height: 2.7,
+                    x: 50, y: 50,
+                    floor: { workItem: null, color: DEFAULT_COLORS[5] },
+                    walls: { workItem: null, color: DEFAULT_COLORS[0] },
+                    ceiling: { workItem: null, color: DEFAULT_COLORS[0] },
+                    products: []
+                  }]);
+                  setSelectedRoom(1);
+                }}>
+                  <RotateCcw size={16} className="mr-1" /> Reset
+                </Button>
               </CardContent>
             </Card>
 
@@ -593,7 +710,7 @@ export default function RoomConfiguratorPrototype() {
               <canvas
                 ref={canvasRef}
                 width={800}
-                height={500}
+                height={400}
                 className="w-full cursor-crosshair"
                 onClick={(e) => {
                   const rect = e.target.getBoundingClientRect();
@@ -601,7 +718,6 @@ export default function RoomConfiguratorPrototype() {
                   const y = e.clientY - rect.top;
                   const scale = 40 * zoom;
                   
-                  // Check if click is inside any room
                   const clickedRoom = rooms.find(room => {
                     const rx = room.x;
                     const ry = room.y;
@@ -641,19 +757,31 @@ export default function RoomConfiguratorPrototype() {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-gray-600">
                           <div>
                             <span className="block text-gray-400">Vloer</span>
-                            {prices.floorArea.toFixed(1)}m² × €{room.floor?.price || 0} = €{prices.floorPrice.toFixed(0)}
+                            {room.floor?.workItem ? (
+                              <span>{room.floor.workItem.title}: €{prices.floorPrice.toFixed(0)}</span>
+                            ) : (
+                              <span className="text-gray-400">Niet gekozen</span>
+                            )}
                           </div>
                           <div>
                             <span className="block text-gray-400">Muren</span>
-                            {prices.wallArea.toFixed(1)}m² × €{room.walls?.price || 0} = €{prices.wallPrice.toFixed(0)}
+                            {room.walls?.workItem ? (
+                              <span>{room.walls.workItem.title}: €{prices.wallPrice.toFixed(0)}</span>
+                            ) : (
+                              <span className="text-gray-400">Niet gekozen</span>
+                            )}
                           </div>
                           <div>
                             <span className="block text-gray-400">Plafond</span>
-                            {prices.ceilingArea.toFixed(1)}m² × €{room.ceiling?.price || 0} = €{prices.ceilingPrice.toFixed(0)}
+                            {room.ceiling?.workItem ? (
+                              <span>{room.ceiling.workItem.title}: €{prices.ceilingPrice.toFixed(0)}</span>
+                            ) : (
+                              <span className="text-gray-400">Niet gekozen</span>
+                            )}
                           </div>
                           <div>
-                            <span className="block text-gray-400">Meubels</span>
-                            {room.furniture.length} items = €{prices.furniturePrice.toFixed(0)}
+                            <span className="block text-gray-400">Producten</span>
+                            <span>{room.products.length} items: €{prices.productsPrice.toFixed(0)}</span>
                           </div>
                         </div>
                       </div>
@@ -684,21 +812,21 @@ export default function RoomConfiguratorPrototype() {
         </div>
 
         {/* Info Banner */}
-        <Card className="bg-yellow-50 border-yellow-200">
+        <Card className="bg-blue-50 border-blue-200">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
               <span className="text-2xl">💡</span>
               <div>
-                <h4 className="font-semibold text-yellow-800">Dit is een Prototype</h4>
-                <p className="text-sm text-yellow-700 mt-1">
-                  Dit demonstreert hoe de kamer configurator zou werken. In de volledige versie:
+                <h4 className="font-semibold text-blue-800">Data uit je Catalogus</h4>
+                <p className="text-sm text-blue-700 mt-1">
+                  De configurator haalt nu prijzen uit je echte database:
                 </p>
-                <ul className="text-sm text-yellow-700 mt-2 space-y-1 list-disc list-inside">
-                  <li>Materialen komen uit jullie catalogusbeheer database</li>
-                  <li>Meubels kunnen met foto&apos;s worden geüpload</li>
-                  <li>Kamers kunnen vrij worden versleept en geschaald</li>
-                  <li>Direct koppeling met offerte systeem</li>
-                  <li>Klanten kunnen dit zelf invullen via een link</li>
+                <ul className="text-sm text-blue-700 mt-2 space-y-1 list-disc list-inside">
+                  <li><strong>Werk items</strong> ({workItems.length} geladen) → voor vloer, muur, plafond werk</li>
+                  <li><strong>Materialen</strong> ({materials.length} geladen) → voor producten/meubels</li>
+                  <li>Voeg <strong>categorie</strong> toe aan werk items (vloer, muur, plafond) voor betere filtering</li>
+                  <li>Voeg materialen toe met categorie <strong>&quot;Meubel&quot;</strong> of <strong>&quot;Product&quot;</strong> voor de producten tab</li>
+                  <li>Upload <strong>afbeeldingen</strong> bij materialen via Catalogusbeheer</li>
                 </ul>
               </div>
             </div>
