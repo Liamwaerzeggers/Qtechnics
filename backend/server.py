@@ -1904,8 +1904,6 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
         ]))
         story.append(table)
         story.append(Spacer(1, 0.2*inch))
-    story.append(table)
-    story.append(Spacer(1, 0.3*inch))
     
     # Totals with VAT breakdown
     total_excl = quote.get('total_excl_vat', quote.get('total_price', 0))
