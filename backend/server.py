@@ -1246,6 +1246,7 @@ async def create_work_item(
     title: str,
     unit: str,
     price: float,
+    category: str = None,
     current_user: User = Depends(get_current_user)
 ):
     """Create a new work item manually"""
@@ -1262,6 +1263,7 @@ async def create_work_item(
         "title": title,
         "unit": unit,
         "price": price,
+        "category": category,
         "user_id": current_user.id,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
