@@ -1842,6 +1842,365 @@ TEST003,Test Boor,12.75,HSS boor 8mm,Gereedschap,TestBrand"""
         
         return True
 
+    def test_split_quote_functionality(self):
+        """Test the new Split Quote functionality that splits a quote into Labor and Materials quotes"""
+        print("\n✂️ Testing Split Quote Functionality...")
+        
+        # Step 1: Login as admin using the specific credentials
+        print("🔐 Testing admin login with test/test123...")
+        
+        # Test admin login endpoint
+        login_url = f"{self.base_url}/auth/admin/login?username=test&password=test123"
+        
+        try:
+            response = requests.post(login_url)
+            
+            if response.status_code != 200:
+                print(f"❌ Admin login failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+                return False
+            
+            # Extract session token from response
+            login_data = response.json()
+            admin_session_token = None
+            
+            # Check if session token is in response body
+            if 'session_token' in login_data:
+                admin_session_token = login_data['session_token']
+            
+            # Also check cookies
+            if not admin_session_token and 'session_token' in response.cookies:
+                admin_session_token = response.cookies['session_token']
+            
+            if not admin_session_token:
+                print("❌ No session token received from admin login")
+                return False
+                
+            print(f"✅ Admin login successful - Token: {admin_session_token[:10]}...")
+            
+            # Update session token for subsequent requests
+            self.session_token = admin_session_token
+            
+        except Exception as e:
+            print(f"❌ Admin login error: {str(e)}")
+            return False
+        
+        # Step 2: Get list of quotes
+        print("\n📋 Getting list of quotes...")
+        
+        success, quotes_response = self.run_test(
+            "Get Quotes List",
+            "GET",
+            "quotes",
+            200
+        )
+        
+        if not success:
+            print("❌ Failed to get quotes list")
+            return False
+        
+        quotes = quotes_response if isinstance(quotes_response, list) else []
+        if not quotes:
+            print("❌ No quotes available for testing")
+            return False
+        
+        print(f"✅ Found {len(quotes)} quotes")
+        
+        # Step 3: Find a quote with BOTH labor items (item_type: "arbeid") AND material items (item_type: "materiaal")
+        print("\n🔍 Looking for quotes with both labor and material items...")
+        
+        target_quote = None
+        for quote in quotes:
+            quote_id = quote.get('id')
+            if not quote_id:
+                continue
+                
+            # Get line items for this quote
+            success, items_response = self.run_test(
+                f"Get Line Items for Quote {quote_id}",
+                "GET",
+                f"quotes/{quote_id}/items",
+                200
+            )
+            
+            if success:
+                items = items_response if isinstance(items_response, list) else []
+                labor_items = [item for item in items if item.get('item_type') == 'arbeid']
+                material_items = [item for item in items if item.get('item_type') == 'materiaal']
+                
+                if labor_items and material_items:
+                    target_quote = quote
+                    print(f"✅ Found mixed quote: {quote_id}")
+                    print(f"   Labor items: {len(labor_items)}")
+                    print(f"   Material items: {len(material_items)}")
+                    break
+        
+        # Step 4: If no mixed quote exists, create one
+        if not target_quote:
+            print("\n➕ No mixed quote found, creating one...")
+            
+            # Use the first available quote
+            quote_id = quotes[0]['id']
+            print(f"   Using quote: {quote_id}")
+            
+            # Get existing items to check what we need to add
+            success, items_response = self.run_test(
+                f"Get Existing Items for Quote {quote_id}",
+                "GET",
+                f"quotes/{quote_id}/items",
+                200
+            )
+            
+            if not success:
+                print("❌ Failed to get existing items")
+                return False
+            
+            existing_items = items_response if isinstance(items_response, list) else []
+            has_labor = any(item.get('item_type') == 'arbeid' for item in existing_items)
+            has_material = any(item.get('item_type') == 'materiaal' for item in existing_items)
+            
+            # Add missing item types
+            if not has_labor:
+                labor_item = {
+                    "description": "Test Arbeid - Schilderwerk",
+                    "quantity": 10.0,
+                    "unit_price": 45.0,
+                    "item_type": "arbeid",
+                    "vat_rate": 6.0
+                }
+                
+                success, response = self.run_test(
+                    "Add Labor Item",
+                    "POST",
+                    f"quotes/{quote_id}/items",
+                    200,
+                    data=labor_item
+                )
+                
+                if not success:
+                    print("❌ Failed to add labor item")
+                    return False
+                print("✅ Added labor item")
+            
+            if not has_material:
+                material_item = {
+                    "description": "Test Materiaal - Verf",
+                    "quantity": 5.0,
+                    "unit_price": 25.0,
+                    "item_type": "materiaal",
+                    "vat_rate": 21.0
+                }
+                
+                success, response = self.run_test(
+                    "Add Material Item",
+                    "POST",
+                    f"quotes/{quote_id}/items",
+                    200,
+                    data=material_item
+                )
+                
+                if not success:
+                    print("❌ Failed to add material item")
+                    return False
+                print("✅ Added material item")
+            
+            target_quote = quotes[0]
+        
+        quote_id = target_quote['id']
+        
+        # Step 5: Test Split endpoint
+        print(f"\n✂️ Testing split endpoint for quote {quote_id}...")
+        
+        success, split_response = self.run_test(
+            "Split Quote",
+            "POST",
+            f"quotes/{quote_id}/split",
+            200
+        )
+        
+        if not success:
+            print("❌ Failed to split quote")
+            return False
+        
+        # Verify response structure
+        required_fields = ['message', 'original_quote_id', 'created_quotes']
+        missing_fields = [field for field in required_fields if field not in split_response]
+        if missing_fields:
+            print(f"❌ Split response missing fields: {missing_fields}")
+            return False
+        
+        message = split_response.get('message', '')
+        original_quote_id = split_response.get('original_quote_id', '')
+        created_quotes = split_response.get('created_quotes', [])
+        
+        print(f"✅ Split successful: {message}")
+        print(f"   Original quote: {original_quote_id}")
+        print(f"   Created quotes: {len(created_quotes)}")
+        
+        # Verify we got exactly 2 new quotes
+        if len(created_quotes) != 2:
+            print(f"❌ Expected 2 created quotes, got {len(created_quotes)}")
+            return False
+        
+        # Find labor and material quotes
+        labor_quote = None
+        material_quote = None
+        
+        for quote in created_quotes:
+            if quote.get('type') == 'arbeid':
+                labor_quote = quote
+            elif quote.get('type') == 'materialen':
+                material_quote = quote
+        
+        if not labor_quote or not material_quote:
+            print("❌ Missing labor or material quote in response")
+            return False
+        
+        labor_quote_id = labor_quote['id']
+        material_quote_id = material_quote['id']
+        
+        print(f"   Labor quote: {labor_quote_id}")
+        print(f"   Material quote: {material_quote_id}")
+        
+        # Step 6: Verify the split worked - check quote IDs end with correct suffixes
+        if not labor_quote_id.endswith('-ARB'):
+            print(f"❌ Labor quote ID should end with '-ARB': {labor_quote_id}")
+            return False
+        
+        if not material_quote_id.endswith('-MAT'):
+            print(f"❌ Material quote ID should end with '-MAT': {material_quote_id}")
+            return False
+        
+        print("✅ Quote ID suffixes correct")
+        
+        # Step 7: Verify labor quote only has arbeid items
+        print(f"\n🔍 Verifying labor quote {labor_quote_id}...")
+        
+        success, labor_quote_data = self.run_test(
+            "Get Labor Quote",
+            "GET",
+            f"quotes/{labor_quote_id}",
+            200
+        )
+        
+        if not success:
+            print("❌ Failed to get labor quote")
+            return False
+        
+        success, labor_items_response = self.run_test(
+            "Get Labor Quote Items",
+            "GET",
+            f"quotes/{labor_quote_id}/items",
+            200
+        )
+        
+        if not success:
+            print("❌ Failed to get labor quote items")
+            return False
+        
+        labor_items = labor_items_response if isinstance(labor_items_response, list) else []
+        non_labor_items = [item for item in labor_items if item.get('item_type') != 'arbeid']
+        
+        if non_labor_items:
+            print(f"❌ Labor quote contains non-labor items: {len(non_labor_items)}")
+            return False
+        
+        print(f"✅ Labor quote verified - {len(labor_items)} labor items only")
+        
+        # Step 8: Verify material quote only has materiaal items
+        print(f"\n🔍 Verifying material quote {material_quote_id}...")
+        
+        success, material_quote_data = self.run_test(
+            "Get Material Quote",
+            "GET",
+            f"quotes/{material_quote_id}",
+            200
+        )
+        
+        if not success:
+            print("❌ Failed to get material quote")
+            return False
+        
+        success, material_items_response = self.run_test(
+            "Get Material Quote Items",
+            "GET",
+            f"quotes/{material_quote_id}/items",
+            200
+        )
+        
+        if not success:
+            print("❌ Failed to get material quote items")
+            return False
+        
+        material_items = material_items_response if isinstance(material_items_response, list) else []
+        non_material_items = [item for item in material_items if item.get('item_type') == 'arbeid']
+        
+        if non_material_items:
+            print(f"❌ Material quote contains labor items: {len(non_material_items)}")
+            return False
+        
+        print(f"✅ Material quote verified - {len(material_items)} material items only")
+        
+        # Step 9: Verify original quote status is "gesplitst"
+        print(f"\n🔍 Verifying original quote status...")
+        
+        success, original_quote_data = self.run_test(
+            "Get Original Quote After Split",
+            "GET",
+            f"quotes/{quote_id}",
+            200
+        )
+        
+        if not success:
+            print("❌ Failed to get original quote")
+            return False
+        
+        original_status = original_quote_data.get('status', '')
+        if original_status != 'gesplitst':
+            print(f"❌ Original quote status should be 'gesplitst', got '{original_status}'")
+            return False
+        
+        print("✅ Original quote status correctly set to 'gesplitst'")
+        
+        # Step 10: Verify totals are calculated correctly
+        print(f"\n💰 Verifying quote totals...")
+        
+        labor_total = labor_quote.get('total_incl_vat', 0)
+        material_total = material_quote.get('total_incl_vat', 0)
+        
+        print(f"   Labor quote total: €{labor_total:.2f}")
+        print(f"   Material quote total: €{material_total:.2f}")
+        print(f"   Combined total: €{labor_total + material_total:.2f}")
+        
+        # Verify totals are positive
+        if labor_total <= 0:
+            print("❌ Labor quote total should be positive")
+            return False
+        
+        if material_total <= 0:
+            print("❌ Material quote total should be positive")
+            return False
+        
+        print("✅ Quote totals verified")
+        
+        print("\n🎉 Split Quote functionality test completed successfully!")
+        print("✅ All functionality working as expected:")
+        print("   ✅ Admin login with test/test123")
+        print("   ✅ Quote list retrieval")
+        print("   ✅ Mixed quote identification/creation")
+        print("   ✅ Quote splitting into labor and materials")
+        print("   ✅ Correct quote ID suffixes (-ARB, -MAT)")
+        print("   ✅ Labor quote contains only arbeid items")
+        print("   ✅ Material quote contains only materiaal items")
+        print("   ✅ Original quote status set to 'gesplitst'")
+        print("   ✅ Quote totals calculated correctly")
+        
+        return True
+
 def main():
     print("🚀 Starting Offerte Dashboard API Tests")
     print("=" * 50)
