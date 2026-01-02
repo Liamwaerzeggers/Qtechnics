@@ -491,21 +491,19 @@ export default function CustomerPortalPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    {/* Line Items - Mobile Card View */}
-                    <div className="space-y-3 sm:hidden">
+                    {/* Line Items - Mobile Card View (NO unit prices for customers) */}
+                    <div className="space-y-2 sm:hidden">
                       {quote.line_items?.map((item, idx) => (
                         <div key={idx} className="p-3 bg-gray-50 rounded-lg">
                           <p className="font-medium text-sm text-gray-800">{item.description}</p>
-                          <div className="flex justify-between mt-2 text-xs text-gray-600">
-                            <span>{item.quantity} {item.unit}</span>
-                            <span>€{item.unit_price?.toFixed(2)}/st</span>
-                          </div>
-                          <p className="text-right mt-1 font-semibold text-sm">€{item.total_incl_vat?.toFixed(2)}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {item.quantity} {item.unit}
+                          </p>
                         </div>
                       ))}
                     </div>
                     
-                    {/* Line Items - Desktop Table */}
+                    {/* Line Items - Desktop Table (NO unit prices for customers) */}
                     <div className="hidden sm:block overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
@@ -513,8 +511,6 @@ export default function CustomerPortalPage() {
                             <th className="text-left py-2">Omschrijving</th>
                             <th className="text-right py-2">Aantal</th>
                             <th className="text-right py-2">Eenheid</th>
-                            <th className="text-right py-2">Prijs</th>
-                            <th className="text-right py-2">Totaal</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -523,23 +519,15 @@ export default function CustomerPortalPage() {
                               <td className="py-2">{item.description}</td>
                               <td className="text-right py-2">{item.quantity}</td>
                               <td className="text-right py-2">{item.unit}</td>
-                              <td className="text-right py-2">€{item.unit_price?.toFixed(2)}</td>
-                              <td className="text-right py-2 font-medium">€{item.total_incl_vat?.toFixed(2)}</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
                     
-                    {/* Totals */}
-                    <div className="mt-4 pt-4 border-t space-y-1 text-right text-sm sm:text-base">
-                      <p className="text-gray-600">
-                        Subtotaal excl. BTW: <span className="font-medium">€{quote.total_excl_vat?.toFixed(2)}</span>
-                      </p>
-                      <p className="text-gray-600">
-                        BTW: <span className="font-medium">€{quote.total_vat?.toFixed(2)}</span>
-                      </p>
-                      <p className="text-base sm:text-lg font-bold">
+                    {/* Totals - Only show grand total for customers */}
+                    <div className="mt-4 pt-4 border-t text-right">
+                      <p className="text-lg sm:text-xl font-bold" style={{color: '#1E40AF'}}>
                         Totaal incl. BTW: €{quote.total_incl_vat?.toFixed(2)}
                       </p>
                     </div>
