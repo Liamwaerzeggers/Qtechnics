@@ -422,7 +422,7 @@ Q Technics`;
               {quote.quote_number}
             </h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button onClick={handleSendEmail} variant="outline" style={{color: '#059669', borderColor: '#059669'}}>
               <Mail className="mr-2" size={20} /> Verstuur Email
             </Button>
@@ -432,6 +432,23 @@ Q Technics`;
             <Button data-testid="download-excel-button" onClick={handleDownloadExcel} variant="outline">
               <Download className="mr-2" size={20} /> Excel
             </Button>
+            {/* Split Quote Button - only show if both labor and material items exist */}
+            {lineItems.some(item => item.item_type === 'arbeid') && 
+             lineItems.some(item => item.item_type === 'materiaal') && 
+             quote.status !== 'gesplitst' && (
+              <Button 
+                onClick={handleSplitQuote} 
+                variant="outline" 
+                disabled={splitting}
+                style={{color: '#7C3AED', borderColor: '#7C3AED'}}
+              >
+                {splitting ? (
+                  <><Loader2 className="mr-2 animate-spin" size={20} /> Splitsen...</>
+                ) : (
+                  <><Scissors className="mr-2" size={20} /> Splits Arbeid/Materiaal</>
+                )}
+              </Button>
+            )}
           </div>
         </div>
 
