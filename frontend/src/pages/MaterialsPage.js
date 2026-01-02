@@ -327,6 +327,20 @@ export default function MaterialsPage() {
                       </select>
                     </div>
                     <div>
+                      <Label>Categorie</Label>
+                      <select
+                        value={newWorkItem.category || ''}
+                        onChange={(e) => setNewWorkItem({...newWorkItem, category: e.target.value})}
+                        className="w-full h-10 px-3 border rounded-md"
+                      >
+                        <option value="">Geen categorie</option>
+                        <option value="Vloer">Vloer</option>
+                        <option value="Muur">Muur</option>
+                        <option value="Plafond">Plafond</option>
+                        <option value="Algemeen">Algemeen</option>
+                      </select>
+                    </div>
+                    <div>
                       <Label>Prijs (€) *</Label>
                       <Input
                         type="number"
