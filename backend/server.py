@@ -1317,6 +1317,135 @@ async def delete_work_item(work_item_id: str, current_user: User = Depends(get_c
     
     return {"message": "Werk item verwijderd"}
 
+# ===== CONFIGURATOR ENDPOINTS =====
+
+@api_router.get("/configurator/work-items")
+async def get_configurator_work_items(category: str = None, current_user: User = Depends(get_current_user)):
+    """Get work items for configurator, optionally filtered by category"""
+    query = {}
+    if category:
+        query["category"] = {"$regex": category, "$options": "i"}
+    
+    work_items = await db.work_items.find(query, {"_id": 0}).to_list(1000)
+    
+    # Clean NaN/Infinity values
+    import math
+    for item in work_items:
+        if 'price' in item and (math.isnan(item['price']) or math.isinf(item['price'])):
+            item['price'] = 0.0
+    
+    return {"work_items": work_items}
+
+@api_router.get("/configurator/materials")
+async def get_configurator_materials(category: str = None, current_user: User = Depends(get_current_user)):
+    """Get materials for configurator (products/furniture), optionally filtered by category"""
+    query = {}
+    if category:
+        query["category"] = {"$regex": category, "$options": "i"}
+    
+    materials = await db.materials.find(query, {"_id": 0}).to_list(1000)
+    return {"materials": materials}
+
+@api_router.put("/materials/{material_id}")
+async def update_material(
+    material_id: str,
+    name: str = None,
+    category: str = None,
+    subcategory: str = None,
+    price: float = None,
+    unit: str = None,
+    image_url: str = None,
+    colors: str = None,  # Comma-separated colors
+    current_user: User = Depends(get_current_user)
+):
+    """Update a material"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can update materials")
+    
+    material = await db.materials.find_one({"id": material_id})
+    if not material:
+        raise HTTPException(status_code=404, detail="Materiaal niet gevonden")
+    
+    update_data = {}
+    if name is not None:
+        update_data["name"] = name
+    if category is not None:
+        update_data["category"] = category
+    if subcategory is not None:
+        update_data["subcategory"] = subcategory
+    if price is not None:
+        update_data["price"] = price
+    if unit is not None:
+        update_data["unit"] = unit
+    if image_url is not None:
+        update_data["image_url"] = image_url
+    if colors is not None:
+        update_data["colors"] = [c.strip() for c in colors.split(",") if c.strip()]
+    
+    if update_data:
+        await db.materials.update_one({"id": material_id}, {"$set": update_data})
+    
+    updated = await db.materials.find_one({"id": material_id}, {"_id": 0})
+    return updated
+
+@api_router.post("/materials/{material_id}/upload-image")
+async def upload_material_image(
+    material_id: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload an image for a material/product"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can upload images")
+    
+    material = await db.materials.find_one({"id": material_id})
+    if not material:
+        raise HTTPException(status_code=404, detail="Materiaal niet gevonden")
+    
+    # Validate file type
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Alleen afbeeldingen zijn toegestaan")
+    
+    # Save image
+    materials_dir = ROOT_DIR / "uploads" / "materials"
+    materials_dir.mkdir(parents=True, exist_ok=True)
+    
+    unique_filename = f"{material_id}_{uuid.uuid4().hex[:8]}_{file.filename}"
+    file_path = materials_dir / unique_filename
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    image_url = f"/api/static/materials/{unique_filename}"
+    
+    # Update material with image URL
+    await db.materials.update_one(
+        {"id": material_id},
+        {"$set": {"image_url": image_url}}
+    )
+    
+    return {"image_url": image_url, "message": "Afbeelding geüpload"}
+
+@api_router.put("/work-items/{work_item_id}/category")
+async def update_work_item_category(
+    work_item_id: str,
+    category: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Update work item category"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can update work items")
+    
+    result = await db.work_items.update_one(
+        {"id": work_item_id},
+        {"$set": {"category": category}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Werk item niet gevonden")
+    
+    return {"message": "Categorie bijgewerkt"}
+
 @api_router.post("/work-items/auto-add")
 async def auto_add_work_item(
     title: str,
