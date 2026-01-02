@@ -110,7 +110,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Room Configurator - Database Integration"
+    - "PDF Export for Quotes - Labor Items with Descriptions and Quantities"
   stuck_tasks: 
     - "Project Navigation UI - Cards not clickable"
   test_priority: "high_first"
