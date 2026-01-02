@@ -271,6 +271,54 @@ export default function QuoteDetailPage() {
     }
   };
 
+  // Split quote into Labor and Materials
+  const handleSplitQuote = async () => {
+    if (!quote) return;
+    
+    const hasLabor = lineItems.some(item => item.item_type === 'arbeid');
+    const hasMaterial = lineItems.some(item => item.item_type === 'materiaal');
+    
+    if (!hasLabor || !hasMaterial) {
+      toast.error('Splitsen vereist zowel arbeid als materiaal items');
+      return;
+    }
+    
+    if (!window.confirm('Weet je zeker dat je deze offerte wilt splitsen in een Arbeid en Materialen offerte?')) {
+      return;
+    }
+    
+    setSplitting(true);
+    try {
+      const response = await axios.post(`${API}/quotes/${quoteId}/split`, {}, { withCredentials: true });
+      
+      toast.success(response.data.message);
+      
+      // Show details of created quotes
+      const createdQuotes = response.data.created_quotes;
+      createdQuotes.forEach(q => {
+        toast.info(`${q.type === 'arbeid' ? '🔧' : '📦'} ${q.type.toUpperCase()}: ${q.id} (€${q.total_incl_vat.toFixed(2)})`, {
+          duration: 5000
+        });
+      });
+      
+      // Refresh quote data
+      fetchQuoteData();
+      
+      // Navigate to the labor quote
+      const laborQuote = createdQuotes.find(q => q.type === 'arbeid');
+      if (laborQuote) {
+        setTimeout(() => {
+          navigate(`/quotes/${laborQuote.id}`);
+        }, 2000);
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || 'Kon offerte niet splitsen';
+      toast.error(errorMsg);
+    } finally {
+      setSplitting(false);
+    }
+  };
+
   const handleSendEmail = async () => {
     if (!lead || !quote) {
       toast.error('Klantgegevens niet beschikbaar');
