@@ -41,6 +41,9 @@ export default function QuoteDetailPage() {
   const [workItemSearch, setWorkItemSearch] = useState('');
   const [filteredWorkItems, setFilteredWorkItems] = useState([]);
   const [showWorkItemDropdown, setShowWorkItemDropdown] = useState(false);
+  
+  // Split quote state
+  const [splitting, setSplitting] = useState(false);
 
   useEffect(() => {
     fetchQuoteData();
