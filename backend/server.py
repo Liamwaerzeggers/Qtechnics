@@ -1960,8 +1960,12 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
         story.append(Paragraph("Arbeid", labor_header_style))
         story.append(Spacer(1, 0.1*inch))
         
+        # Style for wrapping description text
+        desc_style = ParagraphStyle('DescStyle', parent=styles['Normal'], fontSize=9, leading=11)
+        
         # Create labor table showing items with quantity and unit (NO unit price)
-        labor_table_data = [['Omschrijving', 'Hoeveelheid', 'Eenheid']]
+        # Same column layout as materials for consistency
+        labor_table_data = [['Omschrijving', 'Aantal', 'Eenheid', '', 'Subtotaal', '']]
         
         for item in labor_items:
             unit = item.get('unit', 'm²')
@@ -1971,83 +1975,128 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
             elif unit in ['lm', 'lopende meter']:
                 unit = 'm'
             
+            # Use Paragraph for description to allow text wrapping
+            desc_para = Paragraph(item['description'], desc_style)
+            
             labor_table_data.append([
-                item['description'][:50] + ('...' if len(item['description']) > 50 else ''),
+                desc_para,
                 f"{item['quantity']:.2f}" if item['quantity'] else '-',
-                unit
+                unit,
+                '',  # Empty column for alignment with materials
+                '',  # No individual subtotal shown
+                ''
             ])
         
-        # Add labor total row
+        # Add labor total rows
         labor_table_data.append([
-            'Subtotaal Arbeid',
-            '',
-            f"€{labor_total_excl:.2f} excl. BTW"
+            Paragraph('<b>Subtotaal Arbeid</b>', desc_style),
+            '', '', '', 
+            f"€{labor_total_excl:.2f}",
+            'excl. BTW'
         ])
         labor_table_data.append([
-            f'BTW {labor_vat_rate}%',
-            '',
-            f"€{labor_vat:.2f}"
+            Paragraph(f'<b>BTW {labor_vat_rate}%</b>', desc_style),
+            '', '', '',
+            f"€{labor_vat:.2f}",
+            ''
         ])
         labor_table_data.append([
-            'Totaal Arbeid incl. BTW',
-            '',
-            f"€{labor_total_incl:.2f}"
+            Paragraph('<b>Totaal Arbeid incl. BTW</b>', desc_style),
+            '', '', '',
+            f"€{labor_total_incl:.2f}",
+            ''
         ])
         
-        labor_table = Table(labor_table_data, colWidths=[3.5*inch, 1.2*inch, 1.5*inch])
+        labor_table = Table(labor_table_data, colWidths=[2.4*inch, 0.6*inch, 0.6*inch, 0.5*inch, 0.9*inch, 0.7*inch])
         labor_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E5E7EB')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1E40AF')),
             ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
             ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('TOPPADDING', (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
             # Highlight totals
             ('BACKGROUND', (0, -3), (-1, -1), colors.HexColor('#D1FAE5')),
-            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (4, -3), (4, -1), 'Helvetica-Bold'),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB'))
         ]))
         story.append(labor_table)
         story.append(Spacer(1, 0.3*inch))
     
-    # === MATERIALEN SECTIE (met prijzen zoals voorheen) ===
+    # === MATERIALEN SECTIE (met prijzen) ===
     if material_items:
         material_header_style = ParagraphStyle('MaterialHeader', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor('#1E40AF'))
         story.append(Paragraph("Materialen", material_header_style))
         story.append(Spacer(1, 0.1*inch))
         
+        # Style for wrapping description text
+        desc_style = ParagraphStyle('DescStyle', parent=styles['Normal'], fontSize=9, leading=11)
+        
         # Line items table with VAT for materials
-        table_data = [['Omschrijving', 'Aantal', 'Prijs excl.', 'BTW%', 'Totaal excl.', 'Totaal incl.']]
+        table_data = [['Omschrijving', 'Aantal', 'Eenheid', 'Prijs', 'Subtotaal', 'BTW%']]
         
         # Add individual material items
         for item in material_items:
             excl_vat = item.get('total_excl_vat', item.get('quantity', 0) * item.get('unit_price', 0))
             vat_rate = item.get('vat_rate', 21)
-            incl_vat = item.get('total_incl_vat', item.get('total', excl_vat))
+            unit = item.get('unit', 'stuk')
+            
+            # Use Paragraph for description to allow text wrapping
+            desc_para = Paragraph(item['description'], desc_style)
             
             table_data.append([
-                item['description'][:40] + ('...' if len(item['description']) > 40 else ''),
-                str(item['quantity']),
+                desc_para,
+                f"{item['quantity']:.2f}" if item['quantity'] else '-',
+                unit,
                 f"€{item['unit_price']:.2f}",
-                f"{vat_rate}%",
                 f"€{excl_vat:.2f}",
-                f"€{incl_vat:.2f}"
+                f"{vat_rate}%"
             ])
         
-        table = Table(table_data, colWidths=[2.2*inch, 0.6*inch, 0.9*inch, 0.6*inch, 0.9*inch, 0.9*inch])
+        # Calculate material totals
+        material_total_excl = sum(item.get('total_excl_vat', 0) for item in material_items)
+        material_vat = sum(item.get('vat_amount', 0) for item in material_items)
+        material_total_incl = material_total_excl + material_vat
+        
+        # Add material total rows
+        table_data.append([
+            Paragraph('<b>Subtotaal Materialen</b>', desc_style),
+            '', '', '',
+            f"€{material_total_excl:.2f}",
+            'excl.'
+        ])
+        table_data.append([
+            Paragraph('<b>BTW Materialen</b>', desc_style),
+            '', '', '',
+            f"€{material_vat:.2f}",
+            ''
+        ])
+        table_data.append([
+            Paragraph('<b>Totaal Materialen incl. BTW</b>', desc_style),
+            '', '', '',
+            f"€{material_total_incl:.2f}",
+            ''
+        ])
+        
+        table = Table(table_data, colWidths=[2.4*inch, 0.6*inch, 0.6*inch, 0.7*inch, 0.9*inch, 0.5*inch])
         table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1E40AF')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E5E7EB')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1E40AF')),
             ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
             ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 9),
-            ('FONTSIZE', (0, 1), (-1, -1), 9),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-            ('TOPPADDING', (0, 1), (-1, -1), 6),
-            ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            # Highlight totals
+            ('BACKGROUND', (0, -3), (-1, -1), colors.HexColor('#DBEAFE')),
+            ('FONTNAME', (4, -3), (4, -1), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB'))
+        ]))
             ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey)
         ]))
