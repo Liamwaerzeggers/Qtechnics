@@ -2092,13 +2092,9 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
             ('FONTSIZE', (0, 0), (-1, -1), 9),
             ('TOPPADDING', (0, 0), (-1, -1), 6),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            # Highlight totals
             ('BACKGROUND', (0, -3), (-1, -1), colors.HexColor('#DBEAFE')),
             ('FONTNAME', (4, -3), (4, -1), 'Helvetica-Bold'),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB'))
-        ]))
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey)
         ]))
         story.append(table)
         story.append(Spacer(1, 0.2*inch))
