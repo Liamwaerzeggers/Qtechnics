@@ -4501,17 +4501,23 @@ async def retry_billit_send(invoice_id: str, current_user: User = Depends(get_cu
 
 @api_router.get("/invoices/{invoice_id}/peppol-status")
 async def get_peppol_status(invoice_id: str, current_user: User = Depends(get_current_user)):
-    """Get Peppol status for an invoice"""
+    """Get detailed Billit/Peppol status for an invoice"""
     invoice = await db.invoices.find_one({"id": invoice_id}, {"_id": 0})
     if not invoice:
-        raise HTTPException(status_code=404, detail="Invoice not found")
+        raise HTTPException(status_code=404, detail="Factuur niet gevonden")
+    
+    status = invoice.get("peppol_status", "not_sent")
     
     return {
-        "peppol_status": invoice.get("peppol_status", "not_sent"),
+        "peppol_status": status,
+        "status_text": get_billit_status_text(status),
+        "transport_type": invoice.get("peppol_transport_type"),
         "billit_order_id": invoice.get("billit_order_id"),
         "peppol_sent_at": invoice.get("peppol_sent_at"),
         "peppol_delivered_at": invoice.get("peppol_delivered_at"),
-        "peppol_error": invoice.get("peppol_error")
+        "peppol_failed_at": invoice.get("peppol_failed_at"),
+        "peppol_error": invoice.get("peppol_error"),
+        "can_retry": status in ["failed", "rejected", "error"]
     }
 
 @api_router.post("/webhooks/billit")
