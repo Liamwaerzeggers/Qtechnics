@@ -17,7 +17,9 @@ import {
   Send,
   Home,
   Hammer,
-  Eye
+  Eye,
+  Download,
+  FolderArchive
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -46,6 +48,7 @@ export default function CustomerPortalPage() {
   const [ratingComment, setRatingComment] = useState('');
   const [submittingRating, setSubmittingRating] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [legacyDocuments, setLegacyDocuments] = useState([]);
 
   useEffect(() => {
     fetchPortalData();
