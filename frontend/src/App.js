@@ -27,6 +27,19 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
 const API = `${BACKEND_URL}/api`;
 const AUTH_URL = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(window.location.origin + '/auth/callback')}`;
 
+// Setup axios interceptor for global 401 handling
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Clear any stored user state - the AuthProvider will handle the redirect
+      console.warn('Session expired or invalid - redirecting to login');
+      // Don't redirect here, let the component handle it via AuthContext
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Auth Context
 const AuthContext = React.createContext(null);
 
