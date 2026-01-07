@@ -4217,7 +4217,7 @@ async def create_billit_order(invoice_data: dict) -> dict:
         return {"orderId": order_id}
 
 async def send_billit_command(order_id: int, transport_type: str = "Peppol") -> dict:
-    """Send the invoice via specified transport using /v1/command/send endpoint.
+    """Send the invoice via specified transport using /v1/orders/commands/send endpoint.
     TransportTypes: 'Peppol', 'Email', 'Post', etc."""
     async with httpx.AsyncClient() as client:
         headers = {
@@ -4226,17 +4226,18 @@ async def send_billit_command(order_id: int, transport_type: str = "Peppol") -> 
             "Accept": "application/json"
         }
         
-        # Command send endpoint with TransportType
+        # Correct endpoint: /v1/orders/commands/send
+        # Body format: {"Transporttype": "Peppol", "OrderIDs": [1234]}
         send_data = {
-            "OrderID": order_id,
-            "TransportType": transport_type
+            "Transporttype": transport_type,
+            "OrderIDs": [order_id]
         }
         
-        logger.info(f"Sending Billit command to {BILLIT_BASE_URL}/v1/command/send")
+        logger.info(f"Sending Billit command to {BILLIT_BASE_URL}/v1/orders/commands/send")
         logger.debug(f"Send data: {send_data}")
         
         response = await client.post(
-            f"{BILLIT_BASE_URL}/v1/command/send",
+            f"{BILLIT_BASE_URL}/v1/orders/commands/send",
             json=send_data,
             headers=headers,
             timeout=30.0
