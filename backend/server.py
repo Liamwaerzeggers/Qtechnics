@@ -2149,14 +2149,18 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
 
 @api_router.get("/quotes/{quote_id}/export/excel")
 async def export_quote_excel(quote_id: str, current_user: User = Depends(get_current_user)):
-    """Export quote as Excel"""
+    """Export quote as Excel (all admins can export)"""
+    # All admins can export any quote
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can export quotes")
+    
     # Get quote
-    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
+    quote = await db.quotes.find_one({"id": quote_id})
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
     
     # Get lead
-    lead = await db.leads.find_one({"id": quote["lead_id"], "user_id": current_user.id})
+    lead = await db.leads.find_one({"id": quote["lead_id"]})
     
     # Get line items
     items = await db.line_items.find({"quote_id": quote_id}, {"_id": 0}).to_list(1000)
