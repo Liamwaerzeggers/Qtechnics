@@ -4180,7 +4180,7 @@ async def create_billit_order(invoice_data: dict) -> dict:
     Returns the unique OrderID on success."""
     async with httpx.AsyncClient() as client:
         headers = {
-            "Authorization": f"Bearer {BILLIT_API_KEY}",
+            "apiKey": BILLIT_API_KEY,  # Billit uses apiKey header, not Bearer token
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
