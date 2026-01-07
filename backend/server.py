@@ -781,8 +781,11 @@ async def update_quote(quote_id: str, quote_update: QuoteUpdate, current_user: U
 
 @api_router.delete("/quotes/{quote_id}")
 async def delete_quote(quote_id: str, current_user: User = Depends(get_current_user)):
-    """Delete a quote"""
-    result = await db.quotes.delete_one({"id": quote_id, "user_id": current_user.id})
+    """Delete a quote (all admins can delete)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete quotes")
+    
+    result = await db.quotes.delete_one({"id": quote_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Quote not found")
     
