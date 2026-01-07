@@ -56,11 +56,100 @@ export default function ProjectDetailPage() {
         
         setApprovedQuotes(approved);
       }
+      
+      // Fetch legacy documents
+      try {
+        const legacyRes = await axios.get(`${API}/projects/${projectId}/legacy-documents`, { withCredentials: true });
+        setLegacyDocuments(legacyRes.data || []);
+      } catch (e) {
+        console.log('No legacy documents or endpoint not available');
+      }
     } catch (error) {
       console.error('Failed to fetch project:', error);
       toast.error('Kon project niet laden');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Legacy document functions
+  const handleUploadLegacyDocument = async (e) => {
+    e.preventDefault();
+    const file = fileInputRef.current?.files[0];
+    if (!file) {
+      toast.error('Selecteer een PDF bestand');
+      return;
+    }
+    
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      toast.error('Alleen PDF bestanden zijn toegestaan');
+      return;
+    }
+    
+    setUploadingDoc(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const params = new URLSearchParams({
+        document_type: newDocData.document_type,
+        ...(newDocData.document_date && { document_date: newDocData.document_date }),
+        ...(newDocData.description && { description: newDocData.description })
+      });
+      
+      await axios.post(
+        `${API}/projects/${projectId}/legacy-documents?${params.toString()}`,
+        formData,
+        { 
+          withCredentials: true,
+          headers: { 'Content-Type': 'multipart/form-data' }
+        }
+      );
+      
+      toast.success('Document succesvol geüpload! 📄');
+      setShowUploadModal(false);
+      setNewDocData({ document_type: 'offerte', document_date: '', description: '' });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      
+      // Refresh documents
+      const legacyRes = await axios.get(`${API}/projects/${projectId}/legacy-documents`, { withCredentials: true });
+      setLegacyDocuments(legacyRes.data || []);
+    } catch (error) {
+      console.error('Upload failed:', error);
+      toast.error(error.response?.data?.detail || 'Upload mislukt');
+    } finally {
+      setUploadingDoc(false);
+    }
+  };
+
+  const handleDownloadLegacyDocument = async (doc) => {
+    try {
+      const response = await axios.get(
+        `${API}/legacy-documents/${doc.id}/download`,
+        { withCredentials: true, responseType: 'blob' }
+      );
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', doc.original_filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      toast.error('Kon document niet downloaden');
+    }
+  };
+
+  const handleDeleteLegacyDocument = async (docId) => {
+    if (!window.confirm('Weet u zeker dat u dit document wilt verwijderen?')) return;
+    
+    try {
+      await axios.delete(`${API}/legacy-documents/${docId}`, { withCredentials: true });
+      toast.success('Document verwijderd');
+      setLegacyDocuments(prev => prev.filter(d => d.id !== docId));
+    } catch (error) {
+      toast.error('Kon document niet verwijderen');
     }
   };
 
