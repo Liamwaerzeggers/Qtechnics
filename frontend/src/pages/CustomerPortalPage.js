@@ -621,6 +621,85 @@ export default function CustomerPortalPage() {
           </div>
         )}
 
+        {/* Legacy Documents Tab - Archief */}
+        {activeTab === 'documents' && (
+          <div className="space-y-3 sm:space-y-4">
+            <Card>
+              <CardHeader className="pb-2 sm:pb-4">
+                <CardTitle className="text-base sm:text-lg">📁 Archief Documenten</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-500 mb-4">
+                  Oude offertes en facturen uit het vorige systeem
+                </p>
+                
+                {legacyDocuments.length > 0 ? (
+                  <div className="space-y-2">
+                    {legacyDocuments.map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                        style={{borderColor: '#E5E7EB'}}
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="p-2 rounded-lg flex-shrink-0" style={{
+                            backgroundColor: doc.document_type === 'offerte' ? '#DBEAFE' :
+                                            doc.document_type === 'factuur' ? '#D1FAE5' : '#F3E8FF'
+                          }}>
+                            <FileText className="w-5 h-5" style={{
+                              color: doc.document_type === 'offerte' ? '#1E40AF' :
+                                     doc.document_type === 'factuur' ? '#059669' : '#7C3AED'
+                            }} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm truncate" style={{color: '#1E293B'}}>
+                              {doc.original_filename}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                              <span className="text-xs px-2 py-0.5 rounded-full" style={{
+                                backgroundColor: doc.document_type === 'offerte' ? '#DBEAFE' :
+                                                doc.document_type === 'factuur' ? '#D1FAE5' : '#F3E8FF',
+                                color: doc.document_type === 'offerte' ? '#1E40AF' :
+                                       doc.document_type === 'factuur' ? '#059669' : '#7C3AED'
+                              }}>
+                                {doc.document_type === 'offerte' ? 'Offerte' : 
+                                 doc.document_type === 'factuur' ? 'Factuur' : 'Document'}
+                              </span>
+                              {doc.document_date && (
+                                <span className="text-xs text-gray-400">
+                                  {doc.document_date}
+                                </span>
+                              )}
+                            </div>
+                            {doc.description && (
+                              <p className="text-xs text-gray-500 mt-1 truncate">
+                                {doc.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => downloadLegacyDocument(doc)}
+                          className="flex-shrink-0 ml-2"
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <FolderArchive className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p className="text-sm">Geen archief documenten beschikbaar</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Messages Tab - Mobile Optimized */}
         {activeTab === 'messages' && (
           <Card>
