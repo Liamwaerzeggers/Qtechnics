@@ -985,9 +985,12 @@ async def get_line_items(quote_id: str, current_user: User = Depends(get_current
 
 @api_router.put("/quotes/{quote_id}/items/{item_id}", response_model=LineItem)
 async def update_line_item(quote_id: str, item_id: str, item_update: LineItemUpdate, current_user: User = Depends(get_current_user)):
-    """Update a line item"""
-    # Verify quote exists
-    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
+    """Update a line item (all admins can edit)"""
+    # All admins can update any quote item
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can update line items")
+    
+    quote = await db.quotes.find_one({"id": quote_id})
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
     
