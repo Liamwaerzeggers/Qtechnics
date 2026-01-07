@@ -4221,7 +4221,7 @@ async def send_billit_command(order_id: int, transport_type: str = "Peppol") -> 
     TransportTypes: 'Peppol', 'Email', 'Post', etc."""
     async with httpx.AsyncClient() as client:
         headers = {
-            "Authorization": f"Bearer {BILLIT_API_KEY}",
+            "apiKey": BILLIT_API_KEY,  # Billit uses apiKey header, not Bearer token
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
