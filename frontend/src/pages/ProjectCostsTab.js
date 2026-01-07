@@ -105,15 +105,38 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
     setSendingPeppol(invoiceId);
     try {
       const response = await axios.post(
-        `${API}/invoices/${invoiceId}/send-peppol`,
+        `${API}/invoices/${invoiceId}/send-to-billit`,
         {},
         { withCredentials: true }
       );
-      toast.success('Factuur verstuurd via Peppol! 📧');
+      // Show success message with transport type info
+      const transportMsg = response.data.transport_type === 'Peppol' 
+        ? `via PEPPOL naar ${response.data.customer_vat}` 
+        : `via e-mail naar ${response.data.customer_email}`;
+      toast.success(`Factuur verstuurd ${transportMsg}! 📧`);
       fetchInvoices(); // Refresh to get updated status
     } catch (error) {
-      console.error('Peppol send failed:', error);
-      const errorMsg = error.response?.data?.detail || 'Kon factuur niet versturen via Peppol';
+      console.error('Billit send failed:', error);
+      const errorMsg = error.response?.data?.detail || 'Kon factuur niet versturen';
+      toast.error(errorMsg);
+    } finally {
+      setSendingPeppol(null);
+    }
+  };
+
+  const retryBillitSend = async (invoiceId) => {
+    setSendingPeppol(invoiceId);
+    try {
+      const response = await axios.post(
+        `${API}/invoices/${invoiceId}/retry-billit`,
+        {},
+        { withCredentials: true }
+      );
+      toast.success('Factuur opnieuw verstuurd! 📧');
+      fetchInvoices();
+    } catch (error) {
+      console.error('Retry failed:', error);
+      const errorMsg = error.response?.data?.detail || 'Kon factuur niet opnieuw versturen';
       toast.error(errorMsg);
     } finally {
       setSendingPeppol(null);
@@ -123,22 +146,52 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
   const getPeppolStatusBadge = (invoice) => {
     const status = invoice.peppol_status || 'not_sent';
     const styles = {
-      not_sent: { bg: '#E5E7EB', color: '#374151', text: 'Niet verstuurd' },
-      sending: { bg: '#FEF3C7', color: '#92400E', text: 'Verzenden...' },
-      sent: { bg: '#DBEAFE', color: '#1E40AF', text: 'Verstuurd' },
-      delivered: { bg: '#D1FAE5', color: '#065F46', text: 'Afgeleverd' },
-      failed: { bg: '#FEE2E2', color: '#991B1B', text: 'Mislukt' }
+      not_sent: { bg: '#E5E7EB', color: '#374151', text: 'Niet verstuurd', icon: '○' },
+      sending: { bg: '#FEF3C7', color: '#92400E', text: 'Verzenden...', icon: '◌' },
+      sent: { bg: '#DBEAFE', color: '#1E40AF', text: 'Verstuurd', icon: '→' },
+      sent_peppol: { bg: '#DBEAFE', color: '#1E40AF', text: 'PEPPOL', icon: '🔗' },
+      sent_email: { bg: '#E0E7FF', color: '#4338CA', text: 'E-mail', icon: '✉️' },
+      delivered: { bg: '#D1FAE5', color: '#065F46', text: 'Afgeleverd', icon: '✓' },
+      delivered_peppol: { bg: '#D1FAE5', color: '#065F46', text: 'PEPPOL ✓', icon: '🔗' },
+      delivered_email: { bg: '#D1FAE5', color: '#065F46', text: 'E-mail ✓', icon: '✉️' },
+      failed: { bg: '#FEE2E2', color: '#991B1B', text: 'Mislukt', icon: '✗' },
+      rejected: { bg: '#FED7AA', color: '#9A3412', text: 'Geweigerd', icon: '⚠' },
+      error: { bg: '#FEE2E2', color: '#991B1B', text: 'Fout', icon: '!' }
     };
     const style = styles[status] || styles.not_sent;
     
     return (
-      <span 
-        className="px-2 py-0.5 text-xs rounded-full font-medium"
-        style={{ backgroundColor: style.bg, color: style.color }}
-      >
-        {style.text}
-      </span>
+      <div className="flex items-center gap-1">
+        <span 
+          className="px-2 py-0.5 text-xs rounded-full font-medium"
+          style={{ backgroundColor: style.bg, color: style.color }}
+          title={invoice.peppol_error || ''}
+        >
+          {style.icon} {style.text}
+        </span>
+        {invoice.peppol_error && (
+          <span 
+            className="text-xs cursor-help" 
+            title={invoice.peppol_error}
+            style={{ color: '#991B1B' }}
+          >
+            ⓘ
+          </span>
+        )}
+      </div>
     );
+  };
+
+  // Check if invoice can be sent (not already sent successfully)
+  const canSendInvoice = (invoice) => {
+    const status = invoice.peppol_status || 'not_sent';
+    return !['sent', 'sent_peppol', 'sent_email', 'delivered', 'delivered_peppol', 'delivered_email', 'sending'].includes(status);
+  };
+
+  // Check if invoice can be retried (failed status)
+  const canRetryInvoice = (invoice) => {
+    const status = invoice.peppol_status || 'not_sent';
+    return ['failed', 'rejected', 'error'].includes(status);
   };
 
   const handleInvoiceUpload = async (e) => {
