@@ -1823,8 +1823,11 @@ async def delete_project(project_id: str, current_user: User = Depends(get_curre
 
 @api_router.put("/projects/{project_id}/toggle-archive")
 async def toggle_project_archive(project_id: str, current_user: User = Depends(get_current_user)):
-    """Toggle project archive status"""
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    """Toggle project archive status (all admins can archive)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can archive projects")
+    
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
@@ -1839,10 +1842,10 @@ async def toggle_project_archive(project_id: str, current_user: User = Depends(g
 @api_router.put("/projects/{project_id}/toggle-worker-visibility")
 async def toggle_worker_visibility(project_id: str, current_user: User = Depends(get_current_user)):
     """Toggle project visibility for workers (admin only)"""
-    if current_user.role == "worker":
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can change visibility")
     
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
@@ -1859,8 +1862,11 @@ async def toggle_worker_visibility(project_id: str, current_user: User = Depends
 
 @api_router.post("/projects/{project_id}/invoices")
 async def add_invoice_to_project(project_id: str, invoice: InvoiceUpload, current_user: User = Depends(get_current_user)):
-    """Add an invoice to project costs"""
-    existing_project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    """Add an invoice to project costs (all admins can add)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can add invoices")
+    
+    existing_project = await db.projects.find_one({"id": project_id})
     if not existing_project:
         raise HTTPException(status_code=404, detail="Project not found")
     
