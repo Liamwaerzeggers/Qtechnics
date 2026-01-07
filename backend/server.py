@@ -4422,7 +4422,9 @@ async def send_invoice_to_billit(invoice_id: str, current_user: User = Depends(g
         send_response = await send_billit_command(billit_order_id, transport_type=transport_type)
         
         # Determine final status based on transport
-        final_status = f"sent_{transport_type.lower()}" if transport_type in ["Peppol", "Email"] else "sent"
+        # Map SMTP to email for user-friendly status
+        status_transport = "email" if transport_type == "SMTP" else transport_type.lower()
+        final_status = f"sent_{status_transport}"
         
         # Update invoice with Billit info
         await db.invoices.update_one(
@@ -4430,7 +4432,7 @@ async def send_invoice_to_billit(invoice_id: str, current_user: User = Depends(g
             {"$set": {
                 "peppol_status": final_status,
                 "billit_order_id": billit_order_id,
-                "peppol_transport_type": transport_type,
+                "peppol_transport_type": "Email" if transport_type == "SMTP" else transport_type,
                 "peppol_sent_at": datetime.now(timezone.utc).isoformat()
             }}
         )
