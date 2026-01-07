@@ -1944,6 +1944,168 @@ async def get_project_invoices(project_id: str, current_user: User = Depends(get
     
     return {"invoices": project.get("invoice_uploads", [])}
 
+# ============= LEGACY DOCUMENTS (Oude PDF's) =============
+
+# Create uploads directory if it doesn't exist
+UPLOADS_DIR = ROOT_DIR / "uploads" / "legacy_documents"
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+@api_router.post("/projects/{project_id}/legacy-documents")
+async def upload_legacy_document(
+    project_id: str,
+    document_type: str,
+    file: UploadFile = File(...),
+    document_date: Optional[str] = None,
+    description: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Upload een oud document (PDF) uit het vorige systeem"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen documenten uploaden")
+    
+    # Verify project exists
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    # Validate file type
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Alleen PDF bestanden zijn toegestaan")
+    
+    # Check file size (max 10MB)
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Bestand is te groot (max 10MB)")
+    
+    # Generate unique filename
+    doc_id = f"DOC-{str(uuid.uuid4())[:8].upper()}"
+    safe_filename = f"{doc_id}_{file.filename.replace(' ', '_')}"
+    file_path = UPLOADS_DIR / safe_filename
+    
+    # Save file
+    with open(file_path, "wb") as f:
+        f.write(contents)
+    
+    # Create document record
+    doc_record = {
+        "id": doc_id,
+        "project_id": project_id,
+        "document_type": document_type,
+        "filename": safe_filename,
+        "original_filename": file.filename,
+        "document_date": document_date,
+        "description": description,
+        "file_size": len(contents),
+        "uploaded_at": datetime.now(timezone.utc).isoformat(),
+        "uploaded_by": current_user.id or current_user.username
+    }
+    
+    # Store in database
+    await db.legacy_documents.insert_one(doc_record)
+    
+    return {
+        "success": True,
+        "message": "Document succesvol geüpload",
+        "document": {**doc_record, "_id": None}
+    }
+
+@api_router.get("/projects/{project_id}/legacy-documents")
+async def get_project_legacy_documents(project_id: str, current_user: User = Depends(get_current_user)):
+    """Haal alle legacy documenten op voor een project"""
+    # Verify project exists
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    # Get documents
+    documents = await db.legacy_documents.find(
+        {"project_id": project_id},
+        {"_id": 0}
+    ).sort("uploaded_at", -1).to_list(1000)
+    
+    return documents
+
+@api_router.get("/legacy-documents/{document_id}/download")
+async def download_legacy_document(document_id: str, current_user: User = Depends(get_current_user)):
+    """Download een legacy document"""
+    # Get document record
+    doc = await db.legacy_documents.find_one({"id": document_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document niet gevonden")
+    
+    file_path = UPLOADS_DIR / doc["filename"]
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Bestand niet gevonden op server")
+    
+    return FileResponse(
+        path=str(file_path),
+        filename=doc["original_filename"],
+        media_type="application/pdf"
+    )
+
+@api_router.delete("/legacy-documents/{document_id}")
+async def delete_legacy_document(document_id: str, current_user: User = Depends(get_current_user)):
+    """Verwijder een legacy document"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen documenten verwijderen")
+    
+    # Get document record
+    doc = await db.legacy_documents.find_one({"id": document_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document niet gevonden")
+    
+    # Delete file
+    file_path = UPLOADS_DIR / doc["filename"]
+    if file_path.exists():
+        file_path.unlink()
+    
+    # Delete record
+    await db.legacy_documents.delete_one({"id": document_id})
+    
+    return {"success": True, "message": "Document verwijderd"}
+
+@api_router.get("/customer-portal/{access_token}/legacy-documents")
+async def get_customer_legacy_documents(access_token: str):
+    """Haal legacy documenten op voor het klantenportaal"""
+    # Find project by access token
+    project = await db.projects.find_one(
+        {"customer_access_token": access_token},
+        {"_id": 0, "id": 1, "name": 1}
+    )
+    if not project:
+        raise HTTPException(status_code=404, detail="Ongeldige toegangslink")
+    
+    # Get documents for this project
+    documents = await db.legacy_documents.find(
+        {"project_id": project["id"]},
+        {"_id": 0, "id": 1, "document_type": 1, "original_filename": 1, "document_date": 1, "description": 1, "uploaded_at": 1}
+    ).sort("uploaded_at", -1).to_list(1000)
+    
+    return documents
+
+@api_router.get("/customer-portal/{access_token}/legacy-documents/{document_id}/download")
+async def download_customer_legacy_document(access_token: str, document_id: str):
+    """Download een legacy document via het klantenportaal"""
+    # Verify access token
+    project = await db.projects.find_one({"customer_access_token": access_token})
+    if not project:
+        raise HTTPException(status_code=404, detail="Ongeldige toegangslink")
+    
+    # Get document and verify it belongs to this project
+    doc = await db.legacy_documents.find_one({"id": document_id, "project_id": project["id"]})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document niet gevonden")
+    
+    file_path = UPLOADS_DIR / doc["filename"]
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Bestand niet gevonden")
+    
+    return FileResponse(
+        path=str(file_path),
+        filename=doc["original_filename"],
+        media_type="application/pdf"
+    )
+
 # ============= EXPORT ROUTES =============
 
 @api_router.get("/quotes/{quote_id}/export/pdf")
