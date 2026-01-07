@@ -4447,9 +4447,9 @@ async def send_invoice_to_billit(invoice_id: str, current_user: User = Depends(g
             "success": True,
             "message": message,
             "billit_order_id": billit_order_id,
-            "transport_type": transport_type,
+            "transport_type": "Email" if transport_type == "SMTP" else transport_type,  # User-friendly name
             "customer_vat": lead.get("vat_number"),
-            "customer_email": lead.get("email") if transport_type == "Email" else None
+            "customer_email": lead.get("email") if transport_type == "SMTP" else None
         }
         
     except HTTPException as he:
