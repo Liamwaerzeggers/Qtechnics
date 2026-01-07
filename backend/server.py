@@ -4380,8 +4380,9 @@ async def send_invoice_to_billit(invoice_id: str, current_user: User = Depends(g
         raise HTTPException(status_code=404, detail="Klant niet gevonden")
     
     # Determine transport type based on customer VAT status
+    # Billit transport types: Peppol (B2B with VAT), SMTP (Email for B2C)
     has_vat = bool(lead.get("vat_number"))
-    transport_type = "Peppol" if has_vat else "Email"
+    transport_type = "Peppol" if has_vat else "SMTP"  # SMTP = Email transport
     
     # Validate email for non-VAT customers
     if not has_vat and not lead.get("email"):
