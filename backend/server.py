@@ -4161,7 +4161,7 @@ async def get_billit_order_status(order_id: int) -> dict:
     """Get the current status of an order from Billit"""
     async with httpx.AsyncClient() as client:
         headers = {
-            "Authorization": f"Bearer {BILLIT_API_KEY}",
+            "apiKey": BILLIT_API_KEY,  # Billit uses apiKey header, not Bearer token
             "Accept": "application/json"
         }
         
