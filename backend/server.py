@@ -4446,7 +4446,18 @@ async def send_invoice_to_billit(invoice_id: str, current_user: User = Depends(g
             "customer_email": lead.get("email") if transport_type == "Email" else None
         }
         
-    except HTTPException:
+    except HTTPException as he:
+        # Update status to failed for HTTPException from Billit API
+        error_message = he.detail if hasattr(he, 'detail') else str(he)
+        await db.invoices.update_one(
+            {"id": invoice_id},
+            {"$set": {
+                "peppol_status": "failed",
+                "peppol_error": error_message,
+                "peppol_failed_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        logger.error(f"Billit API error for invoice {invoice_id}: {error_message}")
         raise
     except Exception as e:
         error_message = str(e)
