@@ -71,6 +71,90 @@ backend:
         agent: "testing"
         comment: "Error handling working correctly. Invalid API key errors are caught and invoice status is updated to 'failed' with proper error messages. Can_retry flag is set correctly."
 
+  - task: "POST /api/projects/{project_id}/legacy-documents endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Legacy document upload endpoint working correctly. Successfully uploads PDF files with document_type (offerte/factuur/anders), optional description and document_date. Validates file type and size (max 10MB). Returns document ID and metadata."
+
+  - task: "GET /api/projects/{project_id}/legacy-documents endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Legacy documents listing endpoint working correctly. Returns all documents for a project sorted by upload date (newest first). Includes document metadata: id, document_type, original_filename, description, document_date, uploaded_at."
+
+  - task: "GET /api/legacy-documents/{document_id}/download endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Legacy document download endpoint working correctly. Returns PDF file with proper Content-Type (application/pdf) and original filename. Validates document exists and file is available on server."
+
+  - task: "DELETE /api/legacy-documents/{document_id} endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Legacy document deletion endpoint working correctly. Removes both database record and physical file. Only admins can delete documents. Document is properly removed from project listing after deletion."
+
+  - task: "GET /api/customer-portal/{access_token}/legacy-documents endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Customer portal legacy documents listing working correctly. Validates access token and returns documents for the associated project. Returns limited metadata suitable for customer view (no internal IDs or admin info)."
+
+  - task: "GET /api/customer-portal/{access_token}/legacy-documents/{document_id}/download endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Customer portal document download working correctly. Validates access token and ensures document belongs to the correct project. Returns PDF file with proper headers. Security validated - customers can only access documents from their own project."
+
+  - task: "Legacy Documents error handling and validation"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Error handling working correctly. Invalid file types (non-PDF) are rejected with 400 status. Invalid document IDs return 404. File size validation (max 10MB) implemented. Admin-only restrictions enforced for upload/delete operations."
+
 frontend:
   - task: "Invoice send buttons in ProjectCostsTab.js"
     implemented: true
