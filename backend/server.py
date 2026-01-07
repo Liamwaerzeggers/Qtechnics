@@ -965,9 +965,13 @@ async def add_line_item(quote_id: str, item: LineItemCreate, current_user: User 
 
 @api_router.get("/quotes/{quote_id}/items", response_model=List[LineItem])
 async def get_line_items(quote_id: str, current_user: User = Depends(get_current_user)):
-    """Get all line items for a quote"""
-    # Verify quote exists
-    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
+    """Get all line items for a quote (all admins can access)"""
+    # All admins can see all quote items
+    if current_user.role == "admin":
+        quote = await db.quotes.find_one({"id": quote_id})
+    else:
+        quote = None
+    
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
     
