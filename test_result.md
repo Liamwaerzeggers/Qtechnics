@@ -182,6 +182,13 @@ test_plan:
     - "POST /api/invoices/{invoice_id}/send-peppol legacy endpoint"
     - "Smart transport type selection (Peppol vs Email)"
     - "Error handling and status updates"
+    - "POST /api/projects/{project_id}/legacy-documents endpoint"
+    - "GET /api/projects/{project_id}/legacy-documents endpoint"
+    - "GET /api/legacy-documents/{document_id}/download endpoint"
+    - "DELETE /api/legacy-documents/{document_id} endpoint"
+    - "GET /api/customer-portal/{access_token}/legacy-documents endpoint"
+    - "GET /api/customer-portal/{access_token}/legacy-documents/{document_id}/download endpoint"
+    - "Legacy Documents error handling and validation"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
