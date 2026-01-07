@@ -940,9 +940,12 @@ async def split_quote_labor_materials(quote_id: str, current_user: User = Depend
 
 @api_router.post("/quotes/{quote_id}/items", response_model=LineItem)
 async def add_line_item(quote_id: str, item: LineItemCreate, current_user: User = Depends(get_current_user)):
-    """Add a line item to a quote"""
-    # Verify quote exists
-    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
+    """Add a line item to a quote (all admins can add)"""
+    # All admins can add items to any quote
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can add line items")
+    
+    quote = await db.quotes.find_one({"id": quote_id})
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
     
