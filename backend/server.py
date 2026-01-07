@@ -4124,12 +4124,49 @@ async def delete_admin(admin_id: str, current_user: User = Depends(get_current_u
 # ============= BILLIT / PEPPOL INTEGRATION =============
 # Billit API Documentation: https://docs.billit.be/docs/create-first-invoice
 # Production: https://api.billit.io | Sandbox: https://api.sandbox-billit.xyz
+#
+# ARCHITECTURE:
+# - Billit is the ONLY master for legal invoicing and PEPPOL delivery
+# - Emergent generates invoice data and business logic
+# - Billit determines delivery channel: B2B with VAT → PEPPOL, Private → PDF/Email
 
 BILLIT_API_KEY = os.environ.get("BILLIT_API_KEY", "")
-# Default to sandbox for safety - switch to https://api.billit.io for production
-BILLIT_BASE_URL = os.environ.get("BILLIT_BASE_URL", "https://api.sandbox-billit.xyz")
+BILLIT_BASE_URL = os.environ.get("BILLIT_BASE_URL", "https://api.sandbox.billit.be")
 COMPANY_VAT = os.environ.get("COMPANY_VAT", "BE0891533928")
 WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "")
+
+# Billit/PEPPOL Status mapping
+BILLIT_STATUS_MAP = {
+    "not_sent": "Niet verzonden",
+    "pending": "In wachtrij",
+    "sending": "Wordt verzonden",
+    "sent": "Verzonden",
+    "sent_peppol": "Verzonden via PEPPOL",
+    "sent_email": "Verzonden via E-mail",
+    "sent_post": "Verzonden via Post",
+    "delivered": "Afgeleverd",
+    "rejected": "Geweigerd",
+    "paid": "Betaald",
+    "failed": "Mislukt"
+}
+
+async def get_billit_order_status(order_id: int) -> dict:
+    """Get the current status of an order from Billit"""
+    async with httpx.AsyncClient() as client:
+        headers = {
+            "Authorization": f"Bearer {BILLIT_API_KEY}",
+            "Accept": "application/json"
+        }
+        
+        response = await client.get(
+            f"{BILLIT_BASE_URL}/v1/orders/{order_id}",
+            headers=headers,
+            timeout=30.0
+        )
+        
+        if response.status_code == 200:
+            return response.json()
+        return None
 
 async def create_billit_order(invoice_data: dict) -> dict:
     """Create an order/invoice in Billit via /v1/orders endpoint.
