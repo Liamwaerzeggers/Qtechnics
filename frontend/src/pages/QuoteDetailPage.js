@@ -404,7 +404,22 @@ Q Technics`;
     return (
       <DashboardLayout>
         <div className="text-center py-12">
-          <p style={{color: '#94A3B8'}}>Offerte niet gevonden</p>
+          <div className="space-y-4">
+            <p className="text-xl" style={{color: '#64748B'}}>Offerte niet gevonden</p>
+            <p style={{color: '#94A3B8'}}>
+              Deze offerte bestaat niet of u heeft geen toegang. 
+              Mogelijk is uw sessie verlopen.
+            </p>
+            <div className="flex justify-center gap-4 mt-6">
+              <Button onClick={() => navigate('/quotes')} variant="outline">
+                <ArrowLeft size={16} className="mr-2" />
+                Terug naar Offertes
+              </Button>
+              <Button onClick={() => navigate('/')} style={{backgroundColor: '#1E40AF', color: 'white'}}>
+                Opnieuw Inloggen
+              </Button>
+            </div>
+          </div>
         </div>
       </DashboardLayout>
     );
