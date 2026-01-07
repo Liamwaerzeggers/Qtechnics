@@ -4142,11 +4142,13 @@ BILLIT_STATUS_MAP = {
     "sending": "Wordt verzonden",
     "sent": "Verzonden",
     "sent_peppol": "Verzonden via PEPPOL",
-    "sent_email": "Verzonden via E-mail",
+    "sent_smtp": "Verzonden via E-mail",
+    "sent_email": "Verzonden via E-mail",  # Alias
     "sent_post": "Verzonden via Post",
     "delivered": "Afgeleverd",
     "delivered_peppol": "Afgeleverd via PEPPOL",
-    "delivered_email": "Afgeleverd via E-mail",
+    "delivered_smtp": "Afgeleverd via E-mail",
+    "delivered_email": "Afgeleverd via E-mail",  # Alias
     "rejected": "Geweigerd",
     "paid": "Betaald",
     "failed": "Mislukt",
