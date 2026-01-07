@@ -4312,6 +4312,7 @@ def transform_invoice_to_billit(invoice: dict, lead: dict, project: dict) -> dic
         "Customer": {
             "Name": lead.get("name", ""),
             "PartyType": "Customer",
+            "Email": lead.get("email", ""),  # Email at customer level for SMTP transport
             "Addresses": [
                 {
                     "AddressType": "InvoiceAddress",
