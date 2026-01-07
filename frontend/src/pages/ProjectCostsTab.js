@@ -641,23 +641,59 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                         >
                           📄 PDF
                         </Button>
-                        {/* Peppol Send Button */}
-                        <Button
-                          onClick={() => sendViaPeppol(invoice.id)}
-                          disabled={sendingPeppol === invoice.id || invoice.peppol_status === 'sent' || invoice.peppol_status === 'delivered'}
-                          size="sm"
-                          style={{
-                            backgroundColor: invoice.peppol_status === 'sent' || invoice.peppol_status === 'delivered' ? '#D1FAE5' : '#1E40AF',
-                            color: invoice.peppol_status === 'sent' || invoice.peppol_status === 'delivered' ? '#065F46' : 'white'
-                          }}
-                        >
-                          {sendingPeppol === invoice.id ? (
-                            <Loader2 size={14} className="animate-spin mr-1" />
-                          ) : (
-                            <Send size={14} className="mr-1" />
-                          )}
-                          {invoice.peppol_status === 'sent' || invoice.peppol_status === 'delivered' ? 'Verstuurd' : 'Peppol'}
-                        </Button>
+                        {/* Billit Send Button - Smart transport selection */}
+                        {canSendInvoice(invoice) && (
+                          <Button
+                            onClick={() => sendViaPeppol(invoice.id)}
+                            disabled={sendingPeppol === invoice.id}
+                            size="sm"
+                            style={{
+                              backgroundColor: '#1E40AF',
+                              color: 'white'
+                            }}
+                          >
+                            {sendingPeppol === invoice.id ? (
+                              <Loader2 size={14} className="animate-spin mr-1" />
+                            ) : (
+                              <Send size={14} className="mr-1" />
+                            )}
+                            Versturen
+                          </Button>
+                        )}
+                        {/* Retry Button for failed invoices */}
+                        {canRetryInvoice(invoice) && (
+                          <Button
+                            onClick={() => retryBillitSend(invoice.id)}
+                            disabled={sendingPeppol === invoice.id}
+                            size="sm"
+                            variant="outline"
+                            style={{
+                              borderColor: '#DC2626',
+                              color: '#DC2626'
+                            }}
+                          >
+                            {sendingPeppol === invoice.id ? (
+                              <Loader2 size={14} className="animate-spin mr-1" />
+                            ) : (
+                              <span className="mr-1">↻</span>
+                            )}
+                            Opnieuw
+                          </Button>
+                        )}
+                        {/* Success indicator for sent invoices */}
+                        {!canSendInvoice(invoice) && !canRetryInvoice(invoice) && (
+                          <Button
+                            disabled
+                            size="sm"
+                            style={{
+                              backgroundColor: '#D1FAE5',
+                              color: '#065F46'
+                            }}
+                          >
+                            <span className="mr-1">✓</span>
+                            Verstuurd
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
