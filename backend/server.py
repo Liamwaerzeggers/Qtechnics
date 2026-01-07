@@ -4334,35 +4334,51 @@ def transform_invoice_to_billit(invoice: dict, lead: dict, project: dict) -> dic
     
     return billit_order
 
-@api_router.post("/invoices/{invoice_id}/send-peppol")
-async def send_invoice_via_peppol(invoice_id: str, current_user: User = Depends(get_current_user)):
-    """Send an invoice via Peppol through Billit.
+@api_router.post("/invoices/{invoice_id}/send-to-billit")
+async def send_invoice_to_billit(invoice_id: str, current_user: User = Depends(get_current_user)):
+    """Send an invoice to Billit - automatically determines transport type.
+    
+    Architecture (as per user specification):
+    - Emergent generates invoice data (source of truth for business logic)
+    - Billit is the legal "master" for invoicing
+    - Billit automatically determines delivery: B2B with VAT → PEPPOL, B2C → Email/PDF
     
     Process:
     1. Create order in Billit via /v1/orders
-    2. Send order via Peppol using /v1/command/send with TransportType='Peppol'
-    3. Track status via webhooks or polling
+    2. Billit determines the appropriate TransportType based on customer VAT
+    3. Track status via webhooks
     """
     if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admins can send Peppol invoices")
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen facturen versturen")
     
-    # Get invoice - invoices are stored in 'invoices' collection
+    # Get invoice from database
     invoice = await db.invoices.find_one({"id": invoice_id}, {"_id": 0})
     if not invoice:
-        raise HTTPException(status_code=404, detail="Invoice not found")
+        raise HTTPException(status_code=404, detail="Factuur niet gevonden")
     
-    # Check if already sent
-    if invoice.get("peppol_status") in ["sent", "delivered"]:
-        raise HTTPException(status_code=400, detail="Invoice already sent via Peppol")
+    # Check if already sent successfully
+    if invoice.get("peppol_status") in ["sent", "delivered", "sent_peppol", "sent_email"]:
+        raise HTTPException(status_code=400, detail="Factuur is al verstuurd via Billit")
     
     # Get project and lead info
     project = await db.projects.find_one({"id": invoice["project_id"]}, {"_id": 0})
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
     
     lead = await db.leads.find_one({"id": project.get("lead_id")}, {"_id": 0})
     if not lead:
-        raise HTTPException(status_code=404, detail="Lead not found")
+        raise HTTPException(status_code=404, detail="Klant niet gevonden")
+    
+    # Determine transport type based on customer VAT status
+    has_vat = bool(lead.get("vat_number"))
+    transport_type = "Peppol" if has_vat else "Email"
+    
+    # Validate email for non-VAT customers
+    if not has_vat and not lead.get("email"):
+        raise HTTPException(
+            status_code=400, 
+            detail="Klant heeft geen BTW-nummer en geen e-mailadres. Voeg een e-mailadres toe om via e-mail te versturen."
+        )
     
     try:
         # Transform invoice to Billit format
@@ -4371,54 +4387,110 @@ async def send_invoice_via_peppol(invoice_id: str, current_user: User = Depends(
         # Update status to sending
         await db.invoices.update_one(
             {"id": invoice_id},
-            {"$set": {"peppol_status": "sending"}}
+            {"$set": {
+                "peppol_status": "sending",
+                "peppol_transport_type": transport_type,
+                "peppol_error": None  # Clear any previous error
+            }}
         )
         
         # Step 1: Create order in Billit
-        logger.info(f"Creating Billit order for invoice {invoice_id}")
+        logger.info(f"Creating Billit order for invoice {invoice_id} (Transport: {transport_type})")
         billit_response = await create_billit_order(billit_data)
         billit_order_id = billit_response.get("orderId")
         
         if not billit_order_id:
-            raise Exception("Billit did not return an order ID")
+            raise Exception("Billit heeft geen order ID teruggegeven")
         
         logger.info(f"Billit order created with ID: {billit_order_id}")
         
-        # Step 2: Send via Peppol
-        logger.info(f"Sending order {billit_order_id} via Peppol")
-        send_response = await send_billit_command(billit_order_id, transport_type="Peppol")
+        # Step 2: Send via determined transport type
+        logger.info(f"Sending order {billit_order_id} via {transport_type}")
+        send_response = await send_billit_command(billit_order_id, transport_type=transport_type)
         
-        # Update invoice with Peppol info
+        # Determine final status based on transport
+        final_status = f"sent_{transport_type.lower()}" if transport_type in ["Peppol", "Email"] else "sent"
+        
+        # Update invoice with Billit info
         await db.invoices.update_one(
             {"id": invoice_id},
             {"$set": {
-                "peppol_status": "sent",
+                "peppol_status": final_status,
                 "billit_order_id": billit_order_id,
+                "peppol_transport_type": transport_type,
                 "peppol_sent_at": datetime.now(timezone.utc).isoformat()
             }}
         )
         
-        logger.info(f"Invoice {invoice_id} sent via Peppol, Billit Order ID: {billit_order_id}")
+        logger.info(f"Invoice {invoice_id} sent via {transport_type}, Billit Order ID: {billit_order_id}")
+        
+        # User-friendly message based on transport type
+        if transport_type == "Peppol":
+            message = f"Factuur verstuurd via PEPPOL naar {lead.get('vat_number')}"
+        else:
+            message = f"Factuur verstuurd via e-mail naar {lead.get('email')}"
         
         return {
             "success": True,
-            "message": "Factuur verstuurd via Peppol",
-            "billit_order_id": billit_order_id
+            "message": message,
+            "billit_order_id": billit_order_id,
+            "transport_type": transport_type,
+            "customer_vat": lead.get("vat_number"),
+            "customer_email": lead.get("email") if transport_type == "Email" else None
         }
         
     except HTTPException:
         raise
     except Exception as e:
-        # Update status to failed
+        error_message = str(e)
+        # Update status to failed with detailed error
         await db.invoices.update_one(
             {"id": invoice_id},
             {"$set": {
                 "peppol_status": "failed",
-                "peppol_error": str(e)
+                "peppol_error": error_message,
+                "peppol_failed_at": datetime.now(timezone.utc).isoformat()
             }}
         )
-        logger.error(f"Peppol send failed for invoice {invoice_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Peppol verzending mislukt: {str(e)}")
+        logger.error(f"Billit send failed for invoice {invoice_id}: {error_message}")
+        raise HTTPException(status_code=500, detail=f"Verzending mislukt: {error_message}")
+
+@api_router.post("/invoices/{invoice_id}/send-peppol")
+async def send_invoice_via_peppol(invoice_id: str, current_user: User = Depends(get_current_user)):
+    """Legacy endpoint - redirects to new smart send endpoint.
+    Kept for backwards compatibility with existing frontend.
+    """
+    return await send_invoice_to_billit(invoice_id, current_user)
+
+@api_router.post("/invoices/{invoice_id}/retry-billit")
+async def retry_billit_send(invoice_id: str, current_user: User = Depends(get_current_user)):
+    """Retry sending a failed invoice to Billit."""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen facturen opnieuw versturen")
+    
+    # Get invoice
+    invoice = await db.invoices.find_one({"id": invoice_id}, {"_id": 0})
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Factuur niet gevonden")
+    
+    # Only allow retry for failed invoices
+    if invoice.get("peppol_status") not in ["failed", "rejected"]:
+        raise HTTPException(
+            status_code=400, 
+            detail="Alleen mislukte facturen kunnen opnieuw worden verstuurd"
+        )
+    
+    # Reset status and retry
+    await db.invoices.update_one(
+        {"id": invoice_id},
+        {"$set": {
+            "peppol_status": "not_sent",
+            "peppol_error": None,
+            "billit_order_id": None
+        }}
+    )
+    
+    return await send_invoice_to_billit(invoice_id, current_user)
 
 @api_router.get("/invoices/{invoice_id}/peppol-status")
 async def get_peppol_status(invoice_id: str, current_user: User = Depends(get_current_user)):
