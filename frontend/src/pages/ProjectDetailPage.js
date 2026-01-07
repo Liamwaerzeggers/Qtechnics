@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { API } from '../App';
 import DashboardLayout from '../components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, FileText, Camera, Folder, Receipt, Briefcase, CalendarDays, Users, Copy, Link, Check } from 'lucide-react';
+import { ArrowLeft, FileText, Camera, Folder, Receipt, Briefcase, CalendarDays, Users, Copy, Link, Check, Upload, Trash2, Download, File } from 'lucide-react';
 import { toast } from 'sonner';
 import ProjectFirstVisitTab from './ProjectFirstVisitTab';
 import Project3DDesignTab from './Project3DDesignTab';
@@ -22,6 +22,17 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('first-visit');
   const [approvedQuotes, setApprovedQuotes] = useState([]); // All approved quotes
+  
+  // Legacy documents state
+  const [legacyDocuments, setLegacyDocuments] = useState([]);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const fileInputRef = useRef(null);
+  const [newDocData, setNewDocData] = useState({
+    document_type: 'offerte',
+    document_date: '',
+    description: ''
+  });
 
   useEffect(() => {
     fetchProjectData();
