@@ -386,6 +386,189 @@ export default function ProjectDetailPage() {
                 </CardContent>
               </Card>
 
+              {/* Legacy Documents Section */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold" style={{color: '#1E3A8A'}}>
+                      📁 Oude Documenten (Archief)
+                    </h3>
+                    <Button onClick={() => setShowUploadModal(true)} variant="outline">
+                      <Upload size={16} className="mr-2" />
+                      PDF Uploaden
+                    </Button>
+                  </div>
+                  
+                  <p className="text-sm mb-4" style={{color: '#64748B'}}>
+                    Upload hier oude offertes en facturen uit uw vorige systeem
+                  </p>
+                  
+                  {legacyDocuments.length === 0 ? (
+                    <div className="text-center py-8 border-2 border-dashed rounded-lg" style={{borderColor: '#E5E7EB'}}>
+                      <File size={40} className="mx-auto mb-3" style={{color: '#94A3B8'}} />
+                      <p className="text-sm" style={{color: '#64748B'}}>Nog geen oude documenten geüpload</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {legacyDocuments.map((doc) => (
+                        <div
+                          key={doc.id}
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                          style={{borderColor: '#E5E7EB'}}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg" style={{
+                              backgroundColor: doc.document_type === 'offerte' ? '#DBEAFE' :
+                                              doc.document_type === 'factuur' ? '#D1FAE5' : '#F3E8FF'
+                            }}>
+                              <FileText size={20} style={{
+                                color: doc.document_type === 'offerte' ? '#1E40AF' :
+                                       doc.document_type === 'factuur' ? '#059669' : '#7C3AED'
+                              }} />
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm" style={{color: '#1E293B'}}>
+                                {doc.original_filename}
+                              </p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs px-2 py-0.5 rounded-full" style={{
+                                  backgroundColor: doc.document_type === 'offerte' ? '#DBEAFE' :
+                                                  doc.document_type === 'factuur' ? '#D1FAE5' : '#F3E8FF',
+                                  color: doc.document_type === 'offerte' ? '#1E40AF' :
+                                         doc.document_type === 'factuur' ? '#059669' : '#7C3AED'
+                                }}>
+                                  {doc.document_type === 'offerte' ? 'Offerte' : 
+                                   doc.document_type === 'factuur' ? 'Factuur' : 'Anders'}
+                                </span>
+                                {doc.document_date && (
+                                  <span className="text-xs" style={{color: '#94A3B8'}}>
+                                    {doc.document_date}
+                                  </span>
+                                )}
+                                {doc.description && (
+                                  <span className="text-xs" style={{color: '#64748B'}}>
+                                    • {doc.description}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDownloadLegacyDocument(doc)}
+                            >
+                              <Download size={16} />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeleteLegacyDocument(doc.id)}
+                              style={{color: '#EF4444'}}
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Upload Modal */}
+              {showUploadModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+                    <h3 className="text-xl font-bold mb-4" style={{color: '#1E3A8A'}}>
+                      📁 Document Uploaden
+                    </h3>
+                    <form onSubmit={handleUploadLegacyDocument}>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1" style={{color: '#374151'}}>
+                            Document Type
+                          </label>
+                          <select
+                            value={newDocData.document_type}
+                            onChange={(e) => setNewDocData({...newDocData, document_type: e.target.value})}
+                            className="w-full px-3 py-2 border rounded-lg"
+                            style={{borderColor: '#E5E7EB'}}
+                          >
+                            <option value="offerte">Offerte</option>
+                            <option value="factuur">Factuur</option>
+                            <option value="anders">Anders</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-1" style={{color: '#374151'}}>
+                            Datum Document (optioneel)
+                          </label>
+                          <input
+                            type="date"
+                            value={newDocData.document_date}
+                            onChange={(e) => setNewDocData({...newDocData, document_date: e.target.value})}
+                            className="w-full px-3 py-2 border rounded-lg"
+                            style={{borderColor: '#E5E7EB'}}
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-1" style={{color: '#374151'}}>
+                            Beschrijving (optioneel)
+                          </label>
+                          <input
+                            type="text"
+                            value={newDocData.description}
+                            onChange={(e) => setNewDocData({...newDocData, description: e.target.value})}
+                            placeholder="Bijv. Badkamer renovatie"
+                            className="w-full px-3 py-2 border rounded-lg"
+                            style={{borderColor: '#E5E7EB'}}
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-1" style={{color: '#374151'}}>
+                            PDF Bestand
+                          </label>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".pdf"
+                            className="w-full px-3 py-2 border rounded-lg"
+                            style={{borderColor: '#E5E7EB'}}
+                          />
+                          <p className="text-xs mt-1" style={{color: '#94A3B8'}}>
+                            Maximaal 10MB, alleen PDF bestanden
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-3 mt-6">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowUploadModal(false)}
+                          className="flex-1"
+                        >
+                          Annuleren
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={uploadingDoc}
+                          className="flex-1"
+                          style={{backgroundColor: '#1E40AF', color: 'white'}}
+                        >
+                          {uploadingDoc ? 'Uploaden...' : 'Uploaden'}
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm font-medium" style={{color: '#1E40AF'}}>
                   💡 <strong>Workflow:</strong>
