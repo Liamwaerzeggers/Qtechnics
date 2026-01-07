@@ -307,6 +307,24 @@ class InvoiceUpload(BaseModel):
     vat_amount: float
     notes: Optional[str] = None
 
+# Legacy Document Models (voor oude PDF's uit vorig systeem)
+class LegacyDocument(BaseModel):
+    id: str = Field(default_factory=lambda: f"DOC-{str(uuid.uuid4())[:8].upper()}")
+    project_id: str
+    document_type: str  # "offerte", "factuur", "anders"
+    filename: str
+    original_filename: str
+    document_date: Optional[str] = None  # Datum van het originele document
+    description: Optional[str] = None
+    file_size: int = 0
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    uploaded_by: str = ""
+
+class LegacyDocumentCreate(BaseModel):
+    document_type: str  # "offerte", "factuur", "anders"
+    document_date: Optional[str] = None
+    description: Optional[str] = None
+
 # Calendar Models
 class CalendarEvent(BaseModel):
     model_config = ConfigDict(extra="ignore")
