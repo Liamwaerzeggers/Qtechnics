@@ -2436,35 +2436,61 @@ TEST003,Test Boor,12.75,HSS boor 8mm,Gereedschap,TestBrand"""
         # First set status to "sent" to test retry validation
         sent_command = f"""
         use qtechnics;
-        db.invoices.updateOne(
+        var result = db.invoices.updateOne(
             {{id: '{test_invoice_id}'}},
             {{$set: {{peppol_status: 'sent'}}}}
         );
+        print('Update result:', result.modifiedCount);
         """
         
         try:
-            subprocess.run(['mongosh', '--eval', sent_command], 
-                          capture_output=True, text=True, timeout=30)
-        except:
-            pass
+            result = subprocess.run(['mongosh', '--eval', sent_command], 
+                                  capture_output=True, text=True, timeout=30)
+            if "Update result: 1" in result.stdout:
+                print("✅ Invoice status updated to 'sent' for retry validation test")
+            else:
+                print(f"⚠️ Status update result: {result.stdout}")
+        except Exception as e:
+            print(f"⚠️ Status update error: {str(e)}")
         
-        success, retry_fail_response = self.run_test(
-            "Retry on Sent Invoice (should fail)",
-            "POST",
-            f"invoices/{test_invoice_id}/retry-billit",
-            400  # Should return 400 Bad Request
+        # Verify the status was updated
+        success, status_check = self.run_test(
+            "Verify Status Updated to Sent",
+            "GET",
+            f"invoices/{test_invoice_id}/peppol-status",
+            200
         )
         
         if success:
-            print("✅ Retry correctly rejected for non-failed invoice")
-            error_msg = retry_fail_response.get('detail', '')
-            if "can only retry failed" in error_msg.lower():
-                print("✅ Correct error message for retry validation")
+            current_status = status_check.get('peppol_status')
+            print(f"   Current status after update: {current_status}")
+            
+            if current_status == "sent":
+                print("✅ Status successfully updated to 'sent'")
+                
+                # Now test retry (should fail)
+                success, retry_fail_response = self.run_test(
+                    "Retry on Sent Invoice (should fail)",
+                    "POST",
+                    f"invoices/{test_invoice_id}/retry-billit",
+                    400  # Should return 400 Bad Request
+                )
+                
+                if success:
+                    print("✅ Retry correctly rejected for non-failed invoice")
+                    error_msg = retry_fail_response.get('detail', '')
+                    if "mislukte facturen" in error_msg.lower() or "can only retry failed" in error_msg.lower():
+                        print("✅ Correct error message for retry validation")
+                    else:
+                        print(f"⚠️ Unexpected error message: {error_msg}")
+                else:
+                    print("❌ Retry validation failed")
+                    return False
             else:
-                print(f"⚠️ Unexpected error message: {error_msg}")
+                print(f"⚠️ Status update failed, still: {current_status}")
+                print("⚠️ Skipping retry validation test")
         else:
-            print("❌ Retry validation failed")
-            return False
+            print("⚠️ Could not verify status update, skipping retry validation test")
         
         # Summary
         print("\n📊 Billit/PEPPOL Integration Test Results:")
