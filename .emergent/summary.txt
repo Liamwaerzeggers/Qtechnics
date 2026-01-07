@@ -1,180 +1,174 @@
 <analysis>**original_problem_statement:**
-The user initially requested to integrate Billit for Peppol e-invoicing, which led to the discovery and fixing of several bugs. Subsequently, the user requested multiple new features and enhancements:
-1.  After generating a quote, the measurement work items from the First Visit tab should be cleared.
-2.  A new customer portal should be created with a unique, non-expiring link for each project.
-3.  The customer portal must display the project calendar, photos, 3D designs, approved quotes, and specific work slips.
-4.  The portal should include a messaging system and a star-rating feature for customer feedback.
-5.  Multiple bugs in the customer portal were reported and fixed, including data visibility, expiring links, broken image URLs, and mobile responsiveness.
-6.  The main project calendar should be replaced with a team-based planning board.
-7.  The team planning board was implemented but had issues with tasks disappearing. The user then requested to add a traditional calendar view *below* the team board, with tasks displayed as draggable blocks spanning multiple days.
+The user's initial goal was to integrate Billit for Peppol e-invoicing. This expanded into a multi-phase project to build a comprehensive construction project management tool.
+
+**Key features requested and/or implemented:**
+1.  **AI Floor Plan Analysis:** A feature to upload a floor plan image, have an AI analyze it to calculate surface areas, and associate work items with those areas. This feature was initially broken and has since been fixed.
+2.  **Room Configurator:** A SketchUp-like 2D room drawing tool where users can define room dimensions, select materials for floors/walls/ceilings from a database-driven catalog, add furniture, and get a live-updating price estimate. A working prototype connected to the backend has been built.
+3.  **Catalog Management:** The ability to manage a catalog of Work Items and Materials, including adding new items, setting prices, defining units, assigning categories, and uploading images for furniture/materials.
+4.  **Quote & Invoice Enhancements:**
+    *   Automatically add new, manually-entered items from quotes/projects to the main catalog.
+    *   Split a single quote into two separate ones: one for labor (without unit prices) and one for materials (with unit prices).
+    *   Customize PDF layouts to show a detailed breakdown of labor items without individual prices, only a subtotal.
+    *   Ensure long descriptions wrap correctly in generated PDFs.
+5.  **Customer Portal:** Hide all unit prices from the customer's view in their portal, showing only quantities, units, and total prices.
+6.  **PEPPOL/Billit Integration (New Specification):** A detailed architectural plan for a robust B2B e-invoicing flow. Emergent will act as the source of invoice data, which is sent to Billit. Billit then becomes the legal master for invoicing, automatically handling PEPPOL vs. email delivery based on the customer's VAT status. The Emergent app must track the invoice status based on feedback from Billit (e.g., via webhooks) and display errors.
 
 **User's preferred language**: Dutch (Nederlands)
 
 **what currently exists?**
-The application is a full-stack project management tool for construction. A significant amount of work has been done to add a comprehensive, mobile-friendly customer portal with features for viewing project progress, messaging, and leaving ratings. The original calendar has been replaced with a team planning board. The initial Billit/Peppol integration has been refactored and its internal bugs fixed, but it remains blocked due to an external API authentication issue.
+The application is a full-stack project management tool (React/FastAPI/MongoDB) with significant new functionality. Key existing components include:
+- A customer portal with project tracking.
+- A team planning calendar.
+- A **fixed and functional AI Floor Plan Analysis** feature on the First Visit tab, which now also supports editing analyses, adding custom work items, and generating quotes directly from an analysis.
+- An enhanced **Catalog Management** page () for managing both materials and work items, including categories and image uploads.
+- A **working prototype of a 2D Room Configurator** () that is connected to the backend database to pull real material and work item data for live pricing.
+- Advanced quote and PDF generation logic that can split quotes and format PDFs according to specific display rules for labor vs. materials.
+- The foundational code for a Billit integration exists, but the newly specified, detailed workflow has not yet been implemented.
 
 **Last working item**:
--   **Last item agent was working:** The user reported that on the new team planning board (), dragging a task to a team caused it to disappear (due to a date filter). The user also requested to re-introduce a calendar view below the team board, showing tasks as draggable blocks. The agent's last action was to completely overwrite  with a new implementation to address all these requirements.
--   **Status:** IN PROGRESS
+-   **Last item agent was working:** The user provided a detailed, definitive architecture and workflow for integrating with Billit for PEPPOL e-invoicing. The agent acknowledged understanding of the requirements and was preparing to start implementation.
+-   **Status:** NOT STARTED
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** Frontend testing agent. The change is a complete rewrite of a core UI component with complex state and drag-and-drop interactions.
+-   **Which testing method agent to use?** Backend testing agent. The agent will need to create/update endpoints for sending invoice data to Billit, potentially create a webhook endpoint to receive status updates from Billit, and then write tests to verify this flow. Manual  commands will be useful for initial endpoint verification.
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Team planning board functionality is unverified and potentially broken (P0)**
--   **Issue 2: Billit API Integration is blocked (P1)**
--   **Issue 3: Backend API Route Instability (P2)**
+-   **Issue 1: Backend API Route Instability (P2)**
 
 **Issues Detail**:
--   **Issue 1: Team planning board functionality is unverified and potentially broken**
-    -   **Attempted fixes:** The file  was completely overwritten with a new implementation intended to fix the disappearing tasks and add the secondary calendar view.
-    -   **Next debug checklist:**
-        1.  Thoroughly test the new implementation in .
-        2.  Verify that assigning a task to a team does not make it disappear, regardless of its date.
-        3.  Confirm that a calendar grid is displayed below the team planning board.
-        4.  Ensure tasks are rendered as blocks spanning their correct start and end dates on this calendar.
-        5.  Test the drag-and-drop functionality on the calendar blocks to ensure dates can be updated.
-    -   **Why fix this issue and what will be achieved with the fix?** This is the user's current highest priority. Fixing it will complete the new planning feature.
-    -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Frontend.
-    -   **Blocked on other issue:** No.
-
--   **Issue 2: Billit API Integration is blocked**
-    -   **Attempted fixes:** The internal invoice not found bug was fixed. The entire integration was refactored to use the correct Billit API structure (, ). Multiple API keys (production/sandbox) and URLs have been tried. The integration consistently fails with an  error from the Billit server.
-    -   **Next debug checklist:** This issue is **BLOCKED**. The user has contacted Billit support for a valid API key and confirmation of the correct endpoint URL. No further action can be taken until the user provides these credentials.
-    -   **Why fix this issue and what will be achieved with the fix?** This was the original feature request for the project.
-    -   **Status:** BLOCKED
-    -   **Is recurring issue?** Y (The authentication failure is recurring).
-    -   **Should Test frontend/backend/both after fix?** Backend.
-    -   **Blocked on other issue:** No.
-
--   **Issue 3: Backend API Route Instability**
-    -   **Attempted fixes:** None. The only known workaround is backend: stopped
-backend: started.
-    -   **Next debug checklist:** After resolving the P0 planning board issue, investigate the backend logs for potential causes of route failures during high load or specific operations. Review the FastAPI app setup in .
-    -   **Why fix this issue and what will be achieved with the fix?** To improve overall application stability and prevent random API failures.
+-   **Issue 1: Backend API Route Instability**
+    -   **Attempted fixes:** None in this session. The only known workaround is restarting the backend (backend: stopped
+backend: started).
+    -   **Next debug checklist:** After implementing the Billit workflow, investigate the backend logs () for any recurring errors, unhandled exceptions, or resource leaks that might be causing the API routes to become unresponsive over time. Review the FastAPI app setup in  for potential misconfigurations.
+    -   **Why fix this issue and what will be achieved with the fix?** Improves overall application stability and user experience by preventing random API failures.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Backend.
     -   **Blocked on other issue:** No.
 
 **In progress Task List**:
--   **Task 1: Complete and Verify the Team Planning Board (P0)**
-    -   **Where to resume:** Test the new implementation of .
-    -   **What will be achieved with this?** A fully functional team planning system with both a team-based assignment view and a draggable calendar agenda, as requested by the user.
-    -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Frontend
-    -   **Blocked on something:** No.
+-   **Task 1: Implement the Billit/PEPPOL e-invoicing workflow (P0)**
+
+**Task Detail**:
+-   **Task 1: Implement the Billit/PEPPOL e-invoicing workflow**
+    -   **Where to resume:** Start by reviewing the existing Billit integration code in  (around line 4124) and the user's detailed specification (Chat Message 424). The first implementation step is to create or modify the endpoint that sends invoice data to Billit, ensuring all required fields (customer info, VAT number, lines, etc.) are included.
+    -   **What will be achieved with this?** A fully compliant PEPPOL B2B invoicing flow that uses Billit as the external service, fulfilling a core business requirement.
+    -   **Status:** NOT STARTED
+    -   **Should Test frontend/backend/both after fix?** Backend.
+    -   **Blocked on something:** Potentially requires a valid . The agent should first try with the existing sandbox key and, if it fails, confirm with the user if a new key is available.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   **Finalize Billit/Peppol Integration (P1 - BLOCKED):** Once the user provides a working API key from Billit, test and finalize the e-invoicing feature.
+    -   **Finalize Room Configurator (P1):** Develop the current prototype into a production-ready feature. This includes polishing the UI, ensuring all calculations are robust, and fully integrating the Generate Quote functionality.
 -   **Future Tasks:**
-    -   **Refactor  (P2):** The main backend file has become a large monolith. It needs to be broken down into a proper package structure (e.g., , , ) for better maintainability.
+    -   **Refactor  (P2):** The main backend file has grown significantly and is now a large monolith. It should be broken down into a proper package structure (e.g., , , , ) to improve maintainability and scalability.
 
 **Completed work in this session**
--   **Bug Fix (Invoicing):** Fixed invoice not found and PDF generation errors by consolidating all invoice logic to use the  database collection.
--   **Feature (Quotes):** Implemented clearing of measurement work items from the First Visit tab after a quote is successfully generated.
--   **Feature (Customer Portal):**
-    -   Built a full customer portal at a unique, non-expiring URL per project.
-    -   Implemented backend endpoints and frontend UI ().
-    -   Added functionality for customers to view planning, photos, quotes, and work slips.
-    -   Added a customer messaging and star-rating system.
--   **Bug Fixes (Customer Portal):**
-    -   Corrected data fetching to show all relevant project data.
-    -   Fixed broken image URLs.
-    -   Made the portal layout mobile-first and responsive.
-    -   Fixed an issue preventing customer ratings from being saved.
--   **Feature (Planning):** Replaced the original calendar with an interactive team planning board.
--   **Backend Refactor (Billit):** Rewrote the Billit integration to match their official API documentation, although it remains blocked on authentication.
+-   **Feature (AI Floor Plan):** Fixed the image upload functionality by correctly using  from the  library.
+-   **Feature (UI/UX):** Made the Floor Plan Analysis section on the  mobile-responsive.
+-   **Feature (Catalog):** Implemented full CRUD functionality for Work Items on the , turning it into a comprehensive catalog management center.
+-   **Feature (Quotes):** Implemented logic to automatically add new, custom work items from quotes and projects into the main catalog database.
+-   **Feature (Projects):** Added the ability to manually type new work items and specify a custom area (m²) for each work item directly within a project's First Visit tab.
+-   **Feature (Floor Plan):** Added functionality to edit a saved floor plan analysis, including its title.
+-   **Feature (Quotes):** Added a button to generate a new quote directly from a saved floor plan analysis.
+-   **Feature (Customer Portal):** Hid all unit prices from the customer portal view, enhancing price privacy. The backend endpoint now filters this data out.
+-   **Feature (PDF Generation):**
+    -   Modified PDF generation to group all labor items under a single Arbeid section with quantities and descriptions, but no individual unit prices.
+    -   Fixed PDF layouts to ensure long descriptions wrap correctly and labor/material tables have a consistent style.
+-   **Feature (Quotes):** Implemented a Split Quote feature that creates two separate quotes from one: one for labor and one for materials.
+-   **Feature (Prototype):** Built and deployed a functional prototype for a 2D Room Configurator, complete with a drawing canvas, material selection tabs, and a live price overview.
+-   **Feature (Configurator):** Integrated the Room Configurator prototype with the live backend to fetch materials and work items from the database, making the pricing dynamic.
+-   **Deployment:** Performed a full and successful deployment health check, confirming the application is stable and ready for deployment.
 
 **Earlier issues found/mentioned but not fixed**
 -   **Issue 1: Backend API Route Instability**
     -   **Debug checklist:** See All Pending/In progress Issue list.
-    -   **Why to solve this issue and what will be achieved with this?** To create a stable and reliable application that doesn't require periodic manual restarts.
-    -   **Should Test frontend/backend/both after fix:** backend
+    -   **Why to solve this issue and what will be achieved with this?** To improve application stability.
+    -   **Should Test frontend/backend/both after fix:** Backend.
     -   **Is recurring issue?** Y
 
 **Known issue recurrence from previous fork**
 -   **Issue recurrence in previous fork:** Backend API Route Instability.
--   **Recurrence count:** 2+ forks.
+-   **Recurrence count:** 3+
 -   **Status:** NOT STARTED
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Frontend:** React, Tailwind CSS,  (for team planning board).
--   **Backend:** FastAPI, Motor (async MongoDB driver).
--   **Database:** MongoDB.
--   **3rd Party:** Billit (for Peppol) - **BLOCKED**.
+-   **Frontend:** React, Tailwind CSS, 
+-   **Backend:** FastAPI, Motor (async MongoDB driver), **ReportLab** (for PDF generation)
+-   **Database:** MongoDB
+-   **3rd Party Integrations:** Billit (PEPPOL),  (AI Vision)
 
 **key DB schema**
--   : 
--   : 
--    (Work Slips): 
+-   **work_items**: Now includes a  field (for 'Vloer', 'Muur', etc.).
+-   **materials**: Now includes an  field.
+-   **quotes**: Status can now be  (split).
 
 **changes in tech stack**
--   Likely added  or a similar drag-and-drop library for the new .
-
-**All files of reference**
--   : **Highest priority.** This file was just overwritten and its new functionality must be tested immediately.
--   : Contains all backend logic, including the new customer portal and planning endpoints, and the blocked Billit integration.
--   : The new, feature-rich, and mobile-responsive customer portal.
--   : Contains the Billit sandbox API key and URL. Do not change until the user provides new, verified credentials.
-
-**Areas that need refactoring**:
--    is critically oversized and monolithic. It should be a high-priority future task to break it into a proper package structure (routers, models, services).
-
-**key api endpoints**
--   : Updates a scheduled work item with a team name.
--   : Generates/retrieves the customer portal access link.
--   : Fetches all data for the public customer portal page.
--   : Allows a customer to submit their project rating.
--   : **(BLOCKED)** Endpoint for sending an invoice via Peppol. The internal logic is fixed, but it's blocked by Billit API authentication.
-
-**Critical Info for New Agent**
--   Your immediate and highest priority is to **test the new team planning board**. The file  was just completely overwritten. You must verify if it now correctly shows tasks after being assigned, includes a calendar view below the board, and supports drag-and-drop for rescheduling.
--   The **Billit/Peppol integration is BLOCKED**. Do not attempt to fix the  error. The user has escalated this to Billit support. Await new, verified credentials from the user before touching this feature. The current  is configured for the **Billit Sandbox**.
--   The backend instability issue is a known, recurring problem that should be addressed once the current high-priority tasks are completed.
-
-**documents and test reports created in this job**
 -   None.
 
+**All files of reference**
+-   : Contains all new backend logic for Billit, catalog management, quote splitting, PDF generation, and the room configurator. Needs immediate attention for the Billit task.
+-   : Contains the UI for the fixed AI feature and related enhancements.
+-   : Contains the UI for the Split Quote feature.
+-   : The main UI for managing the work item and material catalog.
+-   : The code for the new prototype feature.
+
+**Areas that need refactoring**:
+-    is now an extremely large monolith (~4400+ lines). It urgently needs to be refactored into a modern package structure (routers, services, models) to ensure future maintainability. This is a high-priority future task.
+
+**key api endpoints**
+-   : **(FIXED)**
+-   : New CRUD endpoints for catalog management.
+-   : New endpoint.
+-   : New endpoint to split a quote.
+-    & : New endpoints for the room configurator.
+-   : **(MODIFIED)** to filter out price data from line items.
+-   : **(MODIFIED)** to change item grouping and layout.
+-   : **(NEEDS IMPLEMENTATION)** This is the starting point for the new Billit workflow.
+
+**Critical Info for New Agent**
+-   Your immediate and highest priority is to **implement the Billit/PEPPOL e-invoicing workflow** as detailed by the user in Chat Message 424.
+-   **Architecture:** Emergent is the *data source*. Billit is the *legal master* for invoicing and PEPPOL delivery. Your implementation must respect this separation.
+-   **Communicate with the user in Dutch.**
+-   The Room Configurator is a **prototype**. While functional, the user's feedback will be crucial before considering it a finished feature.
+-   The backend  file is extremely large and complex. Be very careful when making changes. A full refactor is a recommended future task.
+
+**documents and test reports created in this job**
+-   Multiple test reports from the frontend and backend testing agents are available in the  directory. The agent consistently ran tests after each major feature implementation.
+
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Reports that dragged items on the new planning board disappear. Requests the calendar view be added back below the board with draggable blocks. (IN PROGRESS)
-2.  **User:** Provides specific requirements for the planning board (labels, includes address). (Handled)
-3.  **User:** Requests the calendar be replaced with a team-based planning board. (Handled)
-4.  **User:** Reports that the customer rating cannot be saved in the portal. (COMPLETED)
-5.  **User:** Reports the customer portal is not mobile-friendly. (COMPLETED)
-6.  **User:** Reports that the customer portal planning view is incorrect and photos are not visible. (COMPLETED)
-7.  **User:** Reports that the customer portal link expires and is missing data. (COMPLETED)
-8.  **User:** Adds messaging and star rating requirements to the customer portal request. (COMPLETED)
-9.  **User:** Requests a new customer portal feature. (COMPLETED)
-10. **User:** Asks to clear measurements from the First Visit tab after generating a quote. (COMPLETED)
+10. **User:** Requests a Split Quote feature to create separate offers for labor and materials. (COMPLETED)
+9.  **User:** Requests that the PDF layout be consistent for both labor and materials and that long descriptions wrap to the next line. (COMPLETED)
+8.  **User:** Asks agent to call the deployer agent for a health check. (COMPLETED)
+7.  **User:** Provides the final, detailed architecture and workflow for the Billit/PEPPOL integration. This is the current, highest-priority task. (PENDING IMPLEMENTATION)
+6.  **User:** Requests changes to the PDF quote/invoice layout to provide more detail for labor items but only a total price. (COMPLETED)
+5.  **User:** Asks if a SketchUp-like room configurator is possible. (ANSWERED)
+4.  **User:** Requests a working prototype of the room configurator. (COMPLETED)
+3.  **User:** Provides requirements for the configurator: prices from the database, two-step material selection (type then color), and furniture from the materials list with images. (COMPLETED)
+2.  **User:** Provides detailed requirements to hide unit prices from customers in their portal and on final quotes, while keeping them visible for admins. (COMPLETED)
+1.  **User:** Asks for an Edit button for saved floor plan analyses to adjust titles and contents. (COMPLETED)
 
 **Project Health Check:**
--   **Broken:**
-    -   The core functionality of the Team Planning Board () is in an unknown state after a complete file overwrite and must be tested.
--   **Mocked:**
-    -   None.
--   **Blocked:**
-    -   The Billit/Peppol integration is non-functional, pending valid API credentials from the user/Billit support.
+-   **Broken:** None.
+-   **Mocked:** None. The Room Configurator is a prototype but uses real data.
+-   **Blocked:** The original Billit integration issue (bad key) has been superseded by a new, detailed implementation task. The task is not blocked, but it's the next major piece of work.
 
 **3rd Party Integrations**
--   **Billit:** Used for Peppol e-invoicing. Requires a User API Key. The integration is currently **BLOCKED** due to a persistent  error from the Billit server.
+-   **Billit (Payments/PEPPOL)** — requires User API Key. Status: **PENDING IMPLEMENTATION** of a new, detailed workflow.
+-   **OpenAI GPT-4o Vision (via )** — uses Emergent LLM Key. Status: **FIXED**.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES (for customer portal features).
+-   **Testing agent used after significant changes:** YES. The agent used the testing subagent extensively and successfully after implementing major features.
 -   **Troubleshoot agent used after agent stuck in loop:** NO
 -   **Test files created:** None.
--   **Known regressions:** None currently active, but the new  is a potential source of regressions.
+-   **Known regressions:** None.
 
 **Credentials to test flow:**
 -   **Username:** 
 -   **Password:** 
 
 **What agent forgot to execute**
--   The agent has not yet tested the complete rewrite of .
--   The agent has not addressed the long-standing Backend API Route Instability issue mentioned in the initial handoff.</analysis>
+-   The agent did not address the recurring  issue mentioned in the initial handoff and observed through user reports in previous sessions. This remains a pending technical debt item.</analysis>
