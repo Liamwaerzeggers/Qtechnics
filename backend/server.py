@@ -1020,9 +1020,12 @@ async def update_line_item(quote_id: str, item_id: str, item_update: LineItemUpd
 
 @api_router.delete("/quotes/{quote_id}/items/{item_id}")
 async def delete_line_item(quote_id: str, item_id: str, current_user: User = Depends(get_current_user)):
-    """Delete a line item"""
-    # Verify quote exists
-    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
+    """Delete a line item (all admins can delete)"""
+    # All admins can delete any quote item
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete line items")
+    
+    quote = await db.quotes.find_one({"id": quote_id})
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
     
