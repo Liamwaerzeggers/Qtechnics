@@ -4330,12 +4330,14 @@ def transform_invoice_to_billit(invoice: dict, lead: dict, project: dict) -> dic
         billit_order["Customer"]["VATNumber"] = vat_number
         
         # Add Peppol identifier for B2B routing
+        # Use scheme ID 0208 for Belgian enterprise number (KBO/CBE)
+        # or 9925 for Belgian VAT number
         if vat_number.startswith("BE"):
-            # Belgian enterprise number scheme (KBO)
+            enterprise_number = vat_number[2:]  # Remove 'BE' prefix
             billit_order["Customer"]["Identifiers"] = [
                 {
-                    "IdentifierType": "KBO",
-                    "Identifier": vat_number[2:]  # Remove 'BE' prefix for KBO
+                    "IdentifierType": "0208",  # Belgian enterprise number scheme
+                    "Identifier": enterprise_number
                 }
             ]
     
