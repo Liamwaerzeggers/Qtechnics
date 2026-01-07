@@ -757,8 +757,12 @@ async def get_quote(quote_id: str, current_user: User = Depends(get_current_user
 
 @api_router.put("/quotes/{quote_id}", response_model=Quote)
 async def update_quote(quote_id: str, quote_update: QuoteUpdate, current_user: User = Depends(get_current_user)):
-    """Update a quote"""
-    existing_quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
+    """Update a quote (all admins can edit)"""
+    # All admins can update any quote
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can update quotes")
+    
+    existing_quote = await db.quotes.find_one({"id": quote_id})
     if not existing_quote:
         raise HTTPException(status_code=404, detail="Quote not found")
     
