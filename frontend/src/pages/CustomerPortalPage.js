@@ -63,11 +63,38 @@ export default function CustomerPortalPage() {
         setRating(response.data.project.customer_rating);
         setRatingComment(response.data.project.customer_rating_comment || '');
       }
+      
+      // Fetch legacy documents
+      try {
+        const legacyRes = await axios.get(`${API}/customer-portal/${accessToken}/legacy-documents`);
+        setLegacyDocuments(legacyRes.data || []);
+      } catch (e) {
+        console.log('No legacy documents available');
+      }
     } catch (err) {
       console.error('Portal error:', err);
       setError(err.response?.data?.detail || 'Kon projectgegevens niet laden');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const downloadLegacyDocument = async (doc) => {
+    try {
+      const response = await axios.get(
+        `${API}/customer-portal/${accessToken}/legacy-documents/${doc.id}/download`,
+        { responseType: 'blob' }
+      );
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', doc.original_filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      toast.error('Kon document niet downloaden');
     }
   };
 
