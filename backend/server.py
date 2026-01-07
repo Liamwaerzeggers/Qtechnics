@@ -1918,17 +1918,21 @@ async def get_project_invoices(project_id: str, current_user: User = Depends(get
 
 @api_router.get("/quotes/{quote_id}/export/pdf")
 async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_current_user)):
-    """Export quote as PDF with logo and VAT details"""
+    """Export quote as PDF with logo and VAT details (all admins can export)"""
     from reportlab.lib.utils import ImageReader
     from reportlab.platypus import Image as ReportLabImage
     
+    # All admins can export any quote
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can export quotes")
+    
     # Get quote
-    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id})
+    quote = await db.quotes.find_one({"id": quote_id})
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
     
     # Get lead
-    lead = await db.leads.find_one({"id": quote["lead_id"], "user_id": current_user.id})
+    lead = await db.leads.find_one({"id": quote["lead_id"]})
     
     # Get line items
     items = await db.line_items.find({"quote_id": quote_id}, {"_id": 0}).to_list(1000)
