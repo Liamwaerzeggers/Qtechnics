@@ -193,6 +193,7 @@ export default function CustomerPortalPage() {
     { id: 'calendar', label: 'Planning', icon: Calendar },
     { id: 'photos', label: "Foto's", icon: Camera },
     { id: 'quotes', label: 'Offertes', icon: FileText },
+    { id: 'documents', label: 'Archief', icon: FolderArchive },
     { id: 'updates', label: 'Updates', icon: Hammer },
     { id: 'messages', label: 'Berichten', icon: MessageCircle },
   ];
