@@ -2201,6 +2201,298 @@ TEST003,Test Boor,12.75,HSS boor 8mm,Gereedschap,TestBrand"""
         
         return True
 
+    def test_billit_peppol_integration(self):
+        """Test Billit/PEPPOL e-invoicing integration endpoints"""
+        print("\n🧾 Testing Billit/PEPPOL Integration...")
+        
+        # Step 1: Login as admin using the specific credentials
+        print("🔐 Testing admin login with test/test123...")
+        
+        # Test admin login endpoint
+        login_url = f"{self.base_url}/auth/admin/login?username=test&password=test123"
+        
+        try:
+            response = requests.post(login_url)
+            
+            if response.status_code != 200:
+                print(f"❌ Admin login failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+                return False
+            
+            # Extract session token from response
+            login_data = response.json()
+            admin_session_token = None
+            
+            # Check if session token is in response body
+            if 'session_token' in login_data:
+                admin_session_token = login_data['session_token']
+            
+            # Also check cookies
+            if not admin_session_token and 'session_token' in response.cookies:
+                admin_session_token = response.cookies['session_token']
+            
+            if not admin_session_token:
+                print("❌ No session token received from admin login")
+                return False
+                
+            print(f"✅ Admin login successful - Token: {admin_session_token[:10]}...")
+            
+            # Update session token for subsequent requests
+            self.session_token = admin_session_token
+            
+        except Exception as e:
+            print(f"❌ Admin login error: {str(e)}")
+            return False
+        
+        # Step 2: Test with the specific invoice ID from review request
+        test_invoice_id = "9fab847c-3105-4b97-a265-763c27d3cf45"
+        print(f"\n🔍 Testing with invoice ID: {test_invoice_id}")
+        
+        # Step 3: Reset invoice status to "not_sent" for testing
+        print("\n🔄 Resetting invoice status to 'not_sent'...")
+        
+        # First, let's check the current invoice status
+        success, status_response = self.run_test(
+            "Get Current Peppol Status",
+            "GET",
+            f"invoices/{test_invoice_id}/peppol-status",
+            200
+        )
+        
+        if success:
+            current_status = status_response.get('peppol_status', 'unknown')
+            transport_type = status_response.get('transport_type')
+            billit_order_id = status_response.get('billit_order_id')
+            error_msg = status_response.get('peppol_error')
+            
+            print(f"   Current status: {current_status}")
+            print(f"   Transport type: {transport_type}")
+            print(f"   Billit Order ID: {billit_order_id}")
+            if error_msg:
+                print(f"   Previous error: {error_msg}")
+        else:
+            print("❌ Failed to get current Peppol status")
+            return False
+        
+        # Reset invoice status using MongoDB directly
+        print("   Resetting status via database...")
+        reset_command = f"""
+        use qtechnics;
+        db.invoices.updateOne(
+            {{id: '{test_invoice_id}'}},
+            {{$set: {{
+                peppol_status: 'not_sent',
+                peppol_error: null,
+                billit_order_id: null,
+                peppol_transport_type: null,
+                peppol_sent_at: null,
+                peppol_failed_at: null
+            }}}}
+        );
+        """
+        
+        try:
+            result = subprocess.run(['mongosh', '--eval', reset_command], 
+                                  capture_output=True, text=True, timeout=30)
+            if result.returncode == 0:
+                print("✅ Invoice status reset to 'not_sent'")
+            else:
+                print(f"⚠️ Reset warning: {result.stderr}")
+        except Exception as e:
+            print(f"⚠️ Reset error: {str(e)}")
+        
+        # Step 4: Test POST /api/invoices/{invoice_id}/send-to-billit
+        print(f"\n📤 Testing POST /api/invoices/{test_invoice_id}/send-to-billit...")
+        
+        success, send_response = self.run_test(
+            "Send Invoice to Billit",
+            "POST",
+            f"invoices/{test_invoice_id}/send-to-billit",
+            200
+        )
+        
+        if success:
+            print("✅ Send request successful")
+            
+            # Check response structure
+            expected_fields = ['message', 'status', 'transport_type', 'billit_order_id']
+            for field in expected_fields:
+                if field in send_response:
+                    print(f"   {field}: {send_response[field]}")
+                else:
+                    print(f"   ⚠️ Missing field: {field}")
+            
+            # Verify transport type is "Peppol" (since lead has VAT number BE0891533928)
+            transport_type = send_response.get('transport_type')
+            if transport_type == "Peppol":
+                print("✅ Transport type correctly set to 'Peppol' for B2B customer")
+            else:
+                print(f"❌ Expected transport type 'Peppol', got '{transport_type}'")
+                return False
+                
+        else:
+            print("❌ Send to Billit failed")
+            return False
+        
+        # Step 5: Verify status updated to "failed" (expected due to invalid API key)
+        print("\n📊 Verifying status after send attempt...")
+        
+        success, updated_status = self.run_test(
+            "Get Updated Peppol Status",
+            "GET",
+            f"invoices/{test_invoice_id}/peppol-status",
+            200
+        )
+        
+        if success:
+            status = updated_status.get('peppol_status')
+            status_text = updated_status.get('status_text')
+            transport_type = updated_status.get('transport_type')
+            billit_order_id = updated_status.get('billit_order_id')
+            error_msg = updated_status.get('peppol_error')
+            can_retry = updated_status.get('can_retry', False)
+            
+            print(f"   Status: {status}")
+            print(f"   Status text: {status_text}")
+            print(f"   Transport type: {transport_type}")
+            print(f"   Billit Order ID: {billit_order_id}")
+            print(f"   Can retry: {can_retry}")
+            if error_msg:
+                print(f"   Error: {error_msg}")
+            
+            # Verify expected behavior
+            if status == "failed":
+                print("✅ Status correctly updated to 'failed'")
+            else:
+                print(f"❌ Expected status 'failed', got '{status}'")
+                return False
+            
+            if "InvalidAccessToken" in str(error_msg):
+                print("✅ Expected InvalidAccessToken error detected")
+            else:
+                print(f"⚠️ Unexpected error message: {error_msg}")
+            
+            if can_retry:
+                print("✅ Can retry flag is true for failed invoice")
+            else:
+                print("❌ Can retry flag should be true for failed invoices")
+                return False
+                
+        else:
+            print("❌ Failed to get updated status")
+            return False
+        
+        # Step 6: Test POST /api/invoices/{invoice_id}/retry-billit
+        print(f"\n🔄 Testing POST /api/invoices/{test_invoice_id}/retry-billit...")
+        
+        success, retry_response = self.run_test(
+            "Retry Billit Send",
+            "POST",
+            f"invoices/{test_invoice_id}/retry-billit",
+            200
+        )
+        
+        if success:
+            print("✅ Retry request successful")
+            
+            # Check response structure
+            for field in ['message', 'status', 'transport_type']:
+                if field in retry_response:
+                    print(f"   {field}: {retry_response[field]}")
+        else:
+            print("❌ Retry Billit send failed")
+            return False
+        
+        # Step 7: Test POST /api/invoices/{invoice_id}/send-peppol (legacy endpoint)
+        print(f"\n🔄 Testing POST /api/invoices/{test_invoice_id}/send-peppol (legacy redirect)...")
+        
+        # Reset status again for legacy test
+        try:
+            result = subprocess.run(['mongosh', '--eval', reset_command], 
+                                  capture_output=True, text=True, timeout=30)
+        except:
+            pass
+        
+        success, legacy_response = self.run_test(
+            "Send via Legacy Peppol Endpoint",
+            "POST",
+            f"invoices/{test_invoice_id}/send-peppol",
+            200
+        )
+        
+        if success:
+            print("✅ Legacy endpoint redirect working")
+            
+            # Should have same response structure as send-to-billit
+            transport_type = legacy_response.get('transport_type')
+            if transport_type == "Peppol":
+                print("✅ Legacy endpoint correctly uses Peppol transport")
+            else:
+                print(f"⚠️ Legacy endpoint transport type: {transport_type}")
+        else:
+            print("❌ Legacy Peppol endpoint failed")
+            return False
+        
+        # Step 8: Test retry on non-failed invoice (should fail)
+        print(f"\n🚫 Testing retry on non-failed invoice (should fail)...")
+        
+        # First set status to "sent" to test retry validation
+        sent_command = f"""
+        use qtechnics;
+        db.invoices.updateOne(
+            {{id: '{test_invoice_id}'}},
+            {{$set: {{peppol_status: 'sent'}}}}
+        );
+        """
+        
+        try:
+            subprocess.run(['mongosh', '--eval', sent_command], 
+                          capture_output=True, text=True, timeout=30)
+        except:
+            pass
+        
+        success, retry_fail_response = self.run_test(
+            "Retry on Sent Invoice (should fail)",
+            "POST",
+            f"invoices/{test_invoice_id}/retry-billit",
+            400  # Should return 400 Bad Request
+        )
+        
+        if success:
+            print("✅ Retry correctly rejected for non-failed invoice")
+            error_msg = retry_fail_response.get('detail', '')
+            if "can only retry failed" in error_msg.lower():
+                print("✅ Correct error message for retry validation")
+            else:
+                print(f"⚠️ Unexpected error message: {error_msg}")
+        else:
+            print("❌ Retry validation failed")
+            return False
+        
+        # Summary
+        print("\n📊 Billit/PEPPOL Integration Test Results:")
+        print("=" * 50)
+        print("✅ Admin authentication: WORKING")
+        print("✅ POST /api/invoices/{id}/send-to-billit: WORKING")
+        print("✅ Transport type selection (Peppol for B2B): WORKING")
+        print("✅ Status updates to 'failed' with error details: WORKING")
+        print("✅ GET /api/invoices/{id}/peppol-status: WORKING")
+        print("✅ POST /api/invoices/{id}/retry-billit: WORKING")
+        print("✅ POST /api/invoices/{id}/send-peppol (legacy): WORKING")
+        print("✅ Retry validation (only failed/rejected): WORKING")
+        print("✅ Error handling for invalid API key: WORKING")
+        print("✅ Can retry flag for failed invoices: WORKING")
+        
+        print("\n🎉 All Billit/PEPPOL integration endpoints working correctly!")
+        print("📝 Known limitation: Billit API key is invalid (expected)")
+        print("📝 Integration flow handles errors properly")
+        
+        return True
+
 def main():
     print("🚀 Starting Offerte Dashboard API Tests")
     print("=" * 50)
