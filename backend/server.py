@@ -4135,7 +4135,7 @@ BILLIT_BASE_URL = os.environ.get("BILLIT_BASE_URL", "https://api.sandbox.billit.
 COMPANY_VAT = os.environ.get("COMPANY_VAT", "BE0891533928")
 WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "")
 
-# Billit/PEPPOL Status mapping
+# Billit/PEPPOL Status mapping - Extended for all transport types
 BILLIT_STATUS_MAP = {
     "not_sent": "Niet verzonden",
     "pending": "In wachtrij",
@@ -4145,10 +4145,17 @@ BILLIT_STATUS_MAP = {
     "sent_email": "Verzonden via E-mail",
     "sent_post": "Verzonden via Post",
     "delivered": "Afgeleverd",
+    "delivered_peppol": "Afgeleverd via PEPPOL",
+    "delivered_email": "Afgeleverd via E-mail",
     "rejected": "Geweigerd",
     "paid": "Betaald",
-    "failed": "Mislukt"
+    "failed": "Mislukt",
+    "error": "Fout"
 }
+
+# Helper to get user-friendly status text
+def get_billit_status_text(status: str) -> str:
+    return BILLIT_STATUS_MAP.get(status, status or "Onbekend")
 
 async def get_billit_order_status(order_id: int) -> dict:
     """Get the current status of an order from Billit"""
