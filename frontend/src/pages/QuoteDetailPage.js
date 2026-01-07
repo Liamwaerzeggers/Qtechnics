@@ -124,7 +124,18 @@ export default function QuoteDetailPage() {
         setLead(leadRes.data);
       }
     } catch (error) {
-      toast.error('Kon offerte niet ophalen');
+      console.error('Error fetching quote:', error);
+      
+      // Check for authentication errors
+      if (error.response?.status === 401) {
+        toast.error('Sessie verlopen. Log opnieuw in.');
+        // Redirect to login after a short delay
+        setTimeout(() => navigate('/'), 2000);
+      } else if (error.response?.status === 404) {
+        toast.error('Offerte niet gevonden');
+      } else {
+        toast.error('Kon offerte niet ophalen: ' + (error.response?.data?.detail || 'Onbekende fout'));
+      }
     } finally {
       setLoading(false);
     }
