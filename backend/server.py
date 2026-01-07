@@ -1916,8 +1916,11 @@ async def add_invoice_to_project(project_id: str, invoice: InvoiceUpload, curren
 
 @api_router.get("/projects/{project_id}/invoices")
 async def get_project_invoices(project_id: str, current_user: User = Depends(get_current_user)):
-    """Get all invoices for a project"""
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    """Get all invoices for a project (all admins can view)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can view project invoices")
+    
+    project = await db.projects.find_one({"id": project_id})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
