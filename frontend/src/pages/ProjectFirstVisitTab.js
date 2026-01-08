@@ -970,7 +970,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                   style={{borderColor: '#E5E7EB'}}
                 />
                 <p className="text-xs mt-1" style={{color: '#94A3B8'}}>
-                  Meerdere foto's tegelijk mogelijk.
+                  Meerdere foto&apos;s tegelijk mogelijk.
                 </p>
               </div>
             </div>
