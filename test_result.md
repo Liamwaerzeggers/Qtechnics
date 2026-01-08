@@ -155,6 +155,54 @@ backend:
         agent: "testing"
         comment: "Error handling working correctly. Invalid file types (non-PDF) are rejected with 400 status. Invalid document IDs return 404. File size validation (max 10MB) implemented. Admin-only restrictions enforced for upload/delete operations."
 
+  - task: "Room field on quotes - PUT /api/quotes/{quote_id} endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Room field functionality working correctly. PUT /api/quotes/{quote_id} with room field updates successfully. GET /api/quotes/{quote_id} returns room field. GET /api/quotes returns room field in list. Room field can be updated to 'Badkamer', 'Keuken', set to null (removed), and restored. Fixed backend bug where null values were filtered out in update operations."
+
+  - task: "Room field on quotes - GET endpoints"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Room field retrieval working correctly. GET /api/quotes/{quote_id} returns room field properly. GET /api/quotes returns room field in quotes list. Room field persists correctly in database and is returned in all API responses."
+
+  - task: "3D Design upload - POST /api/projects/{project_id}/designs endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "3D design upload working correctly. POST /api/projects/{project_id}/designs accepts multipart form uploads. File is saved to uploads/designs/{project_id}/ directory. Returns proper response with filename, original_filename, url, and uploaded_at fields. Project design_3d_files array is updated with new entry. File is accessible via returned URL."
+
+  - task: "3D Design upload - DELETE /api/projects/{project_id}/designs endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "3D design deletion working correctly. DELETE /api/projects/{project_id}/designs?filename={filename} removes file from both filesystem and database. Project design_3d_files array is updated to remove deleted entry. File is properly cleaned up from server storage."
+
 frontend:
   - task: "Invoice send buttons in ProjectCostsTab.js"
     implemented: true
