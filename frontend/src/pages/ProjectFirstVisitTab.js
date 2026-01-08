@@ -1,11 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API } from '../App';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import { Card, CardContent } from '../components/ui/card';
-import { Camera, Upload, Trash2, Save, Loader2, X, Download, ZoomIn, Plus, Edit2, Check, FileImage, Sparkles, FileText } from 'lucide-react';
+import { Camera, Upload, Trash2, Save, Loader2, X, Download, ZoomIn, Plus, Edit2, Check, FileImage, Sparkles, FileText, Folder, FolderOpen, ChevronDown, ChevronRight, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Room options for organizing photos
+const ROOM_OPTIONS = [
+  'Badkamer', 'Keuken', 'Woonkamer', 'Slaapkamer', 'Toilet', 
+  'Gang', 'Garage', 'Tuin', 'Zolder', 'Kelder', 'Algemeen'
+];
 
 // Helper function to construct full image URL with cache busting
 const getFullImageUrl = (photoPath) => {
