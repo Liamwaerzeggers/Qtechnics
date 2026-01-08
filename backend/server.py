@@ -3792,10 +3792,16 @@ async def worker_login(username: str, password: str, response: Response):
 async def upload_first_visit_photo(
     project_id: str,
     file: UploadFile = File(...),
+    room: Optional[str] = Query(default="Algemeen", description="Kamer/map voor deze foto"),
     current_user: User = Depends(get_current_user)
 ):
-    """Upload photo from first visit"""
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    """Upload photo from first visit with optional room assignment"""
+    # Allow any admin to upload photos for any project
+    if current_user.role == "admin":
+        project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    else:
+        project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
@@ -3812,13 +3818,25 @@ async def upload_first_visit_photo(
     
     photo_url = f"/api/static/first_visit/{project_id}/{unique_filename}"
     
-    # Update project
+    # Create photo record with room field (new format)
+    photo_record = {
+        "filename": unique_filename,
+        "original_filename": file.filename,
+        "url": photo_url,
+        "room": room or "Algemeen",
+        "uploaded_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Check if project uses old format (list of strings) or new format (list of objects)
+    existing_photos = project.get("first_visit_photos", [])
+    
+    # Update project - store as object for new uploads
     await db.projects.update_one(
         {"id": project_id},
-        {"$push": {"first_visit_photos": photo_url}}
+        {"$push": {"first_visit_photos": photo_record}}
     )
     
-    return {"url": photo_url, "filename": unique_filename}
+    return photo_record
 
 @api_router.delete("/projects/{project_id}/first-visit/photos/{photo_name}")
 async def delete_first_visit_photo(
@@ -3914,7 +3932,12 @@ async def update_first_visit_notes(
     return {"message": "Notes updated"}
 
 @api_router.post("/projects/{project_id}/designs")
-async def upload_3d_design(project_id: str, file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+async def upload_3d_design(
+    project_id: str, 
+    file: UploadFile = File(...), 
+    room: Optional[str] = Query(default="Algemeen", description="Kamer/map voor dit ontwerp"),
+    current_user: User = Depends(get_current_user)
+):
     """Upload een 3D design bestand (foto/render) voor een project"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Alleen admins kunnen designs uploaden")
@@ -3947,7 +3970,7 @@ async def upload_3d_design(project_id: str, file: UploadFile = File(...), curren
     with open(file_path, "wb") as f:
         f.write(contents)
     
-    # Create design record
+    # Create design record with room field
     file_url = f"/api/uploads/designs/{project_id}/{unique_filename}"
     design_record = {
         "filename": unique_filename,
@@ -3955,6 +3978,7 @@ async def upload_3d_design(project_id: str, file: UploadFile = File(...), curren
         "url": file_url,
         "size": len(contents),
         "type": ext,
+        "room": room or "Algemeen",
         "uploaded_at": datetime.now(timezone.utc).isoformat()
     }
     
@@ -3967,7 +3991,7 @@ async def upload_3d_design(project_id: str, file: UploadFile = File(...), curren
         {"$set": {"design_3d_files": existing_designs}}
     )
     
-    logger.info(f"3D design uploaded for project {project_id}: {unique_filename}")
+    logger.info(f"3D design uploaded for project {project_id}: {unique_filename} (room: {room})")
     
     return design_record
 
