@@ -961,31 +961,99 @@ Q Technics`;
                   <div 
                     key={item.id} 
                     data-testid={`line-item-${item.id}`}
-                    className="p-4 rounded-lg flex justify-between items-center"
+                    className="p-4 rounded-lg"
                     style={{backgroundColor: '#F8FAFC'}}
                   >
-                    <div className="flex-1">
-                      <div className="font-semibold" style={{color: '#1E293B'}}>{item.description}</div>
-                      <div className="text-sm mt-1" style={{color: '#64748B'}}>
-                        {item.quantity} x €{item.unit_price.toFixed(2)} | Type: {item.item_type}
+                    {editingItem === item.id ? (
+                      // Edit mode
+                      <div className="space-y-3">
+                        <div className="font-semibold" style={{color: '#1E293B'}}>{item.description}</div>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm" style={{color: '#64748B'}}>Aantal:</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={editValues.quantity}
+                              onChange={(e) => setEditValues({...editValues, quantity: e.target.value})}
+                              className="w-24 px-2 py-1 border rounded text-sm"
+                              style={{borderColor: '#E5E7EB'}}
+                              autoFocus
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm" style={{color: '#64748B'}}>Prijs €:</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={editValues.unit_price}
+                              onChange={(e) => setEditValues({...editValues, unit_price: e.target.value})}
+                              className="w-24 px-2 py-1 border rounded text-sm"
+                              style={{borderColor: '#E5E7EB'}}
+                            />
+                          </div>
+                          <span className="text-sm" style={{color: '#64748B'}}>
+                            = €{((parseFloat(editValues.quantity) || 0) * (parseFloat(editValues.unit_price) || 0)).toFixed(2)}
+                          </span>
+                          <div className="flex gap-2 ml-auto">
+                            <Button
+                              size="sm"
+                              onClick={() => handleUpdateItem(item.id)}
+                              style={{backgroundColor: '#10B981', color: 'white'}}
+                            >
+                              <Check size={16} className="mr-1" />
+                              Opslaan
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={cancelEditing}
+                            >
+                              <X size={16} className="mr-1" />
+                              Annuleren
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="text-xs" style={{color: '#94A3B8'}}>
+                          Type: {item.item_type} | BTW: {item.vat_rate}%
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-xl font-bold" style={{color: '#3B82F6'}}>
-                        €{item.total.toFixed(2)}
+                    ) : (
+                      // View mode
+                      <div className="flex justify-between items-center">
+                        <div className="flex-1">
+                          <div className="font-semibold" style={{color: '#1E293B'}}>{item.description}</div>
+                          <div className="text-sm mt-1" style={{color: '#64748B'}}>
+                            {item.quantity} x €{item.unit_price.toFixed(2)} | Type: {item.item_type}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-xl font-bold" style={{color: '#3B82F6'}}>
+                            €{item.total.toFixed(2)}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => startEditingItem(item)}
+                            title="Bewerken"
+                          >
+                            <Edit2 size={18} style={{color: '#3B82F6'}} />
+                          </Button>
+                          <Button 
+                            data-testid={`delete-item-${item.id}`}
+                            variant="ghost" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteItem(item.id);
+                            }}
+                            title="Verwijderen"
+                          >
+                            <Trash2 size={18} style={{color: '#EF4444'}} />
+                          </Button>
+                        </div>
                       </div>
-                      <Button 
-                        data-testid={`delete-item-${item.id}`}
-                        variant="ghost" 
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteItem(item.id);
-                        }}
-                      >
-                        <Trash2 size={18} style={{color: '#EF4444'}} />
-                      </Button>
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
