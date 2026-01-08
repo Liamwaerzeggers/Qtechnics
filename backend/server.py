@@ -234,7 +234,8 @@ class Project(BaseModel):
     color: str = "#1E40AF"  # Default blue color
     
     # NIEUWE SECTIE: Eerste Bezoek
-    first_visit_photos: List[str] = []  # Photo URLs/paths
+    # Support both old format (List[str]) and new format (List[dict] with room)
+    first_visit_photos: List[Any] = []  # Photo URLs/paths OR photo objects with room
     first_visit_notes: str = ""  # Notes from first visit
     first_visit_date: Optional[datetime] = None
     
