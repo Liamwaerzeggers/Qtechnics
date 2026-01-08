@@ -483,21 +483,57 @@ Q Technics`;
             <CardTitle>Offerte Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-4">
-              <Label>Status:</Label>
-              <Select value={quote.status} onValueChange={handleStatusChange}>
-                <SelectTrigger data-testid="quote-status-select" className="w-64">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="concept">Concept</SelectItem>
-                  <SelectItem value="klaar">Klaar</SelectItem>
-                  <SelectItem value="verzonden">Verzonden</SelectItem>
-                  <SelectItem value="goedgekeurd">Goedgekeurd</SelectItem>
-                  <SelectItem value="afgewezen">Afgewezen</SelectItem>
-                  <SelectItem value="gesplitst">Gesplitst</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Label>Status:</Label>
+                <Select value={quote.status} onValueChange={handleStatusChange}>
+                  <SelectTrigger data-testid="quote-status-select" className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="concept">Concept</SelectItem>
+                    <SelectItem value="klaar">Klaar</SelectItem>
+                    <SelectItem value="verzonden">Verzonden</SelectItem>
+                    <SelectItem value="goedgekeurd">Goedgekeurd</SelectItem>
+                    <SelectItem value="afgewezen">Afgewezen</SelectItem>
+                    <SelectItem value="gesplitst">Gesplitst</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Label>🏠 Kamer:</Label>
+                <Select 
+                  value={quote.room || ''} 
+                  onValueChange={async (value) => {
+                    try {
+                      await axios.put(`${API}/quotes/${quoteId}`, { room: value || null }, { withCredentials: true });
+                      setQuote(prev => ({ ...prev, room: value || null }));
+                      toast.success('Kamer bijgewerkt');
+                    } catch (error) {
+                      toast.error('Kon kamer niet bijwerken');
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Selecteer kamer..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Geen kamer</SelectItem>
+                    <SelectItem value="Badkamer">Badkamer</SelectItem>
+                    <SelectItem value="Keuken">Keuken</SelectItem>
+                    <SelectItem value="Woonkamer">Woonkamer</SelectItem>
+                    <SelectItem value="Slaapkamer">Slaapkamer</SelectItem>
+                    <SelectItem value="Toilet">Toilet</SelectItem>
+                    <SelectItem value="Gang">Gang</SelectItem>
+                    <SelectItem value="Garage">Garage</SelectItem>
+                    <SelectItem value="Tuin">Tuin</SelectItem>
+                    <SelectItem value="Zolder">Zolder</SelectItem>
+                    <SelectItem value="Kelder">Kelder</SelectItem>
+                    <SelectItem value="Volledige woning">Volledige woning</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
