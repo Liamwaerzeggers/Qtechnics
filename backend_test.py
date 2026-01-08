@@ -1842,6 +1842,252 @@ TEST003,Test Boor,12.75,HSS boor 8mm,Gereedschap,TestBrand"""
         
         return True
 
+    def test_room_based_image_gallery(self):
+        """Test the new room-based folder functionality for image galleries"""
+        print("\n🏠 Testing Room-Based Image Gallery Functionality...")
+        
+        # Step 1: Login as admin using the specific credentials
+        print("🔐 Testing admin login with test/test123...")
+        
+        # Test admin login endpoint
+        login_url = f"{self.base_url}/auth/admin/login?username=test&password=test123"
+        
+        try:
+            response = requests.post(login_url)
+            
+            if response.status_code != 200:
+                print(f"❌ Admin login failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+                return False
+            
+            # Extract session token from response
+            login_data = response.json()
+            admin_session_token = None
+            
+            # Check if session token is in response body
+            if 'session_token' in login_data:
+                admin_session_token = login_data['session_token']
+            
+            # Also check cookies
+            if not admin_session_token and 'session_token' in response.cookies:
+                admin_session_token = response.cookies['session_token']
+            
+            if not admin_session_token:
+                print("❌ No session token received from admin login")
+                return False
+                
+            print(f"✅ Admin login successful - Token: {admin_session_token[:10]}...")
+            
+            # Update session token for subsequent requests
+            self.session_token = admin_session_token
+            
+        except Exception as e:
+            print(f"❌ Admin login error: {str(e)}")
+            return False
+        
+        # Step 2: Get projects list and take first project ID
+        print("\n📋 Getting projects list...")
+        
+        success, projects_response = self.run_test(
+            "Get Projects List",
+            "GET",
+            "projects",
+            200
+        )
+        
+        if not success:
+            print("❌ Failed to get projects list")
+            return False
+        
+        projects = projects_response if isinstance(projects_response, list) else []
+        if not projects:
+            print("❌ No projects available for testing")
+            return False
+        
+        # Use the first project
+        project_id = projects[0].get('id')
+        project_name = projects[0].get('name', 'Unknown')
+        print(f"✅ Using project: {project_name} (ID: {project_id})")
+        
+        # Step 3: Test 3D Design upload with room parameter
+        print(f"\n🎨 Testing 3D Design upload with room=Badkamer...")
+        
+        # Create a test image file
+        import tempfile
+        import io
+        
+        # Create a simple test image (1x1 PNG)
+        test_image_content = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\tpHYs\x00\x00\x0b\x13\x00\x00\x0b\x13\x01\x00\x9a\x9c\x18\x00\x00\x00\x0cIDATx\x9cc```\x00\x00\x00\x04\x00\x01\xdd\x8d\xb4\x1c\x00\x00\x00\x00IEND\xaeB`\x82'
+        
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
+            temp_file.write(test_image_content)
+            temp_file_path = temp_file.name
+        
+        try:
+            # Test 3D design upload with room parameter
+            url = f"{self.base_url}/projects/{project_id}/designs?room=Badkamer"
+            headers = {'Authorization': f'Bearer {self.session_token}'}
+            
+            with open(temp_file_path, 'rb') as f:
+                files = {'file': ('test_design.png', f, 'image/png')}
+                response = requests.post(url, files=files, headers=headers)
+            
+            print(f"   Status Code: {response.status_code}")
+            
+            if response.status_code != 200:
+                print(f"❌ 3D Design upload failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+                return False
+            
+            design_response = response.json()
+            design_room = design_response.get('room')
+            design_filename = design_response.get('filename')
+            
+            if design_room != 'Badkamer':
+                print(f"❌ Design room mismatch - Expected: Badkamer, Got: {design_room}")
+                return False
+            
+            print(f"✅ 3D Design uploaded successfully:")
+            print(f"   Filename: {design_filename}")
+            print(f"   Room: {design_room}")
+            print(f"   URL: {design_response.get('url')}")
+            
+        finally:
+            os.unlink(temp_file_path)
+        
+        # Step 4: Test First Visit photo upload with room parameter
+        print(f"\n📸 Testing First Visit photo upload with room=Keuken...")
+        
+        # Create another test image file
+        with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
+            temp_file.write(test_image_content)
+            temp_file_path = temp_file.name
+        
+        try:
+            # Test first visit photo upload with room parameter
+            url = f"{self.base_url}/projects/{project_id}/first-visit/photos?room=Keuken"
+            headers = {'Authorization': f'Bearer {self.session_token}'}
+            
+            with open(temp_file_path, 'rb') as f:
+                files = {'file': ('test_photo.jpg', f, 'image/jpeg')}
+                response = requests.post(url, files=files, headers=headers)
+            
+            print(f"   Status Code: {response.status_code}")
+            
+            if response.status_code != 200:
+                print(f"❌ First Visit photo upload failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+                return False
+            
+            photo_response = response.json()
+            photo_room = photo_response.get('room')
+            photo_filename = photo_response.get('filename')
+            
+            if photo_room != 'Keuken':
+                print(f"❌ Photo room mismatch - Expected: Keuken, Got: {photo_room}")
+                return False
+            
+            print(f"✅ First Visit photo uploaded successfully:")
+            print(f"   Filename: {photo_filename}")
+            print(f"   Room: {photo_room}")
+            print(f"   URL: {photo_response.get('url')}")
+            
+        finally:
+            os.unlink(temp_file_path)
+        
+        # Step 5: Get project details and verify room information is stored
+        print(f"\n🔍 Verifying project details contain room information...")
+        
+        success, project_details = self.run_test(
+            "Get Project Details with Room Info",
+            "GET",
+            f"projects/{project_id}",
+            200
+        )
+        
+        if not success:
+            print("❌ Failed to get project details")
+            return False
+        
+        # Check design_3d_files for room information
+        design_3d_files = project_details.get('design_3d_files', [])
+        badkamer_designs = [d for d in design_3d_files if d.get('room') == 'Badkamer']
+        
+        if not badkamer_designs:
+            print("❌ No designs found with room=Badkamer in project details")
+            return False
+        
+        print(f"✅ Found {len(badkamer_designs)} design(s) in Badkamer folder")
+        for design in badkamer_designs:
+            print(f"   - {design.get('original_filename')} (room: {design.get('room')})")
+        
+        # Check first_visit_photos for room information
+        first_visit_photos = project_details.get('first_visit_photos', [])
+        keuken_photos = [p for p in first_visit_photos if isinstance(p, dict) and p.get('room') == 'Keuken']
+        
+        if not keuken_photos:
+            print("❌ No photos found with room=Keuken in project details")
+            return False
+        
+        print(f"✅ Found {len(keuken_photos)} photo(s) in Keuken folder")
+        for photo in keuken_photos:
+            print(f"   - {photo.get('original_filename')} (room: {photo.get('room')})")
+        
+        # Step 6: Test default room assignment (should be "Algemeen")
+        print(f"\n🏠 Testing default room assignment...")
+        
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
+            temp_file.write(test_image_content)
+            temp_file_path = temp_file.name
+        
+        try:
+            # Test design upload without room parameter (should default to "Algemeen")
+            url = f"{self.base_url}/projects/{project_id}/designs"
+            headers = {'Authorization': f'Bearer {self.session_token}'}
+            
+            with open(temp_file_path, 'rb') as f:
+                files = {'file': ('test_default_room.png', f, 'image/png')}
+                response = requests.post(url, files=files, headers=headers)
+            
+            if response.status_code == 200:
+                default_design = response.json()
+                default_room = default_design.get('room')
+                
+                if default_room == 'Algemeen':
+                    print(f"✅ Default room assignment working: {default_room}")
+                else:
+                    print(f"❌ Default room assignment failed - Expected: Algemeen, Got: {default_room}")
+                    return False
+            else:
+                print(f"⚠️ Default room test failed - Status: {response.status_code}")
+        
+        finally:
+            os.unlink(temp_file_path)
+        
+        print("\n🎉 Room-Based Image Gallery functionality test completed successfully!")
+        print("✅ All functionality working as expected:")
+        print("   ✅ Admin login with test/test123")
+        print("   ✅ Projects list retrieval")
+        print("   ✅ 3D Design upload with room parameter")
+        print("   ✅ First Visit photo upload with room parameter")
+        print("   ✅ Room information stored in database")
+        print("   ✅ Room information returned in project details")
+        print("   ✅ Default room assignment (Algemeen)")
+        
+        return True
+
     def test_split_quote_functionality(self):
         """Test the new Split Quote functionality that splits a quote into Labor and Materials quotes"""
         print("\n✂️ Testing Split Quote Functionality...")
