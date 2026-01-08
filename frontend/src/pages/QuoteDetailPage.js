@@ -44,6 +44,10 @@ export default function QuoteDetailPage() {
   
   // Split quote state
   const [splitting, setSplitting] = useState(false);
+  
+  // Inline editing state for line items
+  const [editingItem, setEditingItem] = useState(null);
+  const [editValues, setEditValues] = useState({ quantity: '', unit_price: '' });
 
   useEffect(() => {
     fetchQuoteData();
