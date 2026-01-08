@@ -898,25 +898,6 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
     }
   };
 
-  const handleDownloadPhoto = async (photoUrl) => {
-    try {
-      const response = await fetch(photoUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = photoUrl.split('/').pop();
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success('Foto gedownload! 📥');
-    } catch (error) {
-      console.error('Download error:', error);
-      toast.error('Kon foto niet downloaden');
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Lightbox Modal */}
