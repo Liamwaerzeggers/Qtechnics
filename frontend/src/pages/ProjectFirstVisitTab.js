@@ -900,141 +900,263 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
 
   return (
     <div className="space-y-6">
-      {/* Lightbox Modal */}
-      {lightboxPhoto && (
+      {/* Photo Preview Modal */}
+      {previewPhoto && (
         <div 
-          className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-4"
-          onClick={() => setLightboxPhoto(null)}
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50"
+          onClick={() => setPreviewPhoto(null)}
         >
-          <div className="relative max-w-7xl max-h-screen">
-            {/* Close Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setLightboxPhoto(null);
-              }}
-              className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
-              title="Sluiten"
-            >
-              <X size={24} style={{color: '#1E293B'}} />
-            </button>
-            
-            {/* Download Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDownloadPhoto(lightboxPhoto);
-              }}
-              className="absolute top-4 right-20 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
-              title="Download"
-            >
-              <Download size={24} style={{color: '#1E293B'}} />
-            </button>
-            
-            {/* Image */}
-            <img
-              src={lightboxPhoto}
-              alt="Vergrote foto"
-              className="max-w-full max-h-screen object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
+          <button
+            onClick={() => setPreviewPhoto(null)}
+            className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
+          >
+            <X size={24} />
+          </button>
+          <img
+            src={getPhotoUrl(previewPhoto)}
+            alt={getPhotoOriginalFilename(previewPhoto)}
+            className="max-w-[90vw] max-h-[90vh] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white px-4 py-2 rounded-lg shadow-lg">
+            <p className="font-medium" style={{color: '#1E293B'}}>
+              {getPhotoOriginalFilename(previewPhoto)}
+            </p>
           </div>
         </div>
       )}
 
-      {/* Foto's Sectie */}
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold" style={{color: '#1E3A8A'}}>
+                📸 Foto's Uploaden
+              </h3>
+              <button onClick={() => setShowUploadModal(false)} className="p-1 hover:bg-gray-100 rounded">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{color: '#374151'}}>
+                  Kamer / Map
+                </label>
+                <select
+                  value={selectedRoom}
+                  onChange={(e) => setSelectedRoom(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  style={{borderColor: '#E5E7EB'}}
+                >
+                  {ROOM_OPTIONS.map(room => (
+                    <option key={room} value={room}>{room}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{color: '#374151'}}>
+                  Bestanden
+                </label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  style={{borderColor: '#E5E7EB'}}
+                />
+                <p className="text-xs mt-1" style={{color: '#94A3B8'}}>
+                  Meerdere foto's tegelijk mogelijk.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowUploadModal(false)}
+                className="flex-1"
+              >
+                Annuleren
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Foto's Sectie met Room Folders */}
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold" style={{color: '#1E3A8A'}}>
-              📸 Foto's Eerste Bezoek
-            </h3>
-            <label>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handlePhotoUpload}
-                className="hidden"
-                disabled={uploading}
-              />
-              <Button disabled={uploading} asChild>
-                <span>
-                  {uploading ? (
-                    <>
-                      <Loader2 className="animate-spin mr-2" size={20} />
-                      Uploaden...
-                    </>
-                  ) : (
-                    <>
-                      <Camera className="mr-2" size={20} />
-                      Foto's Uploaden
-                    </>
-                  )}
-                </span>
-              </Button>
-            </label>
+            <div>
+              <h3 className="text-xl font-bold" style={{color: '#1E3A8A'}}>
+                📸 Foto's Eerste Bezoek
+              </h3>
+              <p className="text-sm" style={{color: '#64748B'}}>
+                {photos.length} foto{photos.length !== 1 ? "'s" : ''} in {getPhotosByRoom().filter(([,items]) => items.length > 0).length} map{getPhotosByRoom().filter(([,items]) => items.length > 0).length !== 1 ? 'pen' : ''}
+              </p>
+            </div>
+            <Button 
+              onClick={() => setShowUploadModal(true)} 
+              disabled={uploading}
+              style={{backgroundColor: '#1E40AF', color: 'white'}}
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="animate-spin mr-2" size={20} />
+                  Uploaden...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2" size={20} />
+                  Uploaden
+                </>
+              )}
+            </Button>
           </div>
 
-          {photos.length === 0 ? (
-            <div className="text-center py-12 border-2 border-dashed rounded-lg" style={{borderColor: '#E5E7EB'}}>
-              <Camera size={48} className="mx-auto mb-4" style={{color: '#94A3B8'}} />
-              <p className="text-sm" style={{color: '#64748B'}}>
-                Nog geen foto's geüpload
-              </p>
-              <p className="text-xs mt-1" style={{color: '#94A3B8'}}>
-                Upload foto's van het eerste bezoek voor de offerte
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {photos.map((photo, idx) => (
-                <div key={idx} className="relative group">
-                  {/* Square thumbnail with rounded corners */}
-                  <div 
-                    className="relative aspect-square overflow-hidden rounded-xl cursor-pointer bg-gray-100"
-                    onClick={() => setLightboxPhoto(getFullImageUrl(photo))}
-                  >
-                    <img
-                      src={getFullImageUrl(photo)}
-                      alt={`Eerste bezoek ${idx + 1}`}
-                      className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
-                      onError={(e) => {
-                        e.target.onerror = null; // Prevent infinite loop
-                        e.target.style.display = 'none';
-                        e.target.nextSibling && (e.target.nextSibling.style.display = 'flex');
-                      }}
-                      loading="lazy"
-                    />
-                    <div className="hidden items-center justify-center h-full text-gray-400 absolute inset-0">
-                      <span>⚠️ Kon niet laden</span>
-                    </div>
-                    
-                    {/* Zoom overlay */}
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
-                      <ZoomIn 
-                        size={32} 
-                        className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                      />
-                    </div>
+          {/* Room folders */}
+          <div className="space-y-3">
+            {getPhotosByRoom().map(([room, roomPhotos]) => (
+              <div key={room} className="border rounded-lg overflow-hidden" style={{borderColor: '#E5E7EB'}}>
+                {/* Room header */}
+                <div 
+                  className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50"
+                  onClick={() => toggleRoom(room)}
+                  style={{backgroundColor: roomPhotos.length > 0 ? '#F8FAFC' : 'white'}}
+                >
+                  <div className="flex items-center gap-3">
+                    {expandedRooms[room] ? (
+                      <FolderOpen size={20} style={{color: '#1E40AF'}} />
+                    ) : (
+                      <Folder size={20} style={{color: '#1E40AF'}} />
+                    )}
+                    <span className="font-medium" style={{color: '#1E293B'}}>
+                      {room}
+                    </span>
+                    <span className="text-sm px-2 py-0.5 rounded-full" style={{
+                      backgroundColor: roomPhotos.length > 0 ? '#DBEAFE' : '#F3F4F6',
+                      color: roomPhotos.length > 0 ? '#1E40AF' : '#6B7280'
+                    }}>
+                      {roomPhotos.length}
+                    </span>
                   </div>
-                  
-                  {/* Delete button */}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeletePhoto(photo);
-                    }}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                  >
-                    <Trash2 size={16} />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedRoom(room);
+                        setShowUploadModal(true);
+                      }}
+                    >
+                      <Plus size={16} />
+                    </Button>
+                    {expandedRooms[room] ? (
+                      <ChevronDown size={20} style={{color: '#64748B'}} />
+                    ) : (
+                      <ChevronRight size={20} style={{color: '#64748B'}} />
+                    )}
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
+
+                {/* Room content */}
+                {expandedRooms[room] && (
+                  <div className="p-3 bg-white">
+                    {roomPhotos.length === 0 ? (
+                      <div className="text-center py-6 border-2 border-dashed rounded-lg" style={{borderColor: '#E5E7EB'}}>
+                        <Camera size={32} className="mx-auto mb-2" style={{color: '#94A3B8'}} />
+                        <p className="text-sm" style={{color: '#64748B'}}>
+                          Geen foto's in deze map
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => {
+                            setSelectedRoom(room);
+                            setShowUploadModal(true);
+                          }}
+                        >
+                          <Upload size={14} className="mr-1" />
+                          Uploaden naar {room}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                        {roomPhotos.map((photo, idx) => (
+                          <div
+                            key={idx}
+                            className="group relative border rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                            style={{borderColor: '#E5E7EB'}}
+                          >
+                            {/* Thumbnail */}
+                            <div 
+                              className="aspect-square bg-gray-100 flex items-center justify-center cursor-pointer"
+                              onClick={() => setPreviewPhoto(photo)}
+                            >
+                              <img
+                                src={getPhotoUrl(photo)}
+                                alt={getPhotoOriginalFilename(photo)}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                              <div className="hidden flex-col items-center justify-center">
+                                <span className="text-4xl">📷</span>
+                              </div>
+                              
+                              {/* Hover overlay */}
+                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-all">
+                                <Eye size={24} className="text-white opacity-0 group-hover:opacity-100" />
+                              </div>
+                            </div>
+                            
+                            {/* File info */}
+                            <div className="p-2">
+                              <p className="text-xs font-medium truncate" style={{color: '#1E293B'}} title={getPhotoOriginalFilename(photo)}>
+                                {getPhotoOriginalFilename(photo)}
+                              </p>
+                              {getPhotoUploadDate(photo) && (
+                                <p className="text-xs" style={{color: '#94A3B8'}}>
+                                  {new Date(getPhotoUploadDate(photo)).toLocaleDateString('nl-NL')}
+                                </p>
+                              )}
+                            </div>
+                            
+                            {/* Action buttons */}
+                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => handleDownloadPhoto(photo)}
+                                className="p-1.5 bg-white rounded-full shadow hover:bg-gray-100"
+                                title="Download"
+                              >
+                                <Download size={14} style={{color: '#1E40AF'}} />
+                              </button>
+                              <button
+                                onClick={() => handleDeletePhoto(photo)}
+                                className="p-1.5 bg-white rounded-full shadow hover:bg-red-50"
+                                title="Verwijderen"
+                              >
+                                <Trash2 size={14} style={{color: '#EF4444'}} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
