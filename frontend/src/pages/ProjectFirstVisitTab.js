@@ -742,9 +742,76 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
     }
   };
 
+  // Helper functions for photo handling
+  const getPhotoUrl = (photo) => {
+    if (!photo) return null;
+    const baseUrl = process.env.REACT_APP_BACKEND_URL || '';
+    // Handle both old format (string URL) and new format (object with url)
+    const photoPath = typeof photo === 'string' ? photo : photo.url;
+    if (!photoPath) return null;
+    if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
+      return photoPath;
+    }
+    return `${baseUrl}${photoPath}`;
+  };
+
+  const getPhotoRoom = (photo) => {
+    // Handle both old format (string URL) and new format (object with room)
+    if (typeof photo === 'string') return 'Algemeen';
+    return photo.room || 'Algemeen';
+  };
+
+  const getPhotoFilename = (photo) => {
+    if (typeof photo === 'string') {
+      return photo.split('/').pop();
+    }
+    return photo.filename || photo.url?.split('/').pop();
+  };
+
+  const getPhotoOriginalFilename = (photo) => {
+    if (typeof photo === 'string') {
+      return photo.split('/').pop();
+    }
+    return photo.original_filename || photo.filename || 'Foto';
+  };
+
+  const getPhotoUploadDate = (photo) => {
+    if (typeof photo === 'string') return null;
+    return photo.uploaded_at;
+  };
+
+  // Group photos by room
+  const getPhotosByRoom = () => {
+    const grouped = {};
+    
+    // Initialize all rooms
+    ROOM_OPTIONS.forEach(room => {
+      grouped[room] = [];
+    });
+    
+    // Group photos
+    photos.forEach(photo => {
+      const room = getPhotoRoom(photo);
+      if (!grouped[room]) grouped[room] = [];
+      grouped[room].push(photo);
+    });
+    
+    // Return only rooms with photos, plus always show Algemeen
+    return Object.entries(grouped).filter(([room, items]) => 
+      items.length > 0 || room === 'Algemeen'
+    );
+  };
+
+  const toggleRoom = (room) => {
+    setExpandedRooms(prev => ({ ...prev, [room]: !prev[room] }));
+  };
+
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    
     setUploading(true);
+    setShowUploadModal(false);
 
     try {
       for (const file of files) {
@@ -752,7 +819,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
         formData.append('file', file);
 
         const response = await axios.post(
-          `${API}/projects/${project.id}/first-visit/photos`,
+          `${API}/projects/${project.id}/first-visit/photos?room=${encodeURIComponent(selectedRoom)}`,
           formData,
           { 
             withCredentials: true,
@@ -760,34 +827,54 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
           }
         );
 
-        setPhotos(prev => [...prev, response.data.url]);
+        setPhotos(prev => [...prev, response.data]);
       }
       
-      toast.success(`${files.length} foto('s) geüpload! 📸`);
+      // Expand the room we just uploaded to
+      setExpandedRooms(prev => ({ ...prev, [selectedRoom]: true }));
+      
+      toast.success(`${files.length} foto('s) geüpload naar ${selectedRoom}! 📸`);
       onUpdate();
     } catch (error) {
       console.error('Photo upload error:', error);
-      toast.error('Kon foto niet uploaden');
+      toast.error(error.response?.data?.detail || 'Kon foto niet uploaden');
     } finally {
       setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleDeletePhoto = async (photoUrl) => {
-    const photoName = photoUrl.split('/').pop();
+  const handleDeletePhoto = async (photo) => {
+    const photoFilename = getPhotoFilename(photo);
+    const displayName = getPhotoOriginalFilename(photo);
+    
+    if (!window.confirm(`Weet je zeker dat je "${displayName}" wilt verwijderen?`)) {
+      return;
+    }
     
     try {
       await axios.delete(
-        `${API}/projects/${project.id}/first-visit/photos/${photoName}`,
+        `${API}/projects/${project.id}/first-visit/photos/${photoFilename}`,
         { withCredentials: true }
       );
       
-      setPhotos(prev => prev.filter(p => p !== photoUrl));
+      // Filter out the deleted photo (works for both formats)
+      setPhotos(prev => prev.filter(p => {
+        const filename = getPhotoFilename(p);
+        return filename !== photoFilename;
+      }));
       toast.success('Foto verwijderd');
       onUpdate();
     } catch (error) {
       console.error('Delete photo error:', error);
       toast.error('Kon foto niet verwijderen');
+    }
+  };
+
+  const handleDownloadPhoto = (photo) => {
+    const url = getPhotoUrl(photo);
+    if (url) {
+      window.open(url, '_blank');
     }
   };
 
