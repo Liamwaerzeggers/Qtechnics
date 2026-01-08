@@ -140,6 +140,7 @@ class Quote(BaseModel):
     id: str = Field(default_factory=lambda: f"OFF-{datetime.now(timezone.utc).year}-{str(uuid.uuid4())[:6].upper()}")
     lead_id: str
     quote_number: str = ""
+    room: Optional[str] = None  # Kamer (bijv. "Badkamer", "Keuken", "Woonkamer")
     date: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
     status: str = "concept"
     line_items: List[dict] = []  # Line items (materials + work)
@@ -155,9 +156,11 @@ class Quote(BaseModel):
 
 class QuoteCreate(BaseModel):
     lead_id: str
+    room: Optional[str] = None
 
 class QuoteUpdate(BaseModel):
     status: Optional[str] = None
+    room: Optional[str] = None
 
 # Line Item Models
 class LineItem(BaseModel):
