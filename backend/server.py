@@ -787,7 +787,7 @@ async def update_quote(quote_id: str, quote_update: QuoteUpdate, current_user: U
     if not existing_quote:
         raise HTTPException(status_code=404, detail="Quote not found")
     
-    update_data = {k: v for k, v in quote_update.model_dump().items() if v is not None}
+    update_data = {k: v for k, v in quote_update.model_dump(exclude_unset=True).items()}
     
     if update_data:
         await db.quotes.update_one({"id": quote_id}, {"$set": update_data})
