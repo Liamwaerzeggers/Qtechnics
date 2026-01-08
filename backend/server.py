@@ -3948,7 +3948,7 @@ async def upload_3d_design(project_id: str, file: UploadFile = File(...), curren
         f.write(contents)
     
     # Create design record
-    file_url = f"/api/static/designs/{project_id}/{unique_filename}"
+    file_url = f"/api/uploads/designs/{project_id}/{unique_filename}"
     design_record = {
         "filename": unique_filename,
         "original_filename": file.filename,
