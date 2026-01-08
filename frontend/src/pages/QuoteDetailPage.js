@@ -246,6 +246,51 @@ export default function QuoteDetailPage() {
     }
   };
 
+  // Start editing a line item
+  const startEditingItem = (item) => {
+    setEditingItem(item.id);
+    setEditValues({
+      quantity: item.quantity.toString(),
+      unit_price: item.unit_price.toString()
+    });
+  };
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingItem(null);
+    setEditValues({ quantity: '', unit_price: '' });
+  };
+
+  // Save edited line item
+  const handleUpdateItem = async (itemId) => {
+    const quantity = parseFloat(editValues.quantity);
+    const unit_price = parseFloat(editValues.unit_price);
+
+    if (isNaN(quantity) || quantity <= 0) {
+      toast.error('Voer een geldige hoeveelheid in');
+      return;
+    }
+    if (isNaN(unit_price) || unit_price < 0) {
+      toast.error('Voer een geldige prijs in');
+      return;
+    }
+
+    try {
+      await axios.put(
+        `${API}/quotes/${quoteId}/items/${itemId}`,
+        { quantity, unit_price },
+        { withCredentials: true }
+      );
+      toast.success('Item bijgewerkt! ✏️');
+      setEditingItem(null);
+      setEditValues({ quantity: '', unit_price: '' });
+      fetchQuoteData();
+    } catch (error) {
+      console.error('Update error:', error);
+      toast.error('Kon item niet bijwerken');
+    }
+  };
+
   const handleDownloadPDF = async () => {
     try {
       const response = await axios.get(`${API}/quotes/${quoteId}/export/pdf`, {
