@@ -1033,11 +1033,21 @@ async def update_line_item(quote_id: str, item_id: str, item_update: LineItemUpd
     update_data = {k: v for k, v in item_update.model_dump().items() if v is not None}
     
     if update_data:
-        # Recalculate total if quantity or price changed
+        # Recalculate totals if quantity or price changed
         if "quantity" in update_data or "unit_price" in update_data:
             quantity = update_data.get("quantity", existing_item["quantity"])
             unit_price = update_data.get("unit_price", existing_item["unit_price"])
-            update_data["total"] = quantity * unit_price
+            vat_rate = existing_item.get("vat_rate", 21)
+            
+            # Calculate all totals correctly
+            total_excl_vat = quantity * unit_price
+            vat_amount = total_excl_vat * (vat_rate / 100)
+            total_incl_vat = total_excl_vat + vat_amount
+            
+            update_data["total"] = total_excl_vat  # Base total (excl VAT)
+            update_data["total_excl_vat"] = total_excl_vat
+            update_data["vat_amount"] = vat_amount
+            update_data["total_incl_vat"] = total_incl_vat
         
         await db.line_items.update_one({"id": item_id}, {"$set": update_data})
         existing_item.update(update_data)
