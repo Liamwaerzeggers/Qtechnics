@@ -2948,6 +2948,10 @@ def main():
         test_results.append(("PDF Export Labor Items", tester.test_pdf_export_labor_items()))
         test_results.append(("AI Floor Plan Analysis", tester.test_ai_floor_plan_analysis()))
         
+        # NEW TESTS FOR REVIEW REQUEST
+        test_results.append(("Room Field on Quotes", tester.test_room_field_on_quotes()))
+        test_results.append(("3D Design Upload Fix", tester.test_3d_design_upload_fix()))
+        
         # Print results summary
         print("\n" + "=" * 50)
         print("📊 TEST RESULTS SUMMARY")
