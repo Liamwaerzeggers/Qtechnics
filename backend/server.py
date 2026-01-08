@@ -4260,69 +4260,42 @@ async def generate_quote_from_floor_plan_analysis(
         "analysis_title": analysis_title
     }
 
-async def upload_design_file(
-    project_id: str,
-    file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
-):
-    """Upload 3D design file"""
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    
-    # Save design file
-    designs_dir = ROOT_DIR / "uploads" / "designs" / project_id
-    designs_dir.mkdir(parents=True, exist_ok=True)
-    
-    unique_filename = f"{uuid.uuid4()}_{file.filename}"
-    file_path = designs_dir / unique_filename
-    
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    
-    file_url = f"/api/static/designs/{project_id}/{unique_filename}"
-    
-    design_file = {
-        "filename": file.filename,
-        "url": file_url,
-        "upload_date": datetime.now(timezone.utc).isoformat()
-    }
-    
-    # Update project
-    await db.projects.update_one(
-        {"id": project_id},
-        {"$push": {"design_3d_files": design_file}}
-    )
-    
-    return design_file
-
 @api_router.delete("/projects/{project_id}/designs")
 async def delete_design_file(
     project_id: str,
     filename: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Delete 3D design file"""
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    """Delete 3D design file (all admins can delete)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen designs verwijderen")
+    
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
     
     # Find and delete file
     for design in project.get("design_3d_files", []):
-        if design["filename"] == filename:
-            file_path = ROOT_DIR / design["url"].lstrip("/")
-            if file_path.exists():
-                file_path.unlink()
+        if design.get("filename") == filename or design.get("original_filename") == filename:
+            # Try to delete the actual file
+            file_url = design.get("url", "")
+            if file_url:
+                # Remove /api prefix and construct path
+                relative_path = file_url.replace("/api/uploads/", "").replace("/api/static/", "")
+                file_path = ROOT_DIR / "uploads" / relative_path
+                if file_path.exists():
+                    file_path.unlink()
+                    logger.info(f"Deleted design file: {file_path}")
             
             # Update project
             await db.projects.update_one(
                 {"id": project_id},
-                {"$pull": {"design_3d_files": {"filename": filename}}}
+                {"$pull": {"design_3d_files": {"filename": design.get("filename")}}}
             )
             
-            return {"message": "Design file deleted"}
+            return {"message": "Design verwijderd"}
     
-    raise HTTPException(status_code=404, detail="Design file not found")
+    raise HTTPException(status_code=404, detail="Design bestand niet gevonden")
 
 # ============= ADMIN MANAGEMENT ROUTES =============
 
