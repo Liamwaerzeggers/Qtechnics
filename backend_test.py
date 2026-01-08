@@ -2793,7 +2793,7 @@ TEST003,Test Boor,12.75,HSS boor 8mm,Gereedschap,TestBrand"""
             # Verify response structure
             upload_response = response.json()
             
-            required_fields = ['filename', 'original_filename', 'url', 'upload_date']
+            required_fields = ['filename', 'original_filename', 'url', 'uploaded_at']
             missing_fields = [field for field in required_fields if field not in upload_response]
             
             if missing_fields:
