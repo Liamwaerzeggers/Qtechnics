@@ -994,10 +994,10 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-xl font-bold" style={{color: '#1E3A8A'}}>
-                📸 Foto's Eerste Bezoek
+                📸 Foto&apos;s Eerste Bezoek
               </h3>
               <p className="text-sm" style={{color: '#64748B'}}>
-                {photos.length} foto{photos.length !== 1 ? "'s" : ''} in {getPhotosByRoom().filter(([,items]) => items.length > 0).length} map{getPhotosByRoom().filter(([,items]) => items.length > 0).length !== 1 ? 'pen' : ''}
+                {photos.length} foto{photos.length !== 1 ? "&apos;s" : ''} in {getPhotosByRoom().filter(([,items]) => items.length > 0).length} map{getPhotosByRoom().filter(([,items]) => items.length > 0).length !== 1 ? 'pen' : ''}
               </p>
             </div>
             <Button 
