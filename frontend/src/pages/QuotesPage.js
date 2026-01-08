@@ -275,6 +275,18 @@ export default function QuotesPage() {
                         onClick={() => navigate(`/quotes/${quote.id}`)}
                       >
                         <CardContent className="p-4">
+                          {/* Room badge if set */}
+                          {quote.room && (
+                            <div className="mb-2">
+                              <span className="text-xs px-2 py-1 rounded-full font-medium" style={{
+                                backgroundColor: '#FEF3C7',
+                                color: '#92400E'
+                              }}>
+                                🏠 {quote.room}
+                              </span>
+                            </div>
+                          )}
+                          
                           {/* Project name prominently */}
                           <div className="flex items-start gap-3">
                             <div className="p-2 rounded-lg" style={{backgroundColor: '#DBEAFE'}}>
@@ -282,7 +294,7 @@ export default function QuotesPage() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <h3 className="font-bold text-base truncate" style={{color: '#1E293B'}}>
-                                {group.projectName}
+                                {quote.room ? `${quote.room}` : group.projectName}
                               </h3>
                               <p className="text-sm" style={{color: '#64748B'}}>
                                 {quote.quote_number}
