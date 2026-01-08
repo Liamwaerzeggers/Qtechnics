@@ -3193,6 +3193,7 @@ def main():
         test_results.append(("Quote Generation from Measurements", tester.test_quote_generation_from_measurements()))
         test_results.append(("PDF Export Labor Items", tester.test_pdf_export_labor_items()))
         test_results.append(("AI Floor Plan Analysis", tester.test_ai_floor_plan_analysis()))
+        test_results.append(("Room-Based Image Gallery", tester.test_room_based_image_gallery()))
         
         # NEW TESTS FOR REVIEW REQUEST
         test_results.append(("Room Field on Quotes", tester.test_room_field_on_quotes()))
