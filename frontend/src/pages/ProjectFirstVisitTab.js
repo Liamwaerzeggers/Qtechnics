@@ -33,6 +33,13 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState(null);
+  
+  // Photo room folder state
+  const [expandedRooms, setExpandedRooms] = useState({ 'Algemeen': true });
+  const [selectedRoom, setSelectedRoom] = useState('Algemeen');
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [previewPhoto, setPreviewPhoto] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Measurements state
   const [workItems, setWorkItems] = useState([]);
