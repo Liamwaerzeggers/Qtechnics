@@ -1072,7 +1072,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                       <div className="text-center py-6 border-2 border-dashed rounded-lg" style={{borderColor: '#E5E7EB'}}>
                         <Camera size={32} className="mx-auto mb-2" style={{color: '#94A3B8'}} />
                         <p className="text-sm" style={{color: '#64748B'}}>
-                          Geen foto's in deze map
+                          Geen foto&apos;s in deze map
                         </p>
                         <Button
                           variant="outline"
