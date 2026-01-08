@@ -504,11 +504,12 @@ Q Technics`;
               <div className="flex items-center gap-2">
                 <Label>🏠 Kamer:</Label>
                 <Select 
-                  value={quote.room || ''} 
+                  value={quote.room || 'none'} 
                   onValueChange={async (value) => {
                     try {
-                      await axios.put(`${API}/quotes/${quoteId}`, { room: value || null }, { withCredentials: true });
-                      setQuote(prev => ({ ...prev, room: value || null }));
+                      const newRoom = value === 'none' ? null : value;
+                      await axios.put(`${API}/quotes/${quoteId}`, { room: newRoom }, { withCredentials: true });
+                      setQuote(prev => ({ ...prev, room: newRoom }));
                       toast.success('Kamer bijgewerkt');
                     } catch (error) {
                       toast.error('Kon kamer niet bijwerken');
@@ -519,7 +520,7 @@ Q Technics`;
                     <SelectValue placeholder="Selecteer kamer..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Geen kamer</SelectItem>
+                    <SelectItem value="none">Geen kamer</SelectItem>
                     <SelectItem value="Badkamer">Badkamer</SelectItem>
                     <SelectItem value="Keuken">Keuken</SelectItem>
                     <SelectItem value="Woonkamer">Woonkamer</SelectItem>
