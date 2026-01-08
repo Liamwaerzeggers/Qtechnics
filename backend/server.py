@@ -3844,8 +3844,13 @@ async def delete_first_visit_photo(
     photo_name: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Delete first visit photo"""
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    """Delete first visit photo (supports both old and new format)"""
+    # Allow any admin to delete photos for any project
+    if current_user.role == "admin":
+        project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    else:
+        project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
@@ -3856,10 +3861,22 @@ async def delete_first_visit_photo(
     if file_path.exists():
         file_path.unlink()
     
-    # Update project
+    # Update project - handle both old format (string) and new format (object)
+    existing_photos = project.get("first_visit_photos", [])
+    
+    # Filter out the photo (works for both formats)
+    updated_photos = []
+    for photo in existing_photos:
+        if isinstance(photo, str):
+            if photo != photo_url:
+                updated_photos.append(photo)
+        elif isinstance(photo, dict):
+            if photo.get("filename") != photo_name and photo.get("url") != photo_url:
+                updated_photos.append(photo)
+    
     await db.projects.update_one(
         {"id": project_id},
-        {"$pull": {"first_visit_photos": photo_url}}
+        {"$set": {"first_visit_photos": updated_photos}}
     )
     
     return {"message": "Photo deleted"}
