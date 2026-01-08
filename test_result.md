@@ -1,250 +1,38 @@
-backend:
-  - task: "POST /api/invoices/{invoice_id}/send-to-billit endpoint"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "Endpoint working correctly. Returns 401 with InvalidAccessToken error as expected due to invalid Billit API key. Transport type correctly set to 'Peppol' for B2B customers with VAT numbers."
+# Test Result Document
 
-  - task: "POST /api/invoices/{invoice_id}/retry-billit endpoint"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "Retry endpoint working correctly. Returns 401 with InvalidAccessToken error as expected. Only allows retry for failed/rejected invoices."
+## Testing Protocol
+- Testing backend and frontend changes for image gallery with room folders
 
-  - task: "GET /api/invoices/{invoice_id}/peppol-status endpoint"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "Status endpoint working correctly. Returns detailed status including peppol_status, transport_type, billit_order_id, error messages, and can_retry flag."
+## Current Test Focus
+Test de nieuwe room-based folder functionaliteit voor:
+1. 3D Ontwerpen tab - upload met room parameter
+2. Eerste Bezoek tab - upload met room parameter  
+3. UI moet folders per kamer tonen
 
-  - task: "POST /api/invoices/{invoice_id}/send-peppol legacy endpoint"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "Legacy endpoint working correctly. Redirects to send-to-billit endpoint and maintains same error handling."
+## Test Cases
 
-  - task: "Smart transport type selection (Peppol vs Email)"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "Transport type selection working correctly. B2B customers with VAT numbers get 'Peppol' transport type. Logic implemented in transform_invoice_to_billit function."
+### Backend Tests
+1. `POST /api/projects/{project_id}/designs?room=Badkamer` - upload design with room
+2. `POST /api/projects/{project_id}/first-visit/photos?room=Keuken` - upload photo with room
+3. Verify room field is stored and returned correctly
 
-  - task: "Error handling and status updates"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "Error handling working correctly. Invalid API key errors are caught and invoice status is updated to 'failed' with proper error messages. Can_retry flag is set correctly."
+### Frontend Tests
+1. Login as admin (user: test, password: test123)
+2. Navigate to projects
+3. Open a project and go to "3D Ontwerpen" tab
+4. Verify room folder UI is displayed
+5. Test upload with room selection
+6. Go to "Eerste Bezoek" tab
+7. Verify room folder UI is displayed
+8. Test photo upload with room selection
 
-  - task: "POST /api/projects/{project_id}/legacy-documents endpoint"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "Legacy document upload endpoint working correctly. Successfully uploads PDF files with document_type (offerte/factuur/anders), optional description and document_date. Validates file type and size (max 10MB). Returns document ID and metadata."
+## User Credentials
+- Username: test
+- Password: test123
+- Role: Admin
 
-  - task: "GET /api/projects/{project_id}/legacy-documents endpoint"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "Legacy documents listing endpoint working correctly. Returns all documents for a project sorted by upload date (newest first). Includes document metadata: id, document_type, original_filename, description, document_date, uploaded_at."
+## Known Issues
+- None currently
 
-  - task: "GET /api/legacy-documents/{document_id}/download endpoint"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "Legacy document download endpoint working correctly. Returns PDF file with proper Content-Type (application/pdf) and original filename. Validates document exists and file is available on server."
-
-  - task: "DELETE /api/legacy-documents/{document_id} endpoint"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "Legacy document deletion endpoint working correctly. Removes both database record and physical file. Only admins can delete documents. Document is properly removed from project listing after deletion."
-
-  - task: "GET /api/customer-portal/{access_token}/legacy-documents endpoint"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "Customer portal legacy documents listing working correctly. Validates access token and returns documents for the associated project. Returns limited metadata suitable for customer view (no internal IDs or admin info)."
-
-  - task: "GET /api/customer-portal/{access_token}/legacy-documents/{document_id}/download endpoint"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "Customer portal document download working correctly. Validates access token and ensures document belongs to the correct project. Returns PDF file with proper headers. Security validated - customers can only access documents from their own project."
-
-  - task: "Legacy Documents error handling and validation"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "Error handling working correctly. Invalid file types (non-PDF) are rejected with 400 status. Invalid document IDs return 404. File size validation (max 10MB) implemented. Admin-only restrictions enforced for upload/delete operations."
-
-  - task: "Room field on quotes - PUT /api/quotes/{quote_id} endpoint"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "Room field functionality working correctly. PUT /api/quotes/{quote_id} with room field updates successfully. GET /api/quotes/{quote_id} returns room field. GET /api/quotes returns room field in list. Room field can be updated to 'Badkamer', 'Keuken', set to null (removed), and restored. Fixed backend bug where null values were filtered out in update operations."
-
-  - task: "Room field on quotes - GET endpoints"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "Room field retrieval working correctly. GET /api/quotes/{quote_id} returns room field properly. GET /api/quotes returns room field in quotes list. Room field persists correctly in database and is returned in all API responses."
-
-  - task: "3D Design upload - POST /api/projects/{project_id}/designs endpoint"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "3D design upload working correctly. POST /api/projects/{project_id}/designs accepts multipart form uploads. File is saved to uploads/designs/{project_id}/ directory. Returns proper response with filename, original_filename, url, and uploaded_at fields. Project design_3d_files array is updated with new entry. File is accessible via returned URL."
-
-  - task: "3D Design upload - DELETE /api/projects/{project_id}/designs endpoint"
-    implemented: true
-    working: true
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: false
-    status_history:
-      - working: true
-        agent: "testing"
-        comment: "3D design deletion working correctly. DELETE /api/projects/{project_id}/designs?filename={filename} removes file from both filesystem and database. Project design_3d_files array is updated to remove deleted entry. File is properly cleaned up from server storage."
-
-frontend:
-  - task: "Invoice send buttons in ProjectCostsTab.js"
-    implemented: true
-    working: "NA"
-    file: "frontend/src/components/ProjectCostsTab.js"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: false
-    status_history:
-      - working: "NA"
-        agent: "testing"
-        comment: "Frontend testing not performed as per system limitations. Backend API endpoints are working correctly."
-
-metadata:
-  created_by: "testing_agent"
-  version: "1.0"
-  test_sequence: 1
-  run_ui: false
-
-test_plan:
-  current_focus:
-    - "POST /api/invoices/{invoice_id}/send-to-billit endpoint"
-    - "POST /api/invoices/{invoice_id}/retry-billit endpoint"
-    - "GET /api/invoices/{invoice_id}/peppol-status endpoint"
-    - "POST /api/invoices/{invoice_id}/send-peppol legacy endpoint"
-    - "Smart transport type selection (Peppol vs Email)"
-    - "Error handling and status updates"
-    - "POST /api/projects/{project_id}/legacy-documents endpoint"
-    - "GET /api/projects/{project_id}/legacy-documents endpoint"
-    - "GET /api/legacy-documents/{document_id}/download endpoint"
-    - "DELETE /api/legacy-documents/{document_id} endpoint"
-    - "GET /api/customer-portal/{access_token}/legacy-documents endpoint"
-    - "GET /api/customer-portal/{access_token}/legacy-documents/{document_id}/download endpoint"
-    - "Legacy Documents error handling and validation"
-  stuck_tasks: []
-  test_all: false
-  test_priority: "high_first"
-
-agent_communication:
-  - agent: "testing"
-    message: "Billit/PEPPOL integration testing completed successfully. All backend endpoints are working correctly. The integration properly handles the invalid API key scenario by returning 401 errors and updating invoice status to 'failed' with appropriate error messages. Transport type selection works correctly (Peppol for B2B, Email for B2C). The can_retry flag is properly set for failed invoices. Legacy endpoint redirects correctly. Known limitation: Billit sandbox API key is invalid, which is expected behavior."
-  - agent: "testing"
-    message: "COMPREHENSIVE BILLIT/PEPPOL INTEGRATION TEST COMPLETED: ✅ B2B Scenario (VAT customer → Peppol transport): WORKING - Lead LEAD-3469CEF1 successfully updated with VAT BE0891533928, invoice 9fab847c-3105-4b97-a265-763c27d3cf45 shows peppol_status='sent_peppol', transport_type='Peppol', billit_order_id='87568690'. ✅ B2C Scenario (no VAT → Email transport): WORKING - Lead VAT removed, invoice 0039a014-5ef3-49e8-a9ae-c1f904f47d6a shows peppol_status='sent_email', transport_type='Email', billit_order_id='87570092'. ✅ All API endpoints functional: GET /api/invoices/{id}/peppol-status returns detailed status, POST /api/invoices/{id}/retry-billit correctly rejects already-sent invoices, legacy send-peppol endpoint accessible. ✅ Smart transport selection verified: B2B customers with VAT get Peppol, B2C customers without VAT get Email. ✅ Expected Billit orders found: 87568690 (B2B/Peppol) and 87570092 (B2C/Email) as mentioned in review request. ✅ Status verification: can_retry=false for sent invoices, proper error handling for duplicate sends. Integration is fully functional with expected behavior for already-processed invoices."
-  - agent: "testing"
-    message: "NEW FEATURES TESTING COMPLETED SUCCESSFULLY: ✅ Room Field on Quotes: WORKING - PUT /api/quotes/{quote_id} with room field updates correctly to 'Badkamer', 'Keuken', and null (removal). GET /api/quotes/{quote_id} returns room field properly. GET /api/quotes includes room field in list. Fixed backend bug where null values were filtered out in update operations using exclude_unset=True instead of filtering None values. ✅ 3D Design Upload Fix: WORKING - POST /api/projects/{project_id}/designs accepts multipart uploads, saves files to uploads/designs/{project_id}/, returns proper response with filename, original_filename, url, uploaded_at. Project design_3d_files array updated correctly. DELETE /api/projects/{project_id}/designs?filename={filename} removes files from both filesystem and database. File accessibility verified via returned URLs. All functionality tested with project PROJ-4AD01A31 and quote OFF-2026-1742BF-ARB as specified in review request."
+## Incorporate User Feedback
+- None
