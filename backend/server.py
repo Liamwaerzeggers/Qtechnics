@@ -3914,6 +3914,62 @@ async def update_first_visit_notes(
     return {"message": "Notes updated"}
 
 @api_router.post("/projects/{project_id}/designs")
+async def upload_3d_design(project_id: str, file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    """Upload een 3D design bestand (foto/render) voor een project"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen designs uploaden")
+    
+    # Verify project exists
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    # Validate file type
+    allowed_types = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.skp', '.obj', '.fbx', '.3ds']
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in allowed_types:
+        raise HTTPException(status_code=400, detail=f"Bestandstype niet toegestaan. Toegestaan: {', '.join(allowed_types)}")
+    
+    # Check file size (max 50MB for design files)
+    contents = await file.read()
+    if len(contents) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Bestand is te groot (max 50MB)")
+    
+    # Create designs directory
+    designs_dir = ROOT_DIR / "uploads" / "designs" / project_id
+    designs_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Generate unique filename
+    unique_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename.replace(' ', '_')}"
+    file_path = designs_dir / unique_filename
+    
+    # Save file
+    with open(file_path, "wb") as f:
+        f.write(contents)
+    
+    # Create design record
+    file_url = f"/api/static/designs/{project_id}/{unique_filename}"
+    design_record = {
+        "filename": unique_filename,
+        "original_filename": file.filename,
+        "url": file_url,
+        "size": len(contents),
+        "type": ext,
+        "uploaded_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Update project with new design file
+    existing_designs = project.get("design_3d_files", [])
+    existing_designs.append(design_record)
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"design_3d_files": existing_designs}}
+    )
+    
+    logger.info(f"3D design uploaded for project {project_id}: {unique_filename}")
+    
+    return design_record
 
 
 # ===== PROJECT MEASUREMENTS ENDPOINTS =====
