@@ -12,7 +12,7 @@ import json
 from datetime import datetime
 
 class PeppolBugTester:
-    def __init__(self, base_url="https://craftplan-app.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://projectix-gallery.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.session_token = None
         

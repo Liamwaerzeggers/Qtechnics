@@ -57,7 +57,7 @@ def create_test_worker():
 
 def test_worker_login_and_projects(email, password):
     """Test worker login and project access"""
-    base_url = "https://craftplan-app.preview.emergentagent.com/api"
+    base_url = "https://projectix-gallery.preview.emergentagent.com/api"
     
     # Test login
     print(f"🔍 Testing login for {email}...")
