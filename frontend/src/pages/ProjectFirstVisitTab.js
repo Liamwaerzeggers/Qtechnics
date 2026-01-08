@@ -932,7 +932,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
           <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold" style={{color: '#1E3A8A'}}>
-                📸 Foto's Uploaden
+                📸 Foto&apos;s Uploaden
               </h3>
               <button onClick={() => setShowUploadModal(false)} className="p-1 hover:bg-gray-100 rounded">
                 <X size={20} />
