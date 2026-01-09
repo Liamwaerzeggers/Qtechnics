@@ -472,7 +472,7 @@ export default function ProjectDetailPage() {
                               <p className="font-medium text-sm" style={{color: '#1E293B'}}>
                                 {doc.original_filename}
                               </p>
-                              <div className="flex items-center gap-2 mt-0.5">
+                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                 <span className="text-xs px-2 py-0.5 rounded-full" style={{
                                   backgroundColor: doc.document_type === 'offerte' ? '#DBEAFE' :
                                                   doc.document_type === 'factuur' ? '#D1FAE5' : '#F3E8FF',
@@ -482,6 +482,14 @@ export default function ProjectDetailPage() {
                                   {doc.document_type === 'offerte' ? 'Offerte' : 
                                    doc.document_type === 'factuur' ? 'Factuur' : 'Anders'}
                                 </span>
+                                {doc.total_price && (
+                                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{
+                                    backgroundColor: '#FEF3C7',
+                                    color: '#92400E'
+                                  }}>
+                                    €{doc.total_price.toFixed(2)}
+                                  </span>
+                                )}
                                 {doc.document_date && (
                                   <span className="text-xs" style={{color: '#94A3B8'}}>
                                     {doc.document_date}
@@ -496,6 +504,16 @@ export default function ProjectDetailPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
+                            {/* Zichtbaarheid toggle */}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleToggleDocumentVisibility(doc)}
+                              title={doc.visible_to_customer ? 'Verbergen voor klant' : 'Zichtbaar maken voor klant'}
+                              style={{color: doc.visible_to_customer ? '#10B981' : '#94A3B8'}}
+                            >
+                              {doc.visible_to_customer ? <Eye size={16} /> : <EyeOff size={16} />}
+                            </Button>
                             <Button
                               size="sm"
                               variant="ghost"
