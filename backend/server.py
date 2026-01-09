@@ -2292,10 +2292,10 @@ async def get_customer_legacy_documents(access_token: str):
     if not project:
         raise HTTPException(status_code=404, detail="Ongeldige toegangslink")
     
-    # Get documents for this project
+    # Get only visible documents for this project
     documents = await db.legacy_documents.find(
-        {"project_id": project["id"]},
-        {"_id": 0, "id": 1, "document_type": 1, "original_filename": 1, "document_date": 1, "description": 1, "uploaded_at": 1}
+        {"project_id": project["id"], "visible_to_customer": True},
+        {"_id": 0, "id": 1, "document_type": 1, "original_filename": 1, "document_date": 1, "description": 1, "total_price": 1, "uploaded_at": 1}
     ).sort("uploaded_at", -1).to_list(1000)
     
     return documents
@@ -2308,8 +2308,12 @@ async def download_customer_legacy_document(access_token: str, document_id: str)
     if not project:
         raise HTTPException(status_code=404, detail="Ongeldige toegangslink")
     
-    # Get document and verify it belongs to this project
-    doc = await db.legacy_documents.find_one({"id": document_id, "project_id": project["id"]})
+    # Get document and verify it belongs to this project AND is visible
+    doc = await db.legacy_documents.find_one({
+        "id": document_id, 
+        "project_id": project["id"],
+        "visible_to_customer": True
+    })
     if not doc:
         raise HTTPException(status_code=404, detail="Document niet gevonden")
     
