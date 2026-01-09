@@ -2113,6 +2113,7 @@ async def upload_legacy_document(
     file: UploadFile = File(...),
     document_date: Optional[str] = None,
     description: Optional[str] = None,
+    total_price: Optional[float] = None,
     current_user: User = Depends(get_current_user)
 ):
     """Upload een oud document (PDF) uit het vorige systeem"""
@@ -2151,6 +2152,8 @@ async def upload_legacy_document(
         "original_filename": file.filename,
         "document_date": document_date,
         "description": description,
+        "total_price": total_price,
+        "visible_to_customer": False,
         "file_size": len(contents),
         "uploaded_at": datetime.now(timezone.utc).isoformat(),
         "uploaded_by": current_user.id or current_user.username
@@ -2158,6 +2161,19 @@ async def upload_legacy_document(
     
     # Store in database
     await db.legacy_documents.insert_one(doc_record)
+    
+    # Update project sales_price if this is an approved quote with total_price
+    if document_type == "offerte" and total_price and total_price > 0:
+        current_sales = project.get("sales_price", 0) or 0
+        new_sales = current_sales + total_price
+        total_costs = project.get("total_costs", 0) or 0
+        new_profit = new_sales - total_costs
+        
+        await db.projects.update_one(
+            {"id": project_id},
+            {"$set": {"sales_price": new_sales, "profit": new_profit}}
+        )
+        logger.info(f"Updated project {project_id} sales_price with legacy document: +{total_price}")
     
     return {
         "success": True,
