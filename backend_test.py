@@ -3522,6 +3522,7 @@ def main():
         test_results.append(("Room-Based Image Gallery", tester.test_room_based_image_gallery()))
         
         # NEW TESTS FOR REVIEW REQUEST
+        test_results.append(("Nieuwe Offerte Features", tester.test_nieuwe_offerte_features()))
         test_results.append(("Room Field on Quotes", tester.test_room_field_on_quotes()))
         test_results.append(("3D Design Upload Fix", tester.test_3d_design_upload_fix()))
         
