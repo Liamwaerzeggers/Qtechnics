@@ -1,38 +1,42 @@
 # Test Result Document
 
 ## Testing Protocol
-- Testing backend and frontend changes for image gallery with room folders
+Testing nieuwe features voor offertes:
+1. Auto-add materialen/arbeid naar catalogus
+2. Optionele foto upload bij materialen
+3. Inline bewerking van prijs en hoeveelheid
 
 ## Current Test Focus
-Test de nieuwe room-based folder functionaliteit voor:
-1. 3D Ontwerpen tab - upload met room parameter
-2. Eerste Bezoek tab - upload met room parameter  
-3. UI moet folders per kamer tonen
 
-## Test Cases
+### Feature 1: Auto-add naar catalogus
+- Bij toevoegen van nieuw custom materiaal aan offerte -> automatisch toegevoegd aan materialen catalogus
+- Bij toevoegen van nieuw custom werk item aan offerte -> automatisch toegevoegd aan werk items catalogus
 
-### Backend Tests
-1. `POST /api/projects/{project_id}/designs?room=Badkamer` - upload design with room
-2. `POST /api/projects/{project_id}/first-visit/photos?room=Keuken` - upload photo with room
-3. Verify room field is stored and returned correctly
+### Feature 2: Foto upload bij materiaal
+- Custom materiaal toevoegen met optionele foto
+- Foto wordt opgeslagen bij materiaal in catalogus
+- API endpoint: POST /api/materials/create-with-image (multipart form)
 
-### Frontend Tests
-1. Login as admin (user: test, password: test123)
-2. Navigate to projects
-3. Open a project and go to "3D Ontwerpen" tab
-4. Verify room folder UI is displayed
-5. Test upload with room selection
-6. Go to "Eerste Bezoek" tab
-7. Verify room folder UI is displayed
-8. Test photo upload with room selection
+### Feature 3: Inline bewerking prijzen
+- Prijs en hoeveelheid bewerkbaar in offerte line items
+- Klik op edit icon -> inline editing mode
+- Opslaan of annuleren
+
+### Feature 4: Visuele materiaallijst in PDF
+- Bij PDF export: extra pagina's met foto's en namen van materialen
+- Alleen materialen met afbeeldingen worden getoond
+
+## Test Endpoints
+- POST /api/materials/auto-add?name=X&price=Y&unit=Z
+- POST /api/materials/create-with-image (FormData: name, price, unit, file)
+- PUT /api/quotes/{quote_id}/items/{item_id} (JSON: quantity, unit_price)
 
 ## User Credentials
 - Username: test
 - Password: test123
 - Role: Admin
 
-## Known Issues
-- None currently
-
 ## Incorporate User Feedback
-- None
+- Gebruiker wil prijs EN hoeveelheid kunnen aanpassen na toevoegen
+- Gebruiker wil materialen automatisch toevoegen aan catalogus
+- Gebruiker wil foto's bij materialen kunnen uploaden (1x doen, dan automatisch beschikbaar)
