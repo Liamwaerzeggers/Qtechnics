@@ -151,8 +151,47 @@ export default function ProjectDetailPage() {
       await axios.delete(`${API}/legacy-documents/${docId}`, { withCredentials: true });
       toast.success('Document verwijderd');
       setLegacyDocuments(prev => prev.filter(d => d.id !== docId));
+      fetchProjectData(); // Refresh project to update sales_price
     } catch (error) {
       toast.error('Kon document niet verwijderen');
+    }
+  };
+
+  const handleToggleDocumentVisibility = async (doc) => {
+    try {
+      const newVisibility = !doc.visible_to_customer;
+      await axios.put(
+        `${API}/legacy-documents/${doc.id}`,
+        { visible_to_customer: newVisibility },
+        { withCredentials: true }
+      );
+      
+      setLegacyDocuments(prev => prev.map(d => 
+        d.id === doc.id ? { ...d, visible_to_customer: newVisibility } : d
+      ));
+      
+      toast.success(newVisibility ? 'Document zichtbaar voor klant 👁️' : 'Document verborgen voor klant');
+    } catch (error) {
+      toast.error('Kon zichtbaarheid niet wijzigen');
+    }
+  };
+
+  const handleUpdateDocumentPrice = async (doc, newPrice) => {
+    try {
+      await axios.put(
+        `${API}/legacy-documents/${doc.id}`,
+        { total_price: parseFloat(newPrice) || null },
+        { withCredentials: true }
+      );
+      
+      setLegacyDocuments(prev => prev.map(d => 
+        d.id === doc.id ? { ...d, total_price: parseFloat(newPrice) || null } : d
+      ));
+      
+      fetchProjectData(); // Refresh project to update sales_price
+      toast.success('Prijs bijgewerkt');
+    } catch (error) {
+      toast.error('Kon prijs niet bijwerken');
     }
   };
 
