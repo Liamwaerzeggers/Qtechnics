@@ -2236,6 +2236,51 @@ async def delete_legacy_document(document_id: str, current_user: User = Depends(
     
     return {"success": True, "message": "Document verwijderd"}
 
+
+@api_router.put("/legacy-documents/{document_id}")
+async def update_legacy_document(
+    document_id: str,
+    update_data: LegacyDocumentUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Update een legacy document (bijv. zichtbaarheid of totaalprijs)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen documenten bewerken")
+    
+    # Get existing document
+    doc = await db.legacy_documents.find_one({"id": document_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document niet gevonden")
+    
+    # Build update dict
+    updates = {k: v for k, v in update_data.model_dump(exclude_unset=True).items() if v is not None}
+    
+    if updates:
+        # Check if total_price changed and update project sales_price accordingly
+        if "total_price" in updates and doc.get("document_type") == "offerte":
+            old_price = doc.get("total_price", 0) or 0
+            new_price = updates["total_price"] or 0
+            price_diff = new_price - old_price
+            
+            if price_diff != 0:
+                project = await db.projects.find_one({"id": doc["project_id"]})
+                if project:
+                    current_sales = project.get("sales_price", 0) or 0
+                    new_sales = current_sales + price_diff
+                    total_costs = project.get("total_costs", 0) or 0
+                    new_profit = new_sales - total_costs
+                    
+                    await db.projects.update_one(
+                        {"id": doc["project_id"]},
+                        {"$set": {"sales_price": new_sales, "profit": new_profit}}
+                    )
+        
+        await db.legacy_documents.update_one({"id": document_id}, {"$set": updates})
+    
+    # Return updated document
+    updated_doc = await db.legacy_documents.find_one({"id": document_id}, {"_id": 0})
+    return updated_doc
+
 @api_router.get("/customer-portal/{access_token}/legacy-documents")
 async def get_customer_legacy_documents(access_token: str):
     """Haal legacy documenten op voor het klantenportaal"""
