@@ -31,7 +31,8 @@ export default function ProjectDetailPage() {
   const [newDocData, setNewDocData] = useState({
     document_type: 'offerte',
     document_date: '',
-    description: ''
+    description: '',
+    total_price: ''
   });
 
   useEffect(() => {
