@@ -1545,6 +1545,332 @@ TEST003,Test Boor,12.75,HSS boor 8mm,Gereedschap,TestBrand"""
             print(f"❌ PDF export error: {str(e)}")
             return False
 
+    def test_nieuwe_offerte_features(self):
+        """Test nieuwe offerte functionaliteiten: auto-add, image upload, inline edit, PDF generation"""
+        print("\n🆕 Testing Nieuwe Offerte Features...")
+        
+        # Step 1: Login as admin using the specific credentials
+        print("🔐 Testing admin login with test/test123...")
+        
+        # Test admin login endpoint
+        login_url = f"{self.base_url}/auth/admin/login?username=test&password=test123"
+        
+        try:
+            response = requests.post(login_url)
+            
+            if response.status_code != 200:
+                print(f"❌ Admin login failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+                return False
+            
+            # Extract session token from response
+            login_data = response.json()
+            admin_session_token = None
+            
+            # Check if session token is in response body
+            if 'session_token' in login_data:
+                admin_session_token = login_data['session_token']
+            
+            # Also check cookies
+            if not admin_session_token and 'session_token' in response.cookies:
+                admin_session_token = response.cookies['session_token']
+            
+            if not admin_session_token:
+                print("❌ No session token received from admin login")
+                return False
+                
+            print(f"✅ Admin login successful - Token: {admin_session_token[:10]}...")
+            
+            # Update session token for subsequent requests
+            self.session_token = admin_session_token
+            
+        except Exception as e:
+            print(f"❌ Admin login error: {str(e)}")
+            return False
+        
+        # Step 2: Test Auto-add Material API
+        print("\n🔧 Testing Auto-add Material API...")
+        
+        material_name = "Nieuw Test Materiaal"
+        material_price = 99.99
+        material_unit = "stuk"
+        
+        auto_add_url = f"{self.base_url}/materials/auto-add?name={material_name}&price={material_price}&unit={material_unit}"
+        headers = {'Authorization': f'Bearer {self.session_token}'}
+        
+        try:
+            response = requests.post(auto_add_url, headers=headers)
+            
+            print(f"   Status Code: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                material = result.get('material', {})
+                created = result.get('created', False)
+                
+                print(f"   ✅ Auto-add successful!")
+                print(f"   ✅ Created: {created}")
+                print(f"   ✅ Material Name: {material.get('name')}")
+                print(f"   ✅ Material Price: €{material.get('price', 0):.2f}")
+                print(f"   ✅ Material SKU: {material.get('sku')}")
+                
+                # Verify required fields
+                if material.get('name') == material_name and material.get('price') == material_price:
+                    print("   ✅ Material data verified")
+                else:
+                    print("   ❌ Material data mismatch")
+                    return False
+                    
+            else:
+                print(f"   ❌ Auto-add failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Auto-add error: {str(e)}")
+            return False
+        
+        # Step 3: Test Create Material with Image API
+        print("\n📷 Testing Create Material with Image API...")
+        
+        # Create a test image
+        import tempfile
+        import io
+        
+        try:
+            # Create a simple test image
+            from PIL import Image
+            
+            img = Image.new('RGB', (100, 100), color='blue')
+            img_bytes = io.BytesIO()
+            img.save(img_bytes, format='PNG')
+            img_bytes.seek(0)
+            
+            print("   ✅ Test image created")
+            
+        except ImportError:
+            # Fallback: create a minimal PNG file manually
+            print("   ⚠️ PIL not available, creating minimal test image...")
+            
+            # Minimal PNG file (1x1 pixel blue PNG)
+            png_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\tpHYs\x00\x00\x0b\x13\x00\x00\x0b\x13\x01\x00\x9a\x9c\x18\x00\x00\x00\nIDATx\x9cc```\x00\x00\x00\x04\x00\x01\xdd\x8d\xb4\x1c\x00\x00\x00\x00IEND\xaeB`\x82'
+            img_bytes = io.BytesIO(png_data)
+            
+            print("   ✅ Minimal test image created")
+        
+        # Test multipart upload
+        url = f"{self.base_url}/materials/create-with-image"
+        headers = {'Authorization': f'Bearer {self.session_token}'}
+        
+        form_data = {
+            'name': 'Materiaal Met Foto',
+            'price': '150.00',
+            'unit': 'stuk'
+        }
+        
+        files = {
+            'file': ('test_material.png', img_bytes, 'image/png')
+        }
+        
+        try:
+            response = requests.post(url, data=form_data, files=files, headers=headers)
+            
+            print(f"   Status Code: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                material = result.get('material', {})
+                created = result.get('created', False)
+                
+                print(f"   ✅ Material with image created!")
+                print(f"   ✅ Created: {created}")
+                print(f"   ✅ Material Name: {material.get('name')}")
+                print(f"   ✅ Material Price: €{material.get('price', 0):.2f}")
+                print(f"   ✅ Image URL: {material.get('image_url', 'None')}")
+                
+                # Verify image_url field exists
+                if material.get('image_url'):
+                    print("   ✅ Image URL field verified")
+                else:
+                    print("   ❌ Image URL field missing")
+                    return False
+                    
+            else:
+                print(f"   ❌ Material with image creation failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Material with image error: {str(e)}")
+            return False
+        
+        # Step 4: Test Update Line Item API (prijs en hoeveelheid)
+        print("\n✏️ Testing Update Line Item API...")
+        
+        # First, get quotes
+        success, quotes_response = self.run_test(
+            "Get Quotes",
+            "GET",
+            "quotes",
+            200
+        )
+        
+        if not success or not quotes_response:
+            print("   ❌ No quotes available for line item testing")
+            return False
+        
+        quotes = quotes_response if isinstance(quotes_response, list) else []
+        if not quotes:
+            print("   ❌ No quotes found")
+            return False
+        
+        quote_id = quotes[0].get('id')
+        print(f"   Using quote: {quote_id}")
+        
+        # Get line items for the quote
+        success, items_response = self.run_test(
+            "Get Quote Line Items",
+            "GET",
+            f"quotes/{quote_id}/items",
+            200
+        )
+        
+        if not success:
+            print("   ❌ Failed to get line items")
+            return False
+        
+        items = items_response if isinstance(items_response, list) else []
+        if not items:
+            print("   ❌ No line items found")
+            return False
+        
+        item_id = items[0].get('id')
+        original_quantity = items[0].get('quantity', 0)
+        original_price = items[0].get('unit_price', 0)
+        
+        print(f"   Testing item: {items[0].get('description', 'Unknown')}")
+        print(f"   Original quantity: {original_quantity}")
+        print(f"   Original price: €{original_price:.2f}")
+        
+        # Update quantity and unit_price
+        new_quantity = 25.0
+        new_unit_price = 45.00
+        
+        update_data = {
+            "quantity": new_quantity,
+            "unit_price": new_unit_price
+        }
+        
+        success, update_response = self.run_test(
+            "Update Line Item",
+            "PUT",
+            f"quotes/{quote_id}/items/{item_id}",
+            200,
+            data=update_data
+        )
+        
+        if success:
+            updated_quantity = update_response.get('quantity', 0)
+            updated_price = update_response.get('unit_price', 0)
+            updated_total = update_response.get('total_excl_vat', 0)
+            
+            print(f"   ✅ Line item updated!")
+            print(f"   ✅ New quantity: {updated_quantity}")
+            print(f"   ✅ New price: €{updated_price:.2f}")
+            print(f"   ✅ New total: €{updated_total:.2f}")
+            
+            # Verify calculations
+            expected_total = new_quantity * new_unit_price
+            if abs(updated_total - expected_total) < 0.01:
+                print("   ✅ Total calculation verified")
+            else:
+                print(f"   ❌ Total calculation error - Expected: €{expected_total:.2f}, Got: €{updated_total:.2f}")
+                return False
+        else:
+            print("   ❌ Line item update failed")
+            return False
+        
+        # Step 5: Test PDF Generation with Visual Material List
+        print("\n📄 Testing PDF Generation with Visual Material List...")
+        
+        # Find a quote with materials that have images
+        target_quote_id = None
+        for quote in quotes:
+            quote_id = quote.get('id')
+            
+            # Get line items
+            success, items_response = self.run_test(
+                f"Check Items for Quote {quote_id}",
+                "GET",
+                f"quotes/{quote_id}/items",
+                200
+            )
+            
+            if success:
+                items = items_response if isinstance(items_response, list) else []
+                material_items = [item for item in items if item.get('item_type') == 'materiaal']
+                
+                if material_items:
+                    target_quote_id = quote_id
+                    print(f"   Found quote with {len(material_items)} material items: {quote_id}")
+                    break
+        
+        if not target_quote_id:
+            print("   ⚠️ No quotes with material items found, using first quote")
+            target_quote_id = quotes[0].get('id')
+        
+        # Test PDF download
+        url = f"{self.base_url}/quotes/{target_quote_id}/export/pdf"
+        headers = {'Authorization': f'Bearer {self.session_token}'}
+        
+        try:
+            response = requests.get(url, headers=headers)
+            
+            print(f"   Status Code: {response.status_code}")
+            print(f"   Content-Type: {response.headers.get('content-type', 'Not set')}")
+            print(f"   Content Length: {len(response.content)} bytes")
+            
+            if response.status_code == 200:
+                # Verify it's a valid PDF
+                if response.content.startswith(b'%PDF'):
+                    print("   ✅ PDF generation successful!")
+                    print(f"   ✅ PDF size: {len(response.content)} bytes")
+                    
+                    # Check if PDF is larger (indicating visual material list)
+                    if len(response.content) > 50000:  # Assume larger PDF has images
+                        print("   ✅ PDF appears to contain visual material list (large file size)")
+                    else:
+                        print("   ⚠️ PDF may not contain visual material list (small file size)")
+                    
+                    return True
+                else:
+                    print("   ❌ Response is not a valid PDF")
+                    return False
+            else:
+                print(f"   ❌ PDF generation failed - Status: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Response: {response.text[:200]}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ PDF generation error: {str(e)}")
+            return False
+
     def test_ai_floor_plan_analysis(self):
         """Test AI Floor Plan Analysis feature - specifically the ImageContent fix"""
         print("\n🏗️ Testing AI Floor Plan Analysis Feature...")
