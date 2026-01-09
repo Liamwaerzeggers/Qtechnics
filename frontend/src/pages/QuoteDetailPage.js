@@ -36,6 +36,10 @@ export default function QuoteDetailPage() {
   const [showMaterialDropdown, setShowMaterialDropdown] = useState(false);
   const [useCustomMaterial, setUseCustomMaterial] = useState(false);
   
+  // Material image upload state
+  const [materialImage, setMaterialImage] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  
   // Work items state
   const [workItems, setWorkItems] = useState([]);
   const [workItemSearch, setWorkItemSearch] = useState('');
