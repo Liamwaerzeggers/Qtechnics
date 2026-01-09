@@ -322,6 +322,8 @@ class LegacyDocument(BaseModel):
     original_filename: str
     document_date: Optional[str] = None  # Datum van het originele document
     description: Optional[str] = None
+    total_price: Optional[float] = None  # Totaalprijs van het document (incl BTW)
+    visible_to_customer: bool = False  # Zichtbaar in klantenportaal
     file_size: int = 0
     uploaded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     uploaded_by: str = ""
@@ -330,6 +332,14 @@ class LegacyDocumentCreate(BaseModel):
     document_type: str  # "offerte", "factuur", "anders"
     document_date: Optional[str] = None
     description: Optional[str] = None
+    total_price: Optional[float] = None  # Totaalprijs voor financieel overzicht
+
+class LegacyDocumentUpdate(BaseModel):
+    document_type: Optional[str] = None
+    document_date: Optional[str] = None
+    description: Optional[str] = None
+    total_price: Optional[float] = None
+    visible_to_customer: Optional[bool] = None
 
 # Calendar Models
 class CalendarEvent(BaseModel):
