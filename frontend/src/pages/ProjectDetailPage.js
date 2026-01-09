@@ -559,6 +559,24 @@ export default function ProjectDetailPage() {
                         
                         <div>
                           <label className="block text-sm font-medium mb-1" style={{color: '#374151'}}>
+                            Totaalprijs incl. BTW (optioneel)
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={newDocData.total_price}
+                            onChange={(e) => setNewDocData({...newDocData, total_price: e.target.value})}
+                            placeholder="Bijv. 5500.00"
+                            className="w-full px-3 py-2 border rounded-lg"
+                            style={{borderColor: '#E5E7EB'}}
+                          />
+                          <p className="text-xs mt-1" style={{color: '#64748B'}}>
+                            💡 Bij offertes wordt dit bedrag opgeteld bij de verkoopprijs in Financieel
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-1" style={{color: '#374151'}}>
                             Beschrijving (optioneel)
                           </label>
                           <input
