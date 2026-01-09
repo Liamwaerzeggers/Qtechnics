@@ -728,8 +728,11 @@ async def delete_lead(lead_id: str, current_user: User = Depends(get_current_use
 @api_router.post("/quotes", response_model=Quote)
 async def create_quote(quote_create: QuoteCreate, current_user: User = Depends(get_current_user)):
     """Create a new quote from a lead"""
-    # Verify lead exists
-    lead = await db.leads.find_one({"id": quote_create.lead_id, "user_id": current_user.id})
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can create quotes")
+    
+    # All admins can create quotes for any lead
+    lead = await db.leads.find_one({"id": quote_create.lead_id})
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     
