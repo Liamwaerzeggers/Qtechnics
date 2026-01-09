@@ -956,6 +956,70 @@ Q Technics`;
                         </p>
                       </div>
                     )}
+                    
+                    {/* Image upload for custom materials */}
+                    {useCustomMaterial && formData.item_type === 'materiaal' && (
+                      <div>
+                        <Label>Eenheid</Label>
+                        <select
+                          value={formData.unit}
+                          onChange={(e) => setFormData({...formData, unit: e.target.value})}
+                          className="w-full h-10 px-3 border rounded-md text-sm mb-3"
+                          style={{borderColor: '#E2E8F0'}}
+                        >
+                          <option value="stuk">stuk</option>
+                          <option value="m²">m² (vierkante meter)</option>
+                          <option value="m">m (lopende meter)</option>
+                          <option value="doos">doos</option>
+                          <option value="rol">rol</option>
+                          <option value="kg">kg</option>
+                          <option value="liter">liter</option>
+                        </select>
+                        
+                        <Label>Productfoto (optioneel)</Label>
+                        <div className="mt-1">
+                          {materialImage ? (
+                            <div className="relative">
+                              <div className="border rounded-lg p-2 flex items-center gap-3" style={{borderColor: '#E2E8F0'}}>
+                                <ImageIcon size={20} style={{color: '#10B981'}} />
+                                <span className="text-sm flex-1 truncate">{materialImage.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setMaterialImage(null)}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <X size={16} />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <label className="cursor-pointer">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => setMaterialImage(e.target.files[0])}
+                                className="hidden"
+                              />
+                              <div 
+                                className="border-2 border-dashed rounded-lg p-4 text-center hover:bg-gray-50 transition-colors"
+                                style={{borderColor: '#E2E8F0'}}
+                              >
+                                <Upload size={24} className="mx-auto mb-2" style={{color: '#94A3B8'}} />
+                                <p className="text-sm" style={{color: '#64748B'}}>
+                                  Klik om een foto te uploaden
+                                </p>
+                                <p className="text-xs mt-1" style={{color: '#94A3B8'}}>
+                                  JPG, PNG of WebP
+                                </p>
+                              </div>
+                            </label>
+                          )}
+                        </div>
+                        <p className="text-xs mt-2" style={{color: '#64748B'}}>
+                          📷 De foto wordt opgeslagen bij het materiaal in je catalogus en verschijnt in de visuele materiaallijst van de offerte PDF.
+                        </p>
+                      </div>
+                    )}
 
                     <div>
                       <Label>Aantal</Label>
