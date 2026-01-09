@@ -1306,6 +1306,106 @@ async def get_materials(skip: int = 0, limit: int = 100, current_user: User = De
     
     return {"materials": materials, "total": total}
 
+
+@api_router.post("/materials/auto-add")
+async def auto_add_material(
+    name: str,
+    price: float,
+    unit: str = "stuk",
+    current_user: User = Depends(get_current_user)
+):
+    """Auto-add a material to catalog if it doesn't exist, or return existing one"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can add materials")
+    
+    # Check if material with same name already exists
+    existing = await db.materials.find_one({"name": {"$regex": f"^{name}$", "$options": "i"}})
+    if existing:
+        return {"material": existing, "created": False}
+    
+    # Create new material
+    material = Material(
+        name=name,
+        sku=f"MAT-{uuid.uuid4().hex[:6].upper()}",
+        price=price,
+        unit=unit,
+        user_id=current_user.id
+    )
+    
+    await db.materials.insert_one(material.model_dump())
+    
+    return {"material": material.model_dump(), "created": True}
+
+
+@api_router.post("/materials/create-with-image")
+async def create_material_with_image(
+    name: str = Form(...),
+    price: float = Form(...),
+    unit: str = Form("stuk"),
+    file: Optional[UploadFile] = File(None),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new material with optional image upload"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can add materials")
+    
+    # Check if material with same name already exists
+    existing = await db.materials.find_one({"name": {"$regex": f"^{name}$", "$options": "i"}})
+    if existing:
+        # If existing material and new image provided, update the image
+        if file and file.filename:
+            materials_dir = ROOT_DIR / "uploads" / "materials"
+            materials_dir.mkdir(parents=True, exist_ok=True)
+            
+            unique_filename = f"{existing['id']}_{uuid.uuid4().hex[:8]}_{file.filename}"
+            file_path = materials_dir / unique_filename
+            
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            
+            image_url = f"/api/static/materials/{unique_filename}"
+            await db.materials.update_one(
+                {"id": existing['id']},
+                {"$set": {"image_url": image_url}}
+            )
+            existing['image_url'] = image_url
+        
+        return {"material": existing, "created": False}
+    
+    # Create new material
+    material_id = str(uuid.uuid4())
+    image_url = None
+    
+    # Handle image upload if provided
+    if file and file.filename:
+        if not file.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="Alleen afbeeldingen zijn toegestaan")
+        
+        materials_dir = ROOT_DIR / "uploads" / "materials"
+        materials_dir.mkdir(parents=True, exist_ok=True)
+        
+        unique_filename = f"{material_id}_{uuid.uuid4().hex[:8]}_{file.filename}"
+        file_path = materials_dir / unique_filename
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        image_url = f"/api/static/materials/{unique_filename}"
+    
+    material = Material(
+        id=material_id,
+        name=name,
+        sku=f"MAT-{uuid.uuid4().hex[:6].upper()}",
+        price=price,
+        unit=unit,
+        image_url=image_url,
+        user_id=current_user.id
+    )
+    
+    await db.materials.insert_one(material.model_dump())
+    
+    return {"material": material.model_dump(), "created": True}
+
 # ===== WORK ITEMS ENDPOINTS =====
 @api_router.post("/work-items/upload")
 async def upload_work_items_csv(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
