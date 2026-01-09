@@ -95,7 +95,8 @@ export default function ProjectDetailPage() {
       const params = new URLSearchParams({
         document_type: newDocData.document_type,
         ...(newDocData.document_date && { document_date: newDocData.document_date }),
-        ...(newDocData.description && { description: newDocData.description })
+        ...(newDocData.description && { description: newDocData.description }),
+        ...(newDocData.total_price && { total_price: parseFloat(newDocData.total_price) })
       });
       
       await axios.post(
@@ -109,12 +110,13 @@ export default function ProjectDetailPage() {
       
       toast.success('Document succesvol geüpload! 📄');
       setShowUploadModal(false);
-      setNewDocData({ document_type: 'offerte', document_date: '', description: '' });
+      setNewDocData({ document_type: 'offerte', document_date: '', description: '', total_price: '' });
       if (fileInputRef.current) fileInputRef.current.value = '';
       
-      // Refresh documents
+      // Refresh documents and project data (for updated sales_price)
       const legacyRes = await axios.get(`${API}/projects/${projectId}/legacy-documents`, { withCredentials: true });
       setLegacyDocuments(legacyRes.data || []);
+      fetchProjectData(); // Refresh project to get updated sales_price
     } catch (error) {
       console.error('Upload failed:', error);
       toast.error(error.response?.data?.detail || 'Upload mislukt');
