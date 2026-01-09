@@ -2445,19 +2445,28 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
     story.append(Paragraph(f"<b>Totaal incl. BTW:</b> €{total_incl:.2f}", title_style))
     
     # === VISUELE MATERIAALLIJST ===
-    # Get unique material names from line items and look up their images
-    material_names = set()
+    # Get unique material names from line items and look up their images + prices
+    material_info = {}  # name -> {price, quantity, total}
     for item in material_items:
-        material_names.add(item['description'])
+        name = item['description']
+        if name not in material_info:
+            material_info[name] = {
+                'unit_price': item.get('unit_price', 0),
+                'quantity': item.get('quantity', 0),
+                'total': item.get('total', item.get('unit_price', 0) * item.get('quantity', 0))
+            }
     
-    # Find materials with images
+    # Find materials with images and add price info
     materials_with_images = []
-    for name in material_names:
+    for name, info in material_info.items():
         material = await db.materials.find_one({
             "name": {"$regex": f"^{name}$", "$options": "i"},
             "image_url": {"$ne": None, "$exists": True}
         })
         if material and material.get('image_url'):
+            material['quote_price'] = info['unit_price']
+            material['quote_quantity'] = info['quantity']
+            material['quote_total'] = info['total']
             materials_with_images.append(material)
     
     # Add visual material list if there are materials with images
@@ -2499,6 +2508,11 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
             # Add material name
             name_style = ParagraphStyle('MaterialName', parent=styles['Normal'], fontSize=11, alignment=1, spaceBefore=6)
             cell_content.append(Paragraph(f"<b>{material['name']}</b>", name_style))
+            
+            # Add price from quote
+            price_style = ParagraphStyle('MaterialPrice', parent=styles['Normal'], fontSize=10, alignment=1, textColor=colors.HexColor('#1E40AF'))
+            quote_price = material.get('quote_price', 0)
+            cell_content.append(Paragraph(f"€{quote_price:.2f}", price_style))
             
             material_cells.append(cell_content)
         
