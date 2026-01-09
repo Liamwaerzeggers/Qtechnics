@@ -793,6 +793,33 @@ async def update_quote(quote_id: str, quote_update: QuoteUpdate, current_user: U
     if update_data:
         await db.quotes.update_one({"id": quote_id}, {"$set": update_data})
         existing_quote.update(update_data)
+        
+        # If status changed to "goedgekeurd", update project financials
+        if update_data.get("status") == "goedgekeurd":
+            lead_id = existing_quote.get("lead_id")
+            if lead_id:
+                # Find project with this lead_id
+                project = await db.projects.find_one({"lead_id": lead_id})
+                if project:
+                    # Calculate total sales from all approved quotes for this lead
+                    approved_quotes = await db.quotes.find({
+                        "lead_id": lead_id,
+                        "status": "goedgekeurd"
+                    }, {"_id": 0, "total_incl_vat": 1}).to_list(100)
+                    
+                    total_sales = sum(q.get("total_incl_vat", 0) for q in approved_quotes)
+                    total_costs = project.get("total_costs", 0)
+                    profit = total_sales - total_costs
+                    
+                    # Update project with new sales total
+                    await db.projects.update_one(
+                        {"id": project["id"]},
+                        {"$set": {
+                            "sales_price": total_sales,
+                            "profit": profit
+                        }}
+                    )
+                    logger.info(f"Updated project {project['id']} financials: sales={total_sales}, profit={profit}")
     
     if isinstance(existing_quote["date"], str):
         existing_quote["date"] = datetime.fromisoformat(existing_quote["date"])
