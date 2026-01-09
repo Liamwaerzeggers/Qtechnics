@@ -2444,6 +2444,83 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
     story.append(Spacer(1, 0.1*inch))
     story.append(Paragraph(f"<b>Totaal incl. BTW:</b> €{total_incl:.2f}", title_style))
     
+    # === VISUELE MATERIAALLIJST ===
+    # Get unique material names from line items and look up their images
+    material_names = set()
+    for item in material_items:
+        material_names.add(item['description'])
+    
+    # Find materials with images
+    materials_with_images = []
+    for name in material_names:
+        material = await db.materials.find_one({
+            "name": {"$regex": f"^{name}$", "$options": "i"},
+            "image_url": {"$ne": None, "$exists": True}
+        })
+        if material and material.get('image_url'):
+            materials_with_images.append(material)
+    
+    # Add visual material list if there are materials with images
+    if materials_with_images:
+        # Page break before visual list
+        from reportlab.platypus import PageBreak
+        story.append(PageBreak())
+        
+        # Header for visual material list
+        visual_header_style = ParagraphStyle('VisualHeader', parent=styles['Heading1'], fontSize=18, textColor=colors.HexColor('#1E40AF'))
+        story.append(Paragraph("Visuele Materiaallijst", visual_header_style))
+        story.append(Spacer(1, 0.3*inch))
+        
+        # Create grid of materials (2 columns)
+        material_cells = []
+        for material in materials_with_images:
+            image_url = material.get('image_url', '')
+            image_path = None
+            
+            # Get the actual file path from the URL
+            if image_url.startswith('/api/static/materials/'):
+                filename = image_url.split('/')[-1]
+                potential_path = ROOT_DIR / "uploads" / "materials" / filename
+                if potential_path.exists():
+                    image_path = str(potential_path)
+            
+            # Create cell content
+            cell_content = []
+            
+            if image_path:
+                try:
+                    # Add image (max 2.5 inch width, maintain aspect ratio)
+                    img = ReportLabImage(image_path, width=2.5*inch, height=2.5*inch)
+                    img.hAlign = 'CENTER'
+                    cell_content.append(img)
+                except:
+                    pass
+            
+            # Add material name
+            name_style = ParagraphStyle('MaterialName', parent=styles['Normal'], fontSize=11, alignment=1, spaceBefore=6)
+            cell_content.append(Paragraph(f"<b>{material['name']}</b>", name_style))
+            
+            material_cells.append(cell_content)
+        
+        # Create table with 2 columns
+        if material_cells:
+            # Pad to even number
+            if len(material_cells) % 2 != 0:
+                material_cells.append([''])
+            
+            # Create rows of 2
+            for i in range(0, len(material_cells), 2):
+                row_table_data = [[material_cells[i], material_cells[i+1] if i+1 < len(material_cells) else ['']]]
+                row_table = Table(row_table_data, colWidths=[3.25*inch, 3.25*inch])
+                row_table.setStyle(TableStyle([
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('TOPPADDING', (0, 0), (-1, -1), 12),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+                ]))
+                story.append(row_table)
+                story.append(Spacer(1, 0.2*inch))
+    
     doc.build(story)
     buffer.seek(0)
     
