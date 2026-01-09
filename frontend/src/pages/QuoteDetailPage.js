@@ -220,6 +220,52 @@ export default function QuoteDetailPage() {
           console.log('Auto-add work item:', autoAddError?.response?.data?.detail || autoAddError.message);
         }
       }
+      
+      // If this is a custom material (not from dropdown), auto-add to catalog with optional image
+      if (formData.item_type === 'materiaal' && useCustomMaterial && formData.description && formData.unit_price) {
+        try {
+          setUploadingImage(true);
+          
+          // Use FormData for multipart upload if image is provided
+          if (materialImage) {
+            const formDataUpload = new FormData();
+            formDataUpload.append('name', formData.description);
+            formDataUpload.append('price', parseFloat(formData.unit_price));
+            formDataUpload.append('unit', formData.unit || 'stuk');
+            formDataUpload.append('file', materialImage);
+            
+            const autoAddResponse = await axios.post(
+              `${API}/materials/create-with-image`,
+              formDataUpload,
+              { 
+                withCredentials: true,
+                headers: { 'Content-Type': 'multipart/form-data' }
+              }
+            );
+            
+            if (autoAddResponse.data.created) {
+              toast.info(`"${formData.description}" toegevoegd aan materialen catalogus met foto 📷`);
+            } else if (autoAddResponse.data.material?.image_url) {
+              toast.info(`Foto toegevoegd aan bestaand materiaal "${formData.description}" 📷`);
+            }
+          } else {
+            // No image, just auto-add material
+            const params = new URLSearchParams({
+              name: formData.description,
+              price: parseFloat(formData.unit_price),
+              unit: formData.unit || 'stuk'
+            });
+            const autoAddResponse = await axios.post(`${API}/materials/auto-add?${params.toString()}`, {}, { withCredentials: true });
+            if (autoAddResponse.data.created) {
+              toast.info(`"${formData.description}" toegevoegd aan materialen catalogus`);
+            }
+          }
+        } catch (autoAddError) {
+          console.log('Auto-add material:', autoAddError?.response?.data?.detail || autoAddError.message);
+        } finally {
+          setUploadingImage(false);
+        }
+      }
 
       await axios.post(`${API}/quotes/${quoteId}/items`, {
         ...formData,
@@ -231,8 +277,10 @@ export default function QuoteDetailPage() {
       setIsDialogOpen(false);
       setFormData({ description: '', quantity: '', unit_price: '', item_type: 'materiaal', vat_rate: 21, unit: 'm²' });
       setMaterialSearch('');
+      setMaterialImage(null);
       setUseCustomMaterial(false);
       fetchQuoteData();
+      fetchMaterials(); // Refresh materials list
     } catch (error) {
       toast.error('Kon item niet toevoegen');
     }
