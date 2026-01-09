@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, Download, Trash2, Search, Mail, Scissors, Loader2, Edit2, Check, X } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Trash2, Search, Mail, Scissors, Loader2, Edit2, Check, X, Upload, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function QuoteDetailPage() {
