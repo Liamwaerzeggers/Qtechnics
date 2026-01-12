@@ -686,36 +686,85 @@ export default function CustomerPortalPage() {
             {work_updates && work_updates.length > 0 ? (
               work_updates
                 .sort((a, b) => new Date(b.date) - new Date(a.date))
-                .map(update => (
-                  <Card key={update.id}>
-                    <CardContent className="p-3 sm:pt-6">
-                      <div className="flex items-start gap-3 sm:gap-4">
-                        <div className="bg-blue-100 p-2 sm:p-3 rounded-full flex-shrink-0">
-                          <Hammer className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                .map((update, idx) => {
+                  const isExpanded = expandedUpdates[update.id] !== false; // Default expanded
+                  const updateDate = new Date(update.date);
+                  
+                  return (
+                    <Card key={update.id} className="overflow-hidden">
+                      {/* Header - Always visible with date and title */}
+                      <div 
+                        className="p-3 sm:p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={() => setExpandedUpdates(prev => ({...prev, [update.id]: !isExpanded}))}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="bg-blue-100 p-2 rounded-full flex-shrink-0">
+                            <Hammer className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-semibold text-gray-800 text-sm sm:text-base">
+                                  {updateDate.toLocaleDateString('nl-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                </p>
+                                <p className="text-xs sm:text-sm text-gray-600 mt-0.5 line-clamp-1">
+                                  {update.work_description_nl || 'Werkzaamheden uitgevoerd'}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                {update.photos && update.photos.length > 0 && (
+                                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                                    📷 {update.photos.length}
+                                  </span>
+                                )}
+                                {isExpanded ? (
+                                  <ChevronUp className="w-5 h-5 text-gray-500" />
+                                ) : (
+                                  <ChevronDown className="w-5 h-5 text-gray-500" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs sm:text-sm text-gray-500">{formatDate(update.date)}</p>
-                          <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-800">{update.work_description_nl || 'Werkzaamheden uitgevoerd'}</p>
+                      </div>
+                      
+                      {/* Expanded content - Full description and photos */}
+                      {isExpanded && (
+                        <CardContent className="pt-0 px-3 pb-3 sm:px-4 sm:pb-4 border-t" style={{borderColor: '#E5E7EB'}}>
+                          {/* Full work description */}
+                          <p className="text-sm sm:text-base text-gray-800 mt-3">
+                            {update.work_description_nl || 'Werkzaamheden uitgevoerd'}
+                          </p>
                           
                           {/* Work Photos */}
                           {update.photos && update.photos.length > 0 && (
                             <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                              {update.photos.map((photo, idx) => (
+                              {update.photos.map((photo, photoIdx) => (
                                 <img
-                                  key={idx}
+                                  key={photoIdx}
                                   src={getPhotoUrl(photo)}
-                                  alt={`Werk foto ${idx + 1}`}
-                                  className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-90"
-                                  onClick={() => setSelectedPhoto(photo)}
+                                  alt={`Werk foto ${photoIdx + 1}`}
+                                  className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-90 transition"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedPhoto(photo);
+                                  }}
                                 />
                               ))}
                             </div>
                           )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                          
+                          {/* Hours worked if available */}
+                          {update.hours_worked && (
+                            <p className="text-xs text-gray-500 mt-2">
+                              ⏱️ {update.hours_worked} uur gewerkt
+                            </p>
+                          )}
+                        </CardContent>
+                      )}
+                    </Card>
+                  );
+                })
             ) : (
               <Card>
                 <CardContent className="py-6 text-center text-gray-500 text-sm">
