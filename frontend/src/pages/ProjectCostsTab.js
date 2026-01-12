@@ -20,9 +20,11 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
   const [uploading, setUploading] = useState(false);
   const [sendingPeppol, setSendingPeppol] = useState(null); // Track which invoice is being sent
 
-  // Calculate total sale price from ALL approved quotes
-  const totalSalePrice = approvedQuotes.reduce((sum, q) => sum + (q.total_incl_vat || 0), 0);
-  const hasApprovedQuotes = approvedQuotes.length > 0;
+  // Calculate total sale price - use project.sales_price which includes approved quotes AND legacy documents
+  // Fall back to calculating from approved quotes if sales_price not set
+  const quotesTotal = approvedQuotes.reduce((sum, q) => sum + (q.total_incl_vat || 0), 0);
+  const totalSalePrice = project.sales_price || quotesTotal;
+  const hasApprovedQuotes = approvedQuotes.length > 0 || (project.sales_price && project.sales_price > 0);
 
   useEffect(() => {
     setCostData({
