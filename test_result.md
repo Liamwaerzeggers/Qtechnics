@@ -1,63 +1,35 @@
 # Test Result Document
 
 ## Testing Protocol
-Testing nieuwe features voor offertes:
-1. Auto-add materialen/arbeid naar catalogus ✅ COMPLETED
-2. Optionele foto upload bij materialen ✅ COMPLETED
-3. Inline bewerking van prijs en hoeveelheid ✅ COMPLETED
-4. PDF export met visuele materiaallijst ✅ COMPLETED
+Testing nieuwe features:
+1. Quote aanmaken (fix voor alle admins)
+2. Legacy documents met prijs en zichtbaarheid
+3. Customer portal foto fix
 
-## Backend Test Results
+## Current Test Focus
 
-### Feature 1: Auto-add naar catalogus ✅
-- **Status**: WORKING
-- **API**: POST /api/materials/auto-add?name=X&price=Y&unit=Z
-- **Test Results**:
-  - ✅ Material auto-creation successful
-  - ✅ Response format correct (created: true, material object)
-  - ✅ SKU auto-generation working (MAT-ACCA4E)
-  - ✅ Database persistence verified
+### Feature 1: Quote Aanmaken
+- Alle admins kunnen nu quotes aanmaken voor alle leads
+- Fix: verwijderd user_id check bij lead lookup
 
-### Feature 2: Foto upload bij materiaal ✅
-- **Status**: WORKING  
-- **API**: POST /api/materials/create-with-image (multipart form)
-- **Test Results**:
-  - ✅ Multipart form upload working
-  - ✅ Image storage successful (/api/static/materials/)
-  - ✅ Material created with image_url field
-  - ✅ Response contains image URL
+### Feature 2: Legacy Documents met Prijs
+- Upload legacy document met total_price
+- Prijs wordt opgeteld bij project sales_price
+- Zichtbaarheid toggle voor klantenportaal
+- API endpoints:
+  - POST /api/projects/{id}/legacy-documents?total_price=X
+  - PUT /api/legacy-documents/{id} (visible_to_customer, total_price)
 
-### Feature 3: Inline bewerking prijzen ✅
-- **Status**: WORKING
-- **API**: PUT /api/quotes/{quote_id}/items/{item_id}
-- **Test Results**:
-  - ✅ Quantity update working (25.0)
-  - ✅ Unit price update working (€45.00)
-  - ✅ Total recalculation automatic (€1125.00)
-  - ✅ Response format correct
+### Feature 3: Customer Portal Fix
+- getPhotoUrl functie ondersteunt nu zowel string als object formaat
+- Werkt voor first_visit_photos en designs
 
-### Feature 4: Visuele materiaallijst in PDF ✅
-- **Status**: WORKING
-- **API**: GET /api/quotes/{quote_id}/export/pdf
-- **Test Results**:
-  - ✅ PDF generation successful (101,487 bytes)
-  - ✅ Valid PDF format verified
-  - ✅ Large file size indicates visual content
-  - ✅ Material items processed correctly
+## Test Endpoints
+- POST /api/quotes (met lead_id)
+- POST /api/projects/{id}/legacy-documents
+- PUT /api/legacy-documents/{id}
+- GET /api/customer-portal/{token}
 
-## Authentication ✅
-- **Credentials**: test / test123
-- **Status**: WORKING
-- **Session Token**: Received and functional
-
-## Test Environment
-- **Backend URL**: https://projectix-gallery.preview.emergentagent.com/api
-- **Database**: MongoDB (qtechnics)
-- **Test Date**: 2025-01-27
-- **Tester**: Backend Testing Agent
-
-## Overall Status: ✅ ALL FEATURES WORKING
-
-**READY FOR PRODUCTION USE**
-
-All nieuwe offerte features have been successfully tested and verified working correctly.
+## User Credentials
+- Username: test
+- Password: test123
