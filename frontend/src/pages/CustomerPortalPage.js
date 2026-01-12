@@ -19,7 +19,9 @@ import {
   Hammer,
   Eye,
   Download,
-  FolderArchive
+  FolderArchive,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { toast } from 'sonner';
 
