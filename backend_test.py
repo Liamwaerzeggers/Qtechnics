@@ -3893,6 +3893,11 @@ def main():
         # Run all tests
         test_results = []
         
+        # PRIORITY TESTS - The three specific features requested in review
+        test_results.append(("Quote Creation Fix", tester.test_quote_creation_fix()))
+        test_results.append(("Legacy Document with Price", tester.test_legacy_document_with_price()))
+        test_results.append(("Customer Portal", tester.test_customer_portal()))
+        
         test_results.append(("Authentication", tester.test_auth()))
         test_results.append(("Dashboard Stats", tester.test_dashboard_stats()))
         test_results.append(("Leads CRUD", tester.test_leads_crud()))
