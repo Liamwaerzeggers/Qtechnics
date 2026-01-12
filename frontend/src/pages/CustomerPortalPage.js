@@ -26,14 +26,19 @@ import { toast } from 'sonner';
 // Helper function to get correct photo URL
 const getPhotoUrl = (photo) => {
   if (!photo) return '';
-  if (photo.startsWith('http')) return photo;
+  
+  // Handle both old format (string) and new format (object with url/room)
+  const photoPath = typeof photo === 'string' ? photo : (photo.url || '');
+  if (!photoPath) return '';
+  
+  if (photoPath.startsWith('http')) return photoPath;
   // API already contains /api, so we need the base URL without /api
   const baseUrl = API.replace('/api', '');
   // Photo path already starts with /api/static/... so just append to base
-  if (photo.startsWith('/api/')) {
-    return `${baseUrl}${photo}`;
+  if (photoPath.startsWith('/api/')) {
+    return `${baseUrl}${photoPath}`;
   }
-  return `${baseUrl}/api${photo}`;
+  return `${baseUrl}/api${photoPath}`;
 };
 
 export default function CustomerPortalPage() {
