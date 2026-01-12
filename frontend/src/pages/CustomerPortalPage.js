@@ -61,7 +61,10 @@ export default function CustomerPortalPage() {
   });
   
   // Expanded work periods state (track which periods are expanded)
-  const [expandedPeriods, setExpandedPeriods] = useState({});  const [submittingRating, setSubmittingRating] = useState(false);
+  const [expandedPeriods, setExpandedPeriods] = useState({});
+  
+  // Expanded work updates state (track which updates are expanded)
+  const [expandedUpdates, setExpandedUpdates] = useState({});  const [submittingRating, setSubmittingRating] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [legacyDocuments, setLegacyDocuments] = useState([]);
 
