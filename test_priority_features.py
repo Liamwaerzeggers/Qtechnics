@@ -250,10 +250,11 @@ startxref
                     return False
                 
                 upload_response = response.json()
-                doc_id = upload_response.get('document_id')
+                doc_id = upload_response.get('document', {}).get('id')
                 
                 if not doc_id:
                     print("❌ No document_id in upload response")
+                    print(f"   Response: {upload_response}")
                     return False
                 
                 print(f"✅ Legacy document uploaded: {doc_id}")
