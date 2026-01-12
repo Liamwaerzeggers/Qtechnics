@@ -384,53 +384,81 @@ export default function CustomerPortalPage() {
                       const endDate = new Date(period.end_date);
                       const diffTime = Math.abs(endDate - startDate);
                       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                      const isExpanded = expandedPeriods[idx] !== false; // Default expanded
                       
                       return (
-                        <div key={idx} className="bg-white border rounded-lg p-3 sm:p-4 shadow-sm">
-                          {/* Description and Team - Mobile First */}
-                          <div className="mb-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <h4 className="font-semibold text-gray-800 text-base sm:text-lg">{period.description || 'Werkzaamheden'}</h4>
-                              {period.team_name && (
-                                <span className="flex-shrink-0 px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
-                                  👥 {period.team_name}
+                        <div key={idx} className="bg-white border rounded-lg shadow-sm overflow-hidden">
+                          {/* Header - Always visible with title and date */}
+                          <div 
+                            className="p-3 sm:p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                            onClick={() => setExpandedPeriods(prev => ({...prev, [idx]: !isExpanded}))}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h4 className="font-semibold text-gray-800 text-base sm:text-lg">
+                                    {period.description || 'Werkzaamheden'}
+                                  </h4>
+                                  {period.team_name && (
+                                    <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
+                                      👥 {period.team_name}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  📅 {startDate.toLocaleDateString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short' })} 
+                                  {' - '} 
+                                  {endDate.toLocaleDateString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                                  <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                                    {diffDays} {diffDays === 1 ? 'dag' : 'dagen'}
+                                  </span>
+                                </p>
+                              </div>
+                              <div className="flex-shrink-0 ml-2">
+                                {isExpanded ? (
+                                  <ChevronUp className="w-5 h-5 text-gray-500" />
+                                ) : (
+                                  <ChevronDown className="w-5 h-5 text-gray-500" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Expanded content - Date visual display */}
+                          {isExpanded && (
+                            <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-0 border-t" style={{borderColor: '#E5E7EB'}}>
+                              <div className="flex items-center gap-2 sm:gap-3 pt-3">
+                                {/* Start Date */}
+                                <div className="text-center bg-blue-500 text-white rounded-lg p-2 min-w-[50px] sm:min-w-[60px]">
+                                  <p className="text-[10px] sm:text-xs font-medium opacity-80">VAN</p>
+                                  <p className="text-lg sm:text-xl font-bold">{startDate.getDate()}</p>
+                                  <p className="text-[10px] sm:text-xs">{startDate.toLocaleDateString('nl-BE', { month: 'short' })}</p>
+                                </div>
+                                
+                                {/* Arrow */}
+                                <span className="text-gray-400 text-sm">→</span>
+                                
+                                {/* End Date */}
+                                <div className="text-center bg-orange-500 text-white rounded-lg p-2 min-w-[50px] sm:min-w-[60px]">
+                                  <p className="text-[10px] sm:text-xs font-medium opacity-80">T/M</p>
+                                  <p className="text-lg sm:text-xl font-bold">{endDate.getDate()}</p>
+                                  <p className="text-[10px] sm:text-xs">{endDate.toLocaleDateString('nl-BE', { month: 'short' })}</p>
+                                </div>
+                                
+                                {/* Year badge - only on larger screens */}
+                                <span className="hidden sm:inline-block text-xs text-gray-500">
+                                  {endDate.getFullYear()}
                                 </span>
+                              </div>
+                              
+                              {/* Notes if any */}
+                              {period.notes && (
+                                <div className="mt-3 p-2 bg-gray-50 rounded text-sm text-gray-600">
+                                  📝 {period.notes}
+                                </div>
                               )}
                             </div>
-                            <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                              {diffDays} {diffDays === 1 ? 'dag' : 'dagen'}
-                            </span>
-                          </div>
-                          
-                          {/* Date Display - Responsive */}
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            {/* Start Date */}
-                            <div className="text-center bg-blue-500 text-white rounded-lg p-2 min-w-[50px] sm:min-w-[60px]">
-                              <p className="text-[10px] sm:text-xs font-medium opacity-80">VAN</p>
-                              <p className="text-lg sm:text-xl font-bold">{startDate.getDate()}</p>
-                              <p className="text-[10px] sm:text-xs">{startDate.toLocaleDateString('nl-BE', { month: 'short' })}</p>
-                            </div>
-                            
-                            {/* Arrow */}
-                            <span className="text-gray-400 text-sm">→</span>
-                            
-                            {/* End Date */}
-                            <div className="text-center bg-orange-500 text-white rounded-lg p-2 min-w-[50px] sm:min-w-[60px]">
-                              <p className="text-[10px] sm:text-xs font-medium opacity-80">T/M</p>
-                              <p className="text-lg sm:text-xl font-bold">{endDate.getDate()}</p>
-                              <p className="text-[10px] sm:text-xs">{endDate.toLocaleDateString('nl-BE', { month: 'short' })}</p>
-                            </div>
-                            
-                            {/* Year badge - only on larger screens */}
-                            <span className="hidden sm:inline-block text-xs text-gray-500">
-                              {endDate.getFullYear()}
-                            </span>
-                          </div>
-                          
-                          {/* Full date text - smaller on mobile */}
-                          <p className="text-xs text-gray-500 mt-2">
-                            {startDate.toLocaleDateString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short' })} t/m {endDate.toLocaleDateString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                          </p>
+                          )}
                         </div>
                       );
                     })}
