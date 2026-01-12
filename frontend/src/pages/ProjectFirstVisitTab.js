@@ -36,9 +36,16 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
   
   // Sync photos state when project changes
   useEffect(() => {
-    console.log('Project first_visit_photos:', project.first_visit_photos);
+    // Debug: log what photos are in the project
+    console.log('=== ProjectFirstVisitTab Debug ===');
+    console.log('Project ID:', project?.id);
+    console.log('first_visit_photos type:', typeof project?.first_visit_photos);
+    console.log('first_visit_photos value:', JSON.stringify(project?.first_visit_photos));
+    console.log('first_visit_photos length:', project?.first_visit_photos?.length || 0);
+    console.log('=================================');
+    
     setPhotos(project.first_visit_photos || []);
-  }, [project.first_visit_photos]);
+  }, [project, project.first_visit_photos]);
   
   // Photo room folder state
   const [expandedRooms, setExpandedRooms] = useState({ 'Algemeen': true });
