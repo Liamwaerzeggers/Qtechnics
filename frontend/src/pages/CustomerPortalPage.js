@@ -453,65 +453,124 @@ export default function CustomerPortalPage() {
         {/* Photos Tab - Mobile Optimized */}
         {activeTab === 'photos' && (
           <div className="space-y-4 sm:space-y-6">
-            {/* First Visit Photos */}
+            {/* First Visit Photos - Collapsible */}
             <Card>
-              <CardHeader className="pb-2 sm:pb-4">
-                <CardTitle className="text-base sm:text-lg">📸 Foto's Eerste Bezoek</CardTitle>
+              <CardHeader 
+                className="pb-2 sm:pb-4 cursor-pointer hover:bg-gray-50 transition-colors rounded-t-lg"
+                onClick={() => setSectionsExpanded(prev => ({...prev, firstVisit: !prev.firstVisit}))}
+              >
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    📸 Foto's Eerste Bezoek
+                    <span className="text-sm font-normal text-gray-500">
+                      ({project.first_visit_photos?.length || 0})
+                    </span>
+                  </CardTitle>
+                  {sectionsExpanded.firstVisit ? (
+                    <ChevronUp className="w-5 h-5 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-500" />
+                  )}
+                </div>
               </CardHeader>
-              <CardContent className="pt-0">
-                {project.first_visit_photos && project.first_visit_photos.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
-                    {project.first_visit_photos.map((photo, idx) => (
-                      <div 
-                        key={idx} 
-                        className="relative aspect-square cursor-pointer group"
-                        onClick={() => setSelectedPhoto(photo)}
-                      >
-                        <img
-                          src={getPhotoUrl(photo)}
-                          alt={`Foto ${idx + 1}`}
-                          className="w-full h-full object-cover rounded-lg group-hover:opacity-90 transition"
-                        />
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition rounded-lg flex items-center justify-center">
-                          <Eye className="w-6 h-6 sm:w-8 sm:h-8 text-white opacity-0 group-hover:opacity-100 transition" />
+              {sectionsExpanded.firstVisit && (
+                <CardContent className="pt-0">
+                  {project.first_visit_photos && project.first_visit_photos.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
+                      {project.first_visit_photos.map((photo, idx) => (
+                        <div 
+                          key={idx} 
+                          className="relative aspect-square cursor-pointer group"
+                          onClick={() => setSelectedPhoto(photo)}
+                        >
+                          <img
+                            src={getPhotoUrl(photo)}
+                            alt={`Foto ${idx + 1}`}
+                            className="w-full h-full object-cover rounded-lg group-hover:opacity-90 transition"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition rounded-lg flex items-center justify-center">
+                            <Eye className="w-6 h-6 sm:w-8 sm:h-8 text-white opacity-0 group-hover:opacity-100 transition" />
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-center py-6 text-sm">Nog geen foto's van het eerste bezoek</p>
-                )}
-              </CardContent>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-center py-6 text-sm">Nog geen foto's van het eerste bezoek</p>
+                  )}
+                </CardContent>
+              )}
             </Card>
 
-            {/* 3D Designs */}
+            {/* 3D Designs - Collapsible with Image Preview */}
             <Card>
-              <CardHeader className="pb-2 sm:pb-4">
-                <CardTitle className="text-base sm:text-lg">🏠 3D Ontwerpen</CardTitle>
+              <CardHeader 
+                className="pb-2 sm:pb-4 cursor-pointer hover:bg-gray-50 transition-colors rounded-t-lg"
+                onClick={() => setSectionsExpanded(prev => ({...prev, designs: !prev.designs}))}
+              >
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    🏠 3D Ontwerpen
+                    <span className="text-sm font-normal text-gray-500">
+                      ({project.design_3d_files?.length || 0})
+                    </span>
+                  </CardTitle>
+                  {sectionsExpanded.designs ? (
+                    <ChevronUp className="w-5 h-5 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-500" />
+                  )}
+                </div>
               </CardHeader>
-              <CardContent className="pt-0">
-                {project.design_3d_files && project.design_3d_files.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {project.design_3d_files.map((design, idx) => (
-                      <a
-                        key={idx}
-                        href={getPhotoUrl(design.url)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                      >
-                        <FileText className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600 flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm sm:text-base truncate">{design.filename || `Ontwerp ${idx + 1}`}</p>
-                          <p className="text-xs sm:text-sm text-gray-500">Klik om te bekijken</p>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-center py-6 text-sm">Nog geen 3D ontwerpen beschikbaar</p>
-                )}
-              </CardContent>
+              {sectionsExpanded.designs && (
+                <CardContent className="pt-0">
+                  {project.design_3d_files && project.design_3d_files.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
+                      {project.design_3d_files.map((design, idx) => {
+                        const isImage = design.type && ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(design.type.toLowerCase());
+                        const designUrl = getPhotoUrl(design.url);
+                        
+                        return isImage ? (
+                          <div 
+                            key={idx} 
+                            className="relative aspect-square cursor-pointer group"
+                            onClick={() => setSelectedPhoto(design.url)}
+                          >
+                            <img
+                              src={designUrl}
+                              alt={design.original_filename || `Ontwerp ${idx + 1}`}
+                              className="w-full h-full object-cover rounded-lg group-hover:opacity-90 transition"
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition rounded-lg flex items-center justify-center">
+                              <Eye className="w-6 h-6 sm:w-8 sm:h-8 text-white opacity-0 group-hover:opacity-100 transition" />
+                            </div>
+                            {design.room && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 text-center rounded-b-lg">
+                                {design.room}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <a
+                            key={idx}
+                            href={designUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex flex-col items-center justify-center gap-2 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition aspect-square"
+                          >
+                            <FileText className="w-10 h-10 sm:w-12 sm:h-12 text-blue-600" />
+                            <p className="font-medium text-xs sm:text-sm text-center truncate w-full">
+                              {design.original_filename || `Ontwerp ${idx + 1}`}
+                            </p>
+                            <p className="text-xs text-gray-500">Klik om te openen</p>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-center py-6 text-sm">Nog geen 3D ontwerpen beschikbaar</p>
+                  )}
+                </CardContent>
+              )}
             </Card>
           </div>
         )}
