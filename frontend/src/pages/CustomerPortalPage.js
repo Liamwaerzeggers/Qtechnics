@@ -53,7 +53,12 @@ export default function CustomerPortalPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [rating, setRating] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
-  const [submittingRating, setSubmittingRating] = useState(false);
+  
+  // Collapsible sections state
+  const [sectionsExpanded, setSectionsExpanded] = useState({
+    firstVisit: true,
+    designs: true
+  });  const [submittingRating, setSubmittingRating] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [legacyDocuments, setLegacyDocuments] = useState([]);
 
