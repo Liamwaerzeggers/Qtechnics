@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { API } from '../App';
 import { Button } from '../components/ui/button';
@@ -19,6 +19,12 @@ export default function Project3DDesignTab({ project, onUpdate }) {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Sync designs state when project changes
+  useEffect(() => {
+    console.log('Project design_3d_files:', project.design_3d_files);
+    setDesigns(project.design_3d_files || []);
+  }, [project.design_3d_files]);
 
   // Get base URL for images
   const getImageUrl = (design) => {
