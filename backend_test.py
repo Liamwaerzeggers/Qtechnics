@@ -3662,15 +3662,11 @@ startxref
                 files = {
                     'file': ('test_offerte.pdf', f, 'application/pdf')
                 }
-                data = {
-                    'document_type': 'offerte',
-                    'total_price': 2500.00
-                }
                 
-                url = f"{self.base_url}/projects/{project_id}/legacy-documents"
+                url = f"{self.base_url}/projects/{project_id}/legacy-documents?document_type=offerte&total_price=2500.00"
                 headers = {'Authorization': f'Bearer {self.session_token}'}
                 
-                response = requests.post(url, files=files, data=data, headers=headers)
+                response = requests.post(url, files=files, headers=headers)
                 
                 if response.status_code != 200:
                     print(f"❌ Legacy document upload failed - Status: {response.status_code}")
