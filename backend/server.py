@@ -2200,13 +2200,21 @@ async def get_project_legacy_documents(project_id: str, current_user: User = Dep
 @api_router.get("/legacy-documents/{document_id}/download")
 async def download_legacy_document(document_id: str, current_user: User = Depends(get_current_user)):
     """Download een legacy document"""
+    # All admins can download any document
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen documenten downloaden")
+    
     # Get document record
     doc = await db.legacy_documents.find_one({"id": document_id})
     if not doc:
+        logger.error(f"Legacy document not found: {document_id}")
         raise HTTPException(status_code=404, detail="Document niet gevonden")
     
     file_path = UPLOADS_DIR / doc["filename"]
+    logger.info(f"Attempting to download: {file_path}")
+    
     if not file_path.exists():
+        logger.error(f"File not found on disk: {file_path}")
         raise HTTPException(status_code=404, detail="Bestand niet gevonden op server")
     
     return FileResponse(
