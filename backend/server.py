@@ -3374,8 +3374,12 @@ async def upload_work_slip_photo(
     current_user: User = Depends(get_current_user)
 ):
     """Upload a photo to a work slip"""
-    # Verify project exists
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    # All admins can upload photos to any project
+    if current_user.role == "admin":
+        project = await db.projects.find_one({"id": project_id})
+    else:
+        project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
