@@ -2323,10 +2323,14 @@ async def download_customer_legacy_document(access_token: str, document_id: str)
         "visible_to_customer": True
     })
     if not doc:
+        logger.error(f"Customer portal: Document not found or not visible: {document_id}")
         raise HTTPException(status_code=404, detail="Document niet gevonden")
     
     file_path = UPLOADS_DIR / doc["filename"]
+    logger.info(f"Customer portal download: {file_path}")
+    
     if not file_path.exists():
+        logger.error(f"Customer portal: File not found on disk: {file_path}")
         raise HTTPException(status_code=404, detail="Bestand niet gevonden")
     
     return FileResponse(
