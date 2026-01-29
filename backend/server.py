@@ -5523,6 +5523,18 @@ async def toggle_work_slip_customer_visibility(
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Werkbon niet gevonden")
     
+    # Send email notification when making visible to customer
+    if visible:
+        work_slip = await db.work_slips.find_one({"id": slip_id}, {"_id": 0})
+        slip_date = work_slip.get("date", "onbekende datum") if work_slip else "onbekende datum"
+        if isinstance(slip_date, datetime):
+            slip_date = slip_date.strftime("%d-%m-%Y")
+        await send_customer_notification(
+            project_id=project_id,
+            subject="Nieuwe werkbon beschikbaar - Q-Technics",
+            content_description=f"Er is een nieuwe werkbon ({slip_date}) toegevoegd aan uw project. U kunt deze nu bekijken in uw klantenportaal."
+        )
+    
     return {"success": True, "visible_to_customer": visible}
 
 # ============= QUICK TASKS ENDPOINTS =============
