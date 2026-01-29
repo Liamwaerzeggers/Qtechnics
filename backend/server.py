@@ -2273,6 +2273,9 @@ async def update_legacy_document(
     if not doc:
         raise HTTPException(status_code=404, detail="Document niet gevonden")
     
+    # Track if visibility is being set to true (for notification)
+    was_visible = doc.get("visible_to_customer", False)
+    
     # Build update dict
     updates = {k: v for k, v in update_data.model_dump(exclude_unset=True).items() if v is not None}
     
@@ -2297,6 +2300,16 @@ async def update_legacy_document(
                     )
         
         await db.legacy_documents.update_one({"id": document_id}, {"$set": updates})
+        
+        # Send notification if visibility is being set to true for the first time
+        if updates.get("visible_to_customer") and not was_visible:
+            doc_type = doc.get("document_type", "document")
+            doc_name = doc.get("filename", "Document")
+            await send_customer_notification(
+                project_id=doc["project_id"],
+                subject=f"Nieuw document beschikbaar - Q-Technics",
+                content_description=f"Er is een nieuw document ({doc_name}) toegevoegd aan uw project. U kunt dit nu bekijken in uw klantenportaal."
+            )
     
     # Return updated document
     updated_doc = await db.legacy_documents.find_one({"id": document_id}, {"_id": 0})
