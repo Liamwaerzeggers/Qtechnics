@@ -42,6 +42,10 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+# Resend Email Setup
+resend.api_key = os.environ.get('RESEND_API_KEY')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'noreply@qtechnics.be')
+
 # Create the main app
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
