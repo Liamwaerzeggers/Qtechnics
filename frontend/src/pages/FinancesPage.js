@@ -116,36 +116,49 @@ export default function FinancesPage() {
       { name: 'Q4 (Okt-Dec)', months: [9, 10, 11] }
     ];
 
-    return quarters.map(quarter => {
-      let revenue = 0, costs = 0, profit = 0, projectCount = 0;
+    const selectedYearInt = parseInt(selectedYear);
 
+    return quarters.map(quarter => {
+      let revenue = 0, costs = 0, projectCount = 0;
+
+      // Add costs from projects
       projects.forEach(project => {
         const projectDate = project.start_date || project.created_at;
         if (!projectDate) return;
         
         const date = new Date(projectDate);
         const projectYear = date.getFullYear();
-        const selectedYearInt = parseInt(selectedYear);
         
         if (projectYear !== selectedYearInt) return;
         
         const monthIndex = date.getMonth();
         if (!quarter.months.includes(monthIndex)) return;
 
-        const projProfit = project.profit || 0;
-        const projCosts = project.total_costs_incl_vat || 0;
-        
-        profit += projProfit;
-        costs += projCosts;
-        revenue += projProfit + projCosts;
+        costs += project.total_costs_incl_vat || project.total_costs || 0;
         projectCount += 1;
+      });
+
+      // Add revenue from manual invoices
+      manualInvoices.forEach(entry => {
+        const invoiceDate = entry.invoice_date;
+        if (!invoiceDate) return;
+        
+        const date = new Date(invoiceDate);
+        const invoiceYear = date.getFullYear();
+        
+        if (invoiceYear !== selectedYearInt) return;
+        
+        const monthIndex = date.getMonth();
+        if (!quarter.months.includes(monthIndex)) return;
+
+        revenue += entry.amount || 0;
       });
 
       return {
         quarter: quarter.name,
         revenue,
         costs,
-        profit,
+        profit: revenue - costs,
         projects: projectCount
       };
     });
