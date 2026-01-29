@@ -1877,18 +1877,25 @@ async def get_projects(current_user: User = Depends(get_current_user)):
         if project.get("first_visit_date") and isinstance(project["first_visit_date"], str):
             project["first_visit_date"] = datetime.fromisoformat(project["first_visit_date"])
         
-        # Calculate profit from approved quotes (only for admins)
+        # Calculate profit from sales_price (which includes approved quotes + legacy documents)
         if current_user.role != "worker":
-            lead_id = project.get("lead_id")
-            if lead_id:
-                approved_quotes = await db.quotes.find({
-                    "lead_id": lead_id,
-                    "status": "goedgekeurd"
-                }, {"_id": 0, "total_incl_vat": 1}).to_list(100)
-                
-                total_sales = sum(q.get("total_incl_vat", 0) for q in approved_quotes)
-                total_costs = project.get("total_costs", 0)
+            # Use stored sales_price (already updated by approved quotes and legacy documents)
+            total_sales = project.get("sales_price", 0) or 0
+            total_costs = project.get("total_costs", 0) or 0
+            
+            # If no sales_price stored, fall back to calculating from approved quotes
+            if total_sales == 0:
+                lead_id = project.get("lead_id")
+                if lead_id:
+                    approved_quotes = await db.quotes.find({
+                        "lead_id": lead_id,
+                        "status": "goedgekeurd"
+                    }, {"_id": 0, "total_incl_vat": 1}).to_list(100)
+                    total_sales = sum(q.get("total_incl_vat", 0) for q in approved_quotes)
+            
+            if total_sales > 0:
                 project["profit"] = total_sales - total_costs
+                project["sales_price"] = total_sales  # Ensure sales_price is in response
             else:
                 project["profit"] = None
     
