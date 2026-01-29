@@ -175,6 +175,7 @@ export default function FinancesPage() {
       projects: 0
     };
     
+    // Add costs from projects
     projects.forEach(project => {
       const projectDate = project.start_date || project.created_at;
       if (!projectDate) return;
@@ -183,14 +184,23 @@ export default function FinancesPage() {
       
       if (year !== selectedYearInt) return;
 
-      const profit = project.profit || 0;
-      const costs = project.total_costs_incl_vat || 0;
-      
-      yearData.profit += profit;
-      yearData.costs += costs;
-      yearData.revenue += profit + costs;
+      yearData.costs += project.total_costs_incl_vat || project.total_costs || 0;
       yearData.projects += 1;
     });
+
+    // Add revenue from manual invoices
+    manualInvoices.forEach(entry => {
+      const invoiceDate = entry.invoice_date;
+      if (!invoiceDate) return;
+      
+      const year = new Date(invoiceDate).getFullYear();
+      
+      if (year !== selectedYearInt) return;
+
+      yearData.revenue += entry.amount || 0;
+    });
+
+    yearData.profit = yearData.revenue - yearData.costs;
 
     return [yearData];
   };
