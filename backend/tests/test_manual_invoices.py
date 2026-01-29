@@ -303,8 +303,8 @@ def api_client():
 def auth_token(api_client):
     """Get authentication token via username/password login"""
     response = api_client.post(
-        f"{BASE_URL}/api/auth/admin-login",
-        json={
+        f"{BASE_URL}/api/auth/admin/login",
+        params={
             "username": "test",
             "password": "test123"
         }
