@@ -5736,6 +5736,75 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ============= EMAIL NOTIFICATION HELPER =============
+async def send_customer_notification(project_id: str, subject: str, content_description: str):
+    """
+    Send email notification to customer when new content is added to their portal.
+    Looks up customer email from the project's associated lead.
+    """
+    if not resend.api_key:
+        logger.warning("RESEND_API_KEY not configured - skipping email notification")
+        return None
+    
+    try:
+        # Get project to find lead_id
+        project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+        if not project:
+            logger.warning(f"Project {project_id} not found for email notification")
+            return None
+        
+        lead_id = project.get("lead_id")
+        if not lead_id:
+            logger.warning(f"No lead_id found for project {project_id}")
+            return None
+        
+        # Get lead to find customer email
+        lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
+        if not lead or not lead.get("email"):
+            logger.warning(f"No email found for lead {lead_id}")
+            return None
+        
+        customer_email = lead.get("email")
+        customer_name = lead.get("name", "Klant")
+        project_name = project.get("name", "Uw project")
+        
+        # Check for customer access token for portal link
+        portal_token = project.get("customer_access_token")
+        portal_link = ""
+        if portal_token:
+            portal_link = f"<p><a href='https://qtechnics.preview.emergentagent.com/customer/{portal_token}' style='background-color: #1E40AF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;'>Bekijk uw project</a></p>"
+        
+        # Build HTML email
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #1E40AF;">Update voor {project_name}</h2>
+            <p>Beste {customer_name},</p>
+            <p>{content_description}</p>
+            {portal_link}
+            <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 20px 0;" />
+            <p style="color: #6B7280; font-size: 12px;">
+                Met vriendelijke groeten,<br/>
+                Q-Technics
+            </p>
+        </div>
+        """
+        
+        params = {
+            "from": SENDER_EMAIL,
+            "to": [customer_email],
+            "subject": subject,
+            "html": html_content
+        }
+        
+        # Run sync SDK in thread to keep FastAPI non-blocking
+        email_result = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"Email notification sent to {customer_email} for project {project_id}")
+        return email_result
+        
+    except Exception as e:
+        logger.error(f"Failed to send email notification: {str(e)}")
+        return None
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
