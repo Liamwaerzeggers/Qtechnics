@@ -1,0 +1,74 @@
+{
+  "summary": "Tested Gefaseerde Facturatie (Phased Invoicing) feature - all backend APIs and frontend UI working correctly. Manual invoice entries are correctly attributed to months based on invoice_date in the FinancesPage.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "/api/projects/{project_id}/invoices",
+        "issue": "Returns 520 error (Billit integration issue) - does not affect manual invoice functionality",
+        "priority": "LOW"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_manual_invoices.py",
+    "/app/test_reports/pytest/pytest_results_manual_invoices.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "The Billit integration endpoint /api/projects/{project_id}/invoices returns 520 errors - this is a separate issue from the manual invoicing feature being tested"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_manual_invoices.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "username": "test",
+    "password": "test123"
+  },
+  "seed_data_creation": "Used existing project 'Zinio & Amy' (PROJ-8DC83A0F) with existing manual invoice entry of €53,012.65 dated 2026-02-15",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Gefaseerde Facturatie feature is fully functional. Project 'Zinio & Amy' (PROJ-8DC83A0F) has a manual invoice entry of €53,012.65 with invoice_date 2026-02-15. The FinancesPage correctly shows this amount under February 2026. All CRUD operations for manual invoices work correctly.",
+  "features_tested": {
+    "POST /api/projects/{project_id}/manual-invoices": {
+      "status": "PASS",
+      "details": "Creates manual invoice entry with amount, description, invoice_date. Supports send_via_billit flag."
+    },
+    "GET /api/projects/{project_id}/manual-invoices": {
+      "status": "PASS",
+      "details": "Returns all manual invoice entries for a project sorted by invoice_date descending."
+    },
+    "DELETE /api/projects/{project_id}/manual-invoices/{entry_id}": {
+      "status": "PASS",
+      "details": "Deletes manual invoice entry. Returns 404 for non-existent entries."
+    },
+    "GET /api/all-manual-invoices": {
+      "status": "PASS",
+      "details": "Returns all manual invoices across all projects for financial reporting."
+    },
+    "ProjectCostsTab - Gefaseerde Facturatie section": {
+      "status": "PASS",
+      "details": "Form displays correctly with amount, date, description fields and Billit switch. Entries list shows all registered invoices with delete buttons. Total shows sum and percentage of sales price."
+    },
+    "FinancesPage - Revenue from manual invoices": {
+      "status": "PASS",
+      "details": "Monthly view correctly shows €53,012.65 under February 2026 based on invoice_date. Total revenue matches sum of all manual invoices."
+    }
+  },
+  "ui_verification": {
+    "login_flow": "PASS - Admin login with username/password works correctly",
+    "project_navigation": "PASS - Can navigate to project detail and Financieel tab",
+    "gefaseerde_facturatie_form": "PASS - Form opens, accepts input, submits successfully",
+    "entry_list": "PASS - Shows all entries with amount, description, date, and delete button",
+    "finances_page": "PASS - Shows monthly breakdown with correct revenue attribution"
+  }
+}
