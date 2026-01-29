@@ -5,8 +5,9 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Loader2, Upload, Trash2, Send } from 'lucide-react';
+import { Loader2, Upload, Trash2, Send, Plus, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import { Switch } from '../components/ui/switch';
 
 export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate }) {
   const [editingCosts, setEditingCosts] = useState(false);
@@ -19,6 +20,17 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
   const [invoices, setInvoices] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [sendingPeppol, setSendingPeppol] = useState(null); // Track which invoice is being sent
+  
+  // Manual invoice entries state
+  const [manualEntries, setManualEntries] = useState([]);
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [manualFormData, setManualFormData] = useState({
+    amount: '',
+    description: '',
+    invoice_date: new Date().toISOString().split('T')[0],
+    send_via_billit: false
+  });
+  const [submittingManual, setSubmittingManual] = useState(false);
 
   // Calculate total sale price - use project.sales_price which includes approved quotes AND legacy documents
   // Fall back to calculating from approved quotes if sales_price not set
@@ -34,6 +46,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
       other_costs: project.other_costs || 0
     });
     fetchInvoices();
+    fetchManualEntries();
   }, [project]);
 
   const fetchInvoices = async () => {
@@ -45,6 +58,74 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
       setInvoices([]);
     }
   };
+  
+  const fetchManualEntries = async () => {
+    try {
+      const response = await axios.get(`${API}/projects/${project.id}/manual-invoices`, { withCredentials: true });
+      setManualEntries(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Failed to fetch manual entries:', error);
+      setManualEntries([]);
+    }
+  };
+  
+  const handleSubmitManualEntry = async (e) => {
+    e.preventDefault();
+    if (!manualFormData.amount || parseFloat(manualFormData.amount) <= 0) {
+      toast.error('Vul een geldig bedrag in');
+      return;
+    }
+    
+    setSubmittingManual(true);
+    try {
+      const response = await axios.post(
+        `${API}/projects/${project.id}/manual-invoices`,
+        {
+          amount: parseFloat(manualFormData.amount),
+          description: manualFormData.description,
+          invoice_date: manualFormData.invoice_date,
+          send_via_billit: manualFormData.send_via_billit
+        },
+        { withCredentials: true }
+      );
+      
+      toast.success(response.data.message);
+      setManualFormData({
+        amount: '',
+        description: '',
+        invoice_date: new Date().toISOString().split('T')[0],
+        send_via_billit: false
+      });
+      setShowManualForm(false);
+      fetchManualEntries();
+      fetchInvoices(); // Refresh invoices in case one was created
+      onUpdate();
+    } catch (error) {
+      console.error('Failed to create manual entry:', error);
+      toast.error(error.response?.data?.detail || 'Kon registratie niet aanmaken');
+    } finally {
+      setSubmittingManual(false);
+    }
+  };
+  
+  const handleDeleteManualEntry = async (entryId) => {
+    if (!window.confirm('Weet je zeker dat je deze registratie wilt verwijderen?')) {
+      return;
+    }
+    
+    try {
+      await axios.delete(`${API}/projects/${project.id}/manual-invoices/${entryId}`, { withCredentials: true });
+      toast.success('Registratie verwijderd');
+      fetchManualEntries();
+      onUpdate();
+    } catch (error) {
+      console.error('Failed to delete manual entry:', error);
+      toast.error('Kon registratie niet verwijderen');
+    }
+  };
+  
+  // Calculate total manually invoiced amount
+  const totalManualInvoiced = manualEntries.reduce((sum, e) => sum + (e.amount || 0), 0);
 
   const handleSaveCosts = async () => {
     try {
