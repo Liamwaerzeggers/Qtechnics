@@ -22,6 +22,7 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 ### 2025-01-29 (Deze sessie)
 - [x] **Winstberekening fix** - Project overzichtspagina toont nu correct winst voor projecten met legacy documenten
 - [x] **Email notificaties** - Automatische email naar klant bij nieuwe content in portaal (Resend)
+- [x] **Gefaseerde Facturatie** - Handmatig factuurbedragen registreren met specifieke datum voor correcte maandelijkse rapportage in Financiën
 
 ### Eerder geïmplementeerd
 - [x] Inline bewerking offerte items (prijs/hoeveelheid)
@@ -29,7 +30,21 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 - [x] Visuele materiaallijst PDF bij offertes
 - [x] Legacy documenten met totaalprijs en zichtbaarheidsoptie
 - [x] Inklapbare secties in klantenportaal
-- [x] Bugfixes: offerte aanmaken, werkbon foto's, legacy downloads
+
+## Nieuwe Feature: Gefaseerde Facturatie
+
+### Gebruik
+In het Financieel tabblad van een project:
+1. Klik op "Registratie Toevoegen"
+2. Vul bedrag in (incl. BTW)
+3. Kies factuurdatum (bepaalt in welke maand de omzet verschijnt)
+4. Optioneel: beschrijving (bijv. "Fase 1", "Voorschot")
+5. Optioneel: zet "Verstuur via Billit" aan om ook een echte factuur te versturen
+
+### Resultaat
+- Omzet wordt toegewezen aan de gekozen maand in Financiën pagina
+- Percentage gefactureerd wordt getoond (van totale verkoopprijs)
+- Overzicht van alle registraties met verwijder-optie
 
 ## Backlog
 
@@ -49,6 +64,12 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 
 ## API Endpoints
 
+### Nieuw (Gefaseerde Facturatie)
+- `POST /api/projects/{project_id}/manual-invoices` - Registratie toevoegen
+- `GET /api/projects/{project_id}/manual-invoices` - Alle registraties ophalen
+- `DELETE /api/projects/{project_id}/manual-invoices/{entry_id}` - Registratie verwijderen
+- `GET /api/all-manual-invoices` - Alle registraties voor financiële rapportage
+
 ### Recent gewijzigd
 - `GET /api/projects` - Nu met correcte profit berekening (incl. legacy docs)
 - `PUT /api/legacy-documents/{id}` - Trigger email notificatie bij visible_to_customer=true
@@ -62,3 +83,4 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 - Preview en productie hebben **gescheiden databases**
 - Resend test sender kan alleen naar geverifieerde emails sturen
 - Bij problemen met foto's in productie: eerst checken of data in productie DB bestaat
+- Gefaseerde facturatie: omzet wordt toegewezen aan maand van factuurdatum, niet projectdatum
