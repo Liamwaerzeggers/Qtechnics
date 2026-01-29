@@ -1,0 +1,54 @@
+{
+  "summary": "Tested profit calculation for projects with legacy documents and email notification triggers. All features working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_profit_and_notifications.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Email notifications use Resend test sender (onboarding@resend.dev) which can only send to verified emails. In production, a verified domain sender should be configured."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_profit_and_notifications.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "username": "test",
+    "password": "test123"
+  },
+  "seed_data_creation": "None - used existing project 'Zinio & Amy' (PROJ-8DC83A0F) with legacy document",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Project 'Zinio & Amy' (PROJ-8DC83A0F) has a legacy document with total_price €212,050.58. The profit calculation correctly shows +€212,050.58 (100%) on the projects page. Email notifications are triggered when visibility is set to true, but Resend test sender can only send to verified emails.",
+  "features_tested": {
+    "profit_calculation": {
+      "status": "PASS",
+      "details": "GET /api/projects returns correct profit and sales_price. Project 'Zinio & Amy' shows sales_price=212050.58 and profit=212050.58 from legacy document."
+    },
+    "frontend_profit_display": {
+      "status": "PASS",
+      "details": "Projects page displays profit badge '💰 +€ 212.050,58 (100%)' for Zinio & Amy project"
+    },
+    "legacy_document_visibility_notification": {
+      "status": "PASS",
+      "details": "PUT /api/legacy-documents/{id} with visible_to_customer=true triggers send_customer_notification. Verified in backend logs."
+    },
+    "work_slip_visibility_notification": {
+      "status": "PASS",
+      "details": "PUT /api/projects/{id}/work-slips/{slip_id}/visibility with visible_to_customer=true triggers send_customer_notification. Verified in backend logs."
+    }
+  },
+  "email_notification_note": "Email notifications are being triggered correctly (verified via backend logs). Actual email delivery fails with Resend test sender because recipient email (petra.sabbe@qtechnics.be) is not verified. This is expected behavior for Resend test mode."
+}
