@@ -481,6 +481,25 @@ class InvoiceUpdate(BaseModel):
     payment_status: Optional[str] = None
     paid_date: Optional[datetime] = None
 
+# Manual Invoice Entry - for phased invoicing without automatic invoice generation
+class ManualInvoiceEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"MAN-{str(uuid.uuid4())[:8].upper()}")
+    project_id: str
+    amount: float  # Gefactureerd bedrag (incl. BTW)
+    description: str = ""  # Bijv. "Fase 1", "Deelbetaling maart"
+    invoice_date: datetime  # Datum voor maandelijkse rapportage
+    send_via_billit: bool = False  # Of er een echte factuur moet worden verstuurd
+    billit_invoice_id: Optional[str] = None  # Reference to created invoice if sent via Billit
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    user_id: str
+
+class ManualInvoiceEntryCreate(BaseModel):
+    amount: float
+    description: str = ""
+    invoice_date: str  # YYYY-MM-DD format
+    send_via_billit: bool = False
+
 # Quick Tasks - standalone tasks not tied to a project
 class QuickTask(BaseModel):
     model_config = ConfigDict(extra="ignore")
