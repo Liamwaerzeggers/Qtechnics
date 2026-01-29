@@ -1,77 +1,110 @@
 <analysis>**original_problem_statement:**
-The user's initial goal was to integrate Billit for Peppol e-invoicing. This has since expanded into a multi-phase project to build a comprehensive construction project management tool.
+The user's goal is to build and enhance a full-stack construction project management application.
 
-**Key features requested and/or implemented:**
-1.  **AI Floor Plan Analysis:** An AI feature to analyze floor plans, which is functional.
-2.  **Room Configurator:** A 2D room drawing tool prototype.
-3.  **Catalog Management:** Full CRUD for managing a catalog of Work Items and Materials.
-4.  **Quote & Invoice Enhancements:** Advanced features like quote splitting, custom PDF layouts, and auto-adding items to the catalog.
-5.  **Customer Portal:** A portal for customers to view project progress, with unit prices hidden.
-6.  **PEPPOL/Billit Integration:** A complete, production-ready integration with Billit for B2B (PEPPOL) and B2C (email) e-invoicing.
-7.  **Admin Access Control:** A critical fix allowing all administrators to view and manage all quotes, projects, and related data, not just their own.
-8.  **Legacy Document Upload:** A feature to upload old PDF quotes/invoices to projects and display them in the admin and customer portals.
-9.  **UI/UX Improvements:** Redesigned the main Quotes page to be grouped by project. Added a room identifier to quotes. The current task is to improve image galleries with thumbnails and folder structures.
+**Key features requested in this session:**
+1.  **Quote Line Item Editing:** Allow inline editing of quantity and price for items already added to a quote.
+2.  **Catalog Automation:** Automatically add new materials or labor types to the main catalog when they are first used in a quote.
+3.  **Material Photos:** Allow uploading an image when adding a new material, store it, and use it in a new visual PDF attachment for quotes.
+4.  **Financial Integration:**
+    *   When a quote is approved, its total value should be added to the project's total sales figure in the financial overview.
+    *   Allow uploading legacy (old system) PDF quotes with a total price, and have that price also contribute to the project's total sales figure.
+5.  **Customer Portal UI/UX:**
+    *   Make the First Visit Photos, 3D Designs, and Work Reports sections collapsible for better organization.
+    - Display 3D designs as viewable images instead of download links.
+6.  **Notifications:** Send an email notification to the client when new content (work reports, documents) is added to their portal.
+7.  **Bug Fixes & UX Polish:**
+    *   Fix a bug preventing the creation of new quotes.
+    *   Fix a crash in the customer portal related to inconsistent image data formats.
+    *   Fix issues preventing work slip photo uploads and legacy document downloads.
+    *   Show project profit (€ and %) on the main projects overview page, ensuring it works correctly for projects with legacy document prices.
+    *   Resolve issues where images were not appearing in the admin view on the production environment.
 
 **User's preferred language**: Dutch (Nederlands)
 
 **what currently exists?**
-The application is a full-stack project management tool (React/FastAPI/MongoDB).
-- **Billit/PEPPOL Integration:** A fully implemented and tested B2B/B2C invoicing workflow using the user's production API key. The system automatically chooses between PEPPOL (for clients with a VAT number) and SMTP/Email (for clients without).
-- **Cross-Admin Access:** A major bug has been fixed, allowing any admin user to view, edit, and export all quotes and projects, removing the previous restriction where data was siloed per user.
-- **Quote Management:** The main quotes overview page has been redesigned to group quotes into collapsible folders by project. Quotes can now be assigned a specific room, which is visible on the quote list and editable on the detail page.
-- **Legacy Document Upload:** A new feature allows users to upload old PDF documents (quotes, invoices) to a project. These are accessible in a dedicated section within the project's Quotes tab and in a new Documents tab in the customer portal.
-- **Bug Fixes:** A critical bug preventing the upload of images in the 3D Design tab has been resolved.
+The application is a comprehensive full-stack project management tool (React/FastAPI/MongoDB) with features for invoicing (Billit/PEPPOL), quote and project management, a customer portal, and catalog management.
+
+**Completed in this session:**
+*   **Quote Editing:** Admins can now perform inline editing of price and quantity for line items in a quote. The backend correctly recalculates totals, including VAT.
+*   **Catalog & PDF:** New materials/labor are auto-added to the catalog. Material creation supports optional image uploads, which are then used to generate a new Visual Material List PDF attached to the main quote PDF.
+*   **Financials:** Project sales prices are now correctly updated from two sources: approved quotes and uploaded legacy documents with a specified total price.
+*   **Legacy Docs:** The feature now supports adding a total price and a visible to customer toggle.
+*   **Customer Portal:** The UI has been improved with collapsible sections for photos and work updates, and 3D designs are now displayed as images.
+*   **Bug Fixes:** Critical bugs preventing quote creation, work slip photo uploads, and legacy document downloads have been resolved. A crash in the customer portal was also fixed.
 
 **Last working item**:
--   **Last item agent was working:** The user requested a visual and organizational overhaul of the image galleries. Instead of lists of filenames, they want to see image thumbnails and group photos into folders based on the room they belong to. This applies to both the 3D Ontwerpen (3D Designs) and Eerste Bezoek (First Visit) tabs. The agent started by rewriting the  file to implement this new UI.
--   **Status:** IN PROGRESS
--   **Agent Testing Done:** N
--   **Which testing method agent to use?** Frontend testing agent and screenshot tool. The agent should verify the new folder UI, image previews, drag-and-drop upload, and delete functionality for both the 3D Designs and First Visit tabs once the implementation is complete.
--   **User Testing Done:** N
+*   **Last item agent was working:** The user reported that on the main project overview page, the Profit column showed €0 for projects whose sales price came from an uploaded legacy document, even though the profit was correctly displayed on the project's detail page. The agent had just added the profit *percentage* display and was starting to investigate the backend  endpoint to fix the underlying profit calculation bug.
+*   **Status:** IN PROGRESS
+*   **Agent Testing Done:** N
+*   **Which testing method agent to use?** Backend testing. The agent must test the  endpoint via  to verify that the  field is correctly calculated and returned for all projects, including those with sales prices from legacy documents.
+*   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Backend API Route Instability (P2)**
+-   **Issue 1: Profit not shown in project overview for legacy document projects (P0)**
+-   **Issue 2: Photos not visible in admin view on production (P1)**
+-   **Issue 3: Backend API Route Instability (P2)**
 
 **Issues Detail**:
--   **Issue 1: Backend API Route Instability**
-    -   **Attempted fixes:** None in this session. A backend restart (backend: stopped
-backend: started) is the only known temporary fix.
-    -   **Next debug checklist:** After completing current feature work, investigate backend logs () for silent errors or resource leaks.
-    -   **Why fix this issue and what will be achieved with the fix?** Improves application stability and prevents random API failures.
+-   **Issue 1: Profit not shown in project overview for legacy document projects**
+    -   **Attempted fixes:** The agent added a profit percentage display to the frontend page (), but the core backend data issue remains.
+    -   **Next debug checklist:**
+        1.  Review the  function in .
+        2.  Confirm that the calculation for  correctly includes .
+        3.  Ensure the final  value is calculated and included in the project object returned by the endpoint for the project list.
+    -   **Why fix this issue and what will be achieved with the fix?** This is critical for providing an accurate, at-a-glance financial overview of all projects on the main dashboard, a key user requirement.
+    -   **Status:** IN PROGRESS
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Both. Test the  endpoint (backend), then take a screenshot of the  page (frontend).
+
+-   **Issue 2: Photos not visible in admin view on production**
+    -   **Attempted fixes:** Agent determined it's a data separation issue (preview vs. production databases).  hooks were added to  and  to force re-renders, which might help if data loads asynchronously.
+    -   **Next debug checklist:**
+        1.  Re-confirm with the user that they have uploaded at least one test image **directly in the production environment** and it is still not visible.
+        2.  If the issue persists, check the browser's developer console in production for any 404 (Not Found) errors related to image URLs.
+        3.  Re-examine the  and  helper functions to ensure the base URL is constructed correctly for the production environment.
+    -   **Why fix this issue and what will be achieved with the fix?** The image gallery feature is unusable without visible images. This is a core functionality regression from the user's perspective.
+    -   **Status:** BLOCKED (Requires user confirmation of upload in production)
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Frontend (screenshot).
+
+-   **Issue 3: Backend API Route Instability**
+    -   **Attempted fixes:** None in this session. This is a known issue from a previous fork.
+    -   **Next debug checklist:** Investigate backend logs () for any silent errors, resource leaks, or recurring tracebacks that could cause instability.
+    -   **Why fix this issue and what will be achieved with the fix?** To improve overall application reliability and prevent random API failures.
     -   **Status:** NOT STARTED
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Backend.
-    -   **Blocked on other issue:** No.
 
 **In progress Task List**:
--   **Task 1: Overhaul Image Upload Tabs with Room Folders & Previews (P0)**
+-   **Task 1: Implement Email Notifications (P1)**
 
 **Task Detail**:
--   **Task 1: Overhaul Image Upload Tabs with Room Folders & Previews**
-    -   **Where to resume:**
-        1.  The agent has just overwritten  with a new implementation for folders and image previews.
-        2.  **Backend:** The backend must be updated. Add a  field to the  object model within the  collection in . The  endpoint must be updated to accept and store this new  field.
-        3.  **Frontend (First Visit):** After the 3D Designs tab is complete, apply the exact same functionality (room folders, image previews, upload/delete logic) to the Eerste Bezoek tab by modifying  and its corresponding backend photo upload endpoints.
-    -   **What will be achieved with this?** A much more organized and user-friendly way to manage project photos, grouped by room with visual thumbnails.
+-   **Task 1: Implement Email Notifications**
+    -   **Where to resume:** The  library is installed and the  is in the environment. The agent needs to implement the email sending logic.
+        1.  In , initialize the  client.
+        2.  Create a helper function . This function should fetch the client's email from the associated lead/project.
+        3.  Call this new function from the endpoints that add content to the customer portal (e.g., after creating a work slip, or after toggling a legacy document to be visible).
+    -   **What will be achieved with this?** A key feature for improving client communication by automatically notifying them of project updates.
     -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Should Test frontend/backend/both after fix?** Backend.
     -   **Blocked on something:** No.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   **Finalize Room Configurator (P1):** Elevate the current prototype into a production-ready feature with a polished UI and robust Generate Quote functionality.
+    -   **Finalize Room Configurator (P1):** Turn the existing prototype into a fully functional feature.
 -   **Future Tasks:**
-    -   **Refactor  (P2):** The main backend file is a massive monolith and urgently needs to be broken down into a proper package structure (e.g., , , ) to improve maintainability.
+    -   **Refactor  (P2):** The main backend file is a monolith and needs to be broken down into a proper package structure (routers, models, services) for maintainability.
+    -   **Data Migration Script (P3):** The user expressed interest in migrating data from the preview to the production environment. This is a risky, low-priority task to be considered only if the user insists.
 
 **Completed work in this session**
--   **Feature (Billit/PEPPOL):** Successfully implemented the complete B2B (Peppol) and B2C (Email/SMTP) invoicing workflow using the user's production API key and robust error handling.
--   **Bug Fix (Admin Access Control):** Resolved a critical bug preventing administrators from viewing/editing each other's data. Removed  checks for admin roles across numerous quote, project, and export endpoints.
--   **Bug Fix (User Management):** Debugged the admin creation flow and successfully created a new admin account (Petra) for the user.
--   **Feature (Legacy Document Upload):** Implemented functionality to upload old PDF quotes/invoices to a project, making them visible in both the admin and customer portals.
--   **Feature (UI/UX - Quotes Page):** Redesigned the main  page to group all quotes into collapsible folders by project, significantly improving clarity.
--   **Feature (Quotes - Room Field):** Added a room field to quotes, which is now displayed on the quote list and is editable on the quote detail page.
--   **Bug Fix (3D Design Upload):** Fixed a critical bug where the 3D design upload endpoint was unimplemented, making photo uploads functional again.
--   **Deployment Issues:** Investigated and resolved user issues related to accessing the application on different URLs ( vs. the preview URL), clarifying that they were separate deployments. Guided the user on how to get changes deployed.
+-   **Feature:** Implemented inline editing for quantity and price on quote line items.
+-   **Feature:** Implemented auto-add to catalog for new materials/work, with optional image upload for materials.
+-   **Feature:** Enhanced quote PDF export to include a visual material list (image, name, price).
+-   **Feature:** Added  and a visibility toggle to legacy document uploads, integrating the price into project financials.
+-   **Feature:** Ensured a project's  is updated when a quote is approved.
+-   **UI/UX:** Made sections in the customer portal (photos, work reports) collapsible.
+-   **Bug Fix:** Fixed quote creation, work slip photo uploads, and legacy document downloads.
+-   **Bug Fix:** Resolved a crash in the customer portal related to mixed photo data types.
 
 **Earlier issues found/mentioned but not fixed**
 -   **Issue 1: Backend API Route Instability**
@@ -82,7 +115,7 @@ backend: started) is the only known temporary fix.
 
 **Known issue recurrence from previous fork**
 -   **Issue recurrence in previous fork:** Backend API Route Instability.
--   **Recurrence count:** 3+
+-   **Recurrence count:** High (3+)
 -   **Status:** NOT STARTED
 
 **Code Architecture**
@@ -90,86 +123,92 @@ backend: started) is the only known temporary fix.
 
 **Key Technical Concepts**
 -   **Frontend:** React, Tailwind CSS, Axios
--   **Backend:** FastAPI, Motor (async MongoDB driver), ReportLab
+-   **Backend:** FastAPI, Motor (async MongoDB driver), ReportLab (for PDFs)
 -   **Database:** MongoDB
--   **3rd Party Integrations:**
-    -   **Billit:** E-invoicing via production API. Authentication uses an  header.
-    -   **:** Used for AI vision features from previous sessions.
+-   **3rd Party Integrations:** Billit, , and now **Resend** for emails.
 
 **key DB schema**
--   **quotes**: Added .
--   **projects**:
-    -   Added a new list field: .
-    -   The  list within a project will require a  field to be added to each design object for the in-progress task.
--   **users**: A new admin user petra was added.
--   **LegacyDocument (New Model)**: 
+-   **projects**: Added .
+-   **LegacyDocument (Model)**: Added  and .
+-   **first_visit_photos / design_3d_files**: These fields now handle a  to support both old string-based URLs and new object-based data with a  key.
 
 **changes in tech stack**
--   None.
+-   Added  to the backend for email notifications.
 
 **All files of reference**
--   : Contains all recent backend logic.
--   : Contains the new UI for the 3D Designs tab.
--   : Will need similar modifications to .
--   : Contains the redesigned quotes overview.
--   : Contains the quote editor UI.
+-   
+-   
+-   
+-   
+-   
+-   
+-   
 
 **Areas that need refactoring**:
--    is critically oversized and complex. It urgently needs to be refactored into a proper package structure (routers, services, models).
--   The access control logic () is scattered across many endpoints. A centralized Role-Based Access Control (RBAC) dependency would be a much cleaner and more robust solution.
+-    is critically oversized. It urgently needs to be refactored into a proper package structure (e.g., routers, services, models).
+-   The data models for project photos (, ) are inconsistent (). A data migration script to standardize all entries to the new object format would improve stability.
 
 **key api endpoints**
--   **Billit Integration (Implemented/Modified):**
-    -   : Sends invoice to Billit, auto-selecting Peppol/SMTP.
-    -   : Retries a failed send.
--   **Admin Access (Modified):**
-    -   Multiple endpoints for quotes, projects, and exports (e.g., , , , ) were modified to allow access for any admin, not just the creator.
--   **Legacy Docs (New):**
+-   **New:**
     -   
--   **Designs (Fixed/Modified):**
-    -   : Endpoint implementation was added. It now needs to be updated to accept a .
+    -    (with optional image file)
+-   **Modified:**
+    -    (Needs fix for profit calculation)
+    -    (Bug fix)
+    -    (Added logic to update project sales price)
+    -    (Accepts )
+    -    (Bug fix)
+-   **Heavy Frontend Usage:**
+    -   
 
 **Critical Info for New Agent**
--   **Your immediate priority is to complete the image gallery overhaul.** This involves: 1) Updating the backend  upload endpoint to save a  name. 2) Implementing the same folder/preview UI for the First Visit tab photos and its corresponding backend.
--   **Communicate with the user in Dutch.**
--   The Billit integration is **live and uses a production key**. Be very careful not to break it. The correct authentication method is the  header.
--   The access control model has been fundamentally changed: **All admins can access all data.** Do not re-introduce  checks for admin-level endpoints.
+-   **Environment Separation is KEY:** The preview and production environments have **separate databases and file storage**. Code is deployed, but data is NOT. When the user reports an issue on production, confirm if the necessary data exists there before debugging the code. Do not assume data from the preview environment is present in production.
+-   **Priorities:**
+    1.  Fix the profit calculation on the main project overview page ( endpoint).
+    2.  Address the photos not visible issue by confirming with the user if they've uploaded images in production.
+    3.  Complete the email notification feature using Resend.
+-   **Always communicate with the user in Dutch.**
 
 **documents and test reports created in this job**
 -   Test reports from the testing subagent are available in .
--    was updated and used for testing the Billit and Admin Access fixes.
+-    was updated for testing various features.
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. **User:** Asks for  field on quotes and a fix for 3D design uploads. (COMPLETED)
-9.  **User:** Requests the main quotes page be reorganized into folders by project. (COMPLETED)
-8.  **User:** Asks to upload old PDF quotes/invoices to projects and the customer portal. (COMPLETED)
-7.  **User:** Reports they cannot download PDFs from quotes. (FIXED)
-6.  **User:** Asks about deployment costs. (ANSWERED)
-5.  **User:** Clarifies that  is the live app and changes must be deployed there. (ACKNOWLEDGED)
-4.  **User:** Reports still being unable to edit/view quotes on the live app. (INVESTIGATED - separate deployments identified as the cause).
-3.  **User:** Reports a blank screen after a hard refresh. (INVESTIGATED - determined to be a browser session issue, resolved after login).
-2.  **User:** Reports being unable to view certain quotes as admin Petra. (FIXED - Admin Access Control issue).
-1.  **User:** Wants to see image thumbnails instead of filenames and organize images into room-based folders for 3D Designs and First Visit tabs. (IN PROGRESS)
+10. Reports work slip photos not saving & legacy docs not downloading. (FIXED)
+9.  Asks for email/SMS notifications when the customer portal is updated. (IN PROGRESS)
+8.  Provides Resend API key. (ACKNOWLEDGED)
+7.  Reports that photos are no longer visible and profit margin isn't showing in the project overview. (IN PROGRESS)
+6.  Clarifies the profit margin issue is specific to projects with uploaded legacy quotes. (ACKNOWLEDGED)
+5.  Confirms that uploading a new photo in production works, but asks if data can be migrated from preview. (ANSWERED - No, data is separate).
+4.  Reports that changes (collapsible UI) are not visible in production after redeploy. (INVESTIGATED - Likely a caching or deployment lag issue).
+3.  Reports that work reports are still not collapsible in the customer portal. (COMPLETED)
+2.  Requests that werkbonnen (work reports) also be collapsible in the customer portal. (COMPLETED)
+1.  Requests collapsible sections and inline image previews for photos in the customer portal. (COMPLETED)
 
 **Project Health Check:**
--   **Broken:** None.
--   **Mocked:** The Room Configurator is a functional prototype but not a finished feature.
--   **Blocked:** None.
+-   **Broken:** The profit calculation on the main project overview page is incorrect for certain project types.
+-   **Mocked:** The Room Configurator is still a prototype.
+-   **Blocked:** The photos not visible issue is blocked pending user confirmation of data presence in the production environment.
 
 **3rd Party Integrations**
--   **Billit (Payments/PEPPOL)** — requires User API Key. Status: **IMPLEMENTED** (Production).
--   **OpenAI GPT-4o Vision (via )** — uses Emergent LLM Key. Status: Implemented in a previous session.
+-   **Billit (Payments/PEPPOL)** — requires User API Key. Status: **IMPLEMENTED**.
+-   **OpenAI GPT-4o Vision (via )** — uses Emergent LLM Key. Status: Implemented previously.
+-   **Resend (Email)** — requires User API Key. Status: **IN PROGRESS**.
 
 **Testing status**
--   **Testing agent used after significant changes:** YES. Used to validate the Billit integration and the cross-admin access fixes.
--   **Troubleshoot agent used after agent stuck in loop:** NO.
--   **Test files created:** The testing agent generated temporary test scripts during its runs.
--   **Known regressions:** None.
+-   **Testing agent used after significant changes:** YES
+-   **Troubleshoot agent used after agent stuck in loop:** NO
+-   **Test files created:** Yes, by the testing agent.
+-   **Known regressions:**
+    -   Profit calculation on the project list page is broken for projects with legacy documents.
+    -   User reports photos are not visible in production.
 
 **Credentials to test flow:**
 -   **Username:**  | **Password:**  (Admin)
 -   **Username:**  | **Password:**  (Admin)
+-   **Note:** These credentials are for the development database only. The production database is separate.
 
 **What agent forgot to execute**
--   The agent started the image gallery overhaul (Task 1) but only completed the first step (rewriting one frontend file). The backend changes and the update for the second tab (First Visit) are still pending.
+-   The agent did not complete the backend implementation for the Resend email notification feature after being interrupted.
+-   The agent identified the profit calculation bug but did not get to implement the backend fix in the  function.
 -   The major technical debt of refactoring  remains unaddressed.</analysis>
