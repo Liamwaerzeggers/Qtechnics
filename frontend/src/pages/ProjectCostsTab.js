@@ -787,6 +787,189 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
         </CardContent>
       </Card>
 
+      {/* Handmatige Facturatieregistratie - Gefaseerde Facturatie */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>📊 Gefaseerde Facturatie</CardTitle>
+            <Button 
+              onClick={() => setShowManualForm(!showManualForm)}
+              variant={showManualForm ? "outline" : "default"}
+              style={!showManualForm ? {backgroundColor: '#1E40AF'} : {}}
+            >
+              {showManualForm ? 'Annuleren' : <><Plus size={16} className="mr-1" /> Registratie Toevoegen</>}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Info box */}
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm" style={{color: '#1E40AF'}}>
+                💡 Registreer hier handmatig gefactureerde bedragen voor correcte maandelijkse rapportage. 
+                Optioneel kunt u direct een factuur versturen via Billit.
+              </p>
+            </div>
+            
+            {/* Form */}
+            {showManualForm && (
+              <form onSubmit={handleSubmitManualEntry} className="p-4 bg-gray-50 rounded-lg space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Bedrag (incl. BTW) *</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">€</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={manualFormData.amount}
+                        onChange={(e) => setManualFormData({...manualFormData, amount: e.target.value})}
+                        className="pl-7"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Factuurdatum *</Label>
+                    <div className="relative">
+                      <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <Input
+                        type="date"
+                        value={manualFormData.invoice_date}
+                        onChange={(e) => setManualFormData({...manualFormData, invoice_date: e.target.value})}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label>Beschrijving (optioneel)</Label>
+                  <Input
+                    type="text"
+                    placeholder="Bijv. Fase 1, Deelbetaling maart, Voorschot"
+                    value={manualFormData.description}
+                    onChange={(e) => setManualFormData({...manualFormData, description: e.target.value})}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                  <div>
+                    <div className="font-medium" style={{color: '#1E293B'}}>Verstuur via Billit</div>
+                    <div className="text-sm" style={{color: '#64748B'}}>
+                      Maak automatisch een factuur aan en verstuur naar de klant
+                    </div>
+                  </div>
+                  <Switch
+                    checked={manualFormData.send_via_billit}
+                    onCheckedChange={(checked) => setManualFormData({...manualFormData, send_via_billit: checked})}
+                  />
+                </div>
+                
+                <div className="flex justify-end gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => setShowManualForm(false)}
+                  >
+                    Annuleren
+                  </Button>
+                  <Button 
+                    type="submit"
+                    disabled={submittingManual}
+                    style={{backgroundColor: '#1E40AF'}}
+                  >
+                    {submittingManual ? (
+                      <><Loader2 size={16} className="animate-spin mr-2" /> Bezig...</>
+                    ) : (
+                      'Registratie Toevoegen'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            )}
+            
+            {/* Summary */}
+            {manualEntries.length > 0 && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold" style={{color: '#166534'}}>
+                    Totaal Gefaseerd Gefactureerd:
+                  </span>
+                  <span className="text-2xl font-bold" style={{color: '#166534'}}>
+                    €{totalManualInvoiced.toLocaleString('nl-NL', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  </span>
+                </div>
+                {totalSalePrice > 0 && (
+                  <div className="text-sm mt-1" style={{color: '#15803d'}}>
+                    {((totalManualInvoiced / totalSalePrice) * 100).toFixed(1)}% van verkoopprijs gefactureerd
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Entries List */}
+            {manualEntries.length > 0 ? (
+              <div>
+                <h4 className="font-semibold mb-3" style={{color: '#1E3A8A'}}>
+                  Geregistreerde Facturaties ({manualEntries.length})
+                </h4>
+                <div className="space-y-2">
+                  {manualEntries.map((entry) => (
+                    <div key={entry.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold" style={{color: '#1E40AF'}}>
+                            €{entry.amount?.toLocaleString('nl-NL', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                          </span>
+                          {entry.send_via_billit && entry.billit_invoice_id && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                              Billit
+                            </span>
+                          )}
+                          {!entry.send_via_billit && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">
+                              Handmatig
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm" style={{color: '#64748B'}}>
+                          {entry.description || 'Geen beschrijving'}
+                        </div>
+                        <div className="text-xs" style={{color: '#94A3B8'}}>
+                          Factuurdatum: {new Date(entry.invoice_date).toLocaleDateString('nl-NL', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteManualEntry(entry.id)}
+                        className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-red-50 hover:text-red-600 active:bg-red-100 transition-colors"
+                        title="Verwijderen"
+                        style={{color: '#64748B'}}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-6" style={{color: '#94A3B8'}}>
+                <Calendar size={32} className="mx-auto mb-2 opacity-50" />
+                <p>Nog geen facturatieregistraties</p>
+                <p className="text-sm">Voeg een registratie toe om gefaseerde facturatie bij te houden</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Inkoop Facturen */}
       <Card>
         <CardHeader>
