@@ -3659,6 +3659,174 @@ async def get_project_customer_invoices(
     
     return invoices
 
+# ============= MANUAL INVOICE ENTRIES (Phased Invoicing) =============
+
+@api_router.post("/projects/{project_id}/manual-invoices")
+async def create_manual_invoice_entry(
+    project_id: str,
+    entry: ManualInvoiceEntryCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a manual invoice entry for phased invoicing"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can create manual invoice entries")
+    
+    # Verify project exists
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    # Parse invoice date
+    try:
+        invoice_date = datetime.strptime(entry.invoice_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Ongeldige datum formaat. Gebruik YYYY-MM-DD")
+    
+    # Create the manual entry
+    new_entry = ManualInvoiceEntry(
+        project_id=project_id,
+        amount=entry.amount,
+        description=entry.description,
+        invoice_date=invoice_date,
+        send_via_billit=entry.send_via_billit,
+        user_id=current_user.id
+    )
+    
+    billit_invoice_id = None
+    
+    # If send_via_billit is True, create and send a real invoice
+    if entry.send_via_billit:
+        try:
+            # Get lead for customer info
+            lead = await db.leads.find_one({"id": project.get("lead_id")})
+            if not lead:
+                raise HTTPException(status_code=400, detail="Geen klantgegevens gevonden voor dit project")
+            
+            # Create invoice in our system
+            invoice_number = f"FAC-{datetime.now(timezone.utc).year}-{str(uuid.uuid4())[:6].upper()}"
+            
+            # Calculate VAT (assuming 21%)
+            vat_rate = 0.21
+            amount_excl_vat = entry.amount / (1 + vat_rate)
+            vat_amount = entry.amount - amount_excl_vat
+            
+            invoice_data = {
+                "id": f"INV-{str(uuid.uuid4())[:8].upper()}",
+                "project_id": project_id,
+                "invoice_number": invoice_number,
+                "invoice_date": invoice_date,
+                "due_date": invoice_date + timedelta(days=30),
+                "customer_name": lead.get("name", ""),
+                "customer_email": lead.get("email", ""),
+                "customer_address": lead.get("address", ""),
+                "customer_vat": lead.get("vat_number", ""),
+                "line_items": [{
+                    "description": entry.description or "Deelfacturatie",
+                    "quantity": 1,
+                    "unit_price": amount_excl_vat,
+                    "vat_rate": 21,
+                    "total": entry.amount
+                }],
+                "subtotal": amount_excl_vat,
+                "vat_amount": vat_amount,
+                "total_incl_vat": entry.amount,
+                "milestone": "manual",
+                "milestone_percentage": 0,
+                "payment_status": "pending",
+                "peppol_status": "not_sent",
+                "created_at": datetime.now(timezone.utc),
+                "user_id": current_user.id
+            }
+            
+            await db.invoices.insert_one(invoice_data)
+            billit_invoice_id = invoice_data["id"]
+            new_entry.billit_invoice_id = billit_invoice_id
+            
+            logger.info(f"Created invoice {invoice_number} for manual entry {new_entry.id}")
+        except Exception as e:
+            logger.error(f"Failed to create Billit invoice: {str(e)}")
+            # Continue without Billit - just save the manual entry
+            new_entry.send_via_billit = False
+    
+    # Save the manual entry
+    entry_dict = new_entry.model_dump()
+    entry_dict["invoice_date"] = entry_dict["invoice_date"].isoformat()
+    entry_dict["created_at"] = entry_dict["created_at"].isoformat()
+    await db.manual_invoice_entries.insert_one(entry_dict)
+    
+    # Return without _id
+    entry_dict.pop("_id", None)
+    
+    return {
+        "success": True,
+        "entry": entry_dict,
+        "billit_invoice_created": billit_invoice_id is not None,
+        "message": f"Facturatieregistratie van €{entry.amount:.2f} toegevoegd" + 
+                   (f" en factuur aangemaakt" if billit_invoice_id else "")
+    }
+
+@api_router.get("/projects/{project_id}/manual-invoices")
+async def get_manual_invoice_entries(
+    project_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all manual invoice entries for a project"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can view manual invoice entries")
+    
+    entries = await db.manual_invoice_entries.find(
+        {"project_id": project_id}, 
+        {"_id": 0}
+    ).sort("invoice_date", -1).to_list(1000)
+    
+    # Convert dates
+    for entry in entries:
+        if isinstance(entry.get("invoice_date"), str):
+            entry["invoice_date"] = datetime.fromisoformat(entry["invoice_date"])
+        if isinstance(entry.get("created_at"), str):
+            entry["created_at"] = datetime.fromisoformat(entry["created_at"])
+    
+    return entries
+
+@api_router.delete("/projects/{project_id}/manual-invoices/{entry_id}")
+async def delete_manual_invoice_entry(
+    project_id: str,
+    entry_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a manual invoice entry"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete manual invoice entries")
+    
+    result = await db.manual_invoice_entries.delete_one({
+        "id": entry_id,
+        "project_id": project_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Registratie niet gevonden")
+    
+    return {"success": True, "message": "Registratie verwijderd"}
+
+@api_router.get("/all-manual-invoices")
+async def get_all_manual_invoice_entries(
+    current_user: User = Depends(get_current_user)
+):
+    """Get all manual invoice entries for financial reporting"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can view manual invoice entries")
+    
+    entries = await db.manual_invoice_entries.find({}, {"_id": 0}).to_list(10000)
+    
+    # Convert dates
+    for entry in entries:
+        if isinstance(entry.get("invoice_date"), str):
+            entry["invoice_date"] = datetime.fromisoformat(entry["invoice_date"])
+        if isinstance(entry.get("created_at"), str):
+            entry["created_at"] = datetime.fromisoformat(entry["created_at"])
+    
+    return entries
+
 @api_router.put("/invoices/{invoice_id}", response_model=Invoice)
 async def update_invoice(
     invoice_id: str,
