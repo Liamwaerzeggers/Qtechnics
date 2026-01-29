@@ -245,6 +245,11 @@ export default function ProjectsPage() {
                           }}
                         >
                           💰 {project.profit >= 0 ? '+' : ''}{project.profit.toLocaleString('nl-NL', {style: 'currency', currency: 'EUR'})}
+                          {project.sales_price > 0 && (
+                            <span className="ml-1">
+                              ({Math.round((project.profit / project.sales_price) * 100)}%)
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>
