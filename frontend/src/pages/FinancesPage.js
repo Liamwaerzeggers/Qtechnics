@@ -10,20 +10,25 @@ import { toast } from 'sonner';
 
 export default function FinancesPage() {
   const [projects, setProjects] = useState([]);
+  const [manualInvoices, setManualInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedView, setSelectedView] = useState('month'); // month, quarter, year
 
   useEffect(() => {
-    fetchProjects();
+    fetchData();
   }, []);
 
-  const fetchProjects = async () => {
+  const fetchData = async () => {
     try {
-      const response = await axios.get(`${API}/projects`, { withCredentials: true });
-      setProjects(response.data);
+      const [projectsRes, manualRes] = await Promise.all([
+        axios.get(`${API}/projects`, { withCredentials: true }),
+        axios.get(`${API}/all-manual-invoices`, { withCredentials: true })
+      ]);
+      setProjects(projectsRes.data);
+      setManualInvoices(manualRes.data || []);
     } catch (error) {
-      console.error('Failed to fetch projects:', error);
+      console.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
@@ -42,7 +47,7 @@ export default function FinancesPage() {
     return years.sort((a, b) => b - a);
   };
 
-  // Calculate financials by month
+  // Calculate financials by month - using manual invoices for revenue
   const getMonthlyData = () => {
     const monthlyData = {};
     const months = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 
@@ -55,31 +60,48 @@ export default function FinancesPage() {
         revenue: 0,
         costs: 0,
         profit: 0,
-        projects: 0
+        projects: 0,
+        manualInvoices: 0
       };
     });
 
-    // Aggregate data
+    const selectedYearInt = parseInt(selectedYear);
+
+    // Add costs from projects based on project date
     projects.forEach(project => {
-      // Use start_date, or created_at as fallback
       const projectDate = project.start_date || project.created_at;
       if (!projectDate) return;
       
       const date = new Date(projectDate);
       const projectYear = date.getFullYear();
-      const selectedYearInt = parseInt(selectedYear);
       
       if (projectYear !== selectedYearInt) return;
       
       const monthIndex = date.getMonth();
-      const profit = project.profit || 0;
-      const costs = project.total_costs_incl_vat || 0;
-      const revenue = profit + costs;
+      const costs = project.total_costs_incl_vat || project.total_costs || 0;
       
-      monthlyData[monthIndex].revenue += revenue;
       monthlyData[monthIndex].costs += costs;
-      monthlyData[monthIndex].profit += profit;
       monthlyData[monthIndex].projects += 1;
+    });
+
+    // Add revenue from manual invoice entries based on invoice_date
+    manualInvoices.forEach(entry => {
+      const invoiceDate = entry.invoice_date;
+      if (!invoiceDate) return;
+      
+      const date = new Date(invoiceDate);
+      const invoiceYear = date.getFullYear();
+      
+      if (invoiceYear !== selectedYearInt) return;
+      
+      const monthIndex = date.getMonth();
+      monthlyData[monthIndex].revenue += entry.amount || 0;
+      monthlyData[monthIndex].manualInvoices += 1;
+    });
+
+    // Calculate profit for each month
+    Object.values(monthlyData).forEach(data => {
+      data.profit = data.revenue - data.costs;
     });
 
     return Object.values(monthlyData);
