@@ -4517,6 +4517,35 @@ async def serve_material_image(filename: str):
     
     return FileResponse(file_path, media_type=content_type)
 
+# Alternative route for uploads (some files use /uploads instead of /static)
+@api_router.get("/uploads/{file_type}/{project_id}/{filename}")
+async def serve_upload_file(file_type: str, project_id: str, filename: str):
+    """Serve uploaded files via /uploads route (alternative to /static)"""
+    # Validate file_type
+    if file_type not in ["first_visit", "designs", "work_slips"]:
+        raise HTTPException(status_code=404, detail="Invalid file type")
+    
+    file_path = ROOT_DIR / "uploads" / file_type / project_id / filename
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Determine content type
+    suffix = file_path.suffix.lower()
+    content_types = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".pdf": "application/pdf",
+        ".dxf": "application/dxf",
+        ".dwg": "application/dwg",
+    }
+    content_type = content_types.get(suffix, "application/octet-stream")
+    
+    return FileResponse(file_path, media_type=content_type)
+
 @api_router.put("/projects/{project_id}/first-visit/notes")
 async def update_first_visit_notes(
     project_id: str,
