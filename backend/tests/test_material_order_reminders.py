@@ -20,10 +20,9 @@ class TestMaterialOrderReminders:
         self.session = requests.Session()
         self.session.headers.update({"Content-Type": "application/json"})
         
-        # Login with test credentials
+        # Login with test credentials (uses query params)
         login_response = self.session.post(
-            f"{BASE_URL}/api/auth/admin-login",
-            json={"username": "test", "password": "test123"}
+            f"{BASE_URL}/api/auth/admin/login?username=test&password=test123"
         )
         assert login_response.status_code == 200, f"Login failed: {login_response.text}"
         
