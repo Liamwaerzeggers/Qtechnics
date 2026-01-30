@@ -18,32 +18,34 @@ from datetime import datetime, timedelta
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
+
+@pytest.fixture(scope="module")
+def auth_session():
+    """Create authenticated session for all tests"""
+    s = requests.Session()
+    s.headers.update({"Content-Type": "application/json"})
+    
+    # Login with test credentials using query params
+    response = s.post(f"{BASE_URL}/api/auth/admin/login?username=test&password=test123")
+    
+    if response.status_code == 200:
+        data = response.json()
+        token = data.get("session_token")
+        if token:
+            s.headers.update({"Authorization": f"Bearer {token}"})
+            print(f"✅ Authenticated as: {data.get('user', {}).get('name', 'Unknown')}")
+    else:
+        print(f"❌ Auth failed: {response.status_code} - {response.text}")
+    
+    return s
+
+
 class TestAuth:
     """Authentication tests"""
     
-    @pytest.fixture(scope="class")
-    def session(self):
-        """Create authenticated session"""
-        s = requests.Session()
-        s.headers.update({"Content-Type": "application/json"})
-        
-        # Login with test credentials
-        response = s.post(f"{BASE_URL}/api/auth/admin-login", json={
-            "username": "test",
-            "password": "test123"
-        })
-        
-        if response.status_code == 200:
-            data = response.json()
-            token = data.get("session_token")
-            if token:
-                s.headers.update({"Authorization": f"Bearer {token}"})
-        
-        return s
-    
-    def test_admin_login(self, session):
+    def test_admin_login(self, auth_session):
         """Test admin login works"""
-        response = session.get(f"{BASE_URL}/api/auth/me")
+        response = auth_session.get(f"{BASE_URL}/api/auth/me")
         assert response.status_code == 200
         data = response.json()
         assert data.get("role") == "admin" or data.get("username") == "test"
@@ -53,28 +55,9 @@ class TestAuth:
 class TestCelebrations:
     """Test celebration endpoints"""
     
-    @pytest.fixture(scope="class")
-    def session(self):
-        """Create authenticated session"""
-        s = requests.Session()
-        s.headers.update({"Content-Type": "application/json"})
-        
-        response = s.post(f"{BASE_URL}/api/auth/admin-login", json={
-            "username": "test",
-            "password": "test123"
-        })
-        
-        if response.status_code == 200:
-            data = response.json()
-            token = data.get("session_token")
-            if token:
-                s.headers.update({"Authorization": f"Bearer {token}"})
-        
-        return s
-    
-    def test_get_pending_celebrations(self, session):
+    def test_get_pending_celebrations(self, auth_session):
         """Test GET /api/celebrations/pending returns list"""
-        response = session.get(f"{BASE_URL}/api/celebrations/pending")
+        response = auth_session.get(f"{BASE_URL}/api/celebrations/pending")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -87,10 +70,10 @@ class TestCelebrations:
             assert "project_name" in celebration
             print(f"   First celebration: {celebration.get('project_name')} - €{celebration.get('amount', 0)}")
     
-    def test_mark_celebration_seen(self, session):
+    def test_mark_celebration_seen(self, auth_session):
         """Test POST /api/celebrations/{id}/mark-seen"""
         # First get pending celebrations
-        response = session.get(f"{BASE_URL}/api/celebrations/pending")
+        response = auth_session.get(f"{BASE_URL}/api/celebrations/pending")
         assert response.status_code == 200
         celebrations = response.json()
         
@@ -98,14 +81,14 @@ class TestCelebrations:
             celebration_id = celebrations[0]["id"]
             
             # Mark as seen
-            response = session.post(f"{BASE_URL}/api/celebrations/{celebration_id}/mark-seen")
+            response = auth_session.post(f"{BASE_URL}/api/celebrations/{celebration_id}/mark-seen")
             assert response.status_code == 200
             data = response.json()
             assert data.get("success") == True
             print(f"✅ POST /api/celebrations/{celebration_id}/mark-seen - Success")
         else:
             # Test with non-existent ID (should still return success due to $addToSet)
-            response = session.post(f"{BASE_URL}/api/celebrations/CELEB-NONEXIST/mark-seen")
+            response = auth_session.post(f"{BASE_URL}/api/celebrations/CELEB-NONEXIST/mark-seen")
             assert response.status_code == 200
             print("✅ POST /api/celebrations/mark-seen - Endpoint works (no pending celebrations)")
 
@@ -113,38 +96,18 @@ class TestCelebrations:
 class TestQuoteSold:
     """Test quote sold toggle functionality"""
     
-    @pytest.fixture(scope="class")
-    def session(self):
-        """Create authenticated session"""
-        s = requests.Session()
-        s.headers.update({"Content-Type": "application/json"})
-        
-        response = s.post(f"{BASE_URL}/api/auth/admin-login", json={
-            "username": "test",
-            "password": "test123"
-        })
-        
-        if response.status_code == 200:
-            data = response.json()
-            token = data.get("session_token")
-            if token:
-                s.headers.update({"Authorization": f"Bearer {token}"})
-        
-        return s
-    
-    def test_get_quotes(self, session):
+    def test_get_quotes(self, auth_session):
         """Test GET /api/quotes returns list"""
-        response = session.get(f"{BASE_URL}/api/quotes")
+        response = auth_session.get(f"{BASE_URL}/api/quotes")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
         print(f"✅ GET /api/quotes - Found {len(data)} quotes")
-        return data
     
-    def test_update_quote_with_is_sold(self, session):
+    def test_update_quote_with_is_sold(self, auth_session):
         """Test PUT /api/quotes/{quote_id} with is_sold=true"""
         # Get quotes
-        response = session.get(f"{BASE_URL}/api/quotes")
+        response = auth_session.get(f"{BASE_URL}/api/quotes")
         quotes = response.json()
         
         if len(quotes) > 0:
@@ -152,18 +115,17 @@ class TestQuoteSold:
             quote_id = quote["id"]
             
             # Update with is_sold=true
-            response = session.put(f"{BASE_URL}/api/quotes/{quote_id}", json={
+            response = auth_session.put(f"{BASE_URL}/api/quotes/{quote_id}", json={
                 "is_sold": True
             })
             assert response.status_code == 200
-            data = response.json()
             print(f"✅ PUT /api/quotes/{quote_id} with is_sold=true - Success")
             
             # Verify project status was updated
             lead_id = quote.get("lead_id")
             if lead_id:
                 # Get project by lead_id
-                projects_response = session.get(f"{BASE_URL}/api/projects")
+                projects_response = auth_session.get(f"{BASE_URL}/api/projects")
                 if projects_response.status_code == 200:
                     projects = projects_response.json()
                     project = next((p for p in projects if p.get("lead_id") == lead_id), None)
@@ -176,55 +138,35 @@ class TestQuoteSold:
 class TestLegacyDocumentSold:
     """Test legacy document sold toggle functionality"""
     
-    @pytest.fixture(scope="class")
-    def session(self):
-        """Create authenticated session"""
-        s = requests.Session()
-        s.headers.update({"Content-Type": "application/json"})
-        
-        response = s.post(f"{BASE_URL}/api/auth/admin-login", json={
-            "username": "test",
-            "password": "test123"
-        })
-        
-        if response.status_code == 200:
-            data = response.json()
-            token = data.get("session_token")
-            if token:
-                s.headers.update({"Authorization": f"Bearer {token}"})
-        
-        return s
-    
-    def test_get_legacy_documents(self, session):
+    def test_get_legacy_documents(self, auth_session):
         """Test getting legacy documents for a project"""
         # Get projects first
-        response = session.get(f"{BASE_URL}/api/projects")
+        response = auth_session.get(f"{BASE_URL}/api/projects")
         assert response.status_code == 200
         projects = response.json()
         
         # Find project with legacy documents
         for project in projects:
             project_id = project["id"]
-            docs_response = session.get(f"{BASE_URL}/api/projects/{project_id}/legacy-documents")
+            docs_response = auth_session.get(f"{BASE_URL}/api/projects/{project_id}/legacy-documents")
             if docs_response.status_code == 200:
                 docs = docs_response.json()
                 if len(docs) > 0:
                     print(f"✅ Found {len(docs)} legacy documents in project {project.get('name')}")
-                    return docs
+                    return
         
         print("⚠️ No legacy documents found in any project")
-        return []
     
-    def test_update_legacy_document_with_is_sold(self, session):
+    def test_update_legacy_document_with_is_sold(self, auth_session):
         """Test PUT /api/legacy-documents/{doc_id} with is_sold=true"""
         # Get projects
-        response = session.get(f"{BASE_URL}/api/projects")
+        response = auth_session.get(f"{BASE_URL}/api/projects")
         projects = response.json()
         
         # Find a legacy document
         for project in projects:
             project_id = project["id"]
-            docs_response = session.get(f"{BASE_URL}/api/projects/{project_id}/legacy-documents")
+            docs_response = auth_session.get(f"{BASE_URL}/api/projects/{project_id}/legacy-documents")
             if docs_response.status_code == 200:
                 docs = docs_response.json()
                 # Find an offerte type document
@@ -234,14 +176,14 @@ class TestLegacyDocumentSold:
                     doc_id = doc["id"]
                     
                     # Update with is_sold=true
-                    response = session.put(f"{BASE_URL}/api/legacy-documents/{doc_id}", json={
+                    response = auth_session.put(f"{BASE_URL}/api/legacy-documents/{doc_id}", json={
                         "is_sold": True
                     })
                     assert response.status_code == 200
                     print(f"✅ PUT /api/legacy-documents/{doc_id} with is_sold=true - Success")
                     
                     # Verify project status
-                    project_response = session.get(f"{BASE_URL}/api/projects/{project_id}")
+                    project_response = auth_session.get(f"{BASE_URL}/api/projects/{project_id}")
                     if project_response.status_code == 200:
                         updated_project = project_response.json()
                         print(f"   Project status: {updated_project.get('status')}")
@@ -253,44 +195,26 @@ class TestLegacyDocumentSold:
 class TestMaterialsPerWorkPeriod:
     """Test materials per work period functionality"""
     
-    @pytest.fixture(scope="class")
-    def session(self):
-        """Create authenticated session"""
-        s = requests.Session()
-        s.headers.update({"Content-Type": "application/json"})
-        
-        response = s.post(f"{BASE_URL}/api/auth/admin-login", json={
-            "username": "test",
-            "password": "test123"
-        })
-        
-        if response.status_code == 200:
-            data = response.json()
-            token = data.get("session_token")
-            if token:
-                s.headers.update({"Authorization": f"Bearer {token}"})
-        
-        return s
-    
-    @pytest.fixture(scope="class")
-    def test_project_with_period(self, session):
-        """Get or create a project with a scheduled work period"""
+    def test_add_material_to_work_period(self, auth_session):
+        """Test POST /api/projects/{project_id}/scheduled-days/{period_id}/materials"""
         # Get projects
-        response = session.get(f"{BASE_URL}/api/projects")
+        response = auth_session.get(f"{BASE_URL}/api/projects")
+        assert response.status_code == 200
         projects = response.json()
         
-        # Find project with scheduled_days
+        # Find project with scheduled_days or create one
+        test_project = None
         for project in projects:
             scheduled_days = project.get("scheduled_days", [])
             if len(scheduled_days) > 0:
-                return project
+                test_project = project
+                break
         
-        # If no project with scheduled days, create one
-        if len(projects) > 0:
+        if not test_project and len(projects) > 0:
+            # Add a scheduled work period to first project
             project = projects[0]
             project_id = project["id"]
             
-            # Add a scheduled work period
             future_date = (datetime.now() + timedelta(days=15)).strftime("%Y-%m-%d")
             future_end = (datetime.now() + timedelta(days=20)).strftime("%Y-%m-%d")
             
@@ -301,24 +225,20 @@ class TestMaterialsPerWorkPeriod:
                 "description": "Test werkperiode voor materialen"
             }
             
-            response = session.put(f"{BASE_URL}/api/projects/{project_id}", json={
+            response = auth_session.put(f"{BASE_URL}/api/projects/{project_id}", json={
                 "scheduled_days": [new_period]
             })
             
             if response.status_code == 200:
                 # Refresh project data
-                response = session.get(f"{BASE_URL}/api/projects/{project_id}")
-                return response.json()
+                response = auth_session.get(f"{BASE_URL}/api/projects/{project_id}")
+                test_project = response.json()
         
-        return None
-    
-    def test_add_material_to_work_period(self, session, test_project_with_period):
-        """Test POST /api/projects/{project_id}/scheduled-days/{period_id}/materials"""
-        if not test_project_with_period:
-            pytest.skip("No project with work period available")
+        if not test_project:
+            pytest.skip("No project available for testing")
         
-        project_id = test_project_with_period["id"]
-        scheduled_days = test_project_with_period.get("scheduled_days", [])
+        project_id = test_project["id"]
+        scheduled_days = test_project.get("scheduled_days", [])
         
         if len(scheduled_days) == 0:
             pytest.skip("No scheduled work periods in project")
@@ -326,7 +246,7 @@ class TestMaterialsPerWorkPeriod:
         period_id = scheduled_days[0]["id"]
         
         # Add material
-        response = session.post(
+        response = auth_session.post(
             f"{BASE_URL}/api/projects/{project_id}/scheduled-days/{period_id}/materials",
             json={
                 "name": "TEST Tegels 60x60",
@@ -344,80 +264,73 @@ class TestMaterialsPerWorkPeriod:
         assert material.get("name") == "TEST Tegels 60x60"
         assert material.get("quantity") == 25
         print(f"✅ POST materials - Added material: {material.get('name')} ({material.get('id')})")
-        
-        return material
     
-    def test_remove_material_from_work_period(self, session, test_project_with_period):
+    def test_remove_material_from_work_period(self, auth_session):
         """Test DELETE /api/projects/{project_id}/scheduled-days/{period_id}/materials/{material_id}"""
-        if not test_project_with_period:
-            pytest.skip("No project with work period available")
+        # Get projects
+        response = auth_session.get(f"{BASE_URL}/api/projects")
+        projects = response.json()
         
-        project_id = test_project_with_period["id"]
+        # Find project with scheduled_days and materials
+        for project in projects:
+            project_id = project["id"]
+            scheduled_days = project.get("scheduled_days", [])
+            
+            for period in scheduled_days:
+                period_id = period.get("id")
+                materials = period.get("materials", [])
+                
+                # Find a test material to delete
+                test_materials = [m for m in materials if m.get("name", "").startswith("TEST")]
+                
+                if len(test_materials) > 0:
+                    material_id = test_materials[0]["id"]
+                    
+                    # Delete material
+                    response = auth_session.delete(
+                        f"{BASE_URL}/api/projects/{project_id}/scheduled-days/{period_id}/materials/{material_id}"
+                    )
+                    
+                    assert response.status_code == 200
+                    data = response.json()
+                    assert data.get("success") == True
+                    print(f"✅ DELETE materials - Removed material: {material_id}")
+                    return
         
-        # Refresh project to get latest materials
-        response = session.get(f"{BASE_URL}/api/projects/{project_id}")
-        project = response.json()
-        scheduled_days = project.get("scheduled_days", [])
+        # If no test material found, add one and delete it
+        for project in projects:
+            scheduled_days = project.get("scheduled_days", [])
+            if len(scheduled_days) > 0:
+                project_id = project["id"]
+                period_id = scheduled_days[0]["id"]
+                
+                # Add a test material
+                add_response = auth_session.post(
+                    f"{BASE_URL}/api/projects/{project_id}/scheduled-days/{period_id}/materials",
+                    json={"name": "TEST Delete Material", "quantity": 1, "unit": "stuk"}
+                )
+                
+                if add_response.status_code == 200:
+                    material_id = add_response.json()["material"]["id"]
+                    
+                    # Delete it
+                    response = auth_session.delete(
+                        f"{BASE_URL}/api/projects/{project_id}/scheduled-days/{period_id}/materials/{material_id}"
+                    )
+                    
+                    assert response.status_code == 200
+                    print(f"✅ DELETE materials - Removed material: {material_id}")
+                    return
         
-        if len(scheduled_days) == 0:
-            pytest.skip("No scheduled work periods in project")
-        
-        period = scheduled_days[0]
-        period_id = period["id"]
-        materials = period.get("materials", [])
-        
-        # Find a test material to delete
-        test_materials = [m for m in materials if m.get("name", "").startswith("TEST")]
-        
-        if len(test_materials) == 0:
-            # Add one first
-            add_response = session.post(
-                f"{BASE_URL}/api/projects/{project_id}/scheduled-days/{period_id}/materials",
-                json={"name": "TEST Delete Material", "quantity": 1, "unit": "stuk"}
-            )
-            if add_response.status_code == 200:
-                material_id = add_response.json()["material"]["id"]
-            else:
-                pytest.skip("Could not add test material")
-        else:
-            material_id = test_materials[0]["id"]
-        
-        # Delete material
-        response = session.delete(
-            f"{BASE_URL}/api/projects/{project_id}/scheduled-days/{period_id}/materials/{material_id}"
-        )
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert data.get("success") == True
-        print(f"✅ DELETE materials - Removed material: {material_id}")
+        print("⚠️ No work periods found to test material deletion")
 
 
 class TestMaterialReminders:
     """Test material reminders dashboard endpoint"""
     
-    @pytest.fixture(scope="class")
-    def session(self):
-        """Create authenticated session"""
-        s = requests.Session()
-        s.headers.update({"Content-Type": "application/json"})
-        
-        response = s.post(f"{BASE_URL}/api/auth/admin-login", json={
-            "username": "test",
-            "password": "test123"
-        })
-        
-        if response.status_code == 200:
-            data = response.json()
-            token = data.get("session_token")
-            if token:
-                s.headers.update({"Authorization": f"Bearer {token}"})
-        
-        return s
-    
-    def test_get_material_reminders(self, session):
+    def test_get_material_reminders(self, auth_session):
         """Test GET /api/dashboard/material-reminders"""
-        response = session.get(f"{BASE_URL}/api/dashboard/material-reminders")
+        response = auth_session.get(f"{BASE_URL}/api/dashboard/material-reminders")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -439,29 +352,10 @@ class TestMaterialReminders:
 class TestProjectStatusUpdate:
     """Test that project status is correctly updated when quote/doc is marked as sold"""
     
-    @pytest.fixture(scope="class")
-    def session(self):
-        """Create authenticated session"""
-        s = requests.Session()
-        s.headers.update({"Content-Type": "application/json"})
-        
-        response = s.post(f"{BASE_URL}/api/auth/admin-login", json={
-            "username": "test",
-            "password": "test123"
-        })
-        
-        if response.status_code == 200:
-            data = response.json()
-            token = data.get("session_token")
-            if token:
-                s.headers.update({"Authorization": f"Bearer {token}"})
-        
-        return s
-    
-    def test_project_status_after_sale(self, session):
+    def test_project_status_after_sale(self, auth_session):
         """Verify project status is 'in uitvoering' after marking as sold"""
         # Get projects
-        response = session.get(f"{BASE_URL}/api/projects")
+        response = auth_session.get(f"{BASE_URL}/api/projects")
         assert response.status_code == 200
         projects = response.json()
         
