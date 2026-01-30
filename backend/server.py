@@ -6035,7 +6035,7 @@ async def add_material_to_work_period(
             if "materials" not in period:
                 period["materials"] = []
             
-            # Add material with unique ID
+            # Add material with unique ID and order reminder date
             new_material = {
                 "id": f"MAT-{str(uuid.uuid4())[:8].upper()}",
                 "name": material_data.get("name", ""),
@@ -6044,6 +6044,8 @@ async def add_material_to_work_period(
                 "notes": material_data.get("notes", ""),
                 "from_catalog": material_data.get("from_catalog", False),
                 "catalog_id": material_data.get("catalog_id"),
+                "order_reminder_date": material_data.get("order_reminder_date"),  # When to order
+                "is_ordered": False,  # Track if already ordered
                 "added_at": datetime.now(timezone.utc).isoformat()
             }
             period["materials"].append(new_material)
