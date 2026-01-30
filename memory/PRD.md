@@ -70,9 +70,10 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 - `POST /api/celebrations/{id}/mark-seen` - Markeer als gezien
 
 ### Nieuw (Materialen per Werk)
-- `POST /api/projects/{id}/scheduled-days/{period_id}/materials` - Materiaal toevoegen
+- `POST /api/projects/{id}/scheduled-days/{period_id}/materials` - Materiaal toevoegen (met order_reminder_date)
+- `PUT /api/projects/{id}/scheduled-days/{period_id}/materials/{material_id}` - Update (is_ordered, etc.)
 - `DELETE /api/projects/{id}/scheduled-days/{period_id}/materials/{material_id}` - Verwijderen
-- `GET /api/dashboard/material-reminders` - Werkperiodes met materialen binnen 1 maand
+- `GET /api/dashboard/material-reminders` - Materialen waarvan besteldatum bereikt is
 
 ## Backlog
 
