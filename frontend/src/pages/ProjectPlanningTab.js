@@ -79,7 +79,8 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
           unit: data.unit || 'stuk',
           notes: data.notes || '',
           from_catalog: data.from_catalog || false,
-          catalog_id: data.catalog_id
+          catalog_id: data.catalog_id,
+          order_reminder_date: data.order_reminder_date || null
         },
         { withCredentials: true }
       );
@@ -93,11 +94,40 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
       }));
       
       // Clear form
-      setNewMaterialData(prev => ({...prev, [periodId]: {name: '', quantity: 1, unit: 'stuk', notes: ''}}));
+      setNewMaterialData(prev => ({...prev, [periodId]: {name: '', quantity: 1, unit: 'stuk', notes: '', order_reminder_date: ''}}));
       toast.success('Materiaal toegevoegd!');
     } catch (error) {
       console.error('Error adding material:', error);
       toast.error('Kon materiaal niet toevoegen');
+    }
+  };
+
+  // Toggle material as ordered
+  const handleToggleMaterialOrdered = async (periodId, materialId, isOrdered) => {
+    try {
+      await axios.put(
+        `${API}/projects/${project.id}/scheduled-days/${periodId}/materials/${materialId}`,
+        { is_ordered: isOrdered },
+        { withCredentials: true }
+      );
+      
+      // Update local state
+      setScheduledDays(prev => prev.map(p => {
+        if (p.id === periodId) {
+          return {
+            ...p, 
+            materials: (p.materials || []).map(m => 
+              m.id === materialId ? {...m, is_ordered: isOrdered} : m
+            )
+          };
+        }
+        return p;
+      }));
+      
+      toast.success(isOrdered ? 'Materiaal gemarkeerd als besteld ✓' : 'Markering verwijderd');
+    } catch (error) {
+      console.error('Error updating material:', error);
+      toast.error('Kon status niet bijwerken');
     }
   };
 
