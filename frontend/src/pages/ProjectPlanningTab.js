@@ -381,6 +381,129 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
                         <Trash2 size={18} />
                       </Button>
                     </div>
+                    
+                    {/* Materials Section */}
+                    <div className="mt-4 pt-4 border-t" style={{borderColor: '#E5E7EB'}}>
+                      <button
+                        onClick={() => togglePeriodExpand(period.id)}
+                        className="flex items-center gap-2 w-full text-left mb-3"
+                      >
+                        <Package size={16} style={{color: '#1E40AF'}} />
+                        <span className="font-semibold text-sm" style={{color: '#1E3A8A'}}>
+                          Materialen ({(period.materials || []).length})
+                        </span>
+                        {expandedPeriods[period.id] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                      
+                      {expandedPeriods[period.id] && (
+                        <div className="space-y-3">
+                          {/* Materials List */}
+                          {(period.materials || []).length > 0 && (
+                            <div className="space-y-2">
+                              {(period.materials || []).map((mat) => (
+                                <div key={mat.id} className="flex items-center justify-between p-2 bg-white rounded border" style={{borderColor: '#E5E7EB'}}>
+                                  <div className="flex items-center gap-2">
+                                    <Package size={14} style={{color: '#64748B'}} />
+                                    <span className="font-medium text-sm">{mat.name}</span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor: '#F3F4F6', color: '#64748B'}}>
+                                      {mat.quantity} {mat.unit}
+                                    </span>
+                                    {mat.from_catalog && (
+                                      <span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}>
+                                        Catalogus
+                                      </span>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => handleRemoveMaterial(period.id, mat.id)}
+                                    className="p-1 rounded hover:bg-red-50 text-red-500"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Add Material Form */}
+                          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <p className="text-xs font-semibold mb-2" style={{color: '#1E40AF'}}>Materiaal Toevoegen</p>
+                            
+                            {/* Catalog Quick Select */}
+                            {catalogMaterials.length > 0 && (
+                              <div className="mb-2">
+                                <Label className="text-xs">Kies uit catalogus</Label>
+                                <select
+                                  className="w-full px-2 py-1 text-sm border rounded"
+                                  onChange={(e) => {
+                                    const mat = catalogMaterials.find(m => m.id === e.target.value);
+                                    if (mat) handleSelectCatalogMaterial(period.id, mat);
+                                  }}
+                                  value=""
+                                >
+                                  <option value="">-- Selecteer materiaal --</option>
+                                  {catalogMaterials.map(mat => (
+                                    <option key={mat.id} value={mat.id}>{mat.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+                            
+                            <div className="grid grid-cols-4 gap-2">
+                              <div className="col-span-2">
+                                <Input
+                                  placeholder="Naam materiaal"
+                                  value={newMaterialData[period.id]?.name || ''}
+                                  onChange={(e) => setNewMaterialData(prev => ({
+                                    ...prev,
+                                    [period.id]: {...(prev[period.id] || {}), name: e.target.value}
+                                  }))}
+                                  className="text-sm"
+                                />
+                              </div>
+                              <div>
+                                <Input
+                                  type="number"
+                                  placeholder="Aantal"
+                                  value={newMaterialData[period.id]?.quantity || ''}
+                                  onChange={(e) => setNewMaterialData(prev => ({
+                                    ...prev,
+                                    [period.id]: {...(prev[period.id] || {}), quantity: e.target.value}
+                                  }))}
+                                  className="text-sm"
+                                />
+                              </div>
+                              <div>
+                                <select
+                                  className="w-full h-9 px-2 text-sm border rounded"
+                                  value={newMaterialData[period.id]?.unit || 'stuk'}
+                                  onChange={(e) => setNewMaterialData(prev => ({
+                                    ...prev,
+                                    [period.id]: {...(prev[period.id] || {}), unit: e.target.value}
+                                  }))}
+                                >
+                                  <option value="stuk">stuk</option>
+                                  <option value="m²">m²</option>
+                                  <option value="m">m</option>
+                                  <option value="kg">kg</option>
+                                  <option value="liter">liter</option>
+                                  <option value="doos">doos</option>
+                                  <option value="zak">zak</option>
+                                </select>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => handleAddMaterialToPeriod(period.id)}
+                              className="mt-2"
+                              style={{backgroundColor: '#1E40AF'}}
+                            >
+                              <Plus size={14} className="mr-1" /> Toevoegen
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
