@@ -515,8 +515,8 @@ export default function ProjectDetailPage() {
                       {legacyDocuments.map((doc) => (
                         <div
                           key={doc.id}
-                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                          style={{borderColor: '#E5E7EB'}}
+                          className={`flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 ${doc.is_sold ? 'ring-2 ring-green-500 bg-green-50' : ''}`}
+                          style={{borderColor: doc.is_sold ? '#10B981' : '#E5E7EB'}}
                         >
                           <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg" style={{
@@ -529,9 +529,16 @@ export default function ProjectDetailPage() {
                               }} />
                             </div>
                             <div>
-                              <p className="font-medium text-sm" style={{color: '#1E293B'}}>
-                                {doc.original_filename}
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-sm" style={{color: '#1E293B'}}>
+                                  {doc.original_filename}
+                                </p>
+                                {doc.is_sold && (
+                                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold" style={{backgroundColor: '#D1FAE5', color: '#059669'}}>
+                                    <Trophy size={12} /> VERKOCHT
+                                  </span>
+                                )}
+                              </div>
                               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                 <span className="text-xs px-2 py-0.5 rounded-full" style={{
                                   backgroundColor: doc.document_type === 'offerte' ? '#DBEAFE' :
@@ -564,6 +571,18 @@ export default function ProjectDetailPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
+                            {/* Verkocht toggle - alleen voor offertes */}
+                            {doc.document_type === 'offerte' && (
+                              <div className="flex items-center gap-1 px-2 py-1 rounded-lg mr-2" style={{backgroundColor: doc.is_sold ? '#D1FAE5' : '#F3F4F6'}}>
+                                <span className="text-xs font-medium" style={{color: doc.is_sold ? '#059669' : '#64748B'}}>
+                                  Verkocht
+                                </span>
+                                <Switch
+                                  checked={doc.is_sold || false}
+                                  onCheckedChange={(checked) => handleToggleLegacyDocSold(doc.id, checked)}
+                                />
+                              </div>
+                            )}
                             {/* Zichtbaarheid toggle */}
                             <Button
                               size="sm"
