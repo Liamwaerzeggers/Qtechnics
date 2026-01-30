@@ -5,6 +5,7 @@ import { useAuth } from '../App';
 import DashboardLayout from '../components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { Package, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -13,12 +14,17 @@ export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
+  const [materialReminders, setMaterialReminders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchStats();
-    // Poll for updates every 3 seconds when on dashboard
-    const interval = setInterval(fetchStats, 3000);
+    fetchMaterialReminders();
+    // Poll for updates every 30 seconds
+    const interval = setInterval(() => {
+      fetchStats();
+      fetchMaterialReminders();
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -28,9 +34,32 @@ export default function Dashboard() {
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
-      toast.error('Kon statistieken niet ophalen');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMaterialReminders = async () => {
+    try {
+      const response = await axios.get(`${API}/dashboard/material-reminders`, { withCredentials: true });
+      setMaterialReminders(response.data || []);
+    } catch (error) {
+      console.error('Error fetching material reminders:', error);
+    }
+  };
+
+  const handleMarkAsOrdered = async (projectId, periodId, materialId) => {
+    try {
+      await axios.put(
+        `${API}/projects/${projectId}/scheduled-days/${periodId}/materials/${materialId}`,
+        { is_ordered: true },
+        { withCredentials: true }
+      );
+      toast.success('Materiaal gemarkeerd als besteld ✓');
+      fetchMaterialReminders(); // Refresh the list
+    } catch (error) {
+      console.error('Error marking material as ordered:', error);
+      toast.error('Kon status niet bijwerken');
     }
   };
 
