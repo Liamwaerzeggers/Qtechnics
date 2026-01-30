@@ -1,4 +1,11 @@
-# Q-Technics Project Management - PRD
+# Max Q Project Management - PRD
+
+## Rebranding (Januari 2025)
+- **Bedrijfsnaam**: Max Q (voorheen Q-Technics)
+- **Logo**: maxq_logo.png
+- **Primaire kleur**: #500000 (bordeaux rood)
+- **Secundaire kleur**: #3a190b (donker bruin)
+- **Accent kleur**: #7a1f1f (lichter bordeaux)
 
 ## Originele Probleemstelling
 Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
