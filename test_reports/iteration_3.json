@@ -1,0 +1,84 @@
+{
+  "summary": "Tested Verkocht (Sold) toggle, Celebrations, and Materials per Work Period features. All backend APIs working correctly. Fixed critical bug where new endpoints were defined AFTER app.include_router() causing 404 errors. Frontend UI verified - Verkocht switch visible on legacy documents, celebration modal working with confetti animation, materials section in Planning tab functional.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_verkocht_celebrations_materials.py",
+    "/app/test_reports/pytest/pytest_results_verkocht.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "FIXED: Endpoint definitions for celebrations, materials, and material-reminders were placed AFTER app.include_router(api_router) causing 404 errors. Moved them before the include_router call."
+  ],
+  "updated_files": [
+    "/app/backend/server.py",
+    "/app/backend/tests/test_verkocht_celebrations_materials.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "username": "test",
+    "password": "test123"
+  },
+  "seed_data_creation": "Used existing project 'Zinio & Amy' (PROJ-8DC83A0F) with legacy document DOC-2DBF0739 marked as sold. Celebration records created for both projects.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All new features are working. Celebrations endpoint returns pending celebrations for admins. Material reminders endpoint returns work periods with materials starting within 1 month. Verkocht toggle on quotes and legacy documents updates project status to 'in uitvoering' and creates celebration records.",
+  "features_tested": {
+    "PUT /api/quotes/{quote_id} with is_sold=true": {
+      "status": "PASS",
+      "details": "Updates project status to 'in uitvoering' and creates celebration record"
+    },
+    "PUT /api/legacy-documents/{doc_id} with is_sold=true": {
+      "status": "PASS",
+      "details": "Updates project status to 'in uitvoering' and creates celebration record"
+    },
+    "GET /api/celebrations/pending": {
+      "status": "PASS",
+      "details": "Returns list of unseen celebrations for current admin user"
+    },
+    "POST /api/celebrations/{id}/mark-seen": {
+      "status": "PASS",
+      "details": "Adds current user to seen_by array"
+    },
+    "POST /api/projects/{project_id}/scheduled-days/{period_id}/materials": {
+      "status": "PASS",
+      "details": "Adds material to work period with unique ID"
+    },
+    "DELETE /api/projects/{project_id}/scheduled-days/{period_id}/materials/{material_id}": {
+      "status": "PASS",
+      "details": "Removes material from work period"
+    },
+    "GET /api/dashboard/material-reminders": {
+      "status": "PASS",
+      "details": "Returns work periods with materials starting within 1 month"
+    },
+    "Frontend: Verkocht switch on legacy documents": {
+      "status": "PASS",
+      "details": "Switch visible in Offertes tab of project detail page. Shows green toggle and 'VERKOCHT' badge when enabled."
+    },
+    "Frontend: Celebration modal": {
+      "status": "PASS",
+      "details": "Modal appears on admin login with confetti animation, trophy icon, project name, and sale amount. Dismiss button works."
+    },
+    "Frontend: Materials section in Planning tab": {
+      "status": "PASS",
+      "details": "Each work period shows expandable 'Materialen' section with count. Can add/remove materials."
+    }
+  },
+  "bug_fixed": {
+    "issue": "New API endpoints returning 404 Not Found",
+    "root_cause": "Endpoint definitions for /api/celebrations/pending, /api/celebrations/{id}/mark-seen, /api/projects/{project_id}/scheduled-days/{period_id}/materials, and /api/dashboard/material-reminders were placed AFTER app.include_router(api_router) at line 5984. FastAPI only registers routes that are defined BEFORE include_router is called.",
+    "fix": "Moved all new endpoint definitions to before the app.include_router(api_router) call",
+    "file_modified": "/app/backend/server.py"
+  }
+}
