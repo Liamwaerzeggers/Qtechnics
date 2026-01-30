@@ -256,6 +256,47 @@ export default function ProjectDetailPage() {
     }
   };
 
+  // Mark quote as sold
+  const handleToggleQuoteSold = async (quoteId, isSold) => {
+    try {
+      await axios.put(
+        `${API}/quotes/${quoteId}`,
+        { is_sold: isSold },
+        { withCredentials: true }
+      );
+      if (isSold) {
+        toast.success('🎉 Offerte gemarkeerd als verkocht! Project status is nu "in uitvoering"');
+      } else {
+        toast.success('Offerte niet meer als verkocht gemarkeerd');
+      }
+      fetchProjectData();
+    } catch (error) {
+      console.error('Failed to update quote sold status:', error);
+      toast.error('Kon verkocht status niet bijwerken');
+    }
+  };
+
+  // Mark legacy document as sold
+  const handleToggleLegacyDocSold = async (docId, isSold) => {
+    try {
+      await axios.put(
+        `${API}/legacy-documents/${docId}`,
+        { is_sold: isSold },
+        { withCredentials: true }
+      );
+      if (isSold) {
+        toast.success('🎉 Offerte gemarkeerd als verkocht! Project status is nu "in uitvoering"');
+      } else {
+        toast.success('Offerte niet meer als verkocht gemarkeerd');
+      }
+      fetchProjectData();
+      fetchLegacyDocuments();
+    } catch (error) {
+      console.error('Failed to update legacy doc sold status:', error);
+      toast.error('Kon verkocht status niet bijwerken');
+    }
+  };
+
   const tabs = [
     { id: 'first-visit', label: '📸 Eerste Bezoek', icon: Camera },
     { id: '3d-designs', label: '🏗️ 3D Ontwerpen', icon: Folder },
