@@ -726,7 +726,7 @@ export default function ProjectDetailPage() {
                 </div>
               )}
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-sm font-medium" style={{color: '#500000'}}>
                   💡 <strong>Workflow:</strong>
                 </p>
@@ -950,7 +950,7 @@ function CustomerPortalTab({ project, onUpdate }) {
                     key={msg.id}
                     className={`p-3 rounded-lg ${
                       msg.is_from_customer
-                        ? 'bg-blue-50 border-l-4 border-blue-500'
+                        ? 'bg-red-50 border-l-4 border-blue-500'
                         : 'bg-gray-50 border-l-4 border-gray-300'
                     }`}
                   >

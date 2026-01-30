@@ -1678,7 +1678,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
 
             {/* Room Measurement Form */}
             {showRoomForm && (
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-xl border border-blue-200 mb-4">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-xl border border-red-200 mb-4">
                 <h5 className="font-bold mb-4" style={{color: '#3a190b'}}>
                   {editingRoomId ? '✏️ Meting Bewerken' : '➕ Nieuwe Ruimte Meting'}
                 </h5>
@@ -1801,7 +1801,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                           .map((item) => (
                             <div
                               key={item.id}
-                              className="p-3 hover:bg-blue-50 cursor-pointer border-b"
+                              className="p-3 hover:bg-red-50 cursor-pointer border-b"
                               onClick={() => addWorkItemToRoom(item)}
                             >
                               <div className="font-semibold" style={{color: '#1E293B'}}>{item.title}</div>
@@ -1918,7 +1918,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-lg" style={{color: '#1E293B'}}>{room.room_name}</span>
-                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                          <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">
                             {room.surface_type === 'vloer' ? '🟫 Vloer' : room.surface_type === 'muur' ? '🧱 Muur' : '⬜ Plafond'}
                           </span>
                         </div>
@@ -2012,7 +2012,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
             </p>
 
             {/* Voeg Werk Item Toe */}
-            <div className="bg-blue-50 p-4 rounded-lg mb-4">
+            <div className="bg-red-50 p-4 rounded-lg mb-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Werk Item Selectie */}
                 <div className="md:col-span-2">
@@ -2038,7 +2038,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                           filteredWorkItems.map((item) => (
                             <div
                               key={item.id}
-                              className="p-3 hover:bg-blue-50 cursor-pointer border-b"
+                              className="p-3 hover:bg-red-50 cursor-pointer border-b"
                               onClick={() => {
                                 setSelectedWorkItem(item);
                                 setWorkItemSearch('');

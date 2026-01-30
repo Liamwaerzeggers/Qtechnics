@@ -166,7 +166,7 @@ export default function Project3DDesignTab({ project, onUpdate }) {
             </Button>
           </div>
 
-          <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+          <div className="mb-4 p-3 bg-red-50 rounded-lg">
             <p className="text-sm" style={{color: '#500000'}}>
               <strong>Ondersteunde bestanden:</strong> Afbeeldingen (JPG, PNG, GIF, WEBP), PDF, SketchUp, OBJ, FBX, 3DS
             </p>

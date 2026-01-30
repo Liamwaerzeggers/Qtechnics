@@ -26,7 +26,7 @@ const API = process.env.REACT_APP_BACKEND_URL + '/api';
 const COLOR_PALETTE = [
   { bg: 'bg-orange-500', light: 'bg-orange-100', border: 'border-orange-300', text: 'text-orange-700' },
   { bg: 'bg-green-500', light: 'bg-green-100', border: 'border-green-300', text: 'text-green-700' },
-  { bg: 'bg-blue-500', light: 'bg-blue-100', border: 'border-blue-300', text: 'text-blue-700' },
+  { bg: 'bg-red-500', light: 'bg-red-100', border: 'border-blue-300', text: 'text-red-700' },
   { bg: 'bg-purple-500', light: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-700' },
   { bg: 'bg-pink-500', light: 'bg-pink-100', border: 'border-pink-300', text: 'text-pink-700' },
   { bg: 'bg-cyan-500', light: 'bg-cyan-100', border: 'border-cyan-300', text: 'text-cyan-700' },
@@ -746,9 +746,9 @@ export default function CalendarPage() {
 
         {/* Add Task Modal */}
         {showAddTask && (
-          <Card className="border-blue-200 bg-blue-50">
+          <Card className="border-red-200 bg-red-50">
             <CardHeader className="py-3">
-              <CardTitle className="text-base flex items-center gap-2 text-blue-700">
+              <CardTitle className="text-base flex items-center gap-2 text-red-700">
                 <Briefcase className="w-5 h-5" />
                 Nieuwe taak toevoegen
               </CardTitle>
@@ -1044,7 +1044,7 @@ export default function CalendarPage() {
             {/* Day View */}
             {viewMode === VIEW_MODES.DAY && (
               <div className="min-h-[300px]">
-                <div className={`p-3 text-center border-b ${isToday(viewDates[0]) ? 'bg-blue-100' : 'bg-gray-50'}`}>
+                <div className={`p-3 text-center border-b ${isToday(viewDates[0]) ? 'bg-red-100' : 'bg-gray-50'}`}>
                   <p className="text-sm text-gray-500">
                     {viewDates[0].toLocaleDateString('nl-BE', { weekday: 'long' })}
                   </p>
@@ -1056,7 +1056,7 @@ export default function CalendarPage() {
                   </p>
                 </div>
                 <div 
-                  className={`p-3 min-h-[200px] ${dragOverDate === formatDateForInput(viewDates[0]) ? 'bg-blue-100' : ''}`}
+                  className={`p-3 min-h-[200px] ${dragOverDate === formatDateForInput(viewDates[0]) ? 'bg-red-100' : ''}`}
                   onDragOver={(e) => handleDragOverDate(e, viewDates[0])}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDropOnDate(e, viewDates[0])}
@@ -1100,7 +1100,7 @@ export default function CalendarPage() {
                   {viewDates.map((date, idx) => (
                     <div 
                       key={idx} 
-                      className={`p-2 text-center border-r last:border-r-0 ${isToday(date) ? 'bg-blue-100' : ''}`}
+                      className={`p-2 text-center border-r last:border-r-0 ${isToday(date) ? 'bg-red-100' : ''}`}
                     >
                       <p className="text-xs text-gray-500">
                         {date.toLocaleDateString('nl-BE', { weekday: 'short' })}
@@ -1124,7 +1124,7 @@ export default function CalendarPage() {
                       <div 
                         key={idx}
                         className={`border-r last:border-r-0 p-1 min-h-[250px] max-h-[300px] overflow-y-auto transition-colors ${
-                          isDropTarget ? 'bg-blue-100' : isToday(date) ? 'bg-blue-50/50' : 'bg-white'
+                          isDropTarget ? 'bg-red-100' : isToday(date) ? 'bg-red-50/50' : 'bg-white'
                         }`}
                         onDragOver={(e) => handleDragOverDate(e, date)}
                         onDragLeave={handleDragLeave}
@@ -1186,7 +1186,7 @@ export default function CalendarPage() {
                       <div
                         key={idx}
                         className={`min-h-[120px] p-1 transition-colors ${
-                          isDropTarget ? 'bg-blue-100' : isToday(date) ? 'bg-blue-50' : isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+                          isDropTarget ? 'bg-red-100' : isToday(date) ? 'bg-red-50' : isCurrentMonth ? 'bg-white' : 'bg-gray-50'
                         }`}
                         onDragOver={(e) => handleDragOverDate(e, date)}
                         onDragLeave={handleDragLeave}
@@ -1250,7 +1250,7 @@ export default function CalendarPage() {
                             key={idx}
                             onClick={() => hasWork && navigate(`/projects/${dayWork[0].project.id}`)}
                             className={`p-1 text-center text-[10px] ${
-                              isToday(date) ? 'bg-blue-100 font-bold' : isCurrentMonth ? 'bg-white' : 'bg-gray-50 text-gray-400'
+                              isToday(date) ? 'bg-red-100 font-bold' : isCurrentMonth ? 'bg-white' : 'bg-gray-50 text-gray-400'
                             } ${hasWork ? `${teamColor.light} cursor-pointer hover:opacity-80` : ''}`}
                             title={hasWork ? dayWork.map(w => w.projectName).join(', ') : ''}
                           >

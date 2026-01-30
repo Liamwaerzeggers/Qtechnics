@@ -226,7 +226,7 @@ export default function ProjectsPage() {
                       >
                         {milestone.icon}
                       </div>
-                      <span className={`text-xs mt-1 font-semibold ${isReached ? 'text-white' : 'text-blue-300'}`}>
+                      <span className={`text-xs mt-1 font-semibold ${isReached ? 'text-white' : 'text-red-300'}`}>
                         {milestone.label}
                       </span>
                     </div>
@@ -291,7 +291,7 @@ export default function ProjectsPage() {
         </div>
 
         {isWorker && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4">
             <p className="text-sm font-medium" style={{color: '#500000'}}>
               👷 <strong>Klik op een project</strong> om direct een werkbon in te vullen / <strong>Натисніть на проєкт</strong>, щоб заповнити робочий звіт
             </p>

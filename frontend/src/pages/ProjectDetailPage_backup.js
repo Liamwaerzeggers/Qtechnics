@@ -457,7 +457,7 @@ export default function ProjectDetailPage() {
                   <button
                     onClick={() => createInvoice('10_approval', 10)}
                     disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '10_approval')}
-                    className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
+                    className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-red-50"
                     style={{borderColor: '#CBD5E1'}}
                   >
                     <div className="text-left">
@@ -472,7 +472,7 @@ export default function ProjectDetailPage() {
                   <button
                     onClick={() => createInvoice('40_before_start', 40)}
                     disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '40_before_start')}
-                    className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
+                    className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-red-50"
                     style={{borderColor: '#CBD5E1'}}
                   >
                     <div className="text-left">
@@ -487,7 +487,7 @@ export default function ProjectDetailPage() {
                   <button
                     onClick={() => createInvoice('40_completion', 40)}
                     disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '40_completion')}
-                    className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
+                    className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-red-50"
                     style={{borderColor: '#CBD5E1'}}
                   >
                     <div className="text-left">
@@ -502,7 +502,7 @@ export default function ProjectDetailPage() {
                   <button
                     onClick={() => createInvoice('10_satisfaction', 10)}
                     disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '10_satisfaction')}
-                    className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
+                    className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-red-50"
                     style={{borderColor: '#CBD5E1'}}
                   >
                     <div className="text-left">
@@ -566,7 +566,7 @@ export default function ProjectDetailPage() {
                                 toast.error('Kon PDF niet downloaden');
                               }
                             }}
-                            className="px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors"
+                            className="px-3 py-2 rounded-lg hover:bg-red-100 transition-colors"
                             style={{color: '#500000'}}
                           >
                             📄 PDF

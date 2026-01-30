@@ -407,7 +407,7 @@ export default function ProjectWorkSlipPage() {
             {project?.name || 'Project'}
           </p>
           <div className="mt-3 flex items-center space-x-2 text-xs">
-            <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded">🇳🇱 Nederlands</span>
+            <span className="px-2 py-1 bg-red-50 text-red-700 rounded">🇳🇱 Nederlands</span>
             <span className="px-2 py-1 bg-yellow-50 text-yellow-700 rounded">🇺🇦 Українська</span>
           </div>
         </div>
@@ -563,7 +563,7 @@ export default function ProjectWorkSlipPage() {
                   <div 
                     key={material.id}
                     className={`border-2 rounded-lg p-3 transition-all ${
-                      isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                      isSelected ? 'border-blue-500 bg-red-50' : 'border-gray-200'
                     }`}
                   >
                     <label className="flex items-start space-x-3 cursor-pointer">

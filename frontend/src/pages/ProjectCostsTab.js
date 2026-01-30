@@ -528,7 +528,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                 
                 {/* Approved Quotes List */}
                 {hasApprovedQuotes && (
-                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="p-4 bg-red-50 rounded-lg border border-red-200">
                     <div className="text-sm font-semibold mb-3" style={{color: '#500000'}}>
                       📄 Goedgekeurde Offertes ({approvedQuotes.length})
                     </div>
@@ -548,7 +548,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                       ))}
                     </div>
                     {approvedQuotes.length > 1 && (
-                      <div className="flex justify-between items-center pt-3 mt-2 border-t border-blue-200">
+                      <div className="flex justify-between items-center pt-3 mt-2 border-t border-red-200">
                         <span className="font-semibold" style={{color: '#500000'}}>Totaal alle offertes:</span>
                         <span className="font-bold text-lg" style={{color: '#500000'}}>
                           €{totalSalePrice.toFixed(2)}
@@ -616,7 +616,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                 <button
                   onClick={() => createInvoice('25_approval', 25)}
                   disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '25_approval')}
-                  className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
+                  className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-red-50"
                   style={{borderColor: '#CBD5E1'}}
                 >
                   <div className="text-left">
@@ -631,7 +631,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                 <button
                   onClick={() => createInvoice('40_before_start', 40)}
                   disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '40_before_start')}
-                  className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
+                  className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-red-50"
                   style={{borderColor: '#CBD5E1'}}
                 >
                   <div className="text-left">
@@ -646,7 +646,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                 <button
                   onClick={() => createInvoice('25_completion', 25)}
                   disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '25_completion')}
-                  className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
+                  className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-red-50"
                   style={{borderColor: '#CBD5E1'}}
                 >
                   <div className="text-left">
@@ -661,7 +661,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                 <button
                   onClick={() => createInvoice('10_satisfaction', 10)}
                   disabled={Array.isArray(invoices) && invoices.some(inv => inv.milestone === '10_satisfaction')}
-                  className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-blue-50"
+                  className="flex items-center justify-between p-4 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-blue-500 hover:bg-red-50"
                   style={{borderColor: '#CBD5E1'}}
                 >
                   <div className="text-left">
@@ -804,7 +804,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
         <CardContent>
           <div className="space-y-4">
             {/* Info box */}
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm" style={{color: '#500000'}}>
                 💡 Registreer hier handmatig gefactureerde bedragen voor correcte maandelijkse rapportage. 
                 Optioneel kunt u direct een factuur versturen via Billit.
@@ -926,7 +926,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                             €{entry.amount?.toLocaleString('nl-NL', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                           </span>
                           {entry.send_via_billit && entry.billit_invoice_id && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">
                               Billit
                             </span>
                           )}

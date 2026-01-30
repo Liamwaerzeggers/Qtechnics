@@ -762,7 +762,7 @@ Q Technics`;
                                     <div
                                       key={material.id}
                                       data-testid={`material-option-${material.id}`}
-                                      className="p-3 hover:bg-blue-50 cursor-pointer border-b transition-colors"
+                                      className="p-3 hover:bg-red-50 cursor-pointer border-b transition-colors"
                                       onClick={() => handleSelectMaterial(material)}
                                       style={{borderColor: '#F1F5F9'}}
                                     >
@@ -856,7 +856,7 @@ Q Technics`;
                                     <div
                                       key={workItem.id}
                                       data-testid={`work-item-option-${workItem.id}`}
-                                      className="p-3 hover:bg-blue-50 cursor-pointer border-b transition-colors"
+                                      className="p-3 hover:bg-red-50 cursor-pointer border-b transition-colors"
                                       onClick={() => handleSelectWorkItem(workItem)}
                                       style={{borderColor: '#F1F5F9'}}
                                     >
@@ -881,7 +881,7 @@ Q Technics`;
                                     <div
                                       key={workItem.id}
                                       data-testid={`work-item-option-${workItem.id}`}
-                                      className="p-3 hover:bg-blue-50 cursor-pointer border-b transition-colors"
+                                      className="p-3 hover:bg-red-50 cursor-pointer border-b transition-colors"
                                       onClick={() => handleSelectWorkItem(workItem)}
                                       style={{borderColor: '#F1F5F9'}}
                                     >

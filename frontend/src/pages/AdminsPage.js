@@ -202,7 +202,7 @@ Q Technics`;
                   />
                 </div>
 
-                <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="bg-red-50 p-4 rounded-lg">
                   <p className="text-sm" style={{color: '#500000'}}>
                     <strong>ℹ️ Let op:</strong> Beheerdernen kunnen:
                   </p>
@@ -261,7 +261,7 @@ Q Technics`;
                       </p>
                     </div>
                     
-                    <div className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                    <div className="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
                       🔐 Admin
                     </div>
                   </div>

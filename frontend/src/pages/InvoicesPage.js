@@ -307,7 +307,7 @@ Q Technics`;
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDownloadPDF(invoice.id, invoice.invoice_number)}
-                            className="hover:bg-blue-50"
+                            className="hover:bg-red-50"
                             style={{color: '#500000'}}
                             title="Download PDF"
                           >

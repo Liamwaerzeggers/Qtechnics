@@ -190,7 +190,7 @@ Q Technics`;
                   />
                 </div>
 
-                <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="bg-red-50 p-4 rounded-lg">
                   <p className="text-sm" style={{color: '#500000'}}>
                     <strong>ℹ️ Let op:</strong> Werkmannen kunnen:
                   </p>

@@ -396,7 +396,7 @@ export default function MaterialsPage() {
                     {filteredWorkItems.map((item) => (
                       <div 
                         key={item.id} 
-                        className={`p-3 sm:p-4 hover:bg-gray-50 transition-colors ${editingId === item.id ? 'bg-blue-50' : ''}`}
+                        className={`p-3 sm:p-4 hover:bg-gray-50 transition-colors ${editingId === item.id ? 'bg-red-50' : ''}`}
                       >
                         {editingId === item.id ? (
                           // Edit Mode
@@ -476,7 +476,7 @@ export default function MaterialsPage() {
                                   size="sm" 
                                   variant="ghost"
                                   onClick={() => startEditing(item)}
-                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                  className="text-blue-600 hover:text-blue-800 hover:bg-red-50"
                                 >
                                   <Edit2 size={16} />
                                 </Button>

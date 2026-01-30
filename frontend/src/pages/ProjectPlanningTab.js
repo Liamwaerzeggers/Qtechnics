@@ -285,7 +285,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
         <CardContent>
           <div className="space-y-4">
             {/* Add new work period */}
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="p-4 bg-red-50 rounded-lg border border-red-200">
               <h4 className="font-semibold mb-3" style={{color: '#500000'}}>Nieuwe Werkperiode Toevoegen</h4>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <div>
@@ -468,7 +468,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
                           )}
                           
                           {/* Add Material Form */}
-                          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="p-3 bg-red-50 rounded-lg border border-red-200">
                             <p className="text-xs font-semibold mb-2" style={{color: '#500000'}}>Materiaal Toevoegen</p>
                             
                             {/* Catalog Quick Select */}

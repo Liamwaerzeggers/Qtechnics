@@ -334,7 +334,7 @@ export default function RoomConfiguratorPrototype() {
                     onClick={() => selectWorkItemForSurface(surfaceType, item)}
                     className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
                       currentSelection?.workItem?.id === item.id
-                        ? 'border-blue-500 bg-blue-50'
+                        ? 'border-blue-500 bg-red-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -369,7 +369,7 @@ export default function RoomConfiguratorPrototype() {
                       onClick={() => selectWorkItemForSurface(surfaceType, item)}
                       className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-all text-sm ${
                         currentSelection?.workItem?.id === item.id
-                          ? 'border-blue-500 bg-blue-50'
+                          ? 'border-blue-500 bg-red-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
@@ -490,7 +490,7 @@ export default function RoomConfiguratorPrototype() {
                       onClick={() => setActiveTab(tab.id)}
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                         activeTab === tab.id
-                          ? 'bg-blue-100 text-blue-700'
+                          ? 'bg-red-100 text-red-700'
                           : 'text-gray-600 hover:bg-gray-100'
                       }`}
                     >
@@ -520,7 +520,7 @@ export default function RoomConfiguratorPrototype() {
                       onClick={() => setSelectedRoom(room.id)}
                       className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
                         selectedRoom === room.id
-                          ? 'border-blue-500 bg-blue-50'
+                          ? 'border-blue-500 bg-red-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
@@ -748,7 +748,7 @@ export default function RoomConfiguratorPrototype() {
                     return (
                       <div 
                         key={room.id} 
-                        className={`p-3 rounded-lg border ${selectedRoom === room.id ? 'border-blue-300 bg-blue-50' : 'border-gray-200'}`}
+                        className={`p-3 rounded-lg border ${selectedRoom === room.id ? 'border-blue-300 bg-red-50' : 'border-gray-200'}`}
                       >
                         <div className="flex justify-between items-center mb-2">
                           <span className="font-semibold">{room.name}</span>
@@ -812,16 +812,16 @@ export default function RoomConfiguratorPrototype() {
         </div>
 
         {/* Info Banner */}
-        <Card className="bg-blue-50 border-blue-200">
+        <Card className="bg-red-50 border-red-200">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
               <span className="text-2xl">💡</span>
               <div>
                 <h4 className="font-semibold text-blue-800">Data uit je Catalogus</h4>
-                <p className="text-sm text-blue-700 mt-1">
+                <p className="text-sm text-red-700 mt-1">
                   De configurator haalt nu prijzen uit je echte database:
                 </p>
-                <ul className="text-sm text-blue-700 mt-2 space-y-1 list-disc list-inside">
+                <ul className="text-sm text-red-700 mt-2 space-y-1 list-disc list-inside">
                   <li><strong>Werk items</strong> ({workItems.length} geladen) → voor vloer, muur, plafond werk</li>
                   <li><strong>Materialen</strong> ({materials.length} geladen) → voor producten/meubels</li>
                   <li>Voeg <strong>categorie</strong> toe aan werk items (vloer, muur, plafond) voor betere filtering</li>

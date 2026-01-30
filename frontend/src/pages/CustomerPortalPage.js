@@ -230,7 +230,7 @@ export default function CustomerPortalPage() {
               <p className="font-semibold text-gray-800 text-sm sm:text-base">{project.name}</p>
               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                 project.status === 'completed' ? 'bg-green-100 text-green-700' :
-                project.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                project.status === 'in_progress' ? 'bg-red-100 text-red-700' :
                 'bg-gray-100 text-gray-700'
               }`}>
                 {project.status === 'completed' ? 'Voltooid' :
@@ -412,7 +412,7 @@ export default function CustomerPortalPage() {
                                   📅 {startDate.toLocaleDateString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short' })} 
                                   {' - '} 
                                   {endDate.toLocaleDateString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                                  <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                                  <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded">
                                     {diffDays} {diffDays === 1 ? 'dag' : 'dagen'}
                                   </span>
                                 </p>
@@ -432,7 +432,7 @@ export default function CustomerPortalPage() {
                             <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-0 border-t" style={{borderColor: '#E5E7EB'}}>
                               <div className="flex items-center gap-2 sm:gap-3 pt-3">
                                 {/* Start Date */}
-                                <div className="text-center bg-blue-500 text-white rounded-lg p-2 min-w-[50px] sm:min-w-[60px]">
+                                <div className="text-center bg-red-500 text-white rounded-lg p-2 min-w-[50px] sm:min-w-[60px]">
                                   <p className="text-[10px] sm:text-xs font-medium opacity-80">VAN</p>
                                   <p className="text-lg sm:text-xl font-bold">{startDate.getDate()}</p>
                                   <p className="text-[10px] sm:text-xs">{startDate.toLocaleDateString('nl-BE', { month: 'short' })}</p>
@@ -698,7 +698,7 @@ export default function CustomerPortalPage() {
                         onClick={() => setExpandedUpdates(prev => ({...prev, [update.id]: !isExpanded}))}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="bg-blue-100 p-2 rounded-full flex-shrink-0">
+                          <div className="bg-red-100 p-2 rounded-full flex-shrink-0">
                             <Hammer className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -713,7 +713,7 @@ export default function CustomerPortalPage() {
                               </div>
                               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                                 {update.photos && update.photos.length > 0 && (
-                                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                                  <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full">
                                     📷 {update.photos.length}
                                   </span>
                                 )}
@@ -871,7 +871,7 @@ export default function CustomerPortalPage() {
                         key={msg.id}
                         className={`p-2.5 sm:p-3 rounded-lg text-sm ${
                           msg.is_from_customer
-                            ? 'bg-blue-100 ml-4 sm:ml-8'
+                            ? 'bg-red-100 ml-4 sm:ml-8'
                             : 'bg-gray-100 mr-4 sm:mr-8'
                         }`}
                       >

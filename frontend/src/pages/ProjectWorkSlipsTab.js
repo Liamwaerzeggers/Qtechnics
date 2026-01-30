@@ -136,7 +136,7 @@ export default function ProjectWorkSlipsTab({ project, onUpdate }) {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
+              <div className="p-2 bg-red-100 rounded-lg">
                 <FileText className="text-blue-600" size={24} />
               </div>
               <div>
