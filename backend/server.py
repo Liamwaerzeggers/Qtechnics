@@ -836,32 +836,55 @@ async def update_quote(quote_id: str, quote_update: QuoteUpdate, current_user: U
         await db.quotes.update_one({"id": quote_id}, {"$set": update_data})
         existing_quote.update(update_data)
         
+        lead_id = existing_quote.get("lead_id")
+        project = None
+        if lead_id:
+            project = await db.projects.find_one({"lead_id": lead_id})
+        
+        # If quote is marked as sold, update project status and create celebration
+        if update_data.get("is_sold") == True and project:
+            # Update project status to "in uitvoering"
+            await db.projects.update_one(
+                {"id": project["id"]},
+                {"$set": {"status": "in uitvoering"}}
+            )
+            
+            # Create celebration record for all admins
+            celebration = {
+                "id": f"CELEB-{str(uuid.uuid4())[:8].upper()}",
+                "project_id": project["id"],
+                "project_name": project.get("name", "Onbekend project"),
+                "quote_id": quote_id,
+                "quote_number": existing_quote.get("quote_number", ""),
+                "amount": existing_quote.get("total_incl_vat", 0),
+                "sold_at": datetime.now(timezone.utc).isoformat(),
+                "sold_by": current_user.id,
+                "seen_by": []  # Track which users have seen this celebration
+            }
+            await db.celebrations.insert_one(celebration)
+            logger.info(f"Quote {quote_id} marked as sold, project {project['id']} status set to 'in uitvoering'")
+        
         # If status changed to "goedgekeurd", update project financials
-        if update_data.get("status") == "goedgekeurd":
-            lead_id = existing_quote.get("lead_id")
-            if lead_id:
-                # Find project with this lead_id
-                project = await db.projects.find_one({"lead_id": lead_id})
-                if project:
-                    # Calculate total sales from all approved quotes for this lead
-                    approved_quotes = await db.quotes.find({
-                        "lead_id": lead_id,
-                        "status": "goedgekeurd"
-                    }, {"_id": 0, "total_incl_vat": 1}).to_list(100)
-                    
-                    total_sales = sum(q.get("total_incl_vat", 0) for q in approved_quotes)
-                    total_costs = project.get("total_costs", 0)
-                    profit = total_sales - total_costs
-                    
-                    # Update project with new sales total
-                    await db.projects.update_one(
-                        {"id": project["id"]},
-                        {"$set": {
-                            "sales_price": total_sales,
-                            "profit": profit
-                        }}
-                    )
-                    logger.info(f"Updated project {project['id']} financials: sales={total_sales}, profit={profit}")
+        if update_data.get("status") == "goedgekeurd" and project:
+            # Calculate total sales from all approved quotes for this lead
+            approved_quotes = await db.quotes.find({
+                "lead_id": lead_id,
+                "status": "goedgekeurd"
+            }, {"_id": 0, "total_incl_vat": 1}).to_list(100)
+            
+            total_sales = sum(q.get("total_incl_vat", 0) for q in approved_quotes)
+            total_costs = project.get("total_costs", 0)
+            profit = total_sales - total_costs
+            
+            # Update project with new sales total
+            await db.projects.update_one(
+                {"id": project["id"]},
+                {"$set": {
+                    "sales_price": total_sales,
+                    "profit": profit
+                }}
+            )
+            logger.info(f"Updated project {project['id']} financials: sales={total_sales}, profit={profit}")
     
     if isinstance(existing_quote["date"], str):
         existing_quote["date"] = datetime.fromisoformat(existing_quote["date"])
