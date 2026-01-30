@@ -55,8 +55,8 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
                 data-testid="dashboard-logo"
               >
                 <img 
-                  src="/qtechnics_logo.png" 
-                  alt="Q Technics Logo" 
+                  src="/maxq_logo.png" 
+                  alt="Max Q Logo" 
                   className="h-10 sm:h-12 w-auto"
                 />
               </div>
