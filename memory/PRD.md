@@ -24,7 +24,8 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 - [x] **Projectstatus Update** - Project status wordt automatisch "in uitvoering" bij verkoop
 - [x] **Viering Animatie** - Confetti + popup wanneer admin inlogt na nieuwe verkoop
 - [x] **Materialen per Werk** - Materialen koppelen aan specifieke geplande werkperiodes
-- [x] **Materiaal Herinneringen** - API voor werkperiodes met materialen die binnen 1 maand starten
+- [x] **Materiaal Bestelherinneringen** - Specifieke besteldatum per materiaal met dashboard widget
+- [x] **🎮 Gamification Banner** - Team Sales Leaderboard met progressiebalk en mijlpalen (€100K → €2M)
 
 ### 2025-01-29
 - [x] **Gefaseerde Facturatie** - Handmatig factuurbedragen registreren met specifieke datum
