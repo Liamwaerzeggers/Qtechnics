@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Calendar, Plus, Trash2, Save, Package } from 'lucide-react';
+import { Calendar, Plus, Trash2, Save, Package, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpdate }) {
@@ -19,6 +19,22 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
   const [newWorkDescription, setNewWorkDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [quoteMaterials, setQuoteMaterials] = useState([]);
+  const [catalogMaterials, setCatalogMaterials] = useState([]);
+  const [expandedPeriods, setExpandedPeriods] = useState({});
+  const [newMaterialData, setNewMaterialData] = useState({});
+
+  // Fetch materials from catalog
+  useEffect(() => {
+    const fetchCatalogMaterials = async () => {
+      try {
+        const response = await axios.get(`${API}/materials`, { withCredentials: true });
+        setCatalogMaterials(response.data || []);
+      } catch (error) {
+        console.error('Error fetching catalog materials:', error);
+      }
+    };
+    fetchCatalogMaterials();
+  }, []);
 
   // Fetch materials from approved quotes
   useEffect(() => {
@@ -40,6 +56,88 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
       fetchMaterials();
     }
   }, [approvedQuotes]);
+
+  // Toggle expand/collapse for period materials
+  const togglePeriodExpand = (periodId) => {
+    setExpandedPeriods(prev => ({...prev, [periodId]: !prev[periodId]}));
+  };
+
+  // Add material to a work period
+  const handleAddMaterialToPeriod = async (periodId) => {
+    const data = newMaterialData[periodId];
+    if (!data?.name) {
+      toast.error('Vul een materiaalnaam in');
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${API}/projects/${project.id}/scheduled-days/${periodId}/materials`,
+        {
+          name: data.name,
+          quantity: parseFloat(data.quantity) || 1,
+          unit: data.unit || 'stuk',
+          notes: data.notes || '',
+          from_catalog: data.from_catalog || false,
+          catalog_id: data.catalog_id
+        },
+        { withCredentials: true }
+      );
+      
+      // Update local state
+      setScheduledDays(prev => prev.map(p => {
+        if (p.id === periodId) {
+          return {...p, materials: [...(p.materials || []), response.data.material]};
+        }
+        return p;
+      }));
+      
+      // Clear form
+      setNewMaterialData(prev => ({...prev, [periodId]: {name: '', quantity: 1, unit: 'stuk', notes: ''}}));
+      toast.success('Materiaal toegevoegd!');
+    } catch (error) {
+      console.error('Error adding material:', error);
+      toast.error('Kon materiaal niet toevoegen');
+    }
+  };
+
+  // Remove material from a work period
+  const handleRemoveMaterial = async (periodId, materialId) => {
+    try {
+      await axios.delete(
+        `${API}/projects/${project.id}/scheduled-days/${periodId}/materials/${materialId}`,
+        { withCredentials: true }
+      );
+      
+      // Update local state
+      setScheduledDays(prev => prev.map(p => {
+        if (p.id === periodId) {
+          return {...p, materials: (p.materials || []).filter(m => m.id !== materialId)};
+        }
+        return p;
+      }));
+      
+      toast.success('Materiaal verwijderd');
+    } catch (error) {
+      console.error('Error removing material:', error);
+      toast.error('Kon materiaal niet verwijderen');
+    }
+  };
+
+  // Select material from catalog
+  const handleSelectCatalogMaterial = (periodId, material) => {
+    setNewMaterialData(prev => ({
+      ...prev, 
+      [periodId]: {
+        name: material.name,
+        quantity: 1,
+        unit: material.unit || 'stuk',
+        notes: '',
+        from_catalog: true,
+        catalog_id: material.id
+      }
+    }));
+  };
 
   const handleSavePlanning = async () => {
     setSaving(true);
