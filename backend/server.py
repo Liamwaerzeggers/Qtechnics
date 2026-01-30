@@ -167,6 +167,7 @@ class QuoteCreate(BaseModel):
 class QuoteUpdate(BaseModel):
     status: Optional[str] = None
     room: Optional[str] = None
+    is_sold: Optional[bool] = None  # Mark quote as sold/won
 
 # Line Item Models
 class LineItem(BaseModel):
