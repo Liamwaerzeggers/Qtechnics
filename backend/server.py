@@ -6091,14 +6091,59 @@ async def remove_material_from_work_period(
     
     return {"success": True}
 
+@api_router.put("/projects/{project_id}/scheduled-days/{period_id}/materials/{material_id}")
+async def update_material_in_work_period(
+    project_id: str,
+    period_id: str,
+    material_id: str,
+    material_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Update a material in a scheduled work period (e.g., mark as ordered)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can update materials")
+    
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    scheduled_days = project.get("scheduled_days", [])
+    material_found = False
+    
+    for period in scheduled_days:
+        if period.get("id") == period_id:
+            materials = period.get("materials", [])
+            for mat in materials:
+                if mat.get("id") == material_id:
+                    material_found = True
+                    # Update allowed fields
+                    if "is_ordered" in material_data:
+                        mat["is_ordered"] = material_data["is_ordered"]
+                    if "order_reminder_date" in material_data:
+                        mat["order_reminder_date"] = material_data["order_reminder_date"]
+                    if "notes" in material_data:
+                        mat["notes"] = material_data["notes"]
+                    break
+            break
+    
+    if not material_found:
+        raise HTTPException(status_code=404, detail="Materiaal niet gevonden")
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"scheduled_days": scheduled_days}}
+    )
+    
+    return {"success": True}
+
 @api_router.get("/dashboard/material-reminders")
 async def get_material_reminders(current_user: User = Depends(get_current_user)):
-    """Get work periods with materials that start within 1 month"""
+    """Get materials that need to be ordered (based on order_reminder_date)"""
     if current_user.role != "admin":
         return []
     
     now = datetime.now(timezone.utc)
-    one_month_later = now + timedelta(days=30)
+    today_str = now.strftime("%Y-%m-%d")
     
     # Find all projects
     projects = await db.projects.find({}, {"_id": 0}).to_list(1000)
@@ -6111,34 +6156,36 @@ async def get_material_reminders(current_user: User = Depends(get_current_user))
             if not materials:
                 continue
             
-            start_date_str = period.get("start_date")
-            if not start_date_str:
-                continue
-            
-            try:
-                start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
-                if start_date.tzinfo is None:
-                    start_date = start_date.replace(tzinfo=timezone.utc)
-            except:
-                try:
-                    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-                except:
+            # Filter materials that need ordering
+            materials_to_order = []
+            for mat in materials:
+                # Skip if already ordered
+                if mat.get("is_ordered"):
                     continue
+                
+                order_date = mat.get("order_reminder_date")
+                if not order_date:
+                    continue
+                
+                # Check if order date is today or in the past
+                if order_date <= today_str:
+                    materials_to_order.append({
+                        **mat,
+                        "days_overdue": (now - datetime.strptime(order_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)).days
+                    })
             
-            # Check if within 1 month and not in the past
-            if now <= start_date <= one_month_later:
+            if materials_to_order:
                 reminders.append({
                     "project_id": project["id"],
                     "project_name": project.get("name", "Onbekend project"),
                     "period_id": period.get("id"),
                     "period_description": period.get("description", "Geen beschrijving"),
-                    "start_date": start_date_str,
-                    "days_until": (start_date - now).days,
-                    "materials": materials
+                    "work_start_date": period.get("start_date"),
+                    "materials": materials_to_order
                 })
     
-    # Sort by days until start
-    reminders.sort(key=lambda x: x["days_until"])
+    # Sort by most overdue first
+    reminders.sort(key=lambda x: max((m.get("days_overdue", 0) for m in x["materials"]), default=0), reverse=True)
     
     return reminders
 
