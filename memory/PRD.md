@@ -15,14 +15,21 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 - **Frontend**: React + Tailwind CSS + Shadcn/UI
 - **Backend**: FastAPI + Motor (async MongoDB)
 - **Database**: MongoDB
-- **3rd Party**: Billit, Resend (email), emergentintegrations (AI)
+- **3rd Party**: Billit, Resend (email), emergentintegrations (AI), canvas-confetti
 
 ## Geïmplementeerde Features
 
-### 2025-01-29 (Deze sessie)
-- [x] **Winstberekening fix** - Project overzichtspagina toont nu correct winst voor projecten met legacy documenten
-- [x] **Email notificaties** - Automatische email naar klant bij nieuwe content in portaal (Resend)
-- [x] **Gefaseerde Facturatie** - Handmatig factuurbedragen registreren met specifieke datum voor correcte maandelijkse rapportage in Financiën
+### 2025-01-30 (Deze sessie)
+- [x] **"Verkocht" Toggle** - Switch op offertes en legacy documenten om aan te geven dat offerte verkocht is
+- [x] **Projectstatus Update** - Project status wordt automatisch "in uitvoering" bij verkoop
+- [x] **Viering Animatie** - Confetti + popup wanneer admin inlogt na nieuwe verkoop
+- [x] **Materialen per Werk** - Materialen koppelen aan specifieke geplande werkperiodes
+- [x] **Materiaal Herinneringen** - API voor werkperiodes met materialen die binnen 1 maand starten
+
+### 2025-01-29
+- [x] **Gefaseerde Facturatie** - Handmatig factuurbedragen registreren met specifieke datum
+- [x] **Winstberekening fix** - Correct profit weergave voor projecten met legacy documenten
+- [x] **Email notificaties** - Automatische email naar klant bij nieuwe portaal content
 
 ### Eerder geïmplementeerd
 - [x] Inline bewerking offerte items (prijs/hoeveelheid)
@@ -31,20 +38,38 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 - [x] Legacy documenten met totaalprijs en zichtbaarheidsoptie
 - [x] Inklapbare secties in klantenportaal
 
-## Nieuwe Feature: Gefaseerde Facturatie
+## Nieuwe Features Details
 
-### Gebruik
-In het Financieel tabblad van een project:
-1. Klik op "Registratie Toevoegen"
-2. Vul bedrag in (incl. BTW)
-3. Kies factuurdatum (bepaalt in welke maand de omzet verschijnt)
-4. Optioneel: beschrijving (bijv. "Fase 1", "Voorschot")
-5. Optioneel: zet "Verstuur via Billit" aan om ook een echte factuur te versturen
+### "Verkocht" Toggle
+- Switch bij elke offerte en legacy document (type offerte)
+- Groen gemarkeerd met "VERKOCHT" badge wanneer actief
+- Zet projectstatus automatisch naar "in uitvoering"
+- Meerdere offertes per project kunnen verkocht zijn
 
-### Resultaat
-- Omzet wordt toegewezen aan de gekozen maand in Financiën pagina
-- Percentage gefactureerd wordt getoond (van totale verkoopprijs)
-- Overzicht van alle registraties met verwijder-optie
+### Viering Animatie
+- Confetti-effect bij eerste login na nieuwe verkoop
+- Toont projectnaam en verkoopbedrag
+- Eenmalig per admin per verkocht project
+- "Volgende Viering!" knop bij meerdere nieuwe verkopen
+
+### Materialen per Werkperiode
+- Uitklapbare "Materialen" sectie per gepland werk
+- Selecteer uit catalogus of voeg nieuw materiaal toe
+- Velden: naam, aantal, eenheid (stuk, m², kg, etc.)
+- API voor herinneringen 1 maand voor aanvang
+
+## API Endpoints
+
+### Nieuw (Verkocht & Celebrations)
+- `PUT /api/quotes/{quote_id}` - Met `is_sold` parameter
+- `PUT /api/legacy-documents/{doc_id}` - Met `is_sold` parameter
+- `GET /api/celebrations/pending` - Onbekeken vieringen
+- `POST /api/celebrations/{id}/mark-seen` - Markeer als gezien
+
+### Nieuw (Materialen per Werk)
+- `POST /api/projects/{id}/scheduled-days/{period_id}/materials` - Materiaal toevoegen
+- `DELETE /api/projects/{id}/scheduled-days/{period_id}/materials/{material_id}` - Verwijderen
+- `GET /api/dashboard/material-reminders` - Werkperiodes met materialen binnen 1 maand
 
 ## Backlog
 
@@ -54,6 +79,7 @@ In het Financieel tabblad van een project:
 ### P1 - Hoog
 - [ ] Room Configurator afmaken (prototype)
 - [ ] Geverifieerd Resend domein voor productie emails
+- [ ] Dashboard widget met materiaalherinneringen
 
 ### P2 - Medium
 - [ ] Backend API stabiliteit verbeteren
@@ -62,25 +88,6 @@ In het Financieel tabblad van een project:
 ### P3 - Laag
 - [ ] Data migratie script (preview → productie)
 
-## API Endpoints
-
-### Nieuw (Gefaseerde Facturatie)
-- `POST /api/projects/{project_id}/manual-invoices` - Registratie toevoegen
-- `GET /api/projects/{project_id}/manual-invoices` - Alle registraties ophalen
-- `DELETE /api/projects/{project_id}/manual-invoices/{entry_id}` - Registratie verwijderen
-- `GET /api/all-manual-invoices` - Alle registraties voor financiële rapportage
-
-### Recent gewijzigd
-- `GET /api/projects` - Nu met correcte profit berekening (incl. legacy docs)
-- `PUT /api/legacy-documents/{id}` - Trigger email notificatie bij visible_to_customer=true
-- `PUT /api/projects/{id}/work-slips/{slip_id}/visibility` - Trigger email notificatie
-
 ## Test Credentials
 - Username: `test` | Password: `test123`
 - Username: `petra` | Password: `test123`
-
-## Belangrijke Notities
-- Preview en productie hebben **gescheiden databases**
-- Resend test sender kan alleen naar geverifieerde emails sturen
-- Bij problemen met foto's in productie: eerst checken of data in productie DB bestaat
-- Gefaseerde facturatie: omzet wordt toegewezen aan maand van factuurdatum, niet projectdatum
