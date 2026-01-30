@@ -347,6 +347,7 @@ class LegacyDocumentUpdate(BaseModel):
     description: Optional[str] = None
     total_price: Optional[float] = None
     visible_to_customer: Optional[bool] = None
+    is_sold: Optional[bool] = None  # Mark legacy quote as sold/won
 
 # Calendar Models
 class CalendarEvent(BaseModel):
