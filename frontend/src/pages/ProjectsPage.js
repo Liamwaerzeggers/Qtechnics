@@ -151,6 +151,92 @@ export default function ProjectsPage() {
   return (
     <DashboardLayout showBackToDashboard={true}>
       <div data-testid="projects-page" className="space-y-6">
+        
+        {/* Gamification Banner - Sales Progress */}
+        {!isWorker && (
+          <div className="relative overflow-hidden rounded-2xl p-6" style={{
+            background: 'linear-gradient(135deg, #1E3A8A 0%, #3B82F6 50%, #8B5CF6 100%)'
+          }}>
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 w-64 h-64 opacity-10">
+              <Trophy size={256} />
+            </div>
+            
+            <div className="relative z-10">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                    {currentMilestone?.icon || '🎯'} Team Sales Leaderboard
+                  </h2>
+                  <p className="text-blue-200 text-sm mt-1">
+                    {currentMilestone ? currentMilestone.message : 'Aan de slag!'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-4xl font-bold text-white">
+                    €{totalSales.toLocaleString('nl-NL', {minimumFractionDigits: 0, maximumFractionDigits: 0})}
+                  </div>
+                  <div className="text-blue-200 text-sm">Totale Verkoop</div>
+                </div>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-blue-200">
+                    Volgende mijlpaal: {nextMilestone?.label}
+                  </span>
+                  <span className="text-sm font-bold text-white">
+                    {progressToNext.toFixed(0)}%
+                  </span>
+                </div>
+                <div className="h-4 bg-white/20 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full rounded-full transition-all duration-1000 ease-out"
+                    style={{
+                      width: `${progressToNext}%`,
+                      background: 'linear-gradient(90deg, #10B981 0%, #34D399 50%, #6EE7B7 100%)'
+                    }}
+                  />
+                </div>
+                {nextMilestone && (
+                  <div className="text-xs text-blue-200 mt-1">
+                    Nog €{(nextMilestone.amount - totalSales).toLocaleString('nl-NL', {minimumFractionDigits: 0})} te gaan!
+                  </div>
+                )}
+              </div>
+              
+              {/* Milestones */}
+              <div className="flex justify-between items-center">
+                {MILESTONES.map((milestone, index) => {
+                  const isReached = totalSales >= milestone.amount;
+                  const isCurrent = currentMilestone?.amount === milestone.amount;
+                  return (
+                    <div 
+                      key={milestone.amount}
+                      className={`flex flex-col items-center transition-all ${isReached ? 'opacity-100 scale-110' : 'opacity-40'}`}
+                    >
+                      <div 
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${isCurrent ? 'ring-2 ring-white ring-offset-2 ring-offset-transparent' : ''}`}
+                        style={{
+                          backgroundColor: isReached ? milestone.color : 'rgba(255,255,255,0.2)',
+                          boxShadow: isReached ? `0 0 20px ${milestone.color}50` : 'none'
+                        }}
+                      >
+                        {milestone.icon}
+                      </div>
+                      <span className={`text-xs mt-1 font-semibold ${isReached ? 'text-white' : 'text-blue-300'}`}>
+                        {milestone.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex justify-between items-center">
           <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
             {isWorker ? 'Projecten / Проєкти' : 'Projecten'}
