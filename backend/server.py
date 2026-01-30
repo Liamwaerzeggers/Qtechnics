@@ -5980,6 +5980,166 @@ uploads_dir = ROOT_DIR / "uploads"
 uploads_dir.mkdir(exist_ok=True)
 app.mount("/api/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
+# ============= CELEBRATIONS ENDPOINTS =============
+
+@api_router.get("/celebrations/pending")
+async def get_pending_celebrations(current_user: User = Depends(get_current_user)):
+    """Get celebrations that the current user hasn't seen yet"""
+    if current_user.role != "admin":
+        return []
+    
+    # Find celebrations where current user is not in seen_by
+    celebrations = await db.celebrations.find(
+        {"seen_by": {"$ne": current_user.id}},
+        {"_id": 0}
+    ).sort("sold_at", -1).to_list(10)
+    
+    return celebrations
+
+@api_router.post("/celebrations/{celebration_id}/mark-seen")
+async def mark_celebration_seen(celebration_id: str, current_user: User = Depends(get_current_user)):
+    """Mark a celebration as seen by the current user"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can mark celebrations")
+    
+    result = await db.celebrations.update_one(
+        {"id": celebration_id},
+        {"$addToSet": {"seen_by": current_user.id}}
+    )
+    
+    return {"success": True}
+
+# ============= WORK PERIOD MATERIALS ENDPOINTS =============
+
+@api_router.post("/projects/{project_id}/scheduled-days/{period_id}/materials")
+async def add_material_to_work_period(
+    project_id: str,
+    period_id: str,
+    material_data: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Add a material to a scheduled work period"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can add materials")
+    
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    scheduled_days = project.get("scheduled_days", [])
+    period_found = False
+    
+    for period in scheduled_days:
+        if period.get("id") == period_id:
+            period_found = True
+            if "materials" not in period:
+                period["materials"] = []
+            
+            # Add material with unique ID
+            new_material = {
+                "id": f"MAT-{str(uuid.uuid4())[:8].upper()}",
+                "name": material_data.get("name", ""),
+                "quantity": material_data.get("quantity", 1),
+                "unit": material_data.get("unit", "stuk"),
+                "notes": material_data.get("notes", ""),
+                "from_catalog": material_data.get("from_catalog", False),
+                "catalog_id": material_data.get("catalog_id"),
+                "added_at": datetime.now(timezone.utc).isoformat()
+            }
+            period["materials"].append(new_material)
+            break
+    
+    if not period_found:
+        raise HTTPException(status_code=404, detail="Werkperiode niet gevonden")
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"scheduled_days": scheduled_days}}
+    )
+    
+    return {"success": True, "material": new_material}
+
+@api_router.delete("/projects/{project_id}/scheduled-days/{period_id}/materials/{material_id}")
+async def remove_material_from_work_period(
+    project_id: str,
+    period_id: str,
+    material_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Remove a material from a scheduled work period"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can remove materials")
+    
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    scheduled_days = project.get("scheduled_days", [])
+    
+    for period in scheduled_days:
+        if period.get("id") == period_id:
+            materials = period.get("materials", [])
+            period["materials"] = [m for m in materials if m.get("id") != material_id]
+            break
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"scheduled_days": scheduled_days}}
+    )
+    
+    return {"success": True}
+
+@api_router.get("/dashboard/material-reminders")
+async def get_material_reminders(current_user: User = Depends(get_current_user)):
+    """Get work periods with materials that start within 1 month"""
+    if current_user.role != "admin":
+        return []
+    
+    now = datetime.now(timezone.utc)
+    one_month_later = now + timedelta(days=30)
+    
+    # Find all projects
+    projects = await db.projects.find({}, {"_id": 0}).to_list(1000)
+    
+    reminders = []
+    for project in projects:
+        scheduled_days = project.get("scheduled_days", [])
+        for period in scheduled_days:
+            materials = period.get("materials", [])
+            if not materials:
+                continue
+            
+            start_date_str = period.get("start_date")
+            if not start_date_str:
+                continue
+            
+            try:
+                start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
+                if start_date.tzinfo is None:
+                    start_date = start_date.replace(tzinfo=timezone.utc)
+            except:
+                try:
+                    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                except:
+                    continue
+            
+            # Check if within 1 month and not in the past
+            if now <= start_date <= one_month_later:
+                reminders.append({
+                    "project_id": project["id"],
+                    "project_name": project.get("name", "Onbekend project"),
+                    "period_id": period.get("id"),
+                    "period_description": period.get("description", "Geen beschrijving"),
+                    "start_date": start_date_str,
+                    "days_until": (start_date - now).days,
+                    "materials": materials
+                })
+    
+    # Sort by days until start
+    reminders.sort(key=lambda x: x["days_until"])
+    
+    return reminders
+
 # Include router
 app.include_router(api_router)
 
