@@ -266,7 +266,7 @@ export default function RoomConfiguratorPrototype() {
       ctx.fillRect(x, y, w, h);
       
       // Room outline
-      ctx.strokeStyle = room.id === selectedRoom ? '#3B82F6' : '#64748B';
+      ctx.strokeStyle = room.id === selectedRoom ? '#7a1f1f' : '#64748B';
       ctx.lineWidth = room.id === selectedRoom ? 3 : 2;
       ctx.strokeRect(x, y, w, h);
       
@@ -283,7 +283,7 @@ export default function RoomConfiguratorPrototype() {
       
       // Selected materials
       ctx.font = '10px Inter, sans-serif';
-      ctx.fillStyle = '#3B82F6';
+      ctx.fillStyle = '#7a1f1f';
       if (room.floor?.workItem) {
         ctx.fillText(`Vloer: ${room.floor.workItem.title}`, x + w/2, y + h/2 + 15);
       }
@@ -446,7 +446,7 @@ export default function RoomConfiguratorPrototype() {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-2xl">🏠</span>
-              <h1 className="text-2xl sm:text-3xl font-bold" style={{color: '#1E40AF'}}>
+              <h1 className="text-2xl sm:text-3xl font-bold" style={{color: '#500000'}}>
                 Kamer Configurator
               </h1>
               <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded">
@@ -801,7 +801,7 @@ export default function RoomConfiguratorPrototype() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-bold">Totaal incl. BTW</span>
-                    <span className="text-2xl font-bold" style={{color: '#1E40AF'}}>
+                    <span className="text-2xl font-bold" style={{color: '#500000'}}>
                       €{(totalPrice * 1.21).toFixed(2)}
                     </span>
                   </div>

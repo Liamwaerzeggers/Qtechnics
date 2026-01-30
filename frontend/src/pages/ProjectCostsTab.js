@@ -231,8 +231,8 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
     const styles = {
       not_sent: { bg: '#E5E7EB', color: '#374151', text: 'Niet verstuurd', icon: '○' },
       sending: { bg: '#FEF3C7', color: '#92400E', text: 'Verzenden...', icon: '◌' },
-      sent: { bg: '#DBEAFE', color: '#1E40AF', text: 'Verstuurd', icon: '→' },
-      sent_peppol: { bg: '#DBEAFE', color: '#1E40AF', text: 'PEPPOL', icon: '🔗' },
+      sent: { bg: '#f5e6e6', color: '#500000', text: 'Verstuurd', icon: '→' },
+      sent_peppol: { bg: '#f5e6e6', color: '#500000', text: 'PEPPOL', icon: '🔗' },
       sent_email: { bg: '#E0E7FF', color: '#4338CA', text: 'E-mail', icon: '✉️' },
       delivered: { bg: '#D1FAE5', color: '#065F46', text: 'Afgeleverd', icon: '✓' },
       delivered_peppol: { bg: '#D1FAE5', color: '#065F46', text: 'PEPPOL ✓', icon: '🔗' },
@@ -376,7 +376,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
         <Card>
           <CardContent className="p-6">
             <div className="text-sm font-semibold mb-2" style={{color: '#64748B'}}>Verkoopprijs</div>
-            <div className="text-3xl font-bold" style={{color: '#3B82F6'}}>
+            <div className="text-3xl font-bold" style={{color: '#7a1f1f'}}>
               €{salePrice.toFixed(2)}
             </div>
           </CardContent>
@@ -420,7 +420,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                 >
                   Annuleren
                 </Button>
-                <Button onClick={handleSaveCosts} style={{backgroundColor: '#1E40AF', color: 'white'}}>
+                <Button onClick={handleSaveCosts} style={{backgroundColor: '#500000', color: 'white'}}>
                   Opslaan
                 </Button>
               </div>
@@ -529,7 +529,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                 {/* Approved Quotes List */}
                 {hasApprovedQuotes && (
                   <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="text-sm font-semibold mb-3" style={{color: '#1E40AF'}}>
+                    <div className="text-sm font-semibold mb-3" style={{color: '#500000'}}>
                       📄 Goedgekeurde Offertes ({approvedQuotes.length})
                     </div>
                     <div className="space-y-2">
@@ -541,7 +541,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                               {new Date(q.date || q.created_at).toLocaleDateString('nl-NL')}
                             </span>
                           </div>
-                          <span className="font-bold" style={{color: '#3B82F6'}}>
+                          <span className="font-bold" style={{color: '#7a1f1f'}}>
                             €{(q.total_incl_vat || 0).toFixed(2)}
                           </span>
                         </div>
@@ -549,8 +549,8 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                     </div>
                     {approvedQuotes.length > 1 && (
                       <div className="flex justify-between items-center pt-3 mt-2 border-t border-blue-200">
-                        <span className="font-semibold" style={{color: '#1E40AF'}}>Totaal alle offertes:</span>
-                        <span className="font-bold text-lg" style={{color: '#1E40AF'}}>
+                        <span className="font-semibold" style={{color: '#500000'}}>Totaal alle offertes:</span>
+                        <span className="font-bold text-lg" style={{color: '#500000'}}>
                           €{totalSalePrice.toFixed(2)}
                         </span>
                       </div>
@@ -560,7 +560,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                 
                 <div className="flex justify-between text-lg">
                   <span className="font-semibold" style={{color: '#64748B'}}>Verkoopprijs (incl. BTW):</span>
-                  <span className="font-bold" style={{color: '#3B82F6'}}>
+                  <span className="font-bold" style={{color: '#7a1f1f'}}>
                     €{totalSalePrice.toFixed(2)}
                   </span>
                 </div>
@@ -581,7 +581,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                   return (
                     <>
                       <div className="flex justify-between text-2xl border-t pt-3">
-                        <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Winst:</span>
+                        <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Winst:</span>
                         <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: profit >= 0 ? '#10B981' : '#EF4444'}}>
                           €{profit.toFixed(2)}
                         </span>
@@ -611,7 +611,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
           <div className="space-y-4">
             {/* Milestone Buttons */}
             <div>
-              <h4 className="font-semibold mb-3" style={{color: '#1E3A8A'}}>Deelfacturen Aanmaken</h4>
+              <h4 className="font-semibold mb-3" style={{color: '#3a190b'}}>Deelfacturen Aanmaken</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   onClick={() => createInvoice('25_approval', 25)}
@@ -678,14 +678,14 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
             {/* Invoices List */}
             {Array.isArray(invoices) && invoices.length > 0 && (
               <div>
-                <h4 className="font-semibold mb-3" style={{color: '#1E3A8A'}}>
+                <h4 className="font-semibold mb-3" style={{color: '#3a190b'}}>
                   Uitgegeven Facturen ({invoices.length})
                 </h4>
                 <div className="space-y-2">
                   {invoices.map((invoice) => (
                     <div key={invoice.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-3 bg-gray-50 rounded-lg">
                       <div className="flex-1">
-                        <div className="font-semibold" style={{color: '#1E40AF'}}>
+                        <div className="font-semibold" style={{color: '#500000'}}>
                           {invoice.invoice_number}
                         </div>
                         <div className="text-sm" style={{color: '#64748B'}}>
@@ -699,7 +699,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                           }
                         </div>
                         {invoice.structured_communication && (
-                          <div className="text-xs font-mono mt-1" style={{color: '#3B82F6'}}>
+                          <div className="text-xs font-mono mt-1" style={{color: '#7a1f1f'}}>
                             OGM: {invoice.structured_communication}
                           </div>
                         )}
@@ -731,7 +731,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                             disabled={sendingPeppol === invoice.id}
                             size="sm"
                             style={{
-                              backgroundColor: '#1E40AF',
+                              backgroundColor: '#500000',
                               color: 'white'
                             }}
                           >
@@ -795,7 +795,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
             <Button 
               onClick={() => setShowManualForm(!showManualForm)}
               variant={showManualForm ? "outline" : "default"}
-              style={!showManualForm ? {backgroundColor: '#1E40AF'} : {}}
+              style={!showManualForm ? {backgroundColor: '#500000'} : {}}
             >
               {showManualForm ? 'Annuleren' : <><Plus size={16} className="mr-1" /> Registratie Toevoegen</>}
             </Button>
@@ -805,7 +805,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
           <div className="space-y-4">
             {/* Info box */}
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm" style={{color: '#1E40AF'}}>
+              <p className="text-sm" style={{color: '#500000'}}>
                 💡 Registreer hier handmatig gefactureerde bedragen voor correcte maandelijkse rapportage. 
                 Optioneel kunt u direct een factuur versturen via Billit.
               </p>
@@ -880,7 +880,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                   <Button 
                     type="submit"
                     disabled={submittingManual}
-                    style={{backgroundColor: '#1E40AF'}}
+                    style={{backgroundColor: '#500000'}}
                   >
                     {submittingManual ? (
                       <><Loader2 size={16} className="animate-spin mr-2" /> Bezig...</>
@@ -914,7 +914,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
             {/* Entries List */}
             {manualEntries.length > 0 ? (
               <div>
-                <h4 className="font-semibold mb-3" style={{color: '#1E3A8A'}}>
+                <h4 className="font-semibold mb-3" style={{color: '#3a190b'}}>
                   Geregistreerde Facturaties ({manualEntries.length})
                 </h4>
                 <div className="space-y-2">
@@ -922,7 +922,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                     <div key={entry.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold" style={{color: '#1E40AF'}}>
+                          <span className="font-semibold" style={{color: '#500000'}}>
                             €{entry.amount?.toLocaleString('nl-NL', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                           </span>
                           {entry.send_via_billit && entry.billit_invoice_id && (
@@ -1005,7 +1005,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
             {/* Uploaded Invoices */}
             {project.invoice_uploads && project.invoice_uploads.length > 0 && (
               <div>
-                <h4 className="font-semibold mb-3" style={{color: '#1E3A8A'}}>
+                <h4 className="font-semibold mb-3" style={{color: '#3a190b'}}>
                   Geüploade Facturen ({project.invoice_uploads.length})
                 </h4>
                 <div className="space-y-2">

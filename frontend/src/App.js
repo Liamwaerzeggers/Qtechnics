@@ -206,7 +206,7 @@ function LandingPage() {
     <div className="min-h-screen" style={{backgroundColor: '#F8FAFC'}}>
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-5xl lg:text-6xl font-bold mb-6" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+          <h1 className="text-5xl lg:text-6xl font-bold mb-6" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
             Offerte & Project Dashboard
           </h1>
           <p className="text-lg mb-8" style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}>
@@ -219,7 +219,7 @@ function LandingPage() {
                 data-testid="login-button"
                 onClick={() => window.location.href = AUTH_URL}
                 className="px-8 py-4 rounded-full text-lg font-semibold text-white transition-all hover:scale-105 block w-full max-w-md mx-auto"
-                style={{backgroundColor: '#1E40AF', fontFamily: 'Inter, sans-serif'}}
+                style={{backgroundColor: '#500000', fontFamily: 'Inter, sans-serif'}}
               >
                 🔐 Beheerder - Inloggen met Google
               </button>
@@ -229,8 +229,8 @@ function LandingPage() {
                 className="px-8 py-4 rounded-full text-lg font-semibold transition-all hover:scale-105 block w-full max-w-md mx-auto border-2"
                 style={{
                   backgroundColor: 'white',
-                  color: '#1E40AF',
-                  borderColor: '#1E40AF',
+                  color: '#500000',
+                  borderColor: '#500000',
                   fontFamily: 'Inter, sans-serif'
                 }}
               >
@@ -252,7 +252,7 @@ function LandingPage() {
             </div>
           ) : showAdminLogin ? (
             <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg">
-              <h2 className="text-2xl font-bold mb-2 text-center" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+              <h2 className="text-2xl font-bold mb-2 text-center" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
                 👨‍💼 Beheerder Login
               </h2>
               <p className="text-center mb-6" style={{color: '#64748B', fontSize: '14px'}}>
@@ -296,7 +296,7 @@ function LandingPage() {
                   type="submit"
                   disabled={loggingIn}
                   className="w-full py-3 rounded-lg text-white font-semibold transition-all disabled:opacity-50"
-                  style={{backgroundColor: '#1E40AF', fontFamily: 'Inter, sans-serif'}}
+                  style={{backgroundColor: '#500000', fontFamily: 'Inter, sans-serif'}}
                 >
                   {loggingIn ? 'Bezig met inloggen...' : 'Inloggen'}
                 </button>
@@ -312,7 +312,7 @@ function LandingPage() {
             </div>
           ) : (
             <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg">
-              <h2 className="text-2xl font-bold mb-2 text-center" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+              <h2 className="text-2xl font-bold mb-2 text-center" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
                 👷 Werkman Login
               </h2>
               <p className="text-center mb-6" style={{color: '#64748B', fontSize: '14px'}}>
@@ -356,7 +356,7 @@ function LandingPage() {
                   type="submit"
                   disabled={loggingIn}
                   className="w-full px-8 py-4 rounded-full text-lg font-semibold text-white transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{backgroundColor: '#1E40AF', fontFamily: 'Inter, sans-serif'}}
+                  style={{backgroundColor: '#500000', fontFamily: 'Inter, sans-serif'}}
                 >
                   {loggingIn ? 'Inloggen... / Вхід...' : 'Inloggen / Увійти'}
                 </button>
@@ -376,19 +376,19 @@ function LandingPage() {
 
         <div className="mt-20 grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           <div className="p-6 rounded-2xl" style={{backgroundColor: 'white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'}}>
-            <div className="text-4xl mb-4" style={{color: '#3B82F6'}}>📋</div>
+            <div className="text-4xl mb-4" style={{color: '#7a1f1f'}}>📋</div>
             <h3 className="text-xl font-bold mb-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E293B'}}>Lead Management</h3>
             <p style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}>Beheer al je leads op één centrale plek</p>
           </div>
           
           <div className="p-6 rounded-2xl" style={{backgroundColor: 'white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'}}>
-            <div className="text-4xl mb-4" style={{color: '#3B82F6'}}>💰</div>
+            <div className="text-4xl mb-4" style={{color: '#7a1f1f'}}>💰</div>
             <h3 className="text-xl font-bold mb-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E293B'}}>Offerte Generator</h3>
             <p style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}>Genereer professionele offertes in PDF en Excel</p>
           </div>
           
           <div className="p-6 rounded-2xl" style={{backgroundColor: 'white', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'}}>
-            <div className="text-4xl mb-4" style={{color: '#3B82F6'}}>🗓️</div>
+            <div className="text-4xl mb-4" style={{color: '#7a1f1f'}}>🗓️</div>
             <h3 className="text-xl font-bold mb-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E293B'}}>Project Planner</h3>
             <p style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}>Plan en beheer goedgekeurde projecten</p>
           </div>

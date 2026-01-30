@@ -77,7 +77,7 @@ export default function Dashboard() {
     <DashboardLayout>
       <div data-testid="dashboard-page" className="space-y-8">
         <div>
-          <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+          <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
             Dashboard
           </h1>
           <p className="text-lg mt-2" style={{color: '#64748B'}}>Welkom terug, {user?.name}!</p>
@@ -86,40 +86,40 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card data-testid="stats-leads-card" className="cursor-pointer hover:shadow-lg transition-all" onClick={() => navigate('/leads')}>
             <CardHeader>
-              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Leads</CardTitle>
+              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Leads</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold" style={{color: '#3B82F6'}}>{stats?.total_leads || 0}</div>
+              <div className="text-4xl font-bold" style={{color: '#7a1f1f'}}>{stats?.total_leads || 0}</div>
               <p className="text-sm mt-2" style={{color: '#64748B'}}>Totaal aantal leads</p>
             </CardContent>
           </Card>
 
           <Card data-testid="stats-quotes-card" className="cursor-pointer hover:shadow-lg transition-all" onClick={() => navigate('/quotes')}>
             <CardHeader>
-              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Offertes</CardTitle>
+              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Offertes</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold" style={{color: '#3B82F6'}}>{stats?.total_quotes || 0}</div>
+              <div className="text-4xl font-bold" style={{color: '#7a1f1f'}}>{stats?.total_quotes || 0}</div>
               <p className="text-sm mt-2" style={{color: '#64748B'}}>Totaal aantal offertes</p>
             </CardContent>
           </Card>
 
           <Card data-testid="stats-projects-card" className="cursor-pointer hover:shadow-lg transition-all" onClick={() => navigate('/projects')}>
             <CardHeader>
-              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Projecten</CardTitle>
+              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Projecten</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold" style={{color: '#3B82F6'}}>{stats?.total_projects || 0}</div>
+              <div className="text-4xl font-bold" style={{color: '#7a1f1f'}}>{stats?.total_projects || 0}</div>
               <p className="text-sm mt-2" style={{color: '#64748B'}}>Actieve projecten</p>
             </CardContent>
           </Card>
 
           <Card data-testid="stats-materials-card" className="cursor-pointer hover:shadow-lg transition-all" onClick={() => navigate('/materials')}>
             <CardHeader>
-              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Materialen</CardTitle>
+              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Materialen</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold" style={{color: '#3B82F6'}}>{stats?.total_materials || 0}</div>
+              <div className="text-4xl font-bold" style={{color: '#7a1f1f'}}>{stats?.total_materials || 0}</div>
               <p className="text-sm mt-2" style={{color: '#64748B'}}>In catalogus</p>
             </CardContent>
           </Card>
@@ -157,7 +157,7 @@ export default function Dashboard() {
                         >
                           {reminder.project_name}
                         </div>
-                        <span className="text-sm px-2 py-1 rounded-full" style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}>
+                        <span className="text-sm px-2 py-1 rounded-full" style={{backgroundColor: '#f5e6e6', color: '#500000'}}>
                           {reminder.period_description}
                         </span>
                       </div>
@@ -272,7 +272,7 @@ export default function Dashboard() {
                       {/* Manual materials */}
                       {reminder.required_materials && (
                         <div>
-                          <div className="text-sm font-semibold mb-1" style={{color: '#1E40AF'}}>
+                          <div className="text-sm font-semibold mb-1" style={{color: '#500000'}}>
                             ✏️ Aanvullende materialen:
                           </div>
                           <p className="text-sm" style={{color: '#4B5563'}}>{reminder.required_materials}</p>
@@ -293,7 +293,7 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Recente Leads</CardTitle>
+              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Recente Leads</CardTitle>
             </CardHeader>
             <CardContent>
               {stats?.recent_leads && stats.recent_leads.length > 0 ? (
@@ -319,7 +319,7 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Recente Offertes</CardTitle>
+              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Recente Offertes</CardTitle>
             </CardHeader>
             <CardContent>
               {stats?.recent_quotes && stats.recent_quotes.length > 0 ? (

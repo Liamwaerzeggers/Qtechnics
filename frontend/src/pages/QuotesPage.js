@@ -135,7 +135,7 @@ export default function QuotesPage() {
       case 'goedgekeurd':
         return { backgroundColor: '#D1FAE5', color: '#059669' };
       case 'verzonden':
-        return { backgroundColor: '#DBEAFE', color: '#1E40AF' };
+        return { backgroundColor: '#f5e6e6', color: '#500000' };
       case 'afgekeurd':
         return { backgroundColor: '#FEE2E2', color: '#DC2626' };
       case 'gesplitst':
@@ -173,7 +173,7 @@ export default function QuotesPage() {
       <div data-testid="quotes-page" className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+            <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
               Offertes
             </h1>
             <p className="text-sm mt-1" style={{color: '#64748B'}}>
@@ -183,7 +183,7 @@ export default function QuotesPage() {
           <Button 
             onClick={() => navigate('/leads')}
             className="flex items-center gap-2"
-            style={{backgroundColor: '#1E40AF', color: 'white'}}
+            style={{backgroundColor: '#500000', color: 'white'}}
             title="Maak eerst een lead aan, dan kun je een offerte genereren"
           >
             <Plus size={20} />
@@ -224,9 +224,9 @@ export default function QuotesPage() {
               >
                 <div className="flex items-center gap-3">
                   {expandedProjects[leadId] ? (
-                    <FolderOpen size={24} style={{color: '#1E40AF'}} />
+                    <FolderOpen size={24} style={{color: '#500000'}} />
                   ) : (
-                    <Folder size={24} style={{color: '#1E40AF'}} />
+                    <Folder size={24} style={{color: '#500000'}} />
                   )}
                   <div>
                     <h2 className="text-lg font-bold" style={{color: '#1E293B'}}>
@@ -289,8 +289,8 @@ export default function QuotesPage() {
                           
                           {/* Project name prominently */}
                           <div className="flex items-start gap-3">
-                            <div className="p-2 rounded-lg" style={{backgroundColor: '#DBEAFE'}}>
-                              <FileText size={20} style={{color: '#1E40AF'}} />
+                            <div className="p-2 rounded-lg" style={{backgroundColor: '#f5e6e6'}}>
+                              <FileText size={20} style={{color: '#500000'}} />
                             </div>
                             <div className="flex-1 min-w-0">
                               <h3 className="font-bold text-base truncate" style={{color: '#1E293B'}}>
@@ -318,7 +318,7 @@ export default function QuotesPage() {
                             >
                               {getStatusLabel(quote.status)}
                             </span>
-                            <span className="text-lg font-bold" style={{color: '#1E40AF'}}>
+                            <span className="text-lg font-bold" style={{color: '#500000'}}>
                               €{(quote.total_price || 0).toFixed(2)}
                             </span>
                           </div>

@@ -120,7 +120,7 @@ Q Technics`;
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="animate-spin" size={48} style={{color: '#1E40AF'}} />
+          <Loader2 className="animate-spin" size={48} style={{color: '#500000'}} />
         </div>
       </DashboardLayout>
     );
@@ -132,11 +132,11 @@ Q Technics`;
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="p-3 rounded-xl" style={{backgroundColor: '#DBEAFE'}}>
-              <Users size={28} style={{color: '#1E40AF'}} />
+            <div className="p-3 rounded-xl" style={{backgroundColor: '#f5e6e6'}}>
+              <Users size={28} style={{color: '#500000'}} />
             </div>
             <div>
-              <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+              <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
                 Werkmannen
               </h1>
               <p className="text-sm" style={{color: '#64748B'}}>
@@ -147,7 +147,7 @@ Q Technics`;
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button style={{backgroundColor: '#1E40AF'}}>
+              <Button style={{backgroundColor: '#500000'}}>
                 <Plus className="mr-2" size={20} />
                 Nieuwe Werkman
               </Button>
@@ -191,7 +191,7 @@ Q Technics`;
                 </div>
 
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm" style={{color: '#1E40AF'}}>
+                  <p className="text-sm" style={{color: '#500000'}}>
                     <strong>ℹ️ Let op:</strong> Werkmannen kunnen:
                   </p>
                   <ul className="text-sm mt-2 space-y-1" style={{color: '#64748B'}}>
@@ -205,7 +205,7 @@ Q Technics`;
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Annuleren
                   </Button>
-                  <Button type="submit" style={{backgroundColor: '#1E40AF'}}>
+                  <Button type="submit" style={{backgroundColor: '#500000'}}>
                     Toevoegen
                   </Button>
                 </div>
@@ -225,7 +225,7 @@ Q Technics`;
               <p className="text-sm mb-4" style={{color: '#94A3B8'}}>
                 Voeg je eerste werkman toe om te beginnen
               </p>
-              <Button onClick={() => setIsDialogOpen(true)} style={{backgroundColor: '#1E40AF'}}>
+              <Button onClick={() => setIsDialogOpen(true)} style={{backgroundColor: '#500000'}}>
                 <Plus className="mr-2" size={20} />
                 Eerste Werkman Toevoegen
               </Button>
@@ -238,7 +238,7 @@ Q Technics`;
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold mb-1" style={{color: '#1E3A8A'}}>
+                      <h3 className="text-xl font-bold mb-1" style={{color: '#3a190b'}}>
                         {worker.name}
                       </h3>
                       <p className="text-sm" style={{color: '#64748B'}}>
@@ -300,7 +300,7 @@ Q Technics`;
         {/* Info Card */}
         <Card>
           <CardContent className="p-6">
-            <h3 className="font-semibold mb-3" style={{color: '#1E3A8A'}}>
+            <h3 className="font-semibold mb-3" style={{color: '#3a190b'}}>
               📝 Werkman Login
             </h3>
             <div className="space-y-2 text-sm" style={{color: '#64748B'}}>

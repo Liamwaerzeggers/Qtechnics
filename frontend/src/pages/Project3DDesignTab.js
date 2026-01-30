@@ -140,7 +140,7 @@ export default function Project3DDesignTab({ project, onUpdate }) {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-xl font-bold" style={{color: '#1E3A8A'}}>
+              <h3 className="text-xl font-bold" style={{color: '#3a190b'}}>
                 🏗️ 3D Ontwerpen & Tekeningen
               </h3>
               <p className="text-sm" style={{color: '#64748B'}}>
@@ -150,7 +150,7 @@ export default function Project3DDesignTab({ project, onUpdate }) {
             <Button 
               onClick={() => setShowUploadModal(true)} 
               disabled={uploading}
-              style={{backgroundColor: '#1E40AF', color: 'white'}}
+              style={{backgroundColor: '#500000', color: 'white'}}
             >
               {uploading ? (
                 <>
@@ -167,7 +167,7 @@ export default function Project3DDesignTab({ project, onUpdate }) {
           </div>
 
           <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm" style={{color: '#1E40AF'}}>
+            <p className="text-sm" style={{color: '#500000'}}>
               <strong>Ondersteunde bestanden:</strong> Afbeeldingen (JPG, PNG, GIF, WEBP), PDF, SketchUp, OBJ, FBX, 3DS
             </p>
           </div>
@@ -184,16 +184,16 @@ export default function Project3DDesignTab({ project, onUpdate }) {
                 >
                   <div className="flex items-center gap-3">
                     {expandedRooms[room] ? (
-                      <FolderOpen size={20} style={{color: '#1E40AF'}} />
+                      <FolderOpen size={20} style={{color: '#500000'}} />
                     ) : (
-                      <Folder size={20} style={{color: '#1E40AF'}} />
+                      <Folder size={20} style={{color: '#500000'}} />
                     )}
                     <span className="font-medium" style={{color: '#1E293B'}}>
                       {room}
                     </span>
                     <span className="text-sm px-2 py-0.5 rounded-full" style={{
-                      backgroundColor: roomDesigns.length > 0 ? '#DBEAFE' : '#F3F4F6',
-                      color: roomDesigns.length > 0 ? '#1E40AF' : '#6B7280'
+                      backgroundColor: roomDesigns.length > 0 ? '#f5e6e6' : '#F3F4F6',
+                      color: roomDesigns.length > 0 ? '#500000' : '#6B7280'
                     }}>
                       {roomDesigns.length}
                     </span>
@@ -296,7 +296,7 @@ export default function Project3DDesignTab({ project, onUpdate }) {
                                 className="p-1.5 bg-white rounded-full shadow hover:bg-gray-100"
                                 title="Download"
                               >
-                                <Download size={14} style={{color: '#1E40AF'}} />
+                                <Download size={14} style={{color: '#500000'}} />
                               </button>
                               <button
                                 onClick={() => handleDeleteFile(design)}
@@ -323,7 +323,7 @@ export default function Project3DDesignTab({ project, onUpdate }) {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold" style={{color: '#1E3A8A'}}>
+              <h3 className="text-xl font-bold" style={{color: '#3a190b'}}>
                 📁 Ontwerp Uploaden
               </h3>
               <button onClick={() => setShowUploadModal(false)} className="p-1 hover:bg-gray-100 rounded">

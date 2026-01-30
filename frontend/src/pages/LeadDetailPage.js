@@ -102,9 +102,9 @@ export default function LeadDetailPage() {
             <Button data-testid="back-button" variant="ghost" onClick={() => navigate('/leads')}>
               <ArrowLeft size={20} />
             </Button>
-            <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>{lead.name}</h1>
+            <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>{lead.name}</h1>
           </div>
-          <Button data-testid="create-quote-button" onClick={handleCreateQuote} style={{backgroundColor: '#1E40AF'}}>
+          <Button data-testid="create-quote-button" onClick={handleCreateQuote} style={{backgroundColor: '#500000'}}>
             <FileText className="mr-2" size={20} /> Maak Offerte
           </Button>
         </div>
@@ -120,7 +120,7 @@ export default function LeadDetailPage() {
               ) : (
                 <div className="flex gap-2">
                   <Button onClick={() => { setEditing(false); fetchLead(); }} variant="outline">Annuleren</Button>
-                  <Button data-testid="save-lead-button" onClick={handleSave} style={{backgroundColor: '#1E40AF'}}>Opslaan</Button>
+                  <Button data-testid="save-lead-button" onClick={handleSave} style={{backgroundColor: '#500000'}}>Opslaan</Button>
                 </div>
               )}
             </div>
@@ -155,7 +155,7 @@ export default function LeadDetailPage() {
                 
                 {/* BTW Nummer voor bedrijven (Peppol) */}
                 <div className="border-t pt-4 mt-4">
-                  <h4 className="font-semibold mb-3" style={{color: '#1E40AF'}}>🏢 Bedrijfsgegevens (voor Peppol facturatie)</h4>
+                  <h4 className="font-semibold mb-3" style={{color: '#500000'}}>🏢 Bedrijfsgegevens (voor Peppol facturatie)</h4>
                   <div className="flex items-center gap-2 mb-3">
                     <input
                       type="checkbox"
@@ -207,9 +207,9 @@ export default function LeadDetailPage() {
                 {/* BTW Nummer weergave */}
                 {(lead.is_business || lead.vat_number) && (
                   <div className="border-t pt-4 mt-4">
-                    <h4 className="font-semibold mb-2" style={{color: '#1E40AF'}}>🏢 Bedrijfsgegevens</h4>
+                    <h4 className="font-semibold mb-2" style={{color: '#500000'}}>🏢 Bedrijfsgegevens</h4>
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-1 rounded text-xs font-medium" style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}>
+                      <span className="px-2 py-1 rounded text-xs font-medium" style={{backgroundColor: '#f5e6e6', color: '#500000'}}>
                         {lead.is_business ? 'Bedrijfsklant' : 'Particulier'}
                       </span>
                       {lead.vat_number && (

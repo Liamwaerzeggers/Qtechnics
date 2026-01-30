@@ -141,7 +141,7 @@ export default function ProjectWorkSlipsTab({ project, onUpdate }) {
               </div>
               <div>
                 <p className="text-sm" style={{color: '#64748B'}}>Aantal Werkbonnen</p>
-                <p className="text-2xl font-bold" style={{color: '#1E40AF'}}>{workSlips.length}</p>
+                <p className="text-2xl font-bold" style={{color: '#500000'}}>{workSlips.length}</p>
               </div>
             </div>
           </CardContent>
@@ -180,7 +180,7 @@ export default function ProjectWorkSlipsTab({ project, onUpdate }) {
       <div className="flex justify-end">
         <Button 
           onClick={() => navigate(`/projects/${project.id}/work-slips`)}
-          style={{backgroundColor: '#1E40AF', color: 'white'}}
+          style={{backgroundColor: '#500000', color: 'white'}}
         >
           + Nieuwe Werkbon Invullen
         </Button>
@@ -269,7 +269,7 @@ export default function ProjectWorkSlipsTab({ project, onUpdate }) {
                             className="w-20"
                           />
                         ) : (
-                          <span className="text-sm font-medium" style={{color: '#1E40AF'}}>
+                          <span className="text-sm font-medium" style={{color: '#500000'}}>
                             €{(slip.hourly_rate || 30).toFixed(2)}
                           </span>
                         )}

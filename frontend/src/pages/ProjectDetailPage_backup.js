@@ -163,7 +163,7 @@ export default function ProjectDetailPage() {
             <Button data-testid="back-button" variant="ghost" onClick={() => navigate('/projects')}>
               <ArrowLeft size={20} />
             </Button>
-            <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>{project.name}</h1>
+            <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>{project.name}</h1>
           </div>
         </div>
 
@@ -208,7 +208,7 @@ export default function ProjectDetailPage() {
             <div>
               <div className="text-sm font-semibold mb-2" style={{color: '#64748B'}}>Kalender Kleur</div>
               <Select 
-                value={project.color || '#1E40AF'}
+                value={project.color || '#500000'}
                 onValueChange={async (newColor) => {
                   try {
                     await axios.put(
@@ -227,15 +227,15 @@ export default function ProjectDetailPage() {
                   <div className="flex items-center space-x-2">
                     <div 
                       className="w-6 h-6 rounded border-2 border-gray-300"
-                      style={{backgroundColor: project.color || '#1E40AF'}}
+                      style={{backgroundColor: project.color || '#500000'}}
                     ></div>
                     <span>Projectkleur</span>
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="#1E40AF">
+                  <SelectItem value="#500000">
                     <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 rounded" style={{backgroundColor: '#1E40AF'}}></div>
+                      <div className="w-5 h-5 rounded" style={{backgroundColor: '#500000'}}></div>
                       <span>Blauw</span>
                     </div>
                   </SelectItem>
@@ -310,12 +310,12 @@ export default function ProjectDetailPage() {
             <CardContent>
               <div className="flex justify-between items-center">
                 <div>
-                  <div className="font-bold text-lg" style={{color: '#1E40AF'}}>{quote.quote_number}</div>
+                  <div className="font-bold text-lg" style={{color: '#500000'}}>{quote.quote_number}</div>
                   <div className="text-sm" style={{color: '#64748B'}}>Status: {quote.status}</div>
                 </div>
                 <div>
                   <div className="text-sm" style={{color: '#64748B'}}>Verkoopprijs</div>
-                  <div className="text-2xl font-bold" style={{color: '#3B82F6'}}>€{quote.total_price.toFixed(2)}</div>
+                  <div className="text-2xl font-bold" style={{color: '#7a1f1f'}}>€{quote.total_price.toFixed(2)}</div>
                   <div className="flex space-x-2 mt-2">
                     <Button data-testid="view-quote-button" variant="outline" onClick={() => navigate(`/quotes/${quote.id}`)}>Bekijk Offerte</Button>
                     <Button variant="outline" onClick={() => navigate(`/projects/${project.id}/work-slips`)}>Werkbonnen</Button>
@@ -335,7 +335,7 @@ export default function ProjectDetailPage() {
               ) : (
                 <div className="flex gap-2">
                   <Button data-testid="cancel-costs-button" onClick={() => { setEditingCosts(false); fetchProjectData(); }} variant="outline">Annuleren</Button>
-                  <Button data-testid="save-costs-button" onClick={handleSaveCosts} style={{backgroundColor: '#1E40AF'}}>Opslaan</Button>
+                  <Button data-testid="save-costs-button" onClick={handleSaveCosts} style={{backgroundColor: '#500000'}}>Opslaan</Button>
                 </div>
               )}
             </div>
@@ -419,11 +419,11 @@ export default function ProjectDetailPage() {
                     <>
                       <div className="flex justify-between text-lg">
                         <span className="font-semibold" style={{color: '#64748B'}}>Verkoopprijs:</span>
-                        <span className="font-bold" style={{color: '#3B82F6'}}>€{quote.total_price.toFixed(2)}</span>
+                        <span className="font-bold" style={{color: '#7a1f1f'}}>€{quote.total_price.toFixed(2)}</span>
                       </div>
                       
                       <div className="flex justify-between text-2xl border-t pt-3">
-                        <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Winst:</span>
+                        <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Winst:</span>
                         <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: project.profit >= 0 ? '#10B981' : '#EF4444'}}>
                           €{project.profit?.toFixed(2) || '0.00'}
                         </span>
@@ -452,7 +452,7 @@ export default function ProjectDetailPage() {
             <div className="space-y-4">
               {/* Milestone Buttons */}
               <div>
-                <h4 className="font-semibold mb-3" style={{color: '#1E3A8A'}}>Deelfacturen Aanmaken</h4>
+                <h4 className="font-semibold mb-3" style={{color: '#3a190b'}}>Deelfacturen Aanmaken</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     onClick={() => createInvoice('10_approval', 10)}
@@ -519,14 +519,14 @@ export default function ProjectDetailPage() {
               {/* Invoices List */}
               {Array.isArray(invoices) && invoices.length > 0 && (
                 <div>
-                  <h4 className="font-semibold mb-3" style={{color: '#1E3A8A'}}>
+                  <h4 className="font-semibold mb-3" style={{color: '#3a190b'}}>
                     Uitgegeven Facturen ({invoices.length})
                   </h4>
                   <div className="space-y-2">
                     {invoices.map((invoice) => (
                       <div key={invoice.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-3 bg-gray-50 rounded-lg">
                         <div className="flex-1">
-                          <div className="font-semibold" style={{color: '#1E40AF'}}>
+                          <div className="font-semibold" style={{color: '#500000'}}>
                             {invoice.invoice_number}
                           </div>
                           <div className="text-sm" style={{color: '#64748B'}}>
@@ -567,7 +567,7 @@ export default function ProjectDetailPage() {
                               }
                             }}
                             className="px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors"
-                            style={{color: '#1E40AF'}}
+                            style={{color: '#500000'}}
                           >
                             📄 PDF
                           </button>
@@ -634,7 +634,7 @@ export default function ProjectDetailPage() {
                 <label 
                   htmlFor="invoice-upload" 
                   className="cursor-pointer inline-block px-6 py-3 rounded-lg text-white font-semibold transition-all hover:opacity-90"
-                  style={{backgroundColor: '#1E40AF'}}
+                  style={{backgroundColor: '#500000'}}
                 >
                   📄 Upload Factuur PDF
                 </label>
@@ -646,7 +646,7 @@ export default function ProjectDetailPage() {
               {/* Uploaded Invoices List */}
               {project?.invoice_uploads && project.invoice_uploads.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="font-semibold" style={{color: '#1E3A8A'}}>
+                  <h4 className="font-semibold" style={{color: '#3a190b'}}>
                     Geüploade Facturen ({project.invoice_uploads.length})
                   </h4>
                   {project.invoice_uploads.map((invoice, idx) => (

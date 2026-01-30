@@ -516,7 +516,7 @@ Q Technics`;
                 <ArrowLeft size={16} className="mr-2" />
                 Terug naar Offertes
               </Button>
-              <Button onClick={() => navigate('/')} style={{backgroundColor: '#1E40AF', color: 'white'}}>
+              <Button onClick={() => navigate('/')} style={{backgroundColor: '#500000', color: 'white'}}>
                 Opnieuw Inloggen
               </Button>
             </div>
@@ -545,7 +545,7 @@ Q Technics`;
                 ✓ Opslaan en Terug naar Project
               </Button>
             )}
-            <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+            <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
               {quote.quote_number}
             </h1>
           </div>
@@ -672,7 +672,7 @@ Q Technics`;
               <CardTitle>Line Items</CardTitle>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button data-testid="add-item-button" style={{backgroundColor: '#1E40AF'}}>
+                  <Button data-testid="add-item-button" style={{backgroundColor: '#500000'}}>
                     <Plus className="mr-2" size={20} /> Item Toevoegen
                   </Button>
                 </DialogTrigger>
@@ -769,7 +769,7 @@ Q Technics`;
                                       <div className="font-semibold" style={{color: '#1E293B'}}>{material.name}</div>
                                       <div className="text-sm flex justify-between" style={{color: '#64748B'}}>
                                         <span>SKU: {material.sku}</span>
-                                        <span className="font-bold" style={{color: '#3B82F6'}}>€{material.price.toFixed(2)}</span>
+                                        <span className="font-bold" style={{color: '#7a1f1f'}}>€{material.price.toFixed(2)}</span>
                                       </div>
                                       {material.brand && (
                                         <div className="text-xs mt-1" style={{color: '#94A3B8'}}>Merk: {material.brand}</div>
@@ -803,7 +803,7 @@ Q Technics`;
                               type="button"
                               onClick={() => window.location.href = '/materials'}
                               className="text-xs px-2 py-1 rounded"
-                              style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}
+                              style={{backgroundColor: '#f5e6e6', color: '#500000'}}
                             >
                               Naar Materialen →
                             </button>
@@ -863,7 +863,7 @@ Q Technics`;
                                       <div className="font-semibold" style={{color: '#1E293B'}}>{workItem.title}</div>
                                       <div className="text-sm flex justify-between" style={{color: '#64748B'}}>
                                         <span>Eenheid: {workItem.unit}</span>
-                                        <span className="font-bold" style={{color: '#3B82F6'}}>€{workItem.price.toFixed(2)}</span>
+                                        <span className="font-bold" style={{color: '#7a1f1f'}}>€{workItem.price.toFixed(2)}</span>
                                       </div>
                                     </div>
                                   ))}
@@ -888,7 +888,7 @@ Q Technics`;
                                       <div className="font-semibold" style={{color: '#1E293B'}}>{workItem.title}</div>
                                       <div className="text-sm flex justify-between" style={{color: '#64748B'}}>
                                         <span>Eenheid: {workItem.unit}</span>
-                                        <span className="font-bold" style={{color: '#3B82F6'}}>€{workItem.price.toFixed(2)}</span>
+                                        <span className="font-bold" style={{color: '#7a1f1f'}}>€{workItem.price.toFixed(2)}</span>
                                       </div>
                                     </div>
                                   ))}
@@ -915,7 +915,7 @@ Q Technics`;
                               type="button"
                               onClick={() => window.location.href = '/materials'}
                               className="text-xs px-2 py-1 rounded"
-                              style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}
+                              style={{backgroundColor: '#f5e6e6', color: '#500000'}}
                             >
                               Naar Materialen →
                             </button>
@@ -1060,7 +1060,7 @@ Q Technics`;
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button data-testid="submit-item-button" type="submit" className="w-full" style={{backgroundColor: '#1E40AF'}}>
+                    <Button data-testid="submit-item-button" type="submit" className="w-full" style={{backgroundColor: '#500000'}}>
                       Toevoegen
                     </Button>
                   </form>
@@ -1144,7 +1144,7 @@ Q Technics`;
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <div className="text-xl font-bold" style={{color: '#3B82F6'}}>
+                          <div className="text-xl font-bold" style={{color: '#7a1f1f'}}>
                             €{item.total.toFixed(2)}
                           </div>
                           <Button 
@@ -1153,7 +1153,7 @@ Q Technics`;
                             onClick={() => startEditingItem(item)}
                             title="Bewerken"
                           >
-                            <Edit2 size={18} style={{color: '#3B82F6'}} />
+                            <Edit2 size={18} style={{color: '#7a1f1f'}} />
                           </Button>
                           <Button 
                             data-testid={`delete-item-${item.id}`}
@@ -1201,8 +1201,8 @@ Q Technics`;
             </div>
             
             <div className="border-t pt-3 flex justify-between text-2xl">
-              <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Totaal incl. BTW:</span>
-              <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>€{(quote.total_incl_vat || quote.total_price || 0).toFixed(2)}</span>
+              <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Totaal incl. BTW:</span>
+              <span className="font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>€{(quote.total_incl_vat || quote.total_price || 0).toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>

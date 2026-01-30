@@ -43,7 +43,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
               <button
                 className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                style={{color: '#1E40AF'}}
+                style={{color: '#500000'}}
               >
                 {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
@@ -91,7 +91,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
                   <img src={user.picture} alt={user.name} className="w-10 h-10 rounded-full" />
                 )}
                 <div>
-                  <div className="font-semibold" style={{color: '#1E3A8A'}}>{user?.name}</div>
+                  <div className="font-semibold" style={{color: '#3a190b'}}>{user?.name}</div>
                   <div className="text-xs" style={{color: '#64748B'}}>{user?.email}</div>
                 </div>
               </div>
@@ -110,8 +110,8 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
                     }}
                     className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all text-left"
                     style={isActive ? {
-                      backgroundColor: '#DBEAFE',
-                      color: '#1E40AF',
+                      backgroundColor: '#f5e6e6',
+                      color: '#500000',
                       fontWeight: '600'
                     } : {
                       color: '#64748B'
@@ -138,9 +138,9 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
                   onClick={() => navigate('/dashboard')}
                   className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg mb-4 transition-all"
                   style={{
-                    backgroundColor: '#DBEAFE',
-                    color: '#1E40AF',
-                    border: '2px solid #3B82F6'
+                    backgroundColor: '#f5e6e6',
+                    color: '#500000',
+                    border: '2px solid #7a1f1f'
                   }}
                 >
                   <LayoutDashboard size={20} />
@@ -157,7 +157,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
                     onClick={() => navigate(item.path)}
                     className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all"
                     style={{
-                      backgroundColor: isActive ? '#1E40AF' : 'transparent',
+                      backgroundColor: isActive ? '#500000' : 'transparent',
                       color: isActive ? 'white' : '#64748B',
                     }}
                   >

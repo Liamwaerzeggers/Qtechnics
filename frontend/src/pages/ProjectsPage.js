@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 
 // Milestone definitions
 const MILESTONES = [
-  { amount: 100000, label: '€100K', icon: '🎯', color: '#3B82F6', message: 'Goede start!' },
+  { amount: 100000, label: '€100K', icon: '🎯', color: '#7a1f1f', message: 'Goede start!' },
   { amount: 250000, label: '€250K', icon: '🔥', color: '#F59E0B', message: 'Lekker bezig!' },
   { amount: 500000, label: '€500K', icon: '⭐', color: '#8B5CF6', message: 'Halve miljoen!' },
   { amount: 750000, label: '€750K', icon: '💪', color: '#EC4899', message: 'Sterk werk!' },
@@ -155,7 +155,7 @@ export default function ProjectsPage() {
         {/* Gamification Banner - Sales Progress */}
         {!isWorker && (
           <div className="relative overflow-hidden rounded-2xl p-6" style={{
-            background: 'linear-gradient(135deg, #1E3A8A 0%, #3B82F6 50%, #8B5CF6 100%)'
+            background: 'linear-gradient(135deg, #3a190b 0%, #7a1f1f 50%, #8B5CF6 100%)'
           }}>
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-64 h-64 opacity-10">
@@ -238,13 +238,13 @@ export default function ProjectsPage() {
         )}
 
         <div className="flex justify-between items-center">
-          <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+          <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
             {isWorker ? 'Projecten / Проєкти' : 'Projecten'}
           </h1>
           {!isWorker && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button data-testid="create-project-button" style={{backgroundColor: '#1E40AF'}}>
+              <Button data-testid="create-project-button" style={{backgroundColor: '#500000'}}>
                 <Plus className="mr-2" size={20} /> Nieuw Project
               </Button>
             </DialogTrigger>
@@ -283,7 +283,7 @@ export default function ProjectsPage() {
                   <Label>Notities</Label>
                   <Textarea data-testid="project-notes-input" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} rows={3} />
                 </div>
-                <Button data-testid="submit-project-button" type="submit" className="w-full" style={{backgroundColor: '#1E40AF'}}>Aanmaken</Button>
+                <Button data-testid="submit-project-button" type="submit" className="w-full" style={{backgroundColor: '#500000'}}>Aanmaken</Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -292,7 +292,7 @@ export default function ProjectsPage() {
 
         {isWorker && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <p className="text-sm font-medium" style={{color: '#1E40AF'}}>
+            <p className="text-sm font-medium" style={{color: '#500000'}}>
               👷 <strong>Klik op een project</strong> om direct een werkbon in te vullen / <strong>Натисніть на проєкт</strong>, щоб заповнити робочий звіт
             </p>
           </div>
@@ -320,14 +320,14 @@ export default function ProjectsPage() {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold mb-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>{project.name}</h3>
+                    <h3 className="text-xl font-bold mb-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>{project.name}</h3>
                     <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
                       <div className="flex items-center gap-2">
                         <span 
                           className="text-xs font-semibold px-3 py-1 rounded-full"
                           style={{
-                            backgroundColor: project.status === 'voltooid' ? '#DCFCE7' : project.status === 'in uitvoering' ? '#DBEAFE' : '#FEF3C7',
-                            color: project.status === 'voltooid' ? '#166534' : project.status === 'in uitvoering' ? '#1E40AF' : '#92400E'
+                            backgroundColor: project.status === 'voltooid' ? '#DCFCE7' : project.status === 'in uitvoering' ? '#f5e6e6' : '#FEF3C7',
+                            color: project.status === 'voltooid' ? '#166534' : project.status === 'in uitvoering' ? '#500000' : '#92400E'
                           }}
                         >
                           {project.status}

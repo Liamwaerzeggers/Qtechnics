@@ -337,7 +337,7 @@ export default function ProjectDetailPage() {
               <ArrowLeft size={20} />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold" style={{color: '#1E40AF'}}>
+              <h1 className="text-3xl font-bold" style={{color: '#500000'}}>
                 {project.name}
               </h1>
               <p className="text-sm" style={{color: '#64748B'}}>
@@ -347,8 +347,8 @@ export default function ProjectDetailPage() {
           </div>
           <div className="flex items-center space-x-2">
             <span className="px-3 py-1 rounded-full text-sm font-semibold" style={{
-              backgroundColor: project.status === 'voltooid' ? '#D1FAE5' : '#DBEAFE',
-              color: project.status === 'voltooid' ? '#065F46' : '#1E40AF'
+              backgroundColor: project.status === 'voltooid' ? '#D1FAE5' : '#f5e6e6',
+              color: project.status === 'voltooid' ? '#065F46' : '#500000'
             }}>
               {project.status}
             </span>
@@ -399,7 +399,7 @@ export default function ProjectDetailPage() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold" style={{color: '#1E3A8A'}}>
+                    <h3 className="text-xl font-bold" style={{color: '#3a190b'}}>
                       📄 Offertes voor dit Project
                     </h3>
                     <Button onClick={handleCreateQuote}>
@@ -428,7 +428,7 @@ export default function ProjectDetailPage() {
                             onClick={() => navigate(`/quotes/${quote.id}`, { state: { fromProject: project.id } })}
                           >
                             <div className="flex items-center gap-2">
-                              <p className="font-semibold" style={{color: '#1E3A8A'}}>
+                              <p className="font-semibold" style={{color: '#3a190b'}}>
                                 {quote.quote_number}
                               </p>
                               {quote.is_sold && (
@@ -444,7 +444,7 @@ export default function ProjectDetailPage() {
                           
                           <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
                             <div className="text-right">
-                              <p className="font-bold" style={{color: '#1E3A8A'}}>
+                              <p className="font-bold" style={{color: '#3a190b'}}>
                                 €{quote.total_incl_vat?.toFixed(2) || '0.00'}
                               </p>
                             </div>
@@ -469,10 +469,10 @@ export default function ProjectDetailPage() {
                                 borderColor: '#E5E7EB',
                                 color: quote.status === 'goedgekeurd' ? '#10B981' : 
                                        quote.status === 'afgekeurd' ? '#EF4444' : 
-                                       quote.status === 'verzonden' ? '#3B82F6' : '#F59E0B',
+                                       quote.status === 'verzonden' ? '#7a1f1f' : '#F59E0B',
                                 backgroundColor: quote.status === 'goedgekeurd' ? '#ECFDF5' : 
                                                 quote.status === 'afgekeurd' ? '#FEE2E2' : 
-                                                quote.status === 'verzonden' ? '#DBEAFE' : '#FEF3C7'
+                                                quote.status === 'verzonden' ? '#f5e6e6' : '#FEF3C7'
                               }}
                             >
                               <option value="concept">Concept</option>
@@ -492,7 +492,7 @@ export default function ProjectDetailPage() {
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold" style={{color: '#1E3A8A'}}>
+                    <h3 className="text-xl font-bold" style={{color: '#3a190b'}}>
                       📁 Oude Documenten (Archief)
                     </h3>
                     <Button onClick={() => setShowUploadModal(true)} variant="outline">
@@ -520,11 +520,11 @@ export default function ProjectDetailPage() {
                         >
                           <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg" style={{
-                              backgroundColor: doc.document_type === 'offerte' ? '#DBEAFE' :
+                              backgroundColor: doc.document_type === 'offerte' ? '#f5e6e6' :
                                               doc.document_type === 'factuur' ? '#D1FAE5' : '#F3E8FF'
                             }}>
                               <FileText size={20} style={{
-                                color: doc.document_type === 'offerte' ? '#1E40AF' :
+                                color: doc.document_type === 'offerte' ? '#500000' :
                                        doc.document_type === 'factuur' ? '#059669' : '#7C3AED'
                               }} />
                             </div>
@@ -541,9 +541,9 @@ export default function ProjectDetailPage() {
                               </div>
                               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                                 <span className="text-xs px-2 py-0.5 rounded-full" style={{
-                                  backgroundColor: doc.document_type === 'offerte' ? '#DBEAFE' :
+                                  backgroundColor: doc.document_type === 'offerte' ? '#f5e6e6' :
                                                   doc.document_type === 'factuur' ? '#D1FAE5' : '#F3E8FF',
-                                  color: doc.document_type === 'offerte' ? '#1E40AF' :
+                                  color: doc.document_type === 'offerte' ? '#500000' :
                                          doc.document_type === 'factuur' ? '#059669' : '#7C3AED'
                                 }}>
                                   {doc.document_type === 'offerte' ? 'Offerte' : 
@@ -620,7 +620,7 @@ export default function ProjectDetailPage() {
               {showUploadModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-                    <h3 className="text-xl font-bold mb-4" style={{color: '#1E3A8A'}}>
+                    <h3 className="text-xl font-bold mb-4" style={{color: '#3a190b'}}>
                       📁 Document Uploaden
                     </h3>
                     <form onSubmit={handleUploadLegacyDocument}>
@@ -716,7 +716,7 @@ export default function ProjectDetailPage() {
                           type="submit"
                           disabled={uploadingDoc}
                           className="flex-1"
-                          style={{backgroundColor: '#1E40AF', color: 'white'}}
+                          style={{backgroundColor: '#500000', color: 'white'}}
                         >
                           {uploadingDoc ? 'Uploaden...' : 'Uploaden'}
                         </Button>
@@ -727,10 +727,10 @@ export default function ProjectDetailPage() {
               )}
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm font-medium" style={{color: '#1E40AF'}}>
+                <p className="text-sm font-medium" style={{color: '#500000'}}>
                   💡 <strong>Workflow:</strong>
                 </p>
-                <p className="text-sm mt-1" style={{color: '#1E3A8A'}}>
+                <p className="text-sm mt-1" style={{color: '#3a190b'}}>
                   1. Bekijk foto's en notities van eerste bezoek<br/>
                   2. Check de 3D ontwerpen<br/>
                   3. Maak een offerte met materialen en arbeid<br/>
@@ -849,7 +849,7 @@ function CustomerPortalTab({ project, onUpdate }) {
       {/* Customer Portal Link */}
       <Card>
         <CardContent className="p-6">
-          <h3 className="text-xl font-bold mb-4" style={{color: '#1E3A8A'}}>
+          <h3 className="text-xl font-bold mb-4" style={{color: '#3a190b'}}>
             🔗 Klantportaal Link
           </h3>
           <p className="text-gray-600 mb-4">
@@ -907,7 +907,7 @@ function CustomerPortalTab({ project, onUpdate }) {
       {project.customer_rating && (
         <Card>
           <CardContent className="p-6">
-            <h3 className="text-xl font-bold mb-4" style={{color: '#1E3A8A'}}>
+            <h3 className="text-xl font-bold mb-4" style={{color: '#3a190b'}}>
               ⭐ Klant Beoordeling
             </h3>
             <div className="flex items-center gap-2 mb-2">
@@ -931,7 +931,7 @@ function CustomerPortalTab({ project, onUpdate }) {
       {/* Messages */}
       <Card>
         <CardContent className="p-6">
-          <h3 className="text-xl font-bold mb-4" style={{color: '#1E3A8A'}}>
+          <h3 className="text-xl font-bold mb-4" style={{color: '#3a190b'}}>
             💬 Berichten met Klant
             {unreadCount > 0 && (
               <span className="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full">
@@ -995,7 +995,7 @@ function CustomerPortalTab({ project, onUpdate }) {
       {/* What Customer Can See */}
       <Card>
         <CardContent className="p-6">
-          <h3 className="text-xl font-bold mb-4" style={{color: '#1E3A8A'}}>
+          <h3 className="text-xl font-bold mb-4" style={{color: '#3a190b'}}>
             👁️ Wat ziet de klant?
           </h3>
           <div className="grid md:grid-cols-2 gap-4">

@@ -83,10 +83,10 @@ export default function LeadsPage() {
     <DashboardLayout showBackToDashboard={true}>
       <div data-testid="leads-page" className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>Leads</h1>
+          <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Leads</h1>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button data-testid="create-lead-button" style={{backgroundColor: '#1E40AF'}}>
+              <Button data-testid="create-lead-button" style={{backgroundColor: '#500000'}}>
                 <Plus className="mr-2" size={20} /> Nieuwe Lead
               </Button>
             </DialogTrigger>
@@ -119,7 +119,7 @@ export default function LeadsPage() {
                   <Label>Beschrijving</Label>
                   <Textarea data-testid="lead-description-input" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={4} required />
                 </div>
-                <Button data-testid="submit-lead-button" type="submit" className="w-full" style={{backgroundColor: '#1E40AF'}}>Aanmaken</Button>
+                <Button data-testid="submit-lead-button" type="submit" className="w-full" style={{backgroundColor: '#500000'}}>Aanmaken</Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -140,10 +140,10 @@ export default function LeadsPage() {
           {filteredLeads.map((lead) => (
             <Card key={lead.id} data-testid={`lead-card-${lead.id}`} className="cursor-pointer hover:shadow-lg transition-all" onClick={() => navigate(`/leads/${lead.id}`)}>
               <CardContent className="p-6">
-                <h3 className="text-xl font-bold mb-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>{lead.name}</h3>
+                <h3 className="text-xl font-bold mb-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>{lead.name}</h3>
                 <p className="text-sm mb-1" style={{color: '#64748B'}}>{lead.email}</p>
                 <p className="text-sm mb-1" style={{color: '#64748B'}}>{lead.phone}</p>
-                <p className="text-sm font-semibold mt-3" style={{color: '#3B82F6'}}>{lead.project_type}</p>
+                <p className="text-sm font-semibold mt-3" style={{color: '#7a1f1f'}}>{lead.project_type}</p>
               </CardContent>
             </Card>
           ))}

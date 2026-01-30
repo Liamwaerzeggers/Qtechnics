@@ -198,11 +198,11 @@ Q Technics`;
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <div className="p-2 sm:p-3 rounded-xl" style={{ backgroundColor: '#DBEAFE' }}>
-              <FileText size={24} className="sm:w-7 sm:h-7" style={{ color: '#1E40AF' }} />
+            <div className="p-2 sm:p-3 rounded-xl" style={{ backgroundColor: '#f5e6e6' }}>
+              <FileText size={24} className="sm:w-7 sm:h-7" style={{ color: '#500000' }} />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif', color: '#1E3A8A' }}>
+              <h1 className="text-2xl sm:text-3xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif', color: '#3a190b' }}>
                 Facturen
               </h1>
               <p className="text-sm" style={{ color: '#64748B', fontFamily: 'Inter, sans-serif' }}>
@@ -215,7 +215,7 @@ Q Technics`;
         {/* Invoices List */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{borderColor: '#1E40AF'}}></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{borderColor: '#500000'}}></div>
           </div>
         ) : invoices.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
@@ -259,7 +259,7 @@ Q Technics`;
                   {invoices.map((invoice) => (
                     <tr key={invoice.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="font-semibold" style={{color: '#1E40AF'}}>
+                        <div className="font-semibold" style={{color: '#500000'}}>
                           {invoice.invoice_number}
                         </div>
                       </td>
@@ -308,7 +308,7 @@ Q Technics`;
                             size="sm"
                             onClick={() => handleDownloadPDF(invoice.id, invoice.invoice_number)}
                             className="hover:bg-blue-50"
-                            style={{color: '#1E40AF'}}
+                            style={{color: '#500000'}}
                             title="Download PDF"
                           >
                             <Download size={18} />

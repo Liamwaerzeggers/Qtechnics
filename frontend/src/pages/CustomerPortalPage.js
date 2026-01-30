@@ -663,7 +663,7 @@ export default function CustomerPortalPage() {
                     
                     {/* Totals - Only show grand total for customers */}
                     <div className="mt-4 pt-4 border-t text-right">
-                      <p className="text-lg sm:text-xl font-bold" style={{color: '#1E40AF'}}>
+                      <p className="text-lg sm:text-xl font-bold" style={{color: '#500000'}}>
                         Totaal incl. BTW: €{quote.total_incl_vat?.toFixed(2)}
                       </p>
                     </div>
@@ -797,11 +797,11 @@ export default function CustomerPortalPage() {
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className="p-2 rounded-lg flex-shrink-0" style={{
-                            backgroundColor: doc.document_type === 'offerte' ? '#DBEAFE' :
+                            backgroundColor: doc.document_type === 'offerte' ? '#f5e6e6' :
                                             doc.document_type === 'factuur' ? '#D1FAE5' : '#F3E8FF'
                           }}>
                             <FileText className="w-5 h-5" style={{
-                              color: doc.document_type === 'offerte' ? '#1E40AF' :
+                              color: doc.document_type === 'offerte' ? '#500000' :
                                      doc.document_type === 'factuur' ? '#059669' : '#7C3AED'
                             }} />
                           </div>
@@ -811,9 +811,9 @@ export default function CustomerPortalPage() {
                             </p>
                             <div className="flex flex-wrap items-center gap-2 mt-0.5">
                               <span className="text-xs px-2 py-0.5 rounded-full" style={{
-                                backgroundColor: doc.document_type === 'offerte' ? '#DBEAFE' :
+                                backgroundColor: doc.document_type === 'offerte' ? '#f5e6e6' :
                                                 doc.document_type === 'factuur' ? '#D1FAE5' : '#F3E8FF',
-                                color: doc.document_type === 'offerte' ? '#1E40AF' :
+                                color: doc.document_type === 'offerte' ? '#500000' :
                                        doc.document_type === 'factuur' ? '#059669' : '#7C3AED'
                               }}>
                                 {doc.document_type === 'offerte' ? 'Offerte' : 

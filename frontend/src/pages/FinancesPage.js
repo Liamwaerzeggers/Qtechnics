@@ -257,7 +257,7 @@ export default function FinancesPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="animate-spin" size={48} style={{color: '#1E40AF'}} />
+          <Loader2 className="animate-spin" size={48} style={{color: '#500000'}} />
         </div>
       </DashboardLayout>
     );
@@ -269,11 +269,11 @@ export default function FinancesPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <div className="p-3 rounded-xl" style={{backgroundColor: '#DBEAFE'}}>
-              <TrendingUp size={28} style={{color: '#1E40AF'}} />
+            <div className="p-3 rounded-xl" style={{backgroundColor: '#f5e6e6'}}>
+              <TrendingUp size={28} style={{color: '#500000'}} />
             </div>
             <div>
-              <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+              <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
                 Financiën
               </h1>
               <p className="text-sm" style={{color: '#64748B'}}>
@@ -345,7 +345,7 @@ export default function FinancesPage() {
               onClick={exportToCSV}
               variant="outline"
               className="flex items-center gap-2"
-              style={{color: '#1E40AF', borderColor: '#1E40AF'}}
+              style={{color: '#500000', borderColor: '#500000'}}
             >
               <Download size={18} />
               Export CSV
@@ -360,12 +360,12 @@ export default function FinancesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium" style={{color: '#64748B'}}>Totale Omzet</p>
-                  <p className="text-2xl font-bold mt-2" style={{color: '#1E3A8A'}}>
+                  <p className="text-2xl font-bold mt-2" style={{color: '#3a190b'}}>
                     {formatCurrency(totals.revenue)}
                   </p>
                 </div>
-                <div className="p-3 rounded-full" style={{backgroundColor: '#DBEAFE'}}>
-                  <DollarSign size={24} style={{color: '#1E40AF'}} />
+                <div className="p-3 rounded-full" style={{backgroundColor: '#f5e6e6'}}>
+                  <DollarSign size={24} style={{color: '#500000'}} />
                 </div>
               </div>
             </CardContent>
@@ -408,12 +408,12 @@ export default function FinancesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium" style={{color: '#64748B'}}>Projecten</p>
-                  <p className="text-2xl font-bold mt-2" style={{color: '#1E3A8A'}}>
+                  <p className="text-2xl font-bold mt-2" style={{color: '#3a190b'}}>
                     {totals.projects}
                   </p>
                 </div>
-                <div className="p-3 rounded-full" style={{backgroundColor: '#DBEAFE'}}>
-                  <Calendar size={24} style={{color: '#1E40AF'}} />
+                <div className="p-3 rounded-full" style={{backgroundColor: '#f5e6e6'}}>
+                  <Calendar size={24} style={{color: '#500000'}} />
                 </div>
               </div>
             </CardContent>
@@ -423,7 +423,7 @@ export default function FinancesPage() {
         {/* Detailed Table */}
         <Card>
           <CardContent className="p-6">
-            <h2 className="text-xl font-bold mb-4" style={{color: '#1E3A8A'}}>
+            <h2 className="text-xl font-bold mb-4" style={{color: '#3a190b'}}>
               Gedetailleerd Overzicht
             </h2>
             <div className="overflow-x-auto">
@@ -442,10 +442,10 @@ export default function FinancesPage() {
                 <tbody>
                   {data.map((row, index) => (
                     <tr key={index} className="border-b hover:bg-gray-50" style={{borderColor: '#F3F4F6'}}>
-                      <td className="py-3 px-4 font-medium" style={{color: '#1E3A8A'}}>
+                      <td className="py-3 px-4 font-medium" style={{color: '#3a190b'}}>
                         {row.month || row.quarter || row.year}
                       </td>
-                      <td className="text-right py-3 px-4" style={{color: '#1E3A8A'}}>
+                      <td className="text-right py-3 px-4" style={{color: '#3a190b'}}>
                         {formatCurrency(row.revenue)}
                       </td>
                       <td className="text-right py-3 px-4" style={{color: '#DC2626'}}>
@@ -462,8 +462,8 @@ export default function FinancesPage() {
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 font-bold" style={{borderColor: '#E5E7EB'}}>
-                    <td className="py-3 px-4" style={{color: '#1E3A8A'}}>TOTAAL</td>
-                    <td className="text-right py-3 px-4" style={{color: '#1E3A8A'}}>
+                    <td className="py-3 px-4" style={{color: '#3a190b'}}>TOTAAL</td>
+                    <td className="text-right py-3 px-4" style={{color: '#3a190b'}}>
                       {formatCurrency(totals.revenue)}
                     </td>
                     <td className="text-right py-3 px-4" style={{color: '#DC2626'}}>

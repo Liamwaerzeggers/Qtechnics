@@ -213,7 +213,7 @@ export default function MaterialsPage() {
   return (
     <DashboardLayout showBackToDashboard={true}>
       <div data-testid="materials-page" className="space-y-6">
-        <h1 className="text-2xl sm:text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+        <h1 className="text-2xl sm:text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
           Catalogus Beheer
         </h1>
 
@@ -257,7 +257,7 @@ export default function MaterialsPage() {
                   onChange={handleFileChange}
                   className="flex-1"
                 />
-                <Button data-testid="upload-csv-button" onClick={handleUpload} disabled={uploading} style={{backgroundColor: '#1E40AF'}}>
+                <Button data-testid="upload-csv-button" onClick={handleUpload} disabled={uploading} style={{backgroundColor: '#500000'}}>
                   {uploading ? 'Uploaden...' : <><Upload className="mr-2" size={20} /> Upload</>}
                 </Button>
               </div>
@@ -375,7 +375,7 @@ export default function MaterialsPage() {
             <Card>
               <CardContent className="p-0">
                 <div className="p-4 border-b bg-gray-50">
-                  <h3 className="font-bold text-lg" style={{color: '#1E40AF'}}>
+                  <h3 className="font-bold text-lg" style={{color: '#500000'}}>
                     Alle Werk Items ({filteredWorkItems.length})
                   </h3>
                   <p className="text-sm text-gray-500">
@@ -468,7 +468,7 @@ export default function MaterialsPage() {
                               </div>
                             </div>
                             <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                              <span className="text-lg font-bold" style={{color: '#3B82F6'}}>
+                              <span className="text-lg font-bold" style={{color: '#7a1f1f'}}>
                                 €{(item.price || 0).toFixed(2)}
                               </span>
                               <div className="flex gap-1">
@@ -520,7 +520,7 @@ export default function MaterialsPage() {
                       className="pl-10"
                     />
                   </div>
-                  <Button data-testid="search-button" onClick={handleSearch} disabled={searching} style={{backgroundColor: '#1E40AF'}}>
+                  <Button data-testid="search-button" onClick={handleSearch} disabled={searching} style={{backgroundColor: '#500000'}}>
                     {searching ? 'Zoeken...' : 'Zoek'}
                   </Button>
                 </div>
@@ -530,7 +530,7 @@ export default function MaterialsPage() {
             {/* Search Results */}
             {searchResults.length > 0 && (
               <div className="space-y-3">
-                <h2 className="text-xl sm:text-2xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#1E40AF'}}>
+                <h2 className="text-xl sm:text-2xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
                   Zoekresultaten
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -544,7 +544,7 @@ export default function MaterialsPage() {
                         {material.description && <p className="text-sm mt-1" style={{color: '#64748B'}}>{material.description}</p>}
                         {material.category && <div className="text-sm mt-2" style={{color: '#64748B'}}>Categorie: {material.category}</div>}
                         {material.brand && <div className="text-sm" style={{color: '#64748B'}}>Merk: {material.brand}</div>}
-                        <div className="text-xl font-bold mt-3" style={{color: '#3B82F6'}}>€{material.price.toFixed(2)}</div>
+                        <div className="text-xl font-bold mt-3" style={{color: '#7a1f1f'}}>€{material.price.toFixed(2)}</div>
                       </CardContent>
                     </Card>
                   ))}

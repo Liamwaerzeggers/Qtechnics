@@ -944,7 +944,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold" style={{color: '#1E3A8A'}}>
+              <h3 className="text-xl font-bold" style={{color: '#3a190b'}}>
                 📸 Foto&apos;s Uploaden
               </h3>
               <button onClick={() => setShowUploadModal(false)} className="p-1 hover:bg-gray-100 rounded">
@@ -1006,7 +1006,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-xl font-bold" style={{color: '#1E3A8A'}}>
+              <h3 className="text-xl font-bold" style={{color: '#3a190b'}}>
                 📸 Foto&apos;s Eerste Bezoek
               </h3>
               <p className="text-sm" style={{color: '#64748B'}}>
@@ -1016,7 +1016,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
             <Button 
               onClick={() => setShowUploadModal(true)} 
               disabled={uploading}
-              style={{backgroundColor: '#1E40AF', color: 'white'}}
+              style={{backgroundColor: '#500000', color: 'white'}}
             >
               {uploading ? (
                 <>
@@ -1044,16 +1044,16 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                 >
                   <div className="flex items-center gap-3">
                     {expandedRooms[room] ? (
-                      <FolderOpen size={20} style={{color: '#1E40AF'}} />
+                      <FolderOpen size={20} style={{color: '#500000'}} />
                     ) : (
-                      <Folder size={20} style={{color: '#1E40AF'}} />
+                      <Folder size={20} style={{color: '#500000'}} />
                     )}
                     <span className="font-medium" style={{color: '#1E293B'}}>
                       {room}
                     </span>
                     <span className="text-sm px-2 py-0.5 rounded-full" style={{
-                      backgroundColor: roomPhotos.length > 0 ? '#DBEAFE' : '#F3F4F6',
-                      color: roomPhotos.length > 0 ? '#1E40AF' : '#6B7280'
+                      backgroundColor: roomPhotos.length > 0 ? '#f5e6e6' : '#F3F4F6',
+                      color: roomPhotos.length > 0 ? '#500000' : '#6B7280'
                     }}>
                       {roomPhotos.length}
                     </span>
@@ -1151,7 +1151,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                                 className="p-1.5 bg-white rounded-full shadow hover:bg-gray-100"
                                 title="Download"
                               >
-                                <Download size={14} style={{color: '#1E40AF'}} />
+                                <Download size={14} style={{color: '#500000'}} />
                               </button>
                               <button
                                 onClick={() => handleDeletePhoto(photo)}
@@ -1177,7 +1177,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold" style={{color: '#1E3A8A'}}>
+            <h3 className="text-xl font-bold" style={{color: '#3a190b'}}>
               📝 Notities & Metingen
             </h3>
             <Button onClick={handleSaveNotes} disabled={saving}>
@@ -1299,7 +1299,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                 </div>
 
                 {/* Detected Surfaces */}
-                <h6 className="font-semibold mb-3" style={{color: '#1E3A8A'}}>
+                <h6 className="font-semibold mb-3" style={{color: '#3a190b'}}>
                   Gevonden Oppervlakken ({currentAnalysis.surfaces.length})
                 </h6>
                 <div className="space-y-4">
@@ -1617,7 +1617,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                               size="sm"
                               onClick={() => generateQuoteFromAnalysis(analysis.id)}
                               disabled={generatingQuoteFromAnalysis}
-                              style={{backgroundColor: '#1E40AF'}}
+                              style={{backgroundColor: '#500000'}}
                               className="w-full sm:w-auto"
                             >
                               {generatingQuoteFromAnalysis ? (
@@ -1658,7 +1658,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
           <div className="mt-8 pt-8 border-t">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h4 className="text-lg font-bold" style={{color: '#1E3A8A'}}>
+                <h4 className="text-lg font-bold" style={{color: '#3a190b'}}>
                   📐 Ruimte Metingen (Handmatig)
                 </h4>
                 <p className="text-sm" style={{color: '#64748B'}}>
@@ -1668,7 +1668,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
               {!showRoomForm && (
                 <Button
                   onClick={() => setShowRoomForm(true)}
-                  style={{backgroundColor: '#3B82F6'}}
+                  style={{backgroundColor: '#7a1f1f'}}
                 >
                   <Plus className="mr-2" size={20} />
                   Nieuwe Meting
@@ -1679,14 +1679,14 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
             {/* Room Measurement Form */}
             {showRoomForm && (
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-xl border border-blue-200 mb-4">
-                <h5 className="font-bold mb-4" style={{color: '#1E3A8A'}}>
+                <h5 className="font-bold mb-4" style={{color: '#3a190b'}}>
                   {editingRoomId ? '✏️ Meting Bewerken' : '➕ Nieuwe Ruimte Meting'}
                 </h5>
                 
                 {/* Row 1: Room name and Surface type */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                    <label className="block text-sm font-medium mb-2" style={{color: '#3a190b'}}>
                       Ruimte / Omschrijving
                     </label>
                     <input
@@ -1698,7 +1698,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                    <label className="block text-sm font-medium mb-2" style={{color: '#3a190b'}}>
                       Type Oppervlak
                     </label>
                     <select
@@ -1716,7 +1716,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                 {/* Row 2: Dimensions */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                    <label className="block text-sm font-medium mb-2" style={{color: '#3a190b'}}>
                       Lengte (m)
                     </label>
                     <input
@@ -1729,7 +1729,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                    <label className="block text-sm font-medium mb-2" style={{color: '#3a190b'}}>
                       Breedte (m)
                     </label>
                     <input
@@ -1743,7 +1743,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                   </div>
                   {newRoom.surface_type === 'muur' && (
                     <div>
-                      <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                      <label className="block text-sm font-medium mb-2" style={{color: '#3a190b'}}>
                         Hoogte (m)
                       </label>
                       <input
@@ -1762,7 +1762,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                 {(newRoom.length && newRoom.width) && (
                   <div className="bg-white p-3 rounded-lg border mb-4">
                     <span className="text-sm" style={{color: '#64748B'}}>Berekend oppervlak: </span>
-                    <span className="font-bold text-lg" style={{color: '#1E3A8A'}}>
+                    <span className="font-bold text-lg" style={{color: '#3a190b'}}>
                       {calculateArea(newRoom).toFixed(2)} m²
                     </span>
                     {newRoom.surface_type === 'muur' && (
@@ -1775,7 +1775,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
 
                 {/* Work Items Selection */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                  <label className="block text-sm font-medium mb-2" style={{color: '#3a190b'}}>
                     Selecteer Werk (meerdere mogelijk)
                   </label>
                   <div className="relative">
@@ -1818,7 +1818,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                 {/* Selected Work Items */}
                 {newRoom.work_items.length > 0 && (
                   <div className="mb-4">
-                    <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                    <label className="block text-sm font-medium mb-2" style={{color: '#3a190b'}}>
                       Geselecteerde Werken ({newRoom.work_items.length})
                     </label>
                     <div className="space-y-2">
@@ -1909,7 +1909,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
             {/* Room Measurements List */}
             {roomMeasurements.length > 0 && (
               <div className="space-y-3 mb-4">
-                <h5 className="font-semibold text-sm" style={{color: '#1E3A8A'}}>
+                <h5 className="font-semibold text-sm" style={{color: '#3a190b'}}>
                   📋 Toegevoegde Ruimte Metingen ({roomMeasurements.length})
                 </h5>
                 {roomMeasurements.map((room) => (
@@ -2004,7 +2004,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
           
           {/* BESTAANDE SECTIE: Metingen & Werk Items (Handmatig) */}
           <div className="mt-8">
-            <h4 className="text-lg font-bold mb-4" style={{color: '#1E3A8A'}}>
+            <h4 className="text-lg font-bold mb-4" style={{color: '#3a190b'}}>
               📏 Handmatige Metingen (Speciale Gevallen)
             </h4>
             <p className="text-sm mb-4" style={{color: '#64748B'}}>
@@ -2016,7 +2016,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Werk Item Selectie */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                  <label className="block text-sm font-medium mb-2" style={{color: '#3a190b'}}>
                     Selecteer Werk
                   </label>
                   <div className="relative">
@@ -2063,7 +2063,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
 
                 {/* Hoeveelheid */}
                 <div>
-                  <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                  <label className="block text-sm font-medium mb-2" style={{color: '#3a190b'}}>
                     Hoeveelheid {selectedWorkItem && `(${selectedWorkItem.unit})`}
                   </label>
                   <input
@@ -2080,7 +2080,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                 {/* BTW Tarief */}
                 <div>
-                  <label className="block text-sm font-medium mb-2" style={{color: '#1E3A8A'}}>
+                  <label className="block text-sm font-medium mb-2" style={{color: '#3a190b'}}>
                     BTW Tarief
                   </label>
                   <select
@@ -2099,7 +2099,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                     onClick={handleAddMeasurement}
                     disabled={!selectedWorkItem || !quantity}
                     className="w-full"
-                    style={{backgroundColor: '#3B82F6'}}
+                    style={{backgroundColor: '#7a1f1f'}}
                   >
                     ➕ Voeg Toe
                   </Button>
@@ -2116,7 +2116,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
             {/* Metingen Lijst */}
             {measurements.length > 0 ? (
               <div className="space-y-2 mb-4">
-                <h5 className="font-semibold text-sm" style={{color: '#1E3A8A'}}>
+                <h5 className="font-semibold text-sm" style={{color: '#3a190b'}}>
                   Toegevoegde Metingen ({measurements.length})
                 </h5>
                 {measurements.map((m) => (

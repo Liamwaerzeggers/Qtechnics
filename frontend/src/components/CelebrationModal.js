@@ -50,13 +50,13 @@ export default function CelebrationModal() {
         ...defaults,
         particleCount,
         origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
-        colors: ['#FFD700', '#10B981', '#3B82F6', '#EF4444', '#8B5CF6']
+        colors: ['#FFD700', '#10B981', '#7a1f1f', '#EF4444', '#8B5CF6']
       });
       confetti({
         ...defaults,
         particleCount,
         origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
-        colors: ['#FFD700', '#10B981', '#3B82F6', '#EF4444', '#8B5CF6']
+        colors: ['#FFD700', '#10B981', '#7a1f1f', '#EF4444', '#8B5CF6']
       });
     }, 250);
   };
@@ -105,7 +105,7 @@ export default function CelebrationModal() {
         </div>
 
         {/* Main text */}
-        <h2 className="text-3xl font-bold mb-2" style={{color: '#1E3A8A'}}>
+        <h2 className="text-3xl font-bold mb-2" style={{color: '#3a190b'}}>
           🎉 Gefeliciteerd!
         </h2>
         

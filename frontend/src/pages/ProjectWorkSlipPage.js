@@ -368,7 +368,7 @@ export default function ProjectWorkSlipPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="animate-spin" size={48} style={{ color: '#1E40AF' }} />
+          <Loader2 className="animate-spin" size={48} style={{ color: '#500000' }} />
         </div>
       </DashboardLayout>
     );
@@ -398,8 +398,8 @@ export default function ProjectWorkSlipPage() {
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
           <div className="flex items-center space-x-3 mb-2">
-            <FileText size={24} style={{ color: '#1E40AF' }} />
-            <h1 className="text-2xl font-bold" style={{ color: '#1E3A8A' }}>
+            <FileText size={24} style={{ color: '#500000' }} />
+            <h1 className="text-2xl font-bold" style={{ color: '#3a190b' }}>
               Werkbon Registratie
             </h1>
           </div>
@@ -415,7 +415,7 @@ export default function ProjectWorkSlipPage() {
         {/* Recent Work Slips Timeline */}
         {workSlips.length > 0 && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <h2 className="text-lg font-semibold mb-3" style={{ color: '#1E3A8A' }}>
+            <h2 className="text-lg font-semibold mb-3" style={{ color: '#3a190b' }}>
               📅 Recente Werkbonnen / Останні робочі звіти
             </h2>
             <div className="space-y-3 max-h-80 overflow-y-auto">
@@ -452,7 +452,7 @@ export default function ProjectWorkSlipPage() {
             {/* Totaal arbeidskosten - alleen zichtbaar voor admins */}
             {currentUser?.role !== 'worker' && (
               <div className="mt-4 pt-3 border-t border-gray-200">
-                <p className="text-sm font-semibold" style={{ color: '#1E3A8A' }}>
+                <p className="text-sm font-semibold" style={{ color: '#3a190b' }}>
                   💰 Totaal arbeidskosten: €{workSlips.reduce((sum, slip) => sum + (slip.labor_cost || 0), 0).toFixed(2)}
                 </p>
                 <p className="text-xs" style={{ color: '#64748B' }}>
@@ -465,7 +465,7 @@ export default function ProjectWorkSlipPage() {
 
         {/* SECTION 0: Gewerkte Uren */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <h2 className="text-lg font-semibold mb-2" style={{ color: '#1E3A8A' }}>
+          <h2 className="text-lg font-semibold mb-2" style={{ color: '#3a190b' }}>
             ⏱️ Gewerkte Uren / Відпрацьовані години
           </h2>
           <p className="text-sm mb-4" style={{ color: '#64748B' }}>
@@ -475,7 +475,7 @@ export default function ProjectWorkSlipPage() {
           <div className={`grid grid-cols-1 ${currentUser?.role !== 'worker' ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4 max-w-2xl`}>
             {/* Gewerkte uren */}
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#1E3A8A' }}>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#3a190b' }}>
                 Uren / Години
               </label>
               <input
@@ -487,13 +487,13 @@ export default function ProjectWorkSlipPage() {
                 onChange={(e) => setFormData({...formData, hours_worked: e.target.value})}
                 placeholder="8.5"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
-                style={{ color: '#1E3A8A' }}
+                style={{ color: '#3a190b' }}
               />
             </div>
             
             {/* Aantal werkmannen */}
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: '#1E3A8A' }}>
+              <label className="block text-sm font-medium mb-1" style={{ color: '#3a190b' }}>
                 Aantal man / Кількість працівників
               </label>
               <input
@@ -504,14 +504,14 @@ export default function ProjectWorkSlipPage() {
                 onChange={(e) => setFormData({...formData, number_of_workers: parseInt(e.target.value) || 1})}
                 placeholder="1"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
-                style={{ color: '#1E3A8A' }}
+                style={{ color: '#3a190b' }}
               />
             </div>
             
             {/* Uurtarief - ALLEEN ZICHTBAAR VOOR ADMINS */}
             {currentUser?.role !== 'worker' && (
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: '#1E3A8A' }}>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#3a190b' }}>
                   Uurtarief / Ставка
                 </label>
                 <div className="px-4 py-3 border border-gray-200 rounded-lg text-lg font-semibold bg-gray-50" style={{ color: '#64748B' }}>
@@ -543,7 +543,7 @@ export default function ProjectWorkSlipPage() {
 
         {/* SECTION 1: Materialen uit Offerte */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <h2 className="text-lg font-semibold mb-2" style={{ color: '#1E3A8A' }}>
+          <h2 className="text-lg font-semibold mb-2" style={{ color: '#3a190b' }}>
             1️⃣ Gebruikte Materialen uit Offerte / Матеріали з пропозиції
           </h2>
           <p className="text-sm mb-4" style={{ color: '#64748B' }}>
@@ -574,7 +574,7 @@ export default function ProjectWorkSlipPage() {
                         className="mt-1 w-5 h-5"
                       />
                       <div className="flex-1">
-                        <p className="font-medium text-sm" style={{ color: '#1E3A8A' }}>
+                        <p className="font-medium text-sm" style={{ color: '#3a190b' }}>
                           🇳🇱 {material.description_nl}
                         </p>
                         <p className="text-sm" style={{ color: '#64748B' }}>
@@ -612,7 +612,7 @@ export default function ProjectWorkSlipPage() {
 
         {/* SECTION 2: Extra Materialen */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <h2 className="text-lg font-semibold mb-2" style={{ color: '#1E3A8A' }}>
+          <h2 className="text-lg font-semibold mb-2" style={{ color: '#3a190b' }}>
             2️⃣ Extra Materialen / Додаткові матеріали
           </h2>
           <p className="text-sm mb-4" style={{ color: '#64748B' }}>
@@ -696,7 +696,7 @@ export default function ProjectWorkSlipPage() {
 
         {/* SECTION 3: Werkbeschrijving */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <h2 className="text-lg font-semibold mb-2" style={{ color: '#1E3A8A' }}>
+          <h2 className="text-lg font-semibold mb-2" style={{ color: '#3a190b' }}>
             3️⃣ Werkbeschrijving / Опис робіт
           </h2>
           <p className="text-sm mb-4" style={{ color: '#64748B' }}>
@@ -748,7 +748,7 @@ export default function ProjectWorkSlipPage() {
 
         {/* SECTION 4: Foto's */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <h2 className="text-lg font-semibold mb-2" style={{ color: '#1E3A8A' }}>
+          <h2 className="text-lg font-semibold mb-2" style={{ color: '#3a190b' }}>
             4️⃣ Foto's van de Werkplek / Фото з робочого місця
           </h2>
           <p className="text-sm mb-4" style={{ color: '#64748B' }}>
@@ -805,7 +805,7 @@ export default function ProjectWorkSlipPage() {
             onClick={handleSubmit}
             disabled={isCreating}
             className="w-full text-lg py-6"
-            style={{ backgroundColor: '#1E40AF' }}
+            style={{ backgroundColor: '#500000' }}
           >
             {isCreating ? (
               <>

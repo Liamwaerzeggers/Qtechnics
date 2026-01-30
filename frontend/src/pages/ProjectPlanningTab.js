@@ -249,7 +249,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar size={20} style={{color: '#1E40AF'}} />
+            <Calendar size={20} style={{color: '#500000'}} />
             Project Periode
           </CardTitle>
         </CardHeader>
@@ -286,7 +286,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
           <div className="space-y-4">
             {/* Add new work period */}
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h4 className="font-semibold mb-3" style={{color: '#1E40AF'}}>Nieuwe Werkperiode Toevoegen</h4>
+              <h4 className="font-semibold mb-3" style={{color: '#500000'}}>Nieuwe Werkperiode Toevoegen</h4>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <div>
                   <Label>Van</Label>
@@ -316,7 +316,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
               <Button 
                 onClick={handleAddWorkPeriod}
                 className="mt-3"
-                style={{backgroundColor: '#1E40AF'}}
+                style={{backgroundColor: '#500000'}}
               >
                 <Plus size={16} className="mr-2" /> Werkperiode Toevoegen
               </Button>
@@ -361,7 +361,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
                       {/* Description */}
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="px-2 py-1 text-xs rounded-full" style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}>
+                          <span className="px-2 py-1 text-xs rounded-full" style={{backgroundColor: '#f5e6e6', color: '#500000'}}>
                             {getDaysDiff(period.start_date, period.end_date)} dagen
                           </span>
                         </div>
@@ -418,8 +418,8 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
                         onClick={() => togglePeriodExpand(period.id)}
                         className="flex items-center gap-2 w-full text-left mb-3"
                       >
-                        <Package size={16} style={{color: '#1E40AF'}} />
-                        <span className="font-semibold text-sm" style={{color: '#1E3A8A'}}>
+                        <Package size={16} style={{color: '#500000'}} />
+                        <span className="font-semibold text-sm" style={{color: '#3a190b'}}>
                           Materialen ({(period.materials || []).length})
                         </span>
                         {expandedPeriods[period.id] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -469,7 +469,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
                           
                           {/* Add Material Form */}
                           <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                            <p className="text-xs font-semibold mb-2" style={{color: '#1E40AF'}}>Materiaal Toevoegen</p>
+                            <p className="text-xs font-semibold mb-2" style={{color: '#500000'}}>Materiaal Toevoegen</p>
                             
                             {/* Catalog Quick Select */}
                             {catalogMaterials.length > 0 && (
@@ -554,7 +554,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
                               size="sm"
                               onClick={() => handleAddMaterialToPeriod(period.id)}
                               className="mt-2"
-                              style={{backgroundColor: '#1E40AF'}}
+                              style={{backgroundColor: '#500000'}}
                             >
                               <Plus size={14} className="mr-1" /> Toevoegen
                             </Button>
@@ -580,7 +580,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Package size={20} style={{color: '#1E40AF'}} />
+            <Package size={20} style={{color: '#500000'}} />
             Benodigde Materialen voor Aanvang
           </CardTitle>
         </CardHeader>
@@ -628,7 +628,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
           onClick={handleSavePlanning}
           disabled={saving}
           size="lg"
-          style={{backgroundColor: '#1E40AF'}}
+          style={{backgroundColor: '#500000'}}
         >
           <Save size={20} className="mr-2" />
           {saving ? 'Opslaan...' : 'Planning Opslaan'}
