@@ -14,13 +14,13 @@ import { Plus, Search, Trash2, Trophy, Target, Flame, Star, Rocket } from 'lucid
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
-// Milestone definitions
+// Milestone definitions - Max Q branding colors
 const MILESTONES = [
   { amount: 100000, label: '€100K', icon: '🎯', color: '#7a1f1f', message: 'Goede start!' },
   { amount: 250000, label: '€250K', icon: '🔥', color: '#F59E0B', message: 'Lekker bezig!' },
-  { amount: 500000, label: '€500K', icon: '⭐', color: '#8B5CF6', message: 'Halve miljoen!' },
-  { amount: 750000, label: '€750K', icon: '💪', color: '#EC4899', message: 'Sterk werk!' },
-  { amount: 1000000, label: '€1M', icon: '🏆', color: '#10B981', message: 'MILJOENAIRS!' },
+  { amount: 500000, label: '€500K', icon: '⭐', color: '#500000', message: 'Halve miljoen!' },
+  { amount: 750000, label: '€750K', icon: '💪', color: '#3a190b', message: 'Sterk werk!' },
+  { amount: 1000000, label: '€1M', icon: '🏆', color: '#FFD700', message: 'MILJOENAIRS!' },
   { amount: 1500000, label: '€1.5M', icon: '🚀', color: '#EF4444', message: 'To the moon!' },
   { amount: 2000000, label: '€2M', icon: '👑', color: '#FFD700', message: 'KONINGEN!' },
 ];
