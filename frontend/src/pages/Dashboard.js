@@ -126,6 +126,87 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Material Order Reminders - Based on order_reminder_date */}
+          {materialReminders.length > 0 && (
+            <Card className="lg:col-span-2 border-2" style={{borderColor: '#EF4444', backgroundColor: '#FEF2F2'}}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#991B1B'}}>
+                  <AlertTriangle size={24} />
+                  Materialen Bestellen!
+                  <span className="px-2 py-1 text-xs rounded-full" style={{backgroundColor: '#FECACA', color: '#991B1B'}}>
+                    {materialReminders.reduce((sum, r) => sum + r.materials.length, 0)} materiaal(en)
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm mb-4" style={{color: '#991B1B'}}>
+                  De volgende materialen moeten besteld worden (besteldatum bereikt):
+                </p>
+                <div className="space-y-4">
+                  {materialReminders.map((reminder) => (
+                    <div
+                      key={`${reminder.project_id}-${reminder.period_id}`}
+                      className="p-4 rounded-lg bg-white border"
+                      style={{borderColor: '#FECACA'}}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div 
+                          className="font-semibold text-lg cursor-pointer hover:underline" 
+                          style={{color: '#1E293B'}}
+                          onClick={() => navigate(`/projects/${reminder.project_id}`)}
+                        >
+                          {reminder.project_name}
+                        </div>
+                        <span className="text-sm px-2 py-1 rounded-full" style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}>
+                          {reminder.period_description}
+                        </span>
+                      </div>
+                      
+                      {reminder.work_start_date && (
+                        <div className="text-sm mb-3" style={{color: '#64748B'}}>
+                          Werk start: {new Date(reminder.work_start_date).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </div>
+                      )}
+                      
+                      <div className="space-y-2">
+                        {reminder.materials.map((mat) => (
+                          <div 
+                            key={mat.id} 
+                            className="flex items-center justify-between p-3 rounded-lg"
+                            style={{backgroundColor: mat.days_overdue > 0 ? '#FEE2E2' : '#FEF3C7'}}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Package size={18} style={{color: mat.days_overdue > 0 ? '#991B1B' : '#92400E'}} />
+                              <div>
+                                <span className="font-medium">{mat.name}</span>
+                                <span className="text-sm ml-2" style={{color: '#64748B'}}>
+                                  ({mat.quantity} {mat.unit})
+                                </span>
+                              </div>
+                              {mat.days_overdue > 0 && (
+                                <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{backgroundColor: '#FECACA', color: '#991B1B'}}>
+                                  {mat.days_overdue} dag(en) te laat!
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => handleMarkAsOrdered(reminder.project_id, reminder.period_id, mat.id)}
+                              className="flex items-center gap-1 px-3 py-2 rounded-lg font-medium text-sm transition-colors"
+                              style={{backgroundColor: '#D1FAE5', color: '#059669'}}
+                            >
+                              <CheckCircle size={16} />
+                              Besteld
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Material Reminders - One month before start */}
           {stats?.material_reminders && stats.material_reminders.length > 0 && (
             <Card className="lg:col-span-2 border-2" style={{borderColor: '#F59E0B', backgroundColor: '#FFFBEB'}}>
