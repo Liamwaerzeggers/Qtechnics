@@ -1,0 +1,75 @@
+{
+  "summary": "Tested Material Order Reminders feature - all backend APIs and frontend UI working correctly. Materials can be added with order_reminder_date, marked as ordered via checkbox, and the Dashboard shows 'Materialen Bestellen!' widget for materials due for ordering.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_material_order_reminders.py",
+    "/app/test_reports/pytest/pytest_results_material_reminders.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_material_order_reminders.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "username": "test",
+    "password": "test123"
+  },
+  "seed_data_creation": "Created test materials in project 'Zinio & Amy' (PROJ-8DC83A0F) with order_reminder_date set to today and yesterday for testing.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Material Order Reminders feature is fully functional. Materials can be added with order_reminder_date field in the Planning tab. Dashboard shows 'Materialen Bestellen!' widget for materials where order_reminder_date <= today and is_ordered=false. Clicking 'Besteld' button marks material as ordered and removes it from the widget.",
+  "features_tested": {
+    "POST /api/projects/{id}/scheduled-days/{period_id}/materials with order_reminder_date": {
+      "status": "PASS",
+      "details": "Materials can be added with order_reminder_date field. Field is stored correctly and returned in response."
+    },
+    "PUT /api/projects/{id}/scheduled-days/{period_id}/materials/{material_id} with is_ordered": {
+      "status": "PASS",
+      "details": "Materials can be marked as ordered (is_ordered=true) or unmarked (is_ordered=false). Status persists correctly."
+    },
+    "GET /api/dashboard/material-reminders": {
+      "status": "PASS",
+      "details": "Returns materials where order_reminder_date <= today and is_ordered=false. Includes days_overdue count. Excludes ordered materials and future-dated materials."
+    },
+    "Frontend: Planning tab - Besteldatum field": {
+      "status": "PASS",
+      "details": "Material form in Planning tab shows 'Besteldatum' date input field. Materials can be added with order date."
+    },
+    "Frontend: Planning tab - Order date display": {
+      "status": "PASS",
+      "details": "Materials in list show order date badge '📅 Bestellen: [date]' with red/amber styling based on urgency."
+    },
+    "Frontend: Planning tab - Checkbox to mark as ordered": {
+      "status": "PASS",
+      "details": "Checkbox next to each material allows marking as ordered. Shows '✓ Besteld' badge when checked."
+    },
+    "Frontend: Dashboard - Materialen Bestellen! widget": {
+      "status": "PASS",
+      "details": "Dashboard shows red-bordered widget with materials due for ordering. Shows project name, work period, material details, and 'X dag(en) te laat!' badge for overdue items."
+    },
+    "Frontend: Dashboard - Besteld action button": {
+      "status": "PASS",
+      "details": "Green 'Besteld' button in widget marks material as ordered. Material disappears from widget after clicking."
+    }
+  },
+  "ui_verification": {
+    "login_flow": "PASS - Admin login with username/password works correctly",
+    "project_navigation": "PASS - Can navigate to project detail and Planning tab",
+    "materials_section_expand": "PASS - Materials section expands when clicking 'Materialen (X)' button",
+    "material_form": "PASS - Form shows Materiaal, Aantal, Eenheid, and Besteldatum fields",
+    "material_list": "PASS - Shows materials with checkbox, name, quantity, unit, order date badge, and delete button",
+    "dashboard_widget": "PASS - Shows 'Materialen Bestellen!' widget with action buttons when materials are due"
+  }
+}
