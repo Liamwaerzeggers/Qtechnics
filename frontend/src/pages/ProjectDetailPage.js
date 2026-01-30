@@ -420,18 +420,25 @@ export default function ProjectDetailPage() {
                       {quotes.map((quote) => (
                         <div
                           key={quote.id}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                          style={{borderColor: '#E5E7EB'}}
+                          className={`flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 ${quote.is_sold ? 'ring-2 ring-green-500 bg-green-50' : ''}`}
+                          style={{borderColor: quote.is_sold ? '#10B981' : '#E5E7EB'}}
                         >
                           <div 
                             className="flex-1 cursor-pointer"
                             onClick={() => navigate(`/quotes/${quote.id}`, { state: { fromProject: project.id } })}
                           >
-                            <p className="font-semibold" style={{color: '#1E3A8A'}}>
-                              {quote.quote_number}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold" style={{color: '#1E3A8A'}}>
+                                {quote.quote_number}
+                              </p>
+                              {quote.is_sold && (
+                                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold" style={{backgroundColor: '#D1FAE5', color: '#059669'}}>
+                                  <Trophy size={12} /> VERKOCHT
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs mt-1" style={{color: '#94A3B8'}}>
-                              {new Date(quote.date).toLocaleDateString('nl-NL')}
+                              {new Date(quote.date).toLocaleDateString('nl-NL')} {quote.room && `• ${quote.room}`}
                             </p>
                           </div>
                           
@@ -440,6 +447,17 @@ export default function ProjectDetailPage() {
                               <p className="font-bold" style={{color: '#1E3A8A'}}>
                                 €{quote.total_incl_vat?.toFixed(2) || '0.00'}
                               </p>
+                            </div>
+                            
+                            {/* Verkocht Switch */}
+                            <div className="flex items-center gap-2 px-3 py-1 rounded-lg" style={{backgroundColor: quote.is_sold ? '#D1FAE5' : '#F3F4F6'}}>
+                              <span className="text-xs font-medium" style={{color: quote.is_sold ? '#059669' : '#64748B'}}>
+                                Verkocht
+                              </span>
+                              <Switch
+                                checked={quote.is_sold || false}
+                                onCheckedChange={(checked) => handleToggleQuoteSold(quote.id, checked)}
+                              />
                             </div>
                             
                             <select
