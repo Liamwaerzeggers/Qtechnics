@@ -10,9 +10,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Trash2 } from 'lucide-react';
+import { Plus, Search, Trash2, Trophy, Target, Flame, Star, Rocket } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+
+// Milestone definitions
+const MILESTONES = [
+  { amount: 100000, label: '€100K', icon: '🎯', color: '#3B82F6', message: 'Goede start!' },
+  { amount: 250000, label: '€250K', icon: '🔥', color: '#F59E0B', message: 'Lekker bezig!' },
+  { amount: 500000, label: '€500K', icon: '⭐', color: '#8B5CF6', message: 'Halve miljoen!' },
+  { amount: 750000, label: '€750K', icon: '💪', color: '#EC4899', message: 'Sterk werk!' },
+  { amount: 1000000, label: '€1M', icon: '🏆', color: '#10B981', message: 'MILJOENAIRS!' },
+  { amount: 1500000, label: '€1.5M', icon: '🚀', color: '#EF4444', message: 'To the moon!' },
+  { amount: 2000000, label: '€2M', icon: '👑', color: '#FFD700', message: 'KONINGEN!' },
+];
 
 export default function ProjectsPage() {
   const navigate = useNavigate();
@@ -31,6 +42,14 @@ export default function ProjectsPage() {
     end_date: '',
     notes: ''
   });
+
+  // Calculate total sales from all projects
+  const totalSales = projects.reduce((sum, p) => sum + (p.sales_price || 0), 0);
+  
+  // Find current and next milestone
+  const currentMilestone = MILESTONES.filter(m => totalSales >= m.amount).pop();
+  const nextMilestone = MILESTONES.find(m => totalSales < m.amount) || MILESTONES[MILESTONES.length - 1];
+  const progressToNext = nextMilestone ? Math.min((totalSales / nextMilestone.amount) * 100, 100) : 100;
 
   useEffect(() => {
     fetchData();
