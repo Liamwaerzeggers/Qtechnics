@@ -2319,29 +2319,53 @@ async def update_legacy_document(
     
     # Track if visibility is being set to true (for notification)
     was_visible = doc.get("visible_to_customer", False)
+    was_sold = doc.get("is_sold", False)
     
     # Build update dict
     updates = {k: v for k, v in update_data.model_dump(exclude_unset=True).items() if v is not None}
     
     if updates:
+        project = await db.projects.find_one({"id": doc["project_id"]})
+        
         # Check if total_price changed and update project sales_price accordingly
         if "total_price" in updates and doc.get("document_type") == "offerte":
             old_price = doc.get("total_price", 0) or 0
             new_price = updates["total_price"] or 0
             price_diff = new_price - old_price
             
-            if price_diff != 0:
-                project = await db.projects.find_one({"id": doc["project_id"]})
-                if project:
-                    current_sales = project.get("sales_price", 0) or 0
-                    new_sales = current_sales + price_diff
-                    total_costs = project.get("total_costs", 0) or 0
-                    new_profit = new_sales - total_costs
-                    
-                    await db.projects.update_one(
-                        {"id": doc["project_id"]},
-                        {"$set": {"sales_price": new_sales, "profit": new_profit}}
-                    )
+            if price_diff != 0 and project:
+                current_sales = project.get("sales_price", 0) or 0
+                new_sales = current_sales + price_diff
+                total_costs = project.get("total_costs", 0) or 0
+                new_profit = new_sales - total_costs
+                
+                await db.projects.update_one(
+                    {"id": doc["project_id"]},
+                    {"$set": {"sales_price": new_sales, "profit": new_profit}}
+                )
+        
+        # If legacy document is marked as sold, update project status and create celebration
+        if updates.get("is_sold") == True and not was_sold and project:
+            # Update project status to "in uitvoering"
+            await db.projects.update_one(
+                {"id": project["id"]},
+                {"$set": {"status": "in uitvoering"}}
+            )
+            
+            # Create celebration record for all admins
+            celebration = {
+                "id": f"CELEB-{str(uuid.uuid4())[:8].upper()}",
+                "project_id": project["id"],
+                "project_name": project.get("name", "Onbekend project"),
+                "legacy_doc_id": document_id,
+                "document_name": doc.get("original_filename", ""),
+                "amount": doc.get("total_price", 0) or updates.get("total_price", 0),
+                "sold_at": datetime.now(timezone.utc).isoformat(),
+                "sold_by": current_user.id,
+                "seen_by": []  # Track which users have seen this celebration
+            }
+            await db.celebrations.insert_one(celebration)
+            logger.info(f"Legacy doc {document_id} marked as sold, project {project['id']} status set to 'in uitvoering'")
         
         await db.legacy_documents.update_one({"id": document_id}, {"$set": updates})
         
