@@ -31,6 +31,9 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
 
   return (
     <div className="min-h-screen" style={{backgroundColor: '#F8FAFC'}}>
+      {/* Celebration Modal - shows when there are new sales */}
+      {user?.role === 'admin' && <CelebrationModal />}
+      
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b" style={{backgroundColor: 'white', borderColor: '#E2E8F0'}}>
         <div className="container mx-auto px-4">
