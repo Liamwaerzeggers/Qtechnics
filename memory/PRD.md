@@ -56,7 +56,10 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 - Uitklapbare "Materialen" sectie per gepland werk
 - Selecteer uit catalogus of voeg nieuw materiaal toe
 - Velden: naam, aantal, eenheid (stuk, m², kg, etc.)
-- API voor herinneringen 1 maand voor aanvang
+- **Besteldatum**: Kies wanneer het materiaal besteld moet worden
+- **Checkbox**: Markeer materiaal als besteld (wordt doorgestreept)
+- **Dashboard Widget**: "Materialen Bestellen!" toont materialen waarvan besteldatum bereikt is
+- Overdue materialen worden rood gemarkeerd met "X dag(en) te laat!"
 
 ## API Endpoints
 
