@@ -184,7 +184,7 @@ export default function ProjectsPage() {
               {/* Progress Bar */}
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-blue-200">
+                  <span className="text-sm text-red-200">
                     Volgende mijlpaal: {nextMilestone?.label}
                   </span>
                   <span className="text-sm font-bold text-white">
@@ -196,12 +196,12 @@ export default function ProjectsPage() {
                     className="h-full rounded-full transition-all duration-1000 ease-out"
                     style={{
                       width: `${progressToNext}%`,
-                      background: 'linear-gradient(90deg, #10B981 0%, #34D399 50%, #6EE7B7 100%)'
+                      background: 'linear-gradient(90deg, #FFD700 0%, #FFA500 50%, #FF8C00 100%)'
                     }}
                   />
                 </div>
                 {nextMilestone && (
-                  <div className="text-xs text-blue-200 mt-1">
+                  <div className="text-xs text-red-200 mt-1">
                     Nog €{(nextMilestone.amount - totalSales).toLocaleString('nl-NL', {minimumFractionDigits: 0})} te gaan!
                   </div>
                 )}
