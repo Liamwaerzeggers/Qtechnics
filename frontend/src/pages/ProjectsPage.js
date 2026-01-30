@@ -155,7 +155,7 @@ export default function ProjectsPage() {
         {/* Gamification Banner - Sales Progress */}
         {!isWorker && (
           <div className="relative overflow-hidden rounded-2xl p-6" style={{
-            background: 'linear-gradient(135deg, #3a190b 0%, #7a1f1f 50%, #8B5CF6 100%)'
+            background: 'linear-gradient(135deg, #3a190b 0%, #500000 50%, #7a1f1f 100%)'
           }}>
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-64 h-64 opacity-10">
@@ -169,7 +169,7 @@ export default function ProjectsPage() {
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     {currentMilestone?.icon || '🎯'} Team Sales Leaderboard
                   </h2>
-                  <p className="text-blue-200 text-sm mt-1">
+                  <p className="text-red-200 text-sm mt-1">
                     {currentMilestone ? currentMilestone.message : 'Aan de slag!'}
                   </p>
                 </div>
@@ -177,7 +177,7 @@ export default function ProjectsPage() {
                   <div className="text-4xl font-bold text-white">
                     €{totalSales.toLocaleString('nl-NL', {minimumFractionDigits: 0, maximumFractionDigits: 0})}
                   </div>
-                  <div className="text-blue-200 text-sm">Totale Verkoop</div>
+                  <div className="text-red-200 text-sm">Totale Verkoop</div>
                 </div>
               </div>
               
