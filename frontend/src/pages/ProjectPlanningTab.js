@@ -401,16 +401,28 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
                           {(period.materials || []).length > 0 && (
                             <div className="space-y-2">
                               {(period.materials || []).map((mat) => (
-                                <div key={mat.id} className="flex items-center justify-between p-2 bg-white rounded border" style={{borderColor: '#E5E7EB'}}>
-                                  <div className="flex items-center gap-2">
-                                    <Package size={14} style={{color: '#64748B'}} />
-                                    <span className="font-medium text-sm">{mat.name}</span>
+                                <div key={mat.id} className={`flex items-center justify-between p-2 bg-white rounded border ${mat.is_ordered ? 'opacity-60' : ''}`} style={{borderColor: mat.is_ordered ? '#10B981' : '#E5E7EB'}}>
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <input
+                                      type="checkbox"
+                                      checked={mat.is_ordered || false}
+                                      onChange={(e) => handleToggleMaterialOrdered(period.id, mat.id, e.target.checked)}
+                                      className="w-4 h-4 rounded border-gray-300"
+                                      title="Markeer als besteld"
+                                    />
+                                    <Package size={14} style={{color: mat.is_ordered ? '#10B981' : '#64748B'}} />
+                                    <span className={`font-medium text-sm ${mat.is_ordered ? 'line-through' : ''}`}>{mat.name}</span>
                                     <span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor: '#F3F4F6', color: '#64748B'}}>
                                       {mat.quantity} {mat.unit}
                                     </span>
-                                    {mat.from_catalog && (
-                                      <span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor: '#DBEAFE', color: '#1E40AF'}}>
-                                        Catalogus
+                                    {mat.order_reminder_date && !mat.is_ordered && (
+                                      <span className={`text-xs px-2 py-0.5 rounded-full ${new Date(mat.order_reminder_date) <= new Date() ? 'bg-red-100 text-red-700 font-semibold' : 'bg-amber-100 text-amber-700'}`}>
+                                        📅 Bestellen: {new Date(mat.order_reminder_date).toLocaleDateString('nl-NL')}
+                                      </span>
+                                    )}
+                                    {mat.is_ordered && (
+                                      <span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor: '#D1FAE5', color: '#059669'}}>
+                                        ✓ Besteld
                                       </span>
                                     )}
                                   </div>
@@ -449,8 +461,9 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
                               </div>
                             )}
                             
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="grid grid-cols-5 gap-2">
                               <div className="col-span-2">
+                                <Label className="text-xs">Materiaal</Label>
                                 <Input
                                   placeholder="Naam materiaal"
                                   value={newMaterialData[period.id]?.name || ''}
@@ -462,9 +475,10 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
                                 />
                               </div>
                               <div>
+                                <Label className="text-xs">Aantal</Label>
                                 <Input
                                   type="number"
-                                  placeholder="Aantal"
+                                  placeholder="1"
                                   value={newMaterialData[period.id]?.quantity || ''}
                                   onChange={(e) => setNewMaterialData(prev => ({
                                     ...prev,
@@ -474,6 +488,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
                                 />
                               </div>
                               <div>
+                                <Label className="text-xs">Eenheid</Label>
                                 <select
                                   className="w-full h-9 px-2 text-sm border rounded"
                                   value={newMaterialData[period.id]?.unit || 'stuk'}
@@ -490,6 +505,19 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
                                   <option value="doos">doos</option>
                                   <option value="zak">zak</option>
                                 </select>
+                              </div>
+                              <div>
+                                <Label className="text-xs">Besteldatum</Label>
+                                <Input
+                                  type="date"
+                                  value={newMaterialData[period.id]?.order_reminder_date || ''}
+                                  onChange={(e) => setNewMaterialData(prev => ({
+                                    ...prev,
+                                    [period.id]: {...(prev[period.id] || {}), order_reminder_date: e.target.value}
+                                  }))}
+                                  className="text-sm"
+                                  title="Wanneer moet dit materiaal besteld worden?"
+                                />
                               </div>
                             </div>
                             <Button
