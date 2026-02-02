@@ -973,18 +973,41 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                 <label className="block text-sm font-medium mb-2" style={{color: '#374151'}}>
                   Bestanden
                 </label>
+                <div 
+                  className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                  style={{borderColor: '#500000'}}
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.backgroundColor = '#f5e6e6'; }}
+                  onDragLeave={(e) => { e.preventDefault(); e.currentTarget.style.backgroundColor = ''; }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.currentTarget.style.backgroundColor = '';
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                      const event = { target: { files } };
+                      handlePhotoUpload(event);
+                    }
+                  }}
+                >
+                  <Upload size={48} className="mx-auto mb-3" style={{color: '#500000'}} />
+                  <p className="font-semibold" style={{color: '#500000'}}>
+                    Sleep foto's hierheen
+                  </p>
+                  <p className="text-sm mt-1" style={{color: '#64748B'}}>
+                    of klik om bestanden te selecteren
+                  </p>
+                  <p className="text-xs mt-2" style={{color: '#94A3B8'}}>
+                    Meerdere foto's tegelijk mogelijk
+                  </p>
+                </div>
                 <input
                   ref={fileInputRef}
                   type="file"
                   multiple
                   accept="image/*"
                   onChange={handlePhotoUpload}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  style={{borderColor: '#E5E7EB'}}
+                  className="hidden"
                 />
-                <p className="text-xs mt-1" style={{color: '#94A3B8'}}>
-                  Meerdere foto&apos;s tegelijk mogelijk.
-                </p>
               </div>
             </div>
             
