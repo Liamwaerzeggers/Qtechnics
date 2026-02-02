@@ -4392,38 +4392,51 @@ async def upload_first_visit_photo(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Save photo
-    photos_dir = ROOT_DIR / "uploads" / "first_visit" / project_id
-    photos_dir.mkdir(parents=True, exist_ok=True)
+    # Read file content and convert to base64 for persistent storage
+    import base64
+    file_content = await file.read()
+    base64_data = base64.b64encode(file_content).decode('utf-8')
     
-    file_extension = file.filename.split(".")[-1]
+    file_extension = file.filename.split(".")[-1].lower()
     unique_filename = f"{uuid.uuid4()}.{file_extension}"
-    file_path = photos_dir / unique_filename
     
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    # Determine content type
+    content_types = {
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "png": "image/png",
+        "gif": "image/gif",
+        "webp": "image/webp"
+    }
+    content_type = content_types.get(file_extension, "image/jpeg")
     
-    photo_url = f"/api/static/first_visit/{project_id}/{unique_filename}"
-    
-    # Create photo record with room field (new format)
+    # Create photo record with base64 data for persistent storage
     photo_record = {
         "filename": unique_filename,
         "original_filename": file.filename,
-        "url": photo_url,
+        "url": f"/api/photos/first_visit/{project_id}/{unique_filename}",
         "room": room or "Algemeen",
-        "uploaded_at": datetime.now(timezone.utc).isoformat()
+        "uploaded_at": datetime.now(timezone.utc).isoformat(),
+        "base64_data": base64_data,
+        "content_type": content_type
     }
     
-    # Check if project uses old format (list of strings) or new format (list of objects)
-    existing_photos = project.get("first_visit_photos", [])
+    # Also save to file system for backward compatibility (preview)
+    photos_dir = ROOT_DIR / "uploads" / "first_visit" / project_id
+    photos_dir.mkdir(parents=True, exist_ok=True)
+    file_path = photos_dir / unique_filename
+    with open(file_path, "wb") as buffer:
+        buffer.write(file_content)
     
-    # Update project - store as object for new uploads
+    # Update project - store as object with base64 data
     await db.projects.update_one(
         {"id": project_id},
         {"$push": {"first_visit_photos": photo_record}}
     )
     
-    return photo_record
+    # Return record without base64 data (too large for response)
+    return_record = {k: v for k, v in photo_record.items() if k != "base64_data"}
+    return return_record
 
 @api_router.delete("/projects/{project_id}/first-visit/photos/{photo_name}")
 async def delete_first_visit_photo(
