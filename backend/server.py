@@ -4481,6 +4481,58 @@ async def delete_first_visit_photo(
     
     return {"message": "Photo deleted"}
 
+# Serve photos from database (persistent storage)
+@api_router.get("/photos/{file_type}/{project_id}/{filename}")
+async def serve_photo_from_db(file_type: str, project_id: str, filename: str):
+    """Serve photos from database (base64 storage) - persistent across deployments"""
+    import base64
+    from fastapi.responses import Response
+    
+    if file_type not in ["first_visit", "designs", "work_slips"]:
+        raise HTTPException(status_code=404, detail="Invalid file type")
+    
+    # Find the project
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Search for the photo in the appropriate field
+    photo_data = None
+    if file_type == "first_visit":
+        photos = project.get("first_visit_photos", [])
+        for photo in photos:
+            if isinstance(photo, dict) and photo.get("filename") == filename:
+                photo_data = photo
+                break
+    elif file_type == "designs":
+        designs = project.get("design_3d_files", [])
+        for design in designs:
+            if isinstance(design, dict) and design.get("filename") == filename:
+                photo_data = design
+                break
+    
+    # If found in database with base64 data, serve it
+    if photo_data and photo_data.get("base64_data"):
+        content_type = photo_data.get("content_type", "image/jpeg")
+        image_bytes = base64.b64decode(photo_data["base64_data"])
+        return Response(content=image_bytes, media_type=content_type)
+    
+    # Fallback: try to serve from file system (for old photos)
+    file_path = ROOT_DIR / "uploads" / file_type / project_id / filename
+    if file_path.exists():
+        suffix = file_path.suffix.lower()
+        content_types = {
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".png": "image/png",
+            ".gif": "image/gif",
+            ".webp": "image/webp",
+        }
+        content_type = content_types.get(suffix, "image/jpeg")
+        return FileResponse(file_path, media_type=content_type)
+    
+    raise HTTPException(status_code=404, detail="Photo not found")
+
 # Static file serving endpoint for uploads (workaround for Kubernetes ingress)
 @api_router.get("/static/{file_type}/{project_id}/{filename}")
 async def serve_static_file(file_type: str, project_id: str, filename: str):
