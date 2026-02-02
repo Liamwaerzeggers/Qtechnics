@@ -1145,8 +1145,14 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
                                   e.target.nextSibling.style.display = 'flex';
                                 }}
                               />
-                              <div className="hidden flex-col items-center justify-center">
-                                <span className="text-4xl">📷</span>
+                              <div className="hidden flex-col items-center justify-center p-2 text-center" style={{backgroundColor: '#FEF2F2'}}>
+                                <span className="text-3xl mb-1">⚠️</span>
+                                <span className="text-xs font-medium" style={{color: '#991B1B'}}>
+                                  Foto niet gevonden
+                                </span>
+                                <span className="text-xs mt-1" style={{color: '#B91C1C'}}>
+                                  Upload opnieuw
+                                </span>
                               </div>
                               
                               {/* Hover overlay */}
