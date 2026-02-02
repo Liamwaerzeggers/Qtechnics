@@ -4656,7 +4656,24 @@ async def upload_3d_design(
     if len(contents) > 50 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Bestand is te groot (max 50MB)")
     
-    # Create designs directory
+    # Convert to base64 for persistent storage (only for images, not large 3D files)
+    import base64
+    base64_data = None
+    if ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp'] and len(contents) < 10 * 1024 * 1024:  # Max 10MB for base64
+        base64_data = base64.b64encode(contents).decode('utf-8')
+    
+    # Determine content type
+    content_types = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".pdf": "application/pdf"
+    }
+    content_type = content_types.get(ext, "application/octet-stream")
+    
+    # Create designs directory for backward compatibility
     designs_dir = ROOT_DIR / "uploads" / "designs" / project_id
     designs_dir.mkdir(parents=True, exist_ok=True)
     
@@ -4664,12 +4681,12 @@ async def upload_3d_design(
     unique_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename.replace(' ', '_')}"
     file_path = designs_dir / unique_filename
     
-    # Save file
+    # Save file to disk (for preview/fallback)
     with open(file_path, "wb") as f:
         f.write(contents)
     
-    # Create design record with room field
-    file_url = f"/api/uploads/designs/{project_id}/{unique_filename}"
+    # Create design record with base64 data for persistent storage
+    file_url = f"/api/photos/designs/{project_id}/{unique_filename}"
     design_record = {
         "filename": unique_filename,
         "original_filename": file.filename,
@@ -4677,8 +4694,13 @@ async def upload_3d_design(
         "size": len(contents),
         "type": ext,
         "room": room or "Algemeen",
-        "uploaded_at": datetime.now(timezone.utc).isoformat()
+        "uploaded_at": datetime.now(timezone.utc).isoformat(),
+        "content_type": content_type
     }
+    
+    # Add base64 data if available (for persistent storage)
+    if base64_data:
+        design_record["base64_data"] = base64_data
     
     # Update project with new design file
     existing_designs = project.get("design_3d_files", [])
@@ -4691,7 +4713,9 @@ async def upload_3d_design(
     
     logger.info(f"3D design uploaded for project {project_id}: {unique_filename} (room: {room})")
     
-    return design_record
+    # Return record without base64 data
+    return_record = {k: v for k, v in design_record.items() if k != "base64_data"}
+    return return_record
 
 
 # ===== PROJECT MEASUREMENTS ENDPOINTS =====
