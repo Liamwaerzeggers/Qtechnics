@@ -1027,6 +1027,24 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
       {/* Foto's Sectie met Room Folders */}
       <Card>
         <CardContent className="p-6">
+          {/* Warning banner for photos that need re-uploading */}
+          {photos.some(p => typeof p === 'object' && !p.base64_data && p.url && !p.url.includes('/api/photos/')) && (
+            <div className="mb-4 p-4 rounded-lg border-2" style={{backgroundColor: '#FEF3C7', borderColor: '#F59E0B'}}>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">⚠️</span>
+                <div>
+                  <p className="font-semibold" style={{color: '#92400E'}}>
+                    Sommige foto's moeten opnieuw worden geüpload
+                  </p>
+                  <p className="text-sm mt-1" style={{color: '#A16207'}}>
+                    Door een systeemupdate zijn oude foto's niet meer zichtbaar. 
+                    Upload de foto's opnieuw om ze permanent op te slaan.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-xl font-bold" style={{color: '#3a190b'}}>
