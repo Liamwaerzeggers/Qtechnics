@@ -131,9 +131,35 @@ function LandingPage() {
   const navigate = useNavigate();
   const [showWorkerLogin, setShowWorkerLogin] = React.useState(false);
   const [showAdminLogin, setShowAdminLogin] = React.useState(false);
+  const [showSetup, setShowSetup] = React.useState(false);
+  const [needsSetup, setNeedsSetup] = React.useState(false);
   const [loginUsername, setLoginUsername] = React.useState('');
   const [loginPassword, setLoginPassword] = React.useState('');
   const [loggingIn, setLoggingIn] = React.useState(false);
+  
+  // Setup form state
+  const [setupData, setSetupData] = React.useState({
+    username: '',
+    password: '',
+    email: '',
+    name: ''
+  });
+
+  useEffect(() => {
+    // Check if setup is needed
+    const checkSetup = async () => {
+      try {
+        const response = await axios.get(`${API}/setup/status`);
+        setNeedsSetup(response.data.needs_setup);
+        if (response.data.needs_setup) {
+          setShowSetup(true);
+        }
+      } catch (error) {
+        console.error('Setup check error:', error);
+      }
+    };
+    checkSetup();
+  }, []);
 
   useEffect(() => {
     if (!loading && user) {
@@ -145,6 +171,25 @@ function LandingPage() {
       }
     }
   }, [user, loading, navigate]);
+
+  const handleSetup = async (e) => {
+    e.preventDefault();
+    setLoggingIn(true);
+    
+    try {
+      await axios.post(`${API}/setup/first-admin`, setupData);
+      toast.success('Admin account aangemaakt! U kunt nu inloggen.');
+      setShowSetup(false);
+      setNeedsSetup(false);
+      setShowAdminLogin(true);
+      setLoginUsername(setupData.username);
+    } catch (error) {
+      console.error('Setup error:', error);
+      toast.error(error.response?.data?.detail || 'Kon admin niet aanmaken');
+    } finally {
+      setLoggingIn(false);
+    }
+  };
 
   if (loading) {
     return (
