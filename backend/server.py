@@ -7692,7 +7692,7 @@ async def scrape_generic_website(url: str) -> ScrapedPropertyData:
 
 @api_router.post("/properties/scrape")
 async def scrape_property_url(url: str = Query(...), current_user: User = Depends(get_current_user)):
-    """Scrape property data from a real estate URL"""
+    """Scrape property data from a real estate URL (Immoweb, Zimmo, Immoscoop, or any realtor website)"""
     if current_user.role not in ["admin", "realtor", "investor"]:
         raise HTTPException(status_code=403, detail="Geen toegang")
     
@@ -7704,33 +7704,65 @@ async def scrape_property_url(url: str = Query(...), current_user: User = Depend
     try:
         if 'immoweb.be' in url_lower:
             data = await scrape_immoweb(url)
+            platform_name = "Immoweb"
         elif 'zimmo.be' in url_lower:
             data = await scrape_zimmo(url)
+            platform_name = "Zimmo"
         elif 'immoscoop.be' in url_lower:
             data = await scrape_immoscoop(url)
+            platform_name = "Immoscoop"
         else:
-            raise HTTPException(status_code=400, detail="URL niet ondersteund. Ondersteunde sites: Immoweb.be, Zimmo.be, Immoscoop.be")
+            # Use generic scraper for any other website (realtor websites, etc.)
+            data = await scrape_generic_website(url)
+            platform_name = "website"
         
         # Log what we found
-        logger.info(f"Scraped data: address={data.address}, price={data.asking_price}, area={data.living_area}")
+        logger.info(f"Scraped from {platform_name}: address={data.address}, price={data.asking_price}, area={data.living_area}")
         
         # Check if we got meaningful data
         has_data = bool(data.address or data.asking_price > 0 or data.living_area > 0 or data.bedrooms > 0)
         
         if has_data:
+            # Count how many fields we found
+            fields_found = sum([
+                bool(data.address),
+                data.asking_price > 0,
+                data.living_area > 0,
+                data.bedrooms > 0,
+                data.bathrooms > 0,
+                bool(data.postal_code),
+                bool(data.city),
+                bool(data.epc_score),
+                data.construction_year is not None
+            ])
+            
+            if fields_found >= 3:
+                message = f"✅ {fields_found} gegevens opgehaald van {platform_name}! Controleer en vul aan."
+            else:
+                message = f"⚠️ Slechts {fields_found} gegevens gevonden. Vul de rest handmatig aan."
+            
             return {
                 "success": True,
                 "data": data.model_dump(),
-                "message": "Gegevens opgehaald! Controleer en vul eventueel aan."
+                "message": message,
+                "fields_found": fields_found
             }
         else:
-            # Cloudflare/bot protection likely blocked us
-            return {
-                "success": False,
-                "data": data.model_dump(),
-                "message": "De website blokkeert automatisch ophalen (anti-bot beveiliging). Kopieer de gegevens handmatig van de website.",
-                "hint": "Tip: Open de URL in een nieuw tabblad en kopieer de gegevens"
-            }
+            # No data found - might be blocked or page structure changed
+            if 'immoweb.be' in url_lower or 'zimmo.be' in url_lower:
+                return {
+                    "success": False,
+                    "data": data.model_dump(),
+                    "message": f"{platform_name} blokkeert automatisch ophalen (anti-bot beveiliging). Kopieer de gegevens handmatig.",
+                    "hint": "💡 Tip: Probeer de makelaar's eigen website in plaats van Immoweb/Zimmo"
+                }
+            else:
+                return {
+                    "success": False,
+                    "data": data.model_dump(),
+                    "message": "Kon geen gegevens vinden op deze pagina. Mogelijk is de pagina leeg of heeft een andere structuur.",
+                    "hint": "💡 Vul de gegevens handmatig in"
+                }
         
     except HTTPException:
         raise
@@ -7739,7 +7771,7 @@ async def scrape_property_url(url: str = Query(...), current_user: User = Depend
         return {
             "success": False,
             "data": ScrapedPropertyData().model_dump(),
-            "message": f"Kon gegevens niet ophalen. Vul handmatig in."
+            "message": f"Fout bij ophalen: {str(e)[:100]}"
         }
 
 # --- Work Item Labels (voor renovatiecalculator) ---
