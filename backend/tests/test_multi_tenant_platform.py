@@ -471,7 +471,10 @@ class TestWorkItemLabels:
         
         assert response.status_code == 200, f"Get work items failed: {response.text}"
         data = response.json()
-        assert isinstance(data, list)
+        # API returns object with total and work_items keys
+        assert "work_items" in data or isinstance(data, list)
+        if "work_items" in data:
+            assert isinstance(data["work_items"], list)
     
     def test_update_work_item_label_invalid(self, admin_session):
         """Invalid component label is rejected"""
@@ -481,17 +484,21 @@ class TestWorkItemLabels:
             headers={"Authorization": f"Bearer {admin_session}"}
         )
         
-        if response.status_code == 200 and len(response.json()) > 0:
-            work_item_id = response.json()[0]["id"]
+        if response.status_code == 200:
+            data = response.json()
+            work_items = data.get("work_items", data) if isinstance(data, dict) else data
             
-            # Try to set invalid label
-            label_response = requests.put(
-                f"{BASE_URL}/api/work-items/{work_item_id}/label",
-                params={"component_label": "invalid_label", "room_types": "all"},
-                headers={"Authorization": f"Bearer {admin_session}"}
-            )
-            
-            assert label_response.status_code == 400
+            if len(work_items) > 0:
+                work_item_id = work_items[0]["id"]
+                
+                # Try to set invalid label
+                label_response = requests.put(
+                    f"{BASE_URL}/api/work-items/{work_item_id}/label",
+                    params={"component_label": "invalid_label", "room_types": "all"},
+                    headers={"Authorization": f"Bearer {admin_session}"}
+                )
+                
+                assert label_response.status_code == 400
 
 
 class TestTenantIsolation:
