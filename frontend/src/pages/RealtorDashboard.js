@@ -296,13 +296,13 @@ export default function RealtorDashboard() {
                 <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
                   <div className="flex items-center gap-2 mb-2">
                     <Link size={18} className="text-blue-600" />
-                    <Label className="text-blue-800 font-semibold">Importeer van Immoweb, Zimmo of Immoscoop</Label>
+                    <Label className="text-blue-800 font-semibold">Importeer van website</Label>
                   </div>
                   <div className="flex gap-2">
                     <Input
                       value={formData.source_url}
                       onChange={(e) => handleUrlChange(e.target.value)}
-                      placeholder="Plak hier de URL van het pand (bijv. https://www.immoweb.be/nl/zoekertje/...)"
+                      placeholder="Plak hier de URL van het pand (Immoweb, Zimmo, of makelaar website)"
                       className="flex-1"
                     />
                     <Button
@@ -323,7 +323,7 @@ export default function RealtorDashboard() {
                     </Button>
                   </div>
                   <p className="text-xs text-blue-600 mt-2">
-                    💡 Plak een URL en de gegevens worden automatisch ingevuld. Je kunt ze daarna nog aanpassen.
+                    💡 Werkt met Immoweb, Zimmo, Immoscoop én makelaar websites. Gegevens worden automatisch ingevuld.
                   </p>
                 </div>
 
