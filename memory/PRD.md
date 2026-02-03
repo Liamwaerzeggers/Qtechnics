@@ -26,7 +26,14 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 
 ## Geïmplementeerde Features
 
-### 2025-01-30 (Deze sessie)
+### 2025-02-03 (Deze sessie)
+- [x] **Wachtwoord Reset** - Admins kunnen wachtwoorden van beheerders en werkmannen resetten
+  - Sleutel icoon op elke admin/werkman kaart
+  - Dialog met waarschuwing en nieuw wachtwoord veld
+  - Email voorbereiding met nieuwe credentials na reset
+  - Sessies worden automatisch geïnvalideerd
+
+### 2025-01-30
 - [x] **"Verkocht" Toggle** - Switch op offertes en legacy documenten om aan te geven dat offerte verkocht is
 - [x] **Projectstatus Update** - Project status wordt automatisch "in uitvoering" bij verkoop
 - [x] **Viering Animatie** - Confetti + popup wanneer admin inlogt na nieuwe verkoop
@@ -45,8 +52,19 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 - [x] Visuele materiaallijst PDF bij offertes
 - [x] Legacy documenten met totaalprijs en zichtbaarheidsoptie
 - [x] Inklapbare secties in klantenportaal
+- [x] Beheerders/werkmannen toevoegen en verwijderen
+- [x] Werkmannen activeren/deactiveren
 
 ## Nieuwe Features Details
+
+### Wachtwoord Reset (Nieuw)
+- Sleutel icoon (🔑) naast de verwijder knop op admin/werkman kaarten
+- Klik opent dialog met:
+  - Waarschuwing met naam van de gebruiker
+  - Veld voor nieuw wachtwoord (min. 6 karakters)
+  - "Wachtwoord Resetten" knop
+- Na reset: email wordt automatisch voorbereid met nieuwe credentials
+- Bestaande sessies worden geïnvalideerd
 
 ### "Verkocht" Toggle
 - Switch bij elke offerte en legacy document (type offerte)
@@ -71,6 +89,10 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 
 ## API Endpoints
 
+### Nieuw (Wachtwoord Reset)
+- `POST /api/workers/{worker_id}/reset-password?new_password=xxx` - Reset werkman wachtwoord
+- `POST /api/admins/{admin_id}/reset-password?new_password=xxx` - Reset admin wachtwoord
+
 ### Nieuw (Verkocht & Celebrations)
 - `PUT /api/quotes/{quote_id}` - Met `is_sold` parameter
 - `PUT /api/legacy-documents/{doc_id}` - Met `is_sold` parameter
@@ -86,12 +108,12 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 ## Backlog
 
 ### P0 - Kritiek
-- [ ] Foto's niet zichtbaar in productie (vereist user bevestiging)
+- [ ] Foto's niet zichtbaar in productie (vereist user bevestiging na deployment)
+- [ ] Login fix (eerste admin setup) verificatie na deployment
 
 ### P1 - Hoog
 - [ ] Room Configurator afmaken (prototype)
 - [ ] Geverifieerd Resend domein voor productie emails
-- [ ] Dashboard widget met materiaalherinneringen
 
 ### P2 - Medium
 - [ ] Backend API stabiliteit verbeteren
