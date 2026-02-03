@@ -132,11 +132,39 @@ Max Q Team`;
   const handleCreateInvestor = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API}/investors`, {
+      const response = await axios.post(`${API}/investors`, {
         ...investorForm,
         target_roi: parseFloat(investorForm.target_roi) || 10
       }, { withCredentials: true });
-      toast.success('Investeerder aangemaakt!');
+      
+      // Prepare welcome email
+      const subject = `Welkom bij Max Q - Uw investeerder account`;
+      const body = `Hallo ${investorForm.name},
+
+Uw Max Q investeerder account is aangemaakt!
+
+🔐 INLOGGEGEVENS:
+Gebruikersnaam: ${investorForm.username}
+Wachtwoord: ${investorForm.password}
+
+📱 LOGIN URL:
+${window.location.origin}
+Klik op "🏠 Makelaar / Investeerder Login"
+
+Met Max Q kunt u:
+• Panden analyseren op renovatiekost
+• ROI en rendement berekenen
+• Investeringsbeslissingen onderbouwen
+
+BELANGRIJK: Bewaar deze email veilig.
+
+Met vriendelijke groet,
+Max Q Team`;
+
+      const mailtoLink = `mailto:${investorForm.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailtoLink;
+      
+      toast.success('Investeerder aangemaakt! Email wordt voorbereid...');
       setInvestorDialogOpen(false);
       setInvestorForm({ name: '', email: '', phone: '', username: '', password: '', target_roi: '10' });
       fetchAll();
