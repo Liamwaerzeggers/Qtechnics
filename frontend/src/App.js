@@ -368,7 +368,7 @@ function LandingPage() {
                 </button>
               </form>
             </div>
-          ) : !showWorkerLogin && !showAdminLogin ? (
+          ) : !showWorkerLogin && !showAdminLogin && !showTenantLogin ? (
             <div className="space-y-4">
               <button
                 data-testid="login-button"
