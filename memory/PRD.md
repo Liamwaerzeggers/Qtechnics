@@ -40,7 +40,6 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 - [x] **Werkposten Labels Pagina** - Admin kan labels (vloer/muur/plafond/etc) toewijzen aan werkposten
 
 ### Nog te implementeren (Fase 2+)
-- [ ] **Property Scraping** - Automatisch panden importeren van Immoweb/Zimmo/Immoscoop
 - [ ] **Onderaannemers prijzen** - Integreren in renovatiecalculaties
 - [ ] **Investeerder dashboard** - ROI berekeningen, winstinzicht
 - [ ] **Pand delen** - Makelaar kan pand delen met investeerder
