@@ -7447,6 +7447,249 @@ async def scrape_immoscoop(url: str) -> ScrapedPropertyData:
     
     return data
 
+async def scrape_generic_website(url: str) -> ScrapedPropertyData:
+    """Generic scraper for any real estate website (realtor websites, etc.)"""
+    data = ScrapedPropertyData(source_platform="generic")
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "nl-BE,nl;q=0.9,en;q=0.8"
+    }
+    
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
+            response = await client.get(url, headers=headers)
+            
+            if response.status_code != 200:
+                logger.warning(f"Generic scrape failed: {response.status_code} for {url}")
+                return data
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            text = soup.get_text(separator=' ')
+            
+            # --- Extract Title/Address ---
+            # Try h1 first
+            h1 = soup.find('h1')
+            if h1:
+                data.address = h1.get_text(strip=True)[:200]
+            
+            # Look for address patterns in meta tags
+            meta_desc = soup.find('meta', {'name': 'description'})
+            if meta_desc and meta_desc.get('content'):
+                data.raw_description = meta_desc['content']
+            
+            # --- Extract Price ---
+            price_patterns = [
+                r'€\s*([\d\s.,]+)',
+                r'([\d\s.,]+)\s*€',
+                r'prijs[:\s]*([\d\s.,]+)',
+                r'vraagprijs[:\s]*([\d\s.,]+)',
+                r'price[:\s]*([\d\s.,]+)',
+            ]
+            
+            for pattern in price_patterns:
+                matches = re.findall(pattern, text, re.IGNORECASE)
+                for match in matches:
+                    clean = re.sub(r'[^\d]', '', str(match))
+                    if clean:
+                        try:
+                            price = int(clean)
+                            # Valid price range for Belgian real estate
+                            if 30000 < price < 15000000:
+                                data.asking_price = float(price)
+                                break
+                        except:
+                            pass
+                if data.asking_price > 0:
+                    break
+            
+            # --- Extract Living Area ---
+            area_patterns = [
+                r'bewoonbare?\s*(?:opp(?:ervlakte)?)?[:\s]*(\d+)\s*m[²2]',
+                r'(\d+)\s*m[²2]\s*bewoonbaar',
+                r'woonoppervlakte[:\s]*(\d+)',
+                r'living\s*area[:\s]*(\d+)',
+                r'(\d+)\s*m[²2]',  # Generic fallback
+            ]
+            
+            for pattern in area_patterns:
+                matches = re.findall(pattern, text, re.IGNORECASE)
+                for match in matches:
+                    try:
+                        area = int(match)
+                        # Valid living area range
+                        if 20 < area < 2000:
+                            data.living_area = float(area)
+                            break
+                    except:
+                        pass
+                if data.living_area > 0:
+                    break
+            
+            # --- Extract Plot Area ---
+            plot_patterns = [
+                r'grond(?:opp(?:ervlakte)?)?[:\s]*(\d+)\s*m[²2]',
+                r'perceel[:\s]*(\d+)\s*m[²2]',
+                r'terrein[:\s]*(\d+)\s*m[²2]',
+                r'tuin[:\s]*(\d+)\s*m[²2]',
+            ]
+            
+            for pattern in plot_patterns:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    try:
+                        plot = int(match.group(1))
+                        if 10 < plot < 100000:
+                            data.plot_area = float(plot)
+                            break
+                    except:
+                        pass
+            
+            # --- Extract Bedrooms ---
+            bedroom_patterns = [
+                r'(\d+)\s*slaapkamer',
+                r'slaapkamers?[:\s]*(\d+)',
+                r'(\d+)\s*bedroom',
+                r'bedrooms?[:\s]*(\d+)',
+                r'(\d+)\s*slpk',
+            ]
+            
+            for pattern in bedroom_patterns:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    try:
+                        bedrooms = int(match.group(1))
+                        if 0 < bedrooms < 20:
+                            data.bedrooms = bedrooms
+                            break
+                    except:
+                        pass
+            
+            # --- Extract Bathrooms ---
+            bathroom_patterns = [
+                r'(\d+)\s*badkamer',
+                r'badkamers?[:\s]*(\d+)',
+                r'(\d+)\s*bathroom',
+                r'bathrooms?[:\s]*(\d+)',
+            ]
+            
+            for pattern in bathroom_patterns:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    try:
+                        bathrooms = int(match.group(1))
+                        if 0 < bathrooms < 10:
+                            data.bathrooms = bathrooms
+                            break
+                    except:
+                        pass
+            
+            # --- Extract EPC ---
+            epc_patterns = [
+                r'epc[:\s-]*([A-Ga-g])\b',
+                r'energielabel[:\s]*([A-Ga-g])\b',
+                r'energie[:\s]*([A-Ga-g])\b',
+            ]
+            
+            for pattern in epc_patterns:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    data.epc_score = match.group(1).upper()
+                    break
+            
+            # --- Extract EPC Value ---
+            epc_value_patterns = [
+                r'(\d+)\s*kwh/m[²2]',
+                r'epc[:\s]*(\d+)\s*kwh',
+            ]
+            
+            for pattern in epc_value_patterns:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    try:
+                        epc_val = int(match.group(1))
+                        if 0 < epc_val < 1000:
+                            data.epc_value = float(epc_val)
+                            break
+                    except:
+                        pass
+            
+            # --- Extract Construction Year ---
+            year_patterns = [
+                r'bouwjaar[:\s]*(\d{4})',
+                r'gebouwd\s*(?:in)?\s*(\d{4})',
+                r'construction[:\s]*(\d{4})',
+                r'jaar[:\s]*(\d{4})',
+            ]
+            
+            for pattern in year_patterns:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    try:
+                        year = int(match.group(1))
+                        if 1800 < year < 2030:
+                            data.construction_year = year
+                            break
+                    except:
+                        pass
+            
+            # --- Extract Postal Code and City ---
+            # Belgian postal code pattern
+            postal_patterns = [
+                r'\b(\d{4})\s+([A-Za-z-]+)\b',  # 9000 Gent
+                r'([A-Za-z-]+)\s+(\d{4})\b',     # Gent 9000
+            ]
+            
+            for pattern in postal_patterns:
+                matches = re.findall(pattern, text)
+                for match in matches:
+                    if pattern == postal_patterns[0]:
+                        postal, city = match
+                    else:
+                        city, postal = match
+                    
+                    try:
+                        postal_int = int(postal)
+                        if 1000 <= postal_int <= 9999:  # Belgian postal code range
+                            if not data.postal_code:
+                                data.postal_code = postal
+                            if not data.city and len(city) > 2:
+                                data.city = city.strip()
+                            break
+                    except:
+                        pass
+            
+            # --- Extract Photos ---
+            img_tags = soup.find_all('img', src=True)
+            seen_urls = set()
+            for img in img_tags:
+                src = img.get('src', '') or img.get('data-src', '')
+                if not src:
+                    continue
+                    
+                # Make absolute URL
+                if src.startswith('//'):
+                    src = 'https:' + src
+                elif src.startswith('/'):
+                    from urllib.parse import urlparse
+                    parsed = urlparse(url)
+                    src = f"{parsed.scheme}://{parsed.netloc}{src}"
+                
+                # Filter for likely property photos
+                src_lower = src.lower()
+                if any(x in src_lower for x in ['photo', 'image', 'property', 'pand', 'woning', 'house', 'thumb', 'gallery']):
+                    if src not in seen_urls and len(data.photos) < 10:
+                        seen_urls.add(src)
+                        data.photos.append(src)
+            
+            logger.info(f"Generic scrape results: price={data.asking_price}, area={data.living_area}, bedrooms={data.bedrooms}")
+            
+    except Exception as e:
+        logger.error(f"Generic scrape error: {e}")
+    
+    return data
+
 @api_router.post("/properties/scrape")
 async def scrape_property_url(url: str = Query(...), current_user: User = Depends(get_current_user)):
     """Scrape property data from a real estate URL"""
