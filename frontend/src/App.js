@@ -22,6 +22,8 @@ import WorkersPage from './pages/WorkersPage';
 import AdminsPage from './pages/AdminsPage';
 import CustomerPortalPage from './pages/CustomerPortalPage';
 import RoomConfiguratorPrototype from './pages/RoomConfiguratorPrototype';
+import RealtorDashboard from './pages/RealtorDashboard';
+import TenantsPage from './pages/TenantsPage';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
 const API = `${BACKEND_URL}/api`;
