@@ -18,101 +18,104 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 - Catalogus beheer (materialen en arbeid)
 - Facturatie (Billit/PEPPOL integratie)
 
+## Multi-Tenant Platform Uitbreiding (Februari 2025)
+
+### Nieuwe Rollen
+| Rol | Code | Toegang |
+|-----|------|---------|
+| Max Q Admin | `admin` | Alles |
+| Werkman | `worker` | Beperkt (projecten, werkbonnen) |
+| Onderaannemer | `subcontractor` | Eigen prijzen, toegewezen opdrachten |
+| Makelaar | `realtor` | Eigen panden, renovatiecalculaties |
+| Investeerder | `investor` | Eigen/gedeelde panden, rendement |
+
+### Geïmplementeerd (Fase 1)
+- [x] **Datamodel** - Property, Room, RenovationCalculation, Subcontractor, RealtorProfile, InvestorProfile
+- [x] **Rollen & Authenticatie** - Tenant login via `/api/auth/tenant/login`
+- [x] **Makelaar Dashboard** - Panden beheren, kamers toevoegen, renovatieberekening
+- [x] **Renovatiecalculator** - Automatische berekening op basis van kamerdimensies en werkposten met labels
+- [x] **Tenant Beheer** - Admin kan makelaars, investeerders en onderaannemers aanmaken/beheren
+- [x] **Mailto Welkomst-email** - Bij aanmaken van makelaar/investeerder wordt Outlook geopend met credentials
+
+### Nog te implementeren (Fase 2+)
+- [ ] **Property Scraping** - Automatisch panden importeren van Immoweb/Zimmo/Immoscoop
+- [ ] **Onderaannemers prijzen** - Integreren in renovatiecalculaties
+- [ ] **Investeerder dashboard** - ROI berekeningen, winstinzicht
+- [ ] **Pand delen** - Makelaar kan pand delen met investeerder
+
 ## Architectuur
 - **Frontend**: React + Tailwind CSS + Shadcn/UI
 - **Backend**: FastAPI + Motor (async MongoDB)
 - **Database**: MongoDB
 - **3rd Party**: Billit, Resend (email), emergentintegrations (AI), canvas-confetti
 
-## Geïmplementeerde Features
+## Nieuwe API Endpoints (Multi-Tenant)
+
+### Realtors
+- `POST /api/realtors` - Nieuwe makelaar aanmaken (admin only)
+- `GET /api/realtors` - Alle makelaars ophalen (admin only)
+- `DELETE /api/realtors/{id}` - Makelaar verwijderen
+
+### Investors
+- `POST /api/investors` - Nieuwe investeerder aanmaken
+- `GET /api/investors` - Alle investeerders ophalen
+
+### Subcontractors
+- `POST /api/subcontractors` - Nieuwe onderaannemer
+- `GET /api/subcontractors` - Alle onderaannemers
+- `POST /api/subcontractors/{id}/prices` - Prijs toevoegen
+- `GET /api/subcontractors/{id}/prices` - Prijzen ophalen
+
+### Properties
+- `POST /api/properties` - Nieuw pand toevoegen
+- `GET /api/properties` - Eigen panden ophalen (tenant isolated)
+- `GET /api/properties/{id}` - Pand details
+- `PUT /api/properties/{id}` - Pand bewerken
+- `DELETE /api/properties/{id}` - Pand verwijderen
+- `POST /api/properties/{id}/rooms` - Kamer toevoegen
+- `PUT /api/properties/{id}/rooms/{room_id}` - Kamer bewerken
+- `DELETE /api/properties/{id}/rooms/{room_id}` - Kamer verwijderen
+- `POST /api/properties/{id}/share` - Pand delen met investeerder
+
+### Renovation Calculator
+- `POST /api/properties/{id}/calculate` - Berekening uitvoeren
+- `GET /api/properties/{id}/calculation` - Berekening ophalen
+- `PUT /api/properties/{id}/calculation/items/{item_id}` - Item in/uitsluiten
+
+### Work Items
+- `PUT /api/work-items/{id}/label` - Component label toekennen (vloer, muur, plafond, etc.)
+
+### Auth
+- `POST /api/auth/tenant/login` - Login voor makelaars/investeerders
+
+## Geïmplementeerde Features (Eerder)
 
 ### 2025-02-03 (Deze sessie)
-- [x] **Wachtwoord Reset** - Admins kunnen wachtwoorden van beheerders en werkmannen resetten
-  - Sleutel icoon op elke admin/werkman kaart
-  - Dialog met waarschuwing en nieuw wachtwoord veld
-  - Email voorbereiding met nieuwe credentials na reset
-  - Sessies worden automatisch geïnvalideerd
+- [x] **Wachtwoord Reset** - Admins kunnen wachtwoorden resetten
+- [x] **Multi-Tenant Platform** - Makelaars, investeerders, onderaannemers
+- [x] **Renovatiecalculator** - Automatische berekening per kamer
+- [x] **Tenant Dashboard** - Makelaar kan panden beheren
+- [x] **Mailto Welkomst-email** - Bij aanmaken accounts
 
 ### 2025-01-30
-- [x] **"Verkocht" Toggle** - Switch op offertes en legacy documenten om aan te geven dat offerte verkocht is
-- [x] **Projectstatus Update** - Project status wordt automatisch "in uitvoering" bij verkoop
-- [x] **Viering Animatie** - Confetti + popup wanneer admin inlogt na nieuwe verkoop
-- [x] **Materialen per Werk** - Materialen koppelen aan specifieke geplande werkperiodes
-- [x] **Materiaal Bestelherinneringen** - Specifieke besteldatum per materiaal met dashboard widget
-- [x] **🎮 Gamification Banner** - Team Sales Leaderboard met progressiebalk en mijlpalen (€100K → €2M)
+- [x] **"Verkocht" Toggle** - Switch op offertes en legacy documenten
+- [x] **Viering Animatie** - Confetti bij nieuwe verkoop
+- [x] **Materialen per Werk** - Materialen koppelen aan werkperiodes
+- [x] **Gamification Banner** - Team Sales Leaderboard
 
 ### 2025-01-29
-- [x] **Gefaseerde Facturatie** - Handmatig factuurbedragen registreren met specifieke datum
-- [x] **Winstberekening fix** - Correct profit weergave voor projecten met legacy documenten
+- [x] **Gefaseerde Facturatie** - Handmatig factuurbedragen registreren
 - [x] **Email notificaties** - Automatische email naar klant bij nieuwe portaal content
-
-### Eerder geïmplementeerd
-- [x] Inline bewerking offerte items (prijs/hoeveelheid)
-- [x] Auto-toevoegen materialen aan catalogus met foto-upload
-- [x] Visuele materiaallijst PDF bij offertes
-- [x] Legacy documenten met totaalprijs en zichtbaarheidsoptie
-- [x] Inklapbare secties in klantenportaal
-- [x] Beheerders/werkmannen toevoegen en verwijderen
-- [x] Werkmannen activeren/deactiveren
-
-## Nieuwe Features Details
-
-### Wachtwoord Reset (Nieuw)
-- Sleutel icoon (🔑) naast de verwijder knop op admin/werkman kaarten
-- Klik opent dialog met:
-  - Waarschuwing met naam van de gebruiker
-  - Veld voor nieuw wachtwoord (min. 6 karakters)
-  - "Wachtwoord Resetten" knop
-- Na reset: email wordt automatisch voorbereid met nieuwe credentials
-- Bestaande sessies worden geïnvalideerd
-
-### "Verkocht" Toggle
-- Switch bij elke offerte en legacy document (type offerte)
-- Groen gemarkeerd met "VERKOCHT" badge wanneer actief
-- Zet projectstatus automatisch naar "in uitvoering"
-- Meerdere offertes per project kunnen verkocht zijn
-
-### Viering Animatie
-- Confetti-effect bij eerste login na nieuwe verkoop
-- Toont projectnaam en verkoopbedrag
-- Eenmalig per admin per verkocht project
-- "Volgende Viering!" knop bij meerdere nieuwe verkopen
-
-### Materialen per Werkperiode
-- Uitklapbare "Materialen" sectie per gepland werk
-- Selecteer uit catalogus of voeg nieuw materiaal toe
-- Velden: naam, aantal, eenheid (stuk, m², kg, etc.)
-- **Besteldatum**: Kies wanneer het materiaal besteld moet worden
-- **Checkbox**: Markeer materiaal als besteld (wordt doorgestreept)
-- **Dashboard Widget**: "Materialen Bestellen!" toont materialen waarvan besteldatum bereikt is
-- Overdue materialen worden rood gemarkeerd met "X dag(en) te laat!"
-
-## API Endpoints
-
-### Nieuw (Wachtwoord Reset)
-- `POST /api/workers/{worker_id}/reset-password?new_password=xxx` - Reset werkman wachtwoord
-- `POST /api/admins/{admin_id}/reset-password?new_password=xxx` - Reset admin wachtwoord
-
-### Nieuw (Verkocht & Celebrations)
-- `PUT /api/quotes/{quote_id}` - Met `is_sold` parameter
-- `PUT /api/legacy-documents/{doc_id}` - Met `is_sold` parameter
-- `GET /api/celebrations/pending` - Onbekeken vieringen
-- `POST /api/celebrations/{id}/mark-seen` - Markeer als gezien
-
-### Nieuw (Materialen per Werk)
-- `POST /api/projects/{id}/scheduled-days/{period_id}/materials` - Materiaal toevoegen (met order_reminder_date)
-- `PUT /api/projects/{id}/scheduled-days/{period_id}/materials/{material_id}` - Update (is_ordered, etc.)
-- `DELETE /api/projects/{id}/scheduled-days/{period_id}/materials/{material_id}` - Verwijderen
-- `GET /api/dashboard/material-reminders` - Materialen waarvan besteldatum bereikt is
 
 ## Backlog
 
 ### P0 - Kritiek
-- [ ] Foto's niet zichtbaar in productie (vereist user bevestiging na deployment)
+- [ ] Foto's niet zichtbaar in productie (user verificatie nodig)
 - [ ] Login fix (eerste admin setup) verificatie na deployment
 
 ### P1 - Hoog
-- [ ] Room Configurator afmaken (prototype)
+- [ ] Property scraping (Immoweb/Zimmo/Immoscoop)
+- [ ] Room Configurator afmaken
 - [ ] Geverifieerd Resend domein voor productie emails
 
 ### P2 - Medium
@@ -120,8 +123,10 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 - [ ] server.py refactoren naar package structuur
 
 ### P3 - Laag
-- [ ] Data migratie script (preview → productie)
+- [ ] Investeerder ROI dashboard
+- [ ] Onderaannemers prijzen in calculatie
 
 ## Test Credentials
-- Username: `test` | Password: `test123`
-- Username: `petra` | Password: `test123`
+- **Admin:** `test` / `test123`
+- **Makelaar:** `liamtest` / `test123`
+- **Makelaar (test):** `immogent` / `test123`
