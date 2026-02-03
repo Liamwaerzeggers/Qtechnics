@@ -256,7 +256,18 @@ class TestWorkItemLabels:
         assert response.status_code == 200, f"Update label failed: {response.text}"
         data = response.json()
         
-        assert data.get("component_label") == "vloer"
+        # Endpoint returns {"message": "Label bijgewerkt"}
+        assert "message" in data
+        
+        # Verify by fetching work items again
+        response = requests.get(
+            f"{BASE_URL}/api/work-items",
+            headers={"Authorization": f"Bearer {admin_session}"}
+        )
+        updated_items = response.json().get("work_items", [])
+        updated_item = next((i for i in updated_items if i["id"] == work_item_id), None)
+        assert updated_item is not None
+        assert updated_item.get("component_label") == "vloer"
         print(f"✅ Updated work item {work_item_id} with label 'vloer'")
     
     def test_update_work_item_label_muur(self, admin_session):
@@ -281,8 +292,19 @@ class TestWorkItemLabels:
         assert response.status_code == 200, f"Update label failed: {response.text}"
         data = response.json()
         
-        assert data.get("component_label") == "muur"
-        assert "bathroom" in data.get("room_types", [])
+        # Endpoint returns {"message": "Label bijgewerkt"}
+        assert "message" in data
+        
+        # Verify by fetching work items again
+        response = requests.get(
+            f"{BASE_URL}/api/work-items",
+            headers={"Authorization": f"Bearer {admin_session}"}
+        )
+        updated_items = response.json().get("work_items", [])
+        updated_item = next((i for i in updated_items if i["id"] == work_item_id), None)
+        assert updated_item is not None
+        assert updated_item.get("component_label") == "muur"
+        assert "bathroom" in updated_item.get("room_types", [])
         print(f"✅ Updated work item {work_item_id} with label 'muur' for bathroom,kitchen")
     
     def test_update_work_item_label_plafond(self, admin_session):
