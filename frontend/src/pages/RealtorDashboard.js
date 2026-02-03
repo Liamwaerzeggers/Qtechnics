@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { 
   Building2, Plus, Trash2, Calculator, Eye, Share2, 
   MapPin, BedDouble, Bath, Ruler, Loader2, Home, 
-  ExternalLink, ChevronDown, ChevronRight, Edit, X
+  ExternalLink, ChevronDown, ChevronRight, Edit, X, Link, Search
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -33,6 +33,7 @@ export default function RealtorDashboard() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [calculationLoading, setCalculationLoading] = useState(false);
+  const [scraping, setScraping] = useState(false);
   
   // New property form
   const [formData, setFormData] = useState({
@@ -75,6 +76,49 @@ export default function RealtorDashboard() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Auto-scrape when URL changes
+  const handleUrlChange = async (url) => {
+    setFormData(prev => ({...prev, source_url: url}));
+    
+    // Check if it's a valid real estate URL
+    if (url && (url.includes('immoweb.be') || url.includes('zimmo.be') || url.includes('immoscoop.be'))) {
+      setScraping(true);
+      try {
+        const response = await axios.post(
+          `${API}/properties/scrape?url=${encodeURIComponent(url)}`,
+          {},
+          { withCredentials: true }
+        );
+        
+        if (response.data.success && response.data.data) {
+          const scraped = response.data.data;
+          setFormData(prev => ({
+            ...prev,
+            address: scraped.address || prev.address,
+            postal_code: scraped.postal_code || prev.postal_code,
+            city: scraped.city || prev.city,
+            living_area: scraped.living_area || prev.living_area,
+            plot_area: scraped.plot_area || prev.plot_area,
+            bedrooms: scraped.bedrooms || prev.bedrooms,
+            bathrooms: scraped.bathrooms || prev.bathrooms,
+            construction_year: scraped.construction_year || prev.construction_year,
+            epc_score: scraped.epc_score || prev.epc_score,
+            epc_value: scraped.epc_value || prev.epc_value,
+            asking_price: scraped.asking_price || prev.asking_price
+          }));
+          toast.success(response.data.message);
+        } else {
+          toast.warning(response.data.message || 'Kon gegevens niet ophalen');
+        }
+      } catch (error) {
+        console.error('Scrape error:', error);
+        toast.error('Kon gegevens niet automatisch ophalen. Vul handmatig in.');
+      } finally {
+        setScraping(false);
+      }
     }
   };
 
