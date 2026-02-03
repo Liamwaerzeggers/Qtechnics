@@ -7,13 +7,16 @@ import { Card, CardContent } from '../components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Users, Plus, Trash2, Lock, Unlock, Loader2 } from 'lucide-react';
+import { Users, Plus, Trash2, Lock, Unlock, Loader2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminsPage() {
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [resetPasswordDialog, setResetPasswordDialog] = useState({ open: false, admin: null });
+  const [newPassword, setNewPassword] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     username: '',
