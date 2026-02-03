@@ -5180,6 +5180,37 @@ async def delete_admin(admin_id: str, current_user: User = Depends(get_current_u
     
     return {"message": "Admin deleted successfully"}
 
+@api_router.post("/admins/{admin_id}/reset-password")
+async def reset_admin_password(admin_id: str, new_password: str = Query(..., min_length=6), current_user: User = Depends(get_current_user)):
+    """Reset admin password (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can reset passwords")
+    
+    # Find admin by ID (could be email-based or custom ID)
+    admin = await db.users.find_one({"id": admin_id, "password_hash": {"$exists": True}})
+    if not admin:
+        # Try finding by _id (for email-based admins)
+        admin = await db.users.find_one({"_id": admin_id, "password_hash": {"$exists": True}})
+    
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin not found")
+    
+    # Hash new password
+    new_hash = hash_password(new_password)
+    
+    # Update using whichever field matches
+    if admin.get("id"):
+        await db.users.update_one({"id": admin_id}, {"$set": {"password_hash": new_hash}})
+    else:
+        await db.users.update_one({"_id": admin_id}, {"$set": {"password_hash": new_hash}})
+    
+    # Invalidate existing sessions
+    await db.sessions.delete_many({"user_id": admin_id})
+    await db.user_sessions.delete_many({"user_id": admin_id})
+    
+    logger.info(f"Password reset for admin {admin_id} by admin {current_user.id}")
+    return {"message": "Password reset successfully", "admin_name": admin.get("name", "")}
+
 # ============= BILLIT / PEPPOL INTEGRATION =============
 # Billit API Documentation: https://docs.billit.be/docs/create-first-invoice
 # Production: https://api.billit.io | Sandbox: https://api.sandbox-billit.xyz
