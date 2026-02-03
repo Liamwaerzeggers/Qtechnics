@@ -393,7 +393,7 @@ function LandingPage() {
               </button>
               
               <button
-                onClick={() => { setShowWorkerLogin(true); setShowAdminLogin(false); }}
+                onClick={() => { setShowWorkerLogin(true); setShowAdminLogin(false); setShowTenantLogin(false); }}
                 className="px-8 py-4 rounded-full text-lg font-semibold transition-all hover:scale-105 block w-full max-w-md mx-auto border-2"
                 style={{
                   backgroundColor: 'white',
@@ -404,6 +404,80 @@ function LandingPage() {
               >
                 👷 Werkman Login / Вхід працівника
               </button>
+              
+              <button
+                onClick={() => { setShowTenantLogin(true); setShowWorkerLogin(false); setShowAdminLogin(false); }}
+                className="px-8 py-4 rounded-full text-lg font-semibold transition-all hover:scale-105 block w-full max-w-md mx-auto border-2"
+                style={{
+                  backgroundColor: 'white',
+                  color: '#3B82F6',
+                  borderColor: '#3B82F6',
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              >
+                🏠 Makelaar / Investeerder Login
+              </button>
+            </div>
+          ) : showTenantLogin ? (
+            <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg">
+              <h2 className="text-2xl font-bold mb-2 text-center" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#3B82F6'}}>
+                🏠 Makelaar / Investeerder
+              </h2>
+              <p className="text-center mb-6" style={{color: '#64748B', fontSize: '14px'}}>
+                Toegang tot uw panden dashboard
+              </p>
+              
+              <form onSubmit={handleTenantLogin} className="space-y-4">
+                <div className="text-left">
+                  <label className="block text-sm font-medium mb-2" style={{color: '#1E293B'}}>
+                    Gebruikersnaam
+                  </label>
+                  <input
+                    type="text"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
+                    placeholder="mijnaccount"
+                    required
+                    autoComplete="username"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{fontFamily: 'Inter, sans-serif'}}
+                  />
+                </div>
+                
+                <div className="text-left">
+                  <label className="block text-sm font-medium mb-2" style={{color: '#1E293B'}}>
+                    Wachtwoord
+                  </label>
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    autoComplete="current-password"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    style={{fontFamily: 'Inter, sans-serif'}}
+                  />
+                </div>
+                
+                <button
+                  type="submit"
+                  disabled={loggingIn}
+                  className="w-full px-8 py-4 rounded-full text-lg font-semibold text-white transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{backgroundColor: '#3B82F6', fontFamily: 'Inter, sans-serif'}}
+                >
+                  {loggingIn ? 'Inloggen...' : 'Inloggen'}
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => { setShowTenantLogin(false); setLoginUsername(''); setLoginPassword(''); }}
+                  className="text-sm underline transition-all hover:opacity-80 w-full"
+                  style={{color: '#64748B', fontFamily: 'Inter, sans-serif'}}
+                >
+                  ← Terug naar inlogopties
+                </button>
+              </form>
             </div>
           ) : showAdminLogin ? (
             <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg">
