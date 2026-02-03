@@ -528,6 +528,258 @@ class QuickTaskUpdate(BaseModel):
     end_date: Optional[str] = None
     team_name: Optional[str] = None
 
+# ============= MULTI-TENANT MODELS =============
+
+# Room binnen een Property
+class PropertyRoom(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str  # "Woonkamer", "Badkamer 1", etc.
+    room_type: str = "other"  # "living" | "bedroom" | "bathroom" | "kitchen" | "hallway" | "other"
+    length: float = 0.0  # meter
+    width: float = 0.0  # meter
+    height: float = 2.7  # meter (standaard)
+    floor_area: float = 0.0  # Berekend: length * width
+    ceiling_area: float = 0.0  # Berekend: length * width
+    wall_area: float = 0.0  # Berekend: 2*(length + width) * height
+    windows: int = 0
+    doors: int = 0
+    notes: str = ""
+
+class PropertyRoomCreate(BaseModel):
+    name: str
+    room_type: str = "other"
+    length: float
+    width: float
+    height: float = 2.7
+    windows: int = 0
+    doors: int = 0
+    notes: str = ""
+
+# Property (Pand) - voor makelaars en investeerders
+class Property(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"PROP-{str(uuid.uuid4())[:8].upper()}")
+    owner_type: str  # "realtor" | "investor" | "admin"
+    owner_id: str  # ID van eigenaar
+    
+    # Bron info
+    source_url: Optional[str] = None
+    source_platform: str = "manual"  # "immoweb" | "zimmo" | "immoscoop" | "manual"
+    
+    # Adres
+    address: str = ""
+    postal_code: str = ""
+    city: str = ""
+    
+    # Kenmerken
+    living_area: float = 0.0  # Bewoonbare opp. (m²)
+    plot_area: float = 0.0  # Grondoppervlakte (m²)
+    bedrooms: int = 0
+    bathrooms: int = 0
+    construction_year: Optional[int] = None
+    epc_score: Optional[str] = None  # A, B, C, D, E, F, G
+    epc_value: Optional[float] = None  # kWh/m²/jaar
+    
+    # Kamers met afmetingen
+    rooms: List[PropertyRoom] = []
+    
+    # Prijzen
+    asking_price: float = 0.0
+    estimated_value: float = 0.0  # Geschatte waarde na renovatie
+    
+    # Foto's
+    photos: List[str] = []
+    
+    # Status
+    status: str = "imported"  # "imported" | "analyzing" | "calculated" | "shared"
+    
+    # Renovatie link
+    renovation_calculation_id: Optional[str] = None
+    
+    # Sharing - welke users mogen dit pand zien
+    shared_with: List[str] = []
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class PropertyCreate(BaseModel):
+    source_url: Optional[str] = None
+    address: str = ""
+    postal_code: str = ""
+    city: str = ""
+    living_area: float = 0.0
+    plot_area: float = 0.0
+    bedrooms: int = 0
+    bathrooms: int = 0
+    construction_year: Optional[int] = None
+    epc_score: Optional[str] = None
+    epc_value: Optional[float] = None
+    asking_price: float = 0.0
+    rooms: List[PropertyRoomCreate] = []
+
+class PropertyUpdate(BaseModel):
+    address: Optional[str] = None
+    postal_code: Optional[str] = None
+    city: Optional[str] = None
+    living_area: Optional[float] = None
+    plot_area: Optional[float] = None
+    bedrooms: Optional[int] = None
+    bathrooms: Optional[int] = None
+    construction_year: Optional[int] = None
+    epc_score: Optional[str] = None
+    epc_value: Optional[float] = None
+    asking_price: Optional[float] = None
+    estimated_value: Optional[float] = None
+    status: Optional[str] = None
+
+# Calculation Item - één werkpost in een berekening
+class CalculationItem(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    work_item_id: Optional[str] = None  # Referentie naar WorkItem
+    title: str
+    quantity: float
+    unit: str
+    unit_price: float
+    total: float
+    included: bool = True  # True = meegenomen in totaal
+    is_subcontractor: bool = False
+    subcontractor_id: Optional[str] = None
+
+# Room Calculation - berekening per kamer
+class RoomCalculation(BaseModel):
+    room_id: str
+    room_name: str
+    floor_items: List[CalculationItem] = []
+    wall_items: List[CalculationItem] = []
+    ceiling_items: List[CalculationItem] = []
+    other_items: List[CalculationItem] = []
+    subtotal: float = 0.0
+
+# Renovation Calculation - volledige renovatieberekening
+class RenovationCalculation(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"CALC-{str(uuid.uuid4())[:8].upper()}")
+    property_id: str
+    calculated_by: str  # user_id
+    
+    room_calculations: List[RoomCalculation] = []
+    
+    total_min: float = 0.0
+    total_realistic: float = 0.0
+    total_max: float = 0.0
+    
+    estimated_duration_weeks: int = 0
+    estimated_epc_improvement: str = ""
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Subcontractor (Onderaannemer)
+class Subcontractor(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"SUB-{str(uuid.uuid4())[:8].upper()}")
+    user_id: Optional[str] = None  # Gekoppelde user voor login
+    
+    company_name: str
+    contact_name: str
+    email: str
+    phone: str = ""
+    vat_number: str = ""
+    
+    category: str  # "dak" | "ramen" | "metselwerk" | "gevel" | "isolatie" | "elektriciteit" | "sanitair"
+    
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SubcontractorCreate(BaseModel):
+    company_name: str
+    contact_name: str
+    email: str
+    phone: str = ""
+    vat_number: str = ""
+    category: str
+    password: Optional[str] = None  # Als login nodig is
+
+# Subcontractor Price
+class SubcontractorPrice(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    subcontractor_id: str
+    
+    title: str
+    category: str
+    
+    price_type: str  # "forfait" | "per_m2" | "per_lm" | "per_stuk"
+    price: float
+    price_min: Optional[float] = None
+    price_max: Optional[float] = None
+    
+    valid_from: Optional[str] = None
+    valid_until: Optional[str] = None
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SubcontractorPriceCreate(BaseModel):
+    title: str
+    category: str
+    price_type: str
+    price: float
+    price_min: Optional[float] = None
+    price_max: Optional[float] = None
+
+# Realtor Profile (Makelaar)
+class RealtorProfile(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"REALTOR-{str(uuid.uuid4())[:8].upper()}")
+    user_id: str
+    
+    company_name: str
+    contact_name: str
+    email: str
+    phone: str = ""
+    
+    property_limit: int = 5  # Gratis tier
+    properties_used: int = 0
+    subscription_tier: str = "free"  # "free" | "basic" | "pro"
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class RealtorCreate(BaseModel):
+    company_name: str
+    contact_name: str
+    email: str
+    phone: str = ""
+    username: str
+    password: str
+
+# Investor Profile
+class InvestorProfile(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"INVESTOR-{str(uuid.uuid4())[:8].upper()}")
+    user_id: str
+    
+    name: str
+    email: str
+    phone: str = ""
+    
+    target_roi: float = 10.0  # Gewenst rendement %
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class InvestorCreate(BaseModel):
+    name: str
+    email: str
+    phone: str = ""
+    username: str
+    password: str
+    target_roi: float = 10.0
+
+# WorkItem uitbreiding met component labels
+class WorkItemLabel(BaseModel):
+    component_label: str  # "vloer" | "muur" | "plafond" | "elektriciteit" | "sanitair" | "verwarming" | "isolatie" | "overig"
+    room_types: List[str] = ["all"]  # ["all"] of ["bathroom", "kitchen"] etc.
+
 # ============= AUTH DEPENDENCIES =============
 
 async def get_current_user(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)) -> User:
