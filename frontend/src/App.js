@@ -133,6 +133,7 @@ function LandingPage() {
   const navigate = useNavigate();
   const [showWorkerLogin, setShowWorkerLogin] = React.useState(false);
   const [showAdminLogin, setShowAdminLogin] = React.useState(false);
+  const [showTenantLogin, setShowTenantLogin] = React.useState(false);
   const [showSetup, setShowSetup] = React.useState(false);
   const [needsSetup, setNeedsSetup] = React.useState(false);
   const [loginUsername, setLoginUsername] = React.useState('');
