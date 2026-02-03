@@ -6661,6 +6661,952 @@ async def get_material_reminders(current_user: User = Depends(get_current_user))
     
     return reminders
 
+# ============= MULTI-TENANT PLATFORM ENDPOINTS =============
+
+# --- Helper function for tenant filtering ---
+def get_tenant_filter(current_user: User, entity_type: str) -> dict:
+    """Get MongoDB filter based on user role and entity type"""
+    if current_user.role == "admin":
+        return {}  # Admin ziet alles
+    
+    if entity_type == "property":
+        if current_user.role == "realtor":
+            return {"owner_id": current_user.id, "owner_type": "realtor"}
+        if current_user.role == "investor":
+            return {
+                "$or": [
+                    {"owner_id": current_user.id},
+                    {"shared_with": current_user.id}
+                ]
+            }
+    
+    if entity_type == "subcontractor_price":
+        if current_user.role == "subcontractor":
+            subcontractor_id = current_user.subcontractor_id
+            if subcontractor_id:
+                return {"subcontractor_id": subcontractor_id}
+            return {"subcontractor_id": "__none__"}  # Return nothing
+    
+    # Default: alleen eigen data
+    return {"owner_id": current_user.id}
+
+# --- Realtor Management (Admin only) ---
+
+@api_router.post("/realtors")
+async def create_realtor(realtor: RealtorCreate, current_user: User = Depends(get_current_user)):
+    """Create a new realtor account (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can create realtors")
+    
+    # Check if username exists
+    existing = await db.users.find_one({"username": realtor.username})
+    if existing:
+        raise HTTPException(status_code=400, detail="Gebruikersnaam bestaat al")
+    
+    # Create user account
+    user_id = f"realtor-{realtor.username}"
+    password_hash_value = hash_password(realtor.password)
+    
+    user_doc = {
+        "_id": user_id,
+        "id": user_id,
+        "username": realtor.username,
+        "email": realtor.email,
+        "name": realtor.contact_name,
+        "role": "realtor",
+        "password_hash": password_hash_value,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.insert_one(user_doc)
+    
+    # Create realtor profile
+    profile = RealtorProfile(
+        user_id=user_id,
+        company_name=realtor.company_name,
+        contact_name=realtor.contact_name,
+        email=realtor.email,
+        phone=realtor.phone
+    )
+    
+    profile_doc = profile.model_dump()
+    profile_doc["created_at"] = profile_doc["created_at"].isoformat()
+    
+    await db.realtor_profiles.insert_one(profile_doc)
+    
+    # Update user with realtor_id
+    await db.users.update_one({"_id": user_id}, {"$set": {"realtor_id": profile.id}})
+    
+    logger.info(f"Created realtor: {realtor.company_name} ({realtor.username})")
+    
+    return {"message": "Makelaar aangemaakt", "realtor_id": profile.id, "username": realtor.username}
+
+@api_router.get("/realtors")
+async def get_realtors(current_user: User = Depends(get_current_user)):
+    """Get all realtors (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can view realtors")
+    
+    realtors = await db.realtor_profiles.find({}, {"_id": 0}).to_list(1000)
+    return realtors
+
+@api_router.delete("/realtors/{realtor_id}")
+async def delete_realtor(realtor_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a realtor (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete realtors")
+    
+    profile = await db.realtor_profiles.find_one({"id": realtor_id})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Makelaar niet gevonden")
+    
+    # Delete user account
+    await db.users.delete_one({"_id": profile["user_id"]})
+    # Delete profile
+    await db.realtor_profiles.delete_one({"id": realtor_id})
+    # Delete sessions
+    await db.sessions.delete_many({"user_id": profile["user_id"]})
+    
+    return {"message": "Makelaar verwijderd"}
+
+# --- Investor Management (Admin only) ---
+
+@api_router.post("/investors")
+async def create_investor(investor: InvestorCreate, current_user: User = Depends(get_current_user)):
+    """Create a new investor account (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can create investors")
+    
+    # Check if username exists
+    existing = await db.users.find_one({"username": investor.username})
+    if existing:
+        raise HTTPException(status_code=400, detail="Gebruikersnaam bestaat al")
+    
+    # Create user account
+    user_id = f"investor-{investor.username}"
+    password_hash_value = hash_password(investor.password)
+    
+    user_doc = {
+        "_id": user_id,
+        "id": user_id,
+        "username": investor.username,
+        "email": investor.email,
+        "name": investor.name,
+        "role": "investor",
+        "password_hash": password_hash_value,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.insert_one(user_doc)
+    
+    # Create investor profile
+    profile = InvestorProfile(
+        user_id=user_id,
+        name=investor.name,
+        email=investor.email,
+        phone=investor.phone,
+        target_roi=investor.target_roi
+    )
+    
+    profile_doc = profile.model_dump()
+    profile_doc["created_at"] = profile_doc["created_at"].isoformat()
+    
+    await db.investor_profiles.insert_one(profile_doc)
+    
+    # Update user with investor_id
+    await db.users.update_one({"_id": user_id}, {"$set": {"investor_id": profile.id}})
+    
+    logger.info(f"Created investor: {investor.name} ({investor.username})")
+    
+    return {"message": "Investeerder aangemaakt", "investor_id": profile.id, "username": investor.username}
+
+@api_router.get("/investors")
+async def get_investors(current_user: User = Depends(get_current_user)):
+    """Get all investors (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can view investors")
+    
+    investors = await db.investor_profiles.find({}, {"_id": 0}).to_list(1000)
+    return investors
+
+# --- Subcontractor Management (Admin only) ---
+
+@api_router.post("/subcontractors")
+async def create_subcontractor(subcontractor: SubcontractorCreate, current_user: User = Depends(get_current_user)):
+    """Create a new subcontractor (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can create subcontractors")
+    
+    # Create subcontractor profile
+    sub = Subcontractor(
+        company_name=subcontractor.company_name,
+        contact_name=subcontractor.contact_name,
+        email=subcontractor.email,
+        phone=subcontractor.phone,
+        vat_number=subcontractor.vat_number,
+        category=subcontractor.category
+    )
+    
+    # If password provided, create user account
+    if subcontractor.password:
+        username = subcontractor.email.split("@")[0].lower()
+        user_id = f"sub-{username}"
+        password_hash_value = hash_password(subcontractor.password)
+        
+        user_doc = {
+            "_id": user_id,
+            "id": user_id,
+            "username": username,
+            "email": subcontractor.email,
+            "name": subcontractor.contact_name,
+            "role": "subcontractor",
+            "password_hash": password_hash_value,
+            "subcontractor_id": sub.id,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.users.insert_one(user_doc)
+        sub.user_id = user_id
+    
+    sub_doc = sub.model_dump()
+    sub_doc["created_at"] = sub_doc["created_at"].isoformat()
+    
+    await db.subcontractors.insert_one(sub_doc)
+    
+    logger.info(f"Created subcontractor: {subcontractor.company_name} ({subcontractor.category})")
+    
+    return {"message": "Onderaannemer aangemaakt", "subcontractor_id": sub.id}
+
+@api_router.get("/subcontractors")
+async def get_subcontractors(current_user: User = Depends(get_current_user)):
+    """Get all subcontractors (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can view subcontractors")
+    
+    subcontractors = await db.subcontractors.find({}, {"_id": 0}).to_list(1000)
+    return subcontractors
+
+@api_router.post("/subcontractors/{subcontractor_id}/prices")
+async def add_subcontractor_price(subcontractor_id: str, price: SubcontractorPriceCreate, current_user: User = Depends(get_current_user)):
+    """Add a price to a subcontractor (admin or subcontractor owner)"""
+    # Check access
+    if current_user.role == "subcontractor":
+        if current_user.subcontractor_id != subcontractor_id:
+            raise HTTPException(status_code=403, detail="Geen toegang tot deze onderaannemer")
+    elif current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    # Check subcontractor exists
+    sub = await db.subcontractors.find_one({"id": subcontractor_id})
+    if not sub:
+        raise HTTPException(status_code=404, detail="Onderaannemer niet gevonden")
+    
+    price_obj = SubcontractorPrice(
+        subcontractor_id=subcontractor_id,
+        title=price.title,
+        category=price.category,
+        price_type=price.price_type,
+        price=price.price,
+        price_min=price.price_min,
+        price_max=price.price_max
+    )
+    
+    price_doc = price_obj.model_dump()
+    price_doc["created_at"] = price_doc["created_at"].isoformat()
+    price_doc["updated_at"] = price_doc["updated_at"].isoformat()
+    
+    await db.subcontractor_prices.insert_one(price_doc)
+    
+    return {"message": "Prijs toegevoegd", "price_id": price_obj.id}
+
+@api_router.get("/subcontractors/{subcontractor_id}/prices")
+async def get_subcontractor_prices(subcontractor_id: str, current_user: User = Depends(get_current_user)):
+    """Get prices for a subcontractor"""
+    # Check access
+    if current_user.role == "subcontractor":
+        if current_user.subcontractor_id != subcontractor_id:
+            raise HTTPException(status_code=403, detail="Geen toegang tot deze onderaannemer")
+    elif current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    prices = await db.subcontractor_prices.find({"subcontractor_id": subcontractor_id}, {"_id": 0}).to_list(1000)
+    return prices
+
+# --- Property Management (Realtors & Investors) ---
+
+@api_router.post("/properties")
+async def create_property(prop: PropertyCreate, current_user: User = Depends(get_current_user)):
+    """Create a new property"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang tot panden")
+    
+    # Determine owner type
+    owner_type = current_user.role if current_user.role in ["realtor", "investor"] else "admin"
+    
+    # Check property limit for realtors
+    if current_user.role == "realtor":
+        realtor_profile = await db.realtor_profiles.find_one({"user_id": current_user.id})
+        if realtor_profile:
+            if realtor_profile.get("properties_used", 0) >= realtor_profile.get("property_limit", 5):
+                raise HTTPException(status_code=403, detail="Pand limiet bereikt. Upgrade naar een hoger abonnement.")
+    
+    # Process rooms - calculate areas
+    rooms = []
+    for room_data in prop.rooms:
+        room = PropertyRoom(
+            name=room_data.name,
+            room_type=room_data.room_type,
+            length=room_data.length,
+            width=room_data.width,
+            height=room_data.height,
+            windows=room_data.windows,
+            doors=room_data.doors,
+            notes=room_data.notes
+        )
+        # Calculate areas
+        room.floor_area = room.length * room.width
+        room.ceiling_area = room.length * room.width
+        room.wall_area = 2 * (room.length + room.width) * room.height
+        rooms.append(room)
+    
+    property_obj = Property(
+        owner_type=owner_type,
+        owner_id=current_user.id,
+        source_url=prop.source_url,
+        source_platform="manual",
+        address=prop.address,
+        postal_code=prop.postal_code,
+        city=prop.city,
+        living_area=prop.living_area,
+        plot_area=prop.plot_area,
+        bedrooms=prop.bedrooms,
+        bathrooms=prop.bathrooms,
+        construction_year=prop.construction_year,
+        epc_score=prop.epc_score,
+        epc_value=prop.epc_value,
+        asking_price=prop.asking_price,
+        rooms=rooms,
+        status="imported"
+    )
+    
+    prop_doc = property_obj.model_dump()
+    prop_doc["created_at"] = prop_doc["created_at"].isoformat()
+    prop_doc["updated_at"] = prop_doc["updated_at"].isoformat()
+    # Convert rooms to dicts
+    prop_doc["rooms"] = [r.model_dump() for r in rooms]
+    
+    await db.properties.insert_one(prop_doc)
+    
+    # Update realtor property count
+    if current_user.role == "realtor":
+        await db.realtor_profiles.update_one(
+            {"user_id": current_user.id},
+            {"$inc": {"properties_used": 1}}
+        )
+    
+    logger.info(f"Created property: {prop.address} by {current_user.id}")
+    
+    return {"message": "Pand aangemaakt", "property_id": property_obj.id}
+
+@api_router.get("/properties")
+async def get_properties(current_user: User = Depends(get_current_user)):
+    """Get properties based on user role"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang tot panden")
+    
+    filter_query = get_tenant_filter(current_user, "property")
+    
+    properties = await db.properties.find(filter_query, {"_id": 0}).to_list(1000)
+    
+    return properties
+
+@api_router.get("/properties/{property_id}")
+async def get_property(property_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific property"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang tot panden")
+    
+    base_filter = {"id": property_id}
+    tenant_filter = get_tenant_filter(current_user, "property")
+    
+    # Combine filters
+    if tenant_filter:
+        filter_query = {"$and": [base_filter, tenant_filter]}
+    else:
+        filter_query = base_filter
+    
+    prop = await db.properties.find_one(filter_query, {"_id": 0})
+    
+    if not prop:
+        raise HTTPException(status_code=404, detail="Pand niet gevonden")
+    
+    return prop
+
+@api_router.put("/properties/{property_id}")
+async def update_property(property_id: str, update: PropertyUpdate, current_user: User = Depends(get_current_user)):
+    """Update a property"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang tot panden")
+    
+    # Check ownership
+    tenant_filter = get_tenant_filter(current_user, "property")
+    filter_query = {"id": property_id}
+    if tenant_filter:
+        filter_query = {"$and": [{"id": property_id}, tenant_filter]}
+    
+    prop = await db.properties.find_one(filter_query)
+    if not prop:
+        raise HTTPException(status_code=404, detail="Pand niet gevonden")
+    
+    update_data = {k: v for k, v in update.model_dump().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.properties.update_one({"id": property_id}, {"$set": update_data})
+    
+    return {"message": "Pand bijgewerkt"}
+
+@api_router.delete("/properties/{property_id}")
+async def delete_property(property_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a property"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang tot panden")
+    
+    # Check ownership
+    tenant_filter = get_tenant_filter(current_user, "property")
+    filter_query = {"id": property_id}
+    if tenant_filter:
+        filter_query = {"$and": [{"id": property_id}, tenant_filter]}
+    
+    result = await db.properties.delete_one(filter_query)
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Pand niet gevonden")
+    
+    # Update realtor property count
+    if current_user.role == "realtor":
+        await db.realtor_profiles.update_one(
+            {"user_id": current_user.id},
+            {"$inc": {"properties_used": -1}}
+        )
+    
+    # Delete associated calculations
+    await db.renovation_calculations.delete_many({"property_id": property_id})
+    
+    return {"message": "Pand verwijderd"}
+
+@api_router.post("/properties/{property_id}/rooms")
+async def add_property_room(property_id: str, room: PropertyRoomCreate, current_user: User = Depends(get_current_user)):
+    """Add a room to a property"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    # Check ownership
+    tenant_filter = get_tenant_filter(current_user, "property")
+    filter_query = {"id": property_id}
+    if tenant_filter:
+        filter_query = {"$and": [{"id": property_id}, tenant_filter]}
+    
+    prop = await db.properties.find_one(filter_query)
+    if not prop:
+        raise HTTPException(status_code=404, detail="Pand niet gevonden")
+    
+    # Create room with calculated areas
+    room_obj = PropertyRoom(
+        name=room.name,
+        room_type=room.room_type,
+        length=room.length,
+        width=room.width,
+        height=room.height,
+        windows=room.windows,
+        doors=room.doors,
+        notes=room.notes
+    )
+    room_obj.floor_area = room_obj.length * room_obj.width
+    room_obj.ceiling_area = room_obj.length * room_obj.width
+    room_obj.wall_area = 2 * (room_obj.length + room_obj.width) * room_obj.height
+    
+    await db.properties.update_one(
+        {"id": property_id},
+        {
+            "$push": {"rooms": room_obj.model_dump()},
+            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+        }
+    )
+    
+    return {"message": "Kamer toegevoegd", "room_id": room_obj.id}
+
+@api_router.put("/properties/{property_id}/rooms/{room_id}")
+async def update_property_room(property_id: str, room_id: str, room: PropertyRoomCreate, current_user: User = Depends(get_current_user)):
+    """Update a room in a property"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    # Check ownership
+    tenant_filter = get_tenant_filter(current_user, "property")
+    filter_query = {"id": property_id}
+    if tenant_filter:
+        filter_query = {"$and": [{"id": property_id}, tenant_filter]}
+    
+    prop = await db.properties.find_one(filter_query)
+    if not prop:
+        raise HTTPException(status_code=404, detail="Pand niet gevonden")
+    
+    # Find and update room
+    rooms = prop.get("rooms", [])
+    room_found = False
+    for i, r in enumerate(rooms):
+        if r.get("id") == room_id:
+            rooms[i] = {
+                "id": room_id,
+                "name": room.name,
+                "room_type": room.room_type,
+                "length": room.length,
+                "width": room.width,
+                "height": room.height,
+                "floor_area": room.length * room.width,
+                "ceiling_area": room.length * room.width,
+                "wall_area": 2 * (room.length + room.width) * room.height,
+                "windows": room.windows,
+                "doors": room.doors,
+                "notes": room.notes
+            }
+            room_found = True
+            break
+    
+    if not room_found:
+        raise HTTPException(status_code=404, detail="Kamer niet gevonden")
+    
+    await db.properties.update_one(
+        {"id": property_id},
+        {
+            "$set": {
+                "rooms": rooms,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    return {"message": "Kamer bijgewerkt"}
+
+@api_router.delete("/properties/{property_id}/rooms/{room_id}")
+async def delete_property_room(property_id: str, room_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a room from a property"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    await db.properties.update_one(
+        {"id": property_id},
+        {
+            "$pull": {"rooms": {"id": room_id}},
+            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+        }
+    )
+    
+    return {"message": "Kamer verwijderd"}
+
+@api_router.post("/properties/{property_id}/share")
+async def share_property(property_id: str, user_id: str = Query(...), current_user: User = Depends(get_current_user)):
+    """Share a property with another user (admin or owner only)"""
+    if current_user.role not in ["admin", "realtor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    # Check ownership
+    if current_user.role == "realtor":
+        prop = await db.properties.find_one({"id": property_id, "owner_id": current_user.id})
+    else:
+        prop = await db.properties.find_one({"id": property_id})
+    
+    if not prop:
+        raise HTTPException(status_code=404, detail="Pand niet gevonden")
+    
+    # Add user to shared_with
+    await db.properties.update_one(
+        {"id": property_id},
+        {
+            "$addToSet": {"shared_with": user_id},
+            "$set": {
+                "status": "shared",
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    return {"message": "Pand gedeeld"}
+
+# --- Work Item Labels (voor renovatiecalculator) ---
+
+@api_router.put("/work-items/{work_item_id}/label")
+async def update_work_item_label(
+    work_item_id: str, 
+    component_label: str = Query(..., description="vloer, muur, plafond, elektriciteit, sanitair, verwarming, isolatie, overig"),
+    room_types: str = Query("all", description="Komma-gescheiden lijst: all, bathroom, kitchen, bedroom, living, hallway"),
+    current_user: User = Depends(get_current_user)
+):
+    """Update component label for a work item (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can update work item labels")
+    
+    valid_labels = ["vloer", "muur", "plafond", "elektriciteit", "sanitair", "verwarming", "isolatie", "overig"]
+    if component_label not in valid_labels:
+        raise HTTPException(status_code=400, detail=f"Ongeldig label. Kies uit: {', '.join(valid_labels)}")
+    
+    room_types_list = [rt.strip() for rt in room_types.split(",")]
+    
+    result = await db.work_items.update_one(
+        {"id": work_item_id},
+        {"$set": {
+            "component_label": component_label,
+            "room_types": room_types_list
+        }}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Werkpost niet gevonden")
+    
+    return {"message": "Label bijgewerkt"}
+
+# --- Renovation Calculator ---
+
+@api_router.post("/properties/{property_id}/calculate")
+async def calculate_renovation(property_id: str, current_user: User = Depends(get_current_user)):
+    """Generate renovation calculation for a property"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    # Get property
+    tenant_filter = get_tenant_filter(current_user, "property")
+    filter_query = {"id": property_id}
+    if tenant_filter:
+        filter_query = {"$and": [{"id": property_id}, tenant_filter]}
+    
+    prop = await db.properties.find_one(filter_query, {"_id": 0})
+    if not prop:
+        raise HTTPException(status_code=404, detail="Pand niet gevonden")
+    
+    rooms = prop.get("rooms", [])
+    if not rooms:
+        raise HTTPException(status_code=400, detail="Voeg eerst kamers toe aan het pand")
+    
+    # Get all work items with labels
+    work_items = await db.work_items.find(
+        {"component_label": {"$exists": True, "$ne": None}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    if not work_items:
+        raise HTTPException(status_code=400, detail="Geen werkposten met labels gevonden. Voeg eerst labels toe aan werkposten.")
+    
+    # Group work items by component
+    work_items_by_component = {}
+    for wi in work_items:
+        label = wi.get("component_label", "overig")
+        if label not in work_items_by_component:
+            work_items_by_component[label] = []
+        work_items_by_component[label].append(wi)
+    
+    # Calculate per room
+    room_calculations = []
+    total = 0.0
+    
+    for room in rooms:
+        room_calc = RoomCalculation(
+            room_id=room.get("id", str(uuid.uuid4())),
+            room_name=room.get("name", "Onbekend"),
+            floor_items=[],
+            wall_items=[],
+            ceiling_items=[],
+            other_items=[],
+            subtotal=0.0
+        )
+        
+        room_type = room.get("room_type", "other")
+        floor_area = room.get("floor_area", 0)
+        ceiling_area = room.get("ceiling_area", 0)
+        wall_area = room.get("wall_area", 0)
+        
+        # Floor items
+        for wi in work_items_by_component.get("vloer", []):
+            # Check if this work item applies to this room type
+            applicable_rooms = wi.get("room_types", ["all"])
+            if "all" not in applicable_rooms and room_type not in applicable_rooms:
+                continue
+            
+            quantity = floor_area
+            unit = wi.get("unit", "m²")
+            price = wi.get("price", 0)
+            item_total = quantity * price
+            
+            room_calc.floor_items.append(CalculationItem(
+                work_item_id=wi.get("id"),
+                title=wi.get("title", ""),
+                quantity=round(quantity, 2),
+                unit=unit,
+                unit_price=price,
+                total=round(item_total, 2),
+                included=True
+            ))
+            room_calc.subtotal += item_total
+        
+        # Wall items
+        for wi in work_items_by_component.get("muur", []):
+            applicable_rooms = wi.get("room_types", ["all"])
+            if "all" not in applicable_rooms and room_type not in applicable_rooms:
+                continue
+            
+            quantity = wall_area
+            unit = wi.get("unit", "m²")
+            price = wi.get("price", 0)
+            item_total = quantity * price
+            
+            room_calc.wall_items.append(CalculationItem(
+                work_item_id=wi.get("id"),
+                title=wi.get("title", ""),
+                quantity=round(quantity, 2),
+                unit=unit,
+                unit_price=price,
+                total=round(item_total, 2),
+                included=True
+            ))
+            room_calc.subtotal += item_total
+        
+        # Ceiling items
+        for wi in work_items_by_component.get("plafond", []):
+            applicable_rooms = wi.get("room_types", ["all"])
+            if "all" not in applicable_rooms and room_type not in applicable_rooms:
+                continue
+            
+            quantity = ceiling_area
+            unit = wi.get("unit", "m²")
+            price = wi.get("price", 0)
+            item_total = quantity * price
+            
+            room_calc.ceiling_items.append(CalculationItem(
+                work_item_id=wi.get("id"),
+                title=wi.get("title", ""),
+                quantity=round(quantity, 2),
+                unit=unit,
+                unit_price=price,
+                total=round(item_total, 2),
+                included=True
+            ))
+            room_calc.subtotal += item_total
+        
+        # Other items (elektriciteit, sanitair, verwarming, isolatie, overig)
+        for label in ["elektriciteit", "sanitair", "verwarming", "isolatie", "overig"]:
+            for wi in work_items_by_component.get(label, []):
+                applicable_rooms = wi.get("room_types", ["all"])
+                if "all" not in applicable_rooms and room_type not in applicable_rooms:
+                    continue
+                
+                # For non-surface items, use quantity 1 or based on unit
+                unit = wi.get("unit", "stuk")
+                if unit == "m²":
+                    quantity = floor_area
+                elif unit == "lm":
+                    # Estimate running meters based on perimeter
+                    quantity = 2 * (room.get("length", 0) + room.get("width", 0))
+                else:
+                    quantity = 1
+                
+                price = wi.get("price", 0)
+                item_total = quantity * price
+                
+                room_calc.other_items.append(CalculationItem(
+                    work_item_id=wi.get("id"),
+                    title=f"{wi.get('title', '')} ({label})",
+                    quantity=round(quantity, 2),
+                    unit=unit,
+                    unit_price=price,
+                    total=round(item_total, 2),
+                    included=True
+                ))
+                room_calc.subtotal += item_total
+        
+        room_calc.subtotal = round(room_calc.subtotal, 2)
+        total += room_calc.subtotal
+        room_calculations.append(room_calc)
+    
+    # Create calculation object
+    calculation = RenovationCalculation(
+        property_id=property_id,
+        calculated_by=current_user.id,
+        room_calculations=room_calculations,
+        total_min=round(total * 0.85, 2),  # 15% onder
+        total_realistic=round(total, 2),
+        total_max=round(total * 1.20, 2),  # 20% boven
+        estimated_duration_weeks=max(2, int(total / 10000)),  # Rough estimate
+        estimated_epc_improvement=""
+    )
+    
+    calc_doc = calculation.model_dump()
+    calc_doc["created_at"] = calc_doc["created_at"].isoformat()
+    calc_doc["updated_at"] = calc_doc["updated_at"].isoformat()
+    # Convert room calculations
+    calc_doc["room_calculations"] = [
+        {
+            **rc.model_dump(),
+            "floor_items": [item.model_dump() for item in rc.floor_items],
+            "wall_items": [item.model_dump() for item in rc.wall_items],
+            "ceiling_items": [item.model_dump() for item in rc.ceiling_items],
+            "other_items": [item.model_dump() for item in rc.other_items]
+        }
+        for rc in room_calculations
+    ]
+    
+    # Remove old calculation if exists
+    await db.renovation_calculations.delete_many({"property_id": property_id})
+    
+    # Insert new calculation
+    await db.renovation_calculations.insert_one(calc_doc)
+    
+    # Update property status and link
+    await db.properties.update_one(
+        {"id": property_id},
+        {"$set": {
+            "status": "calculated",
+            "renovation_calculation_id": calculation.id,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    logger.info(f"Calculated renovation for property {property_id}: €{total:.2f}")
+    
+    return {
+        "calculation_id": calculation.id,
+        "total_min": calculation.total_min,
+        "total_realistic": calculation.total_realistic,
+        "total_max": calculation.total_max,
+        "estimated_duration_weeks": calculation.estimated_duration_weeks,
+        "rooms_calculated": len(room_calculations)
+    }
+
+@api_router.get("/properties/{property_id}/calculation")
+async def get_renovation_calculation(property_id: str, current_user: User = Depends(get_current_user)):
+    """Get renovation calculation for a property"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    # Check property access
+    tenant_filter = get_tenant_filter(current_user, "property")
+    filter_query = {"id": property_id}
+    if tenant_filter:
+        filter_query = {"$and": [{"id": property_id}, tenant_filter]}
+    
+    prop = await db.properties.find_one(filter_query)
+    if not prop:
+        raise HTTPException(status_code=404, detail="Pand niet gevonden")
+    
+    calc = await db.renovation_calculations.find_one({"property_id": property_id}, {"_id": 0})
+    if not calc:
+        raise HTTPException(status_code=404, detail="Geen berekening gevonden. Start eerst een berekening.")
+    
+    return calc
+
+@api_router.put("/properties/{property_id}/calculation/items/{item_id}")
+async def toggle_calculation_item(
+    property_id: str, 
+    item_id: str, 
+    included: bool = Query(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Toggle a calculation item on/off and recalculate totals"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    # Get calculation
+    calc = await db.renovation_calculations.find_one({"property_id": property_id})
+    if not calc:
+        raise HTTPException(status_code=404, detail="Berekening niet gevonden")
+    
+    # Find and update item
+    room_calculations = calc.get("room_calculations", [])
+    item_found = False
+    new_total = 0.0
+    
+    for room_calc in room_calculations:
+        room_subtotal = 0.0
+        for item_list_name in ["floor_items", "wall_items", "ceiling_items", "other_items"]:
+            for item in room_calc.get(item_list_name, []):
+                if item.get("id") == item_id:
+                    item["included"] = included
+                    item_found = True
+                
+                if item.get("included", True):
+                    room_subtotal += item.get("total", 0)
+        
+        room_calc["subtotal"] = round(room_subtotal, 2)
+        new_total += room_subtotal
+    
+    if not item_found:
+        raise HTTPException(status_code=404, detail="Item niet gevonden")
+    
+    # Update calculation
+    await db.renovation_calculations.update_one(
+        {"property_id": property_id},
+        {"$set": {
+            "room_calculations": room_calculations,
+            "total_min": round(new_total * 0.85, 2),
+            "total_realistic": round(new_total, 2),
+            "total_max": round(new_total * 1.20, 2),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {
+        "message": "Item bijgewerkt",
+        "total_realistic": round(new_total, 2)
+    }
+
+# --- Realtor/Investor Login ---
+
+@api_router.post("/auth/tenant/login")
+async def tenant_login(username: str, password: str, response: Response):
+    """Login for realtors and investors"""
+    logger.info(f"Tenant login attempt for: {username}")
+    
+    # Find user
+    user = await db.users.find_one({"username": username, "role": {"$in": ["realtor", "investor", "subcontractor"]}})
+    
+    if not user or not user.get("password_hash"):
+        raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
+    
+    if not verify_password(password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
+    
+    # Create session
+    session_token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    session_doc = {
+        "user_id": user["_id"],
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.sessions.insert_one(session_doc)
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=7*24*60*60,
+        path="/"
+    )
+    
+    user_response = {
+        "id": user["_id"],
+        "username": user.get("username"),
+        "email": user.get("email"),
+        "name": user.get("name"),
+        "role": user.get("role"),
+        "created_at": user.get("created_at")
+    }
+    
+    return {"user": user_response, "session_token": session_token}
+
 # Include router
 app.include_router(api_router)
 
