@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../App';
-import { FileText, FileSpreadsheet, Calendar, Package, Users, LogOut, LayoutDashboard, Menu, X, TrendingUp, UserCog, ShieldCheck, PenTool } from 'lucide-react';
+import { FileText, FileSpreadsheet, Calendar, Package, Users, LogOut, LayoutDashboard, Menu, X, TrendingUp, UserCog, ShieldCheck, PenTool, Building2 } from 'lucide-react';
 import CelebrationModal from './CelebrationModal';
 
 export default function DashboardLayout({ children, showBackToDashboard = false }) {
@@ -10,19 +10,31 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
-  const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, testId: 'nav-dashboard', adminOnly: false },
-    { name: 'Leads', path: '/leads', icon: Users, testId: 'nav-leads', adminOnly: true },
-    { name: 'Offertes', path: '/quotes', icon: FileText, testId: 'nav-quotes', adminOnly: true },
-    { name: 'Projecten', path: '/projects', icon: FileSpreadsheet, testId: 'nav-projects', adminOnly: false },
-    { name: 'Facturen', path: '/invoices', icon: FileText, testId: 'nav-invoices', adminOnly: true },
-    { name: 'Financiën', path: '/finances', icon: TrendingUp, testId: 'nav-finances', adminOnly: true },
-    { name: 'Kalender', path: '/calendar', icon: Calendar, testId: 'nav-calendar', adminOnly: true },
-    { name: 'Materialen', path: '/materials', icon: Package, testId: 'nav-materials', adminOnly: true },
-    { name: 'Configurator', path: '/configurator', icon: PenTool, testId: 'nav-configurator', adminOnly: true, badge: 'PROTO' },
-    { name: 'Werkmannen', path: '/workers', icon: UserCog, testId: 'nav-workers', adminOnly: true },
-    { name: 'Beheerders', path: '/admins', icon: ShieldCheck, testId: 'nav-admins', adminOnly: true },
-  ];
+  // Different nav items based on role
+  const getNavItems = () => {
+    if (user?.role === 'realtor' || user?.role === 'investor') {
+      return [
+        { name: 'Mijn Panden', path: '/realtor', icon: Building2, testId: 'nav-properties', adminOnly: false },
+      ];
+    }
+    
+    return [
+      { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, testId: 'nav-dashboard', adminOnly: false },
+      { name: 'Leads', path: '/leads', icon: Users, testId: 'nav-leads', adminOnly: true },
+      { name: 'Offertes', path: '/quotes', icon: FileText, testId: 'nav-quotes', adminOnly: true },
+      { name: 'Projecten', path: '/projects', icon: FileSpreadsheet, testId: 'nav-projects', adminOnly: false },
+      { name: 'Facturen', path: '/invoices', icon: FileText, testId: 'nav-invoices', adminOnly: true },
+      { name: 'Financiën', path: '/finances', icon: TrendingUp, testId: 'nav-finances', adminOnly: true },
+      { name: 'Kalender', path: '/calendar', icon: Calendar, testId: 'nav-calendar', adminOnly: true },
+      { name: 'Materialen', path: '/materials', icon: Package, testId: 'nav-materials', adminOnly: true },
+      { name: 'Configurator', path: '/configurator', icon: PenTool, testId: 'nav-configurator', adminOnly: true, badge: 'PROTO' },
+      { name: 'Werkmannen', path: '/workers', icon: UserCog, testId: 'nav-workers', adminOnly: true },
+      { name: 'Beheerders', path: '/admins', icon: ShieldCheck, testId: 'nav-admins', adminOnly: true },
+      { name: 'Tenants', path: '/tenants', icon: Building2, testId: 'nav-tenants', adminOnly: true },
+    ];
+  };
+
+  const navItems = getNavItems();
 
   const handleLogout = async () => {
     await logout();
