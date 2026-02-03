@@ -1,0 +1,581 @@
+"""
+Multi-Tenant Platform Tests
+Tests for: Realtors, Investors, Subcontractors, Properties, Rooms, Renovation Calculator
+"""
+import pytest
+import requests
+import os
+import uuid
+
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+
+# Test credentials
+ADMIN_USERNAME = "test"
+ADMIN_PASSWORD = "test123"
+REALTOR_USERNAME = "immogent"
+REALTOR_PASSWORD = "test123"
+
+
+class TestAdminLogin:
+    """Test admin login functionality"""
+    
+    def test_admin_login_success(self):
+        """Admin can login with valid credentials"""
+        response = requests.post(
+            f"{BASE_URL}/api/auth/admin/login",
+            params={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD}
+        )
+        assert response.status_code == 200, f"Admin login failed: {response.text}"
+        data = response.json()
+        assert "user" in data
+        assert "session_token" in data
+        assert data["user"]["role"] == "admin"
+        return data["session_token"]
+
+
+class TestRealtorManagement:
+    """Test realtor CRUD operations (admin only)"""
+    
+    @pytest.fixture
+    def admin_session(self):
+        """Get admin session token"""
+        response = requests.post(
+            f"{BASE_URL}/api/auth/admin/login",
+            params={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD}
+        )
+        assert response.status_code == 200
+        return response.json()["session_token"]
+    
+    def test_create_realtor(self, admin_session):
+        """Admin can create a new realtor"""
+        unique_id = str(uuid.uuid4())[:8]
+        realtor_data = {
+            "company_name": f"TEST_Makelaar_{unique_id}",
+            "contact_name": f"Test Contact {unique_id}",
+            "email": f"test_{unique_id}@makelaar.be",
+            "phone": "0471234567",
+            "username": f"test_realtor_{unique_id}",
+            "password": "testpass123"
+        }
+        
+        response = requests.post(
+            f"{BASE_URL}/api/realtors",
+            json=realtor_data,
+            headers={"Authorization": f"Bearer {admin_session}"}
+        )
+        
+        assert response.status_code == 200, f"Create realtor failed: {response.text}"
+        data = response.json()
+        assert "realtor_id" in data
+        assert "username" in data
+        assert data["username"] == realtor_data["username"]
+        
+        # Cleanup - delete the realtor
+        delete_response = requests.delete(
+            f"{BASE_URL}/api/realtors/{data['realtor_id']}",
+            headers={"Authorization": f"Bearer {admin_session}"}
+        )
+        assert delete_response.status_code == 200
+    
+    def test_get_realtors(self, admin_session):
+        """Admin can list all realtors"""
+        response = requests.get(
+            f"{BASE_URL}/api/realtors",
+            headers={"Authorization": f"Bearer {admin_session}"}
+        )
+        
+        assert response.status_code == 200, f"Get realtors failed: {response.text}"
+        data = response.json()
+        assert isinstance(data, list)
+
+
+class TestInvestorManagement:
+    """Test investor CRUD operations (admin only)"""
+    
+    @pytest.fixture
+    def admin_session(self):
+        """Get admin session token"""
+        response = requests.post(
+            f"{BASE_URL}/api/auth/admin/login",
+            params={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD}
+        )
+        assert response.status_code == 200
+        return response.json()["session_token"]
+    
+    def test_create_investor(self, admin_session):
+        """Admin can create a new investor"""
+        unique_id = str(uuid.uuid4())[:8]
+        investor_data = {
+            "name": f"TEST_Investor_{unique_id}",
+            "email": f"test_{unique_id}@investor.be",
+            "phone": "0471234567",
+            "username": f"test_investor_{unique_id}",
+            "password": "testpass123",
+            "target_roi": 12.5
+        }
+        
+        response = requests.post(
+            f"{BASE_URL}/api/investors",
+            json=investor_data,
+            headers={"Authorization": f"Bearer {admin_session}"}
+        )
+        
+        assert response.status_code == 200, f"Create investor failed: {response.text}"
+        data = response.json()
+        assert "investor_id" in data
+        assert "username" in data
+        assert data["username"] == investor_data["username"]
+    
+    def test_get_investors(self, admin_session):
+        """Admin can list all investors"""
+        response = requests.get(
+            f"{BASE_URL}/api/investors",
+            headers={"Authorization": f"Bearer {admin_session}"}
+        )
+        
+        assert response.status_code == 200, f"Get investors failed: {response.text}"
+        data = response.json()
+        assert isinstance(data, list)
+
+
+class TestSubcontractorManagement:
+    """Test subcontractor CRUD operations (admin only)"""
+    
+    @pytest.fixture
+    def admin_session(self):
+        """Get admin session token"""
+        response = requests.post(
+            f"{BASE_URL}/api/auth/admin/login",
+            params={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD}
+        )
+        assert response.status_code == 200
+        return response.json()["session_token"]
+    
+    def test_create_subcontractor(self, admin_session):
+        """Admin can create a new subcontractor"""
+        unique_id = str(uuid.uuid4())[:8]
+        subcontractor_data = {
+            "company_name": f"TEST_Dakwerken_{unique_id}",
+            "contact_name": f"Test Dakwerker {unique_id}",
+            "email": f"test_{unique_id}@dakwerken.be",
+            "phone": "0471234567",
+            "vat_number": "BE0123456789",
+            "category": "dak"
+        }
+        
+        response = requests.post(
+            f"{BASE_URL}/api/subcontractors",
+            json=subcontractor_data,
+            headers={"Authorization": f"Bearer {admin_session}"}
+        )
+        
+        assert response.status_code == 200, f"Create subcontractor failed: {response.text}"
+        data = response.json()
+        assert "subcontractor_id" in data
+        assert "message" in data
+    
+    def test_get_subcontractors(self, admin_session):
+        """Admin can list all subcontractors"""
+        response = requests.get(
+            f"{BASE_URL}/api/subcontractors",
+            headers={"Authorization": f"Bearer {admin_session}"}
+        )
+        
+        assert response.status_code == 200, f"Get subcontractors failed: {response.text}"
+        data = response.json()
+        assert isinstance(data, list)
+
+
+class TestTenantLogin:
+    """Test tenant (realtor/investor) login"""
+    
+    def test_realtor_login_success(self):
+        """Realtor can login with valid credentials"""
+        response = requests.post(
+            f"{BASE_URL}/api/auth/tenant/login",
+            params={"username": REALTOR_USERNAME, "password": REALTOR_PASSWORD}
+        )
+        
+        assert response.status_code == 200, f"Realtor login failed: {response.text}"
+        data = response.json()
+        assert "user" in data
+        assert "session_token" in data
+        assert data["user"]["role"] == "realtor"
+        return data["session_token"]
+    
+    def test_realtor_login_invalid_credentials(self):
+        """Realtor login fails with invalid credentials"""
+        response = requests.post(
+            f"{BASE_URL}/api/auth/tenant/login",
+            params={"username": "invalid_user", "password": "wrongpass"}
+        )
+        
+        assert response.status_code == 401
+
+
+class TestPropertyManagement:
+    """Test property CRUD operations"""
+    
+    @pytest.fixture
+    def realtor_session(self):
+        """Get realtor session token"""
+        response = requests.post(
+            f"{BASE_URL}/api/auth/tenant/login",
+            params={"username": REALTOR_USERNAME, "password": REALTOR_PASSWORD}
+        )
+        assert response.status_code == 200, f"Realtor login failed: {response.text}"
+        return response.json()["session_token"]
+    
+    @pytest.fixture
+    def admin_session(self):
+        """Get admin session token"""
+        response = requests.post(
+            f"{BASE_URL}/api/auth/admin/login",
+            params={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD}
+        )
+        assert response.status_code == 200
+        return response.json()["session_token"]
+    
+    def test_realtor_create_property(self, realtor_session):
+        """Realtor can create a new property"""
+        unique_id = str(uuid.uuid4())[:8]
+        property_data = {
+            "address": f"TEST_Teststraat {unique_id}",
+            "postal_code": "9000",
+            "city": "Gent",
+            "living_area": 150.0,
+            "plot_area": 200.0,
+            "bedrooms": 3,
+            "bathrooms": 2,
+            "construction_year": 1990,
+            "epc_score": "D",
+            "epc_value": 350.0,
+            "asking_price": 350000.0,
+            "rooms": []
+        }
+        
+        response = requests.post(
+            f"{BASE_URL}/api/properties",
+            json=property_data,
+            headers={"Authorization": f"Bearer {realtor_session}"}
+        )
+        
+        assert response.status_code == 200, f"Create property failed: {response.text}"
+        data = response.json()
+        assert "property_id" in data
+        return data["property_id"]
+    
+    def test_realtor_get_own_properties(self, realtor_session):
+        """Realtor can view their own properties"""
+        response = requests.get(
+            f"{BASE_URL}/api/properties",
+            headers={"Authorization": f"Bearer {realtor_session}"}
+        )
+        
+        assert response.status_code == 200, f"Get properties failed: {response.text}"
+        data = response.json()
+        assert isinstance(data, list)
+        
+        # Verify tenant isolation - all properties should belong to this realtor
+        for prop in data:
+            assert prop.get("owner_type") == "realtor"
+    
+    def test_admin_can_see_all_properties(self, admin_session):
+        """Admin can see all properties"""
+        response = requests.get(
+            f"{BASE_URL}/api/properties",
+            headers={"Authorization": f"Bearer {admin_session}"}
+        )
+        
+        assert response.status_code == 200, f"Get properties failed: {response.text}"
+        data = response.json()
+        assert isinstance(data, list)
+
+
+class TestPropertyRooms:
+    """Test adding rooms to properties"""
+    
+    @pytest.fixture
+    def realtor_session(self):
+        """Get realtor session token"""
+        response = requests.post(
+            f"{BASE_URL}/api/auth/tenant/login",
+            params={"username": REALTOR_USERNAME, "password": REALTOR_PASSWORD}
+        )
+        assert response.status_code == 200
+        return response.json()["session_token"]
+    
+    @pytest.fixture
+    def test_property(self, realtor_session):
+        """Create a test property and return its ID"""
+        unique_id = str(uuid.uuid4())[:8]
+        property_data = {
+            "address": f"TEST_Kamerstraat {unique_id}",
+            "postal_code": "9000",
+            "city": "Gent",
+            "living_area": 100.0,
+            "bedrooms": 2,
+            "bathrooms": 1,
+            "asking_price": 250000.0,
+            "rooms": []
+        }
+        
+        response = requests.post(
+            f"{BASE_URL}/api/properties",
+            json=property_data,
+            headers={"Authorization": f"Bearer {realtor_session}"}
+        )
+        assert response.status_code == 200
+        return response.json()["property_id"]
+    
+    def test_add_room_to_property(self, realtor_session, test_property):
+        """Realtor can add a room to their property"""
+        room_data = {
+            "name": "Woonkamer",
+            "room_type": "living",
+            "length": 5.0,
+            "width": 4.0,
+            "height": 2.7,
+            "windows": 2,
+            "doors": 1,
+            "notes": "Grote woonkamer met veel licht"
+        }
+        
+        response = requests.post(
+            f"{BASE_URL}/api/properties/{test_property}/rooms",
+            json=room_data,
+            headers={"Authorization": f"Bearer {realtor_session}"}
+        )
+        
+        assert response.status_code == 200, f"Add room failed: {response.text}"
+        data = response.json()
+        assert "room_id" in data
+        
+        # Verify room was added by getting the property
+        prop_response = requests.get(
+            f"{BASE_URL}/api/properties/{test_property}",
+            headers={"Authorization": f"Bearer {realtor_session}"}
+        )
+        assert prop_response.status_code == 200
+        prop_data = prop_response.json()
+        assert len(prop_data.get("rooms", [])) >= 1
+        
+        # Verify area calculations
+        room = prop_data["rooms"][-1]
+        expected_floor_area = 5.0 * 4.0  # 20 m²
+        expected_wall_area = 2 * (5.0 + 4.0) * 2.7  # 48.6 m²
+        assert room.get("floor_area") == expected_floor_area
+        assert room.get("wall_area") == expected_wall_area
+
+
+class TestRenovationCalculator:
+    """Test renovation calculation functionality"""
+    
+    @pytest.fixture
+    def admin_session(self):
+        """Get admin session token"""
+        response = requests.post(
+            f"{BASE_URL}/api/auth/admin/login",
+            params={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD}
+        )
+        assert response.status_code == 200
+        return response.json()["session_token"]
+    
+    @pytest.fixture
+    def realtor_session(self):
+        """Get realtor session token"""
+        response = requests.post(
+            f"{BASE_URL}/api/auth/tenant/login",
+            params={"username": REALTOR_USERNAME, "password": REALTOR_PASSWORD}
+        )
+        assert response.status_code == 200
+        return response.json()["session_token"]
+    
+    def test_get_existing_calculation(self, realtor_session):
+        """Test getting an existing renovation calculation"""
+        # First get properties to find one with a calculation
+        response = requests.get(
+            f"{BASE_URL}/api/properties",
+            headers={"Authorization": f"Bearer {realtor_session}"}
+        )
+        assert response.status_code == 200
+        properties = response.json()
+        
+        # Find a property with a calculation
+        property_with_calc = None
+        for prop in properties:
+            if prop.get("renovation_calculation_id"):
+                property_with_calc = prop
+                break
+        
+        if property_with_calc:
+            calc_response = requests.get(
+                f"{BASE_URL}/api/properties/{property_with_calc['id']}/calculation",
+                headers={"Authorization": f"Bearer {realtor_session}"}
+            )
+            assert calc_response.status_code == 200
+            calc_data = calc_response.json()
+            assert "total_realistic" in calc_data
+    
+    def test_calculate_renovation_requires_rooms(self, realtor_session):
+        """Renovation calculation requires rooms to be added first"""
+        # Create a property without rooms
+        unique_id = str(uuid.uuid4())[:8]
+        property_data = {
+            "address": f"TEST_Leegstraat {unique_id}",
+            "postal_code": "9000",
+            "city": "Gent",
+            "living_area": 100.0,
+            "asking_price": 200000.0,
+            "rooms": []
+        }
+        
+        create_response = requests.post(
+            f"{BASE_URL}/api/properties",
+            json=property_data,
+            headers={"Authorization": f"Bearer {realtor_session}"}
+        )
+        assert create_response.status_code == 200
+        property_id = create_response.json()["property_id"]
+        
+        # Try to calculate - should fail because no rooms
+        calc_response = requests.post(
+            f"{BASE_URL}/api/properties/{property_id}/calculate",
+            headers={"Authorization": f"Bearer {realtor_session}"}
+        )
+        
+        # Should return 400 because no rooms
+        assert calc_response.status_code == 400
+        assert "kamers" in calc_response.json().get("detail", "").lower()
+
+
+class TestWorkItemLabels:
+    """Test work item component labels for renovation calculator"""
+    
+    @pytest.fixture
+    def admin_session(self):
+        """Get admin session token"""
+        response = requests.post(
+            f"{BASE_URL}/api/auth/admin/login",
+            params={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD}
+        )
+        assert response.status_code == 200
+        return response.json()["session_token"]
+    
+    def test_get_work_items(self, admin_session):
+        """Admin can get work items"""
+        response = requests.get(
+            f"{BASE_URL}/api/work-items",
+            headers={"Authorization": f"Bearer {admin_session}"}
+        )
+        
+        assert response.status_code == 200, f"Get work items failed: {response.text}"
+        data = response.json()
+        assert isinstance(data, list)
+    
+    def test_update_work_item_label_invalid(self, admin_session):
+        """Invalid component label is rejected"""
+        # First get a work item
+        response = requests.get(
+            f"{BASE_URL}/api/work-items",
+            headers={"Authorization": f"Bearer {admin_session}"}
+        )
+        
+        if response.status_code == 200 and len(response.json()) > 0:
+            work_item_id = response.json()[0]["id"]
+            
+            # Try to set invalid label
+            label_response = requests.put(
+                f"{BASE_URL}/api/work-items/{work_item_id}/label",
+                params={"component_label": "invalid_label", "room_types": "all"},
+                headers={"Authorization": f"Bearer {admin_session}"}
+            )
+            
+            assert label_response.status_code == 400
+
+
+class TestTenantIsolation:
+    """Test that tenants can only see their own data"""
+    
+    @pytest.fixture
+    def admin_session(self):
+        """Get admin session token"""
+        response = requests.post(
+            f"{BASE_URL}/api/auth/admin/login",
+            params={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD}
+        )
+        assert response.status_code == 200
+        return response.json()["session_token"]
+    
+    @pytest.fixture
+    def realtor_session(self):
+        """Get realtor session token"""
+        response = requests.post(
+            f"{BASE_URL}/api/auth/tenant/login",
+            params={"username": REALTOR_USERNAME, "password": REALTOR_PASSWORD}
+        )
+        assert response.status_code == 200
+        return response.json()["session_token"]
+    
+    def test_realtor_cannot_access_admin_endpoints(self, realtor_session):
+        """Realtor cannot access admin-only endpoints"""
+        # Try to create a realtor (admin only)
+        response = requests.post(
+            f"{BASE_URL}/api/realtors",
+            json={
+                "company_name": "Unauthorized",
+                "contact_name": "Test",
+                "email": "test@test.be",
+                "phone": "0471234567",
+                "username": "unauthorized",
+                "password": "test123"
+            },
+            headers={"Authorization": f"Bearer {realtor_session}"}
+        )
+        
+        assert response.status_code == 403
+    
+    def test_realtor_only_sees_own_properties(self, realtor_session, admin_session):
+        """Realtor only sees their own properties, not admin's"""
+        # Get realtor's properties
+        realtor_props = requests.get(
+            f"{BASE_URL}/api/properties",
+            headers={"Authorization": f"Bearer {realtor_session}"}
+        )
+        assert realtor_props.status_code == 200
+        
+        # All properties should belong to this realtor
+        for prop in realtor_props.json():
+            assert prop.get("owner_type") == "realtor"
+
+
+# Cleanup test data
+class TestCleanup:
+    """Cleanup test data created during tests"""
+    
+    @pytest.fixture
+    def admin_session(self):
+        """Get admin session token"""
+        response = requests.post(
+            f"{BASE_URL}/api/auth/admin/login",
+            params={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD}
+        )
+        assert response.status_code == 200
+        return response.json()["session_token"]
+    
+    def test_cleanup_test_properties(self, admin_session):
+        """Clean up TEST_ prefixed properties"""
+        response = requests.get(
+            f"{BASE_URL}/api/properties",
+            headers={"Authorization": f"Bearer {admin_session}"}
+        )
+        
+        if response.status_code == 200:
+            for prop in response.json():
+                if prop.get("address", "").startswith("TEST_"):
+                    requests.delete(
+                        f"{BASE_URL}/api/properties/{prop['id']}",
+                        headers={"Authorization": f"Bearer {admin_session}"}
+                    )
+        
+        assert True  # Cleanup always passes
