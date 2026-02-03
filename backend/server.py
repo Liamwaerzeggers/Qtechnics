@@ -5045,6 +5045,50 @@ async def delete_design_file(
 
 # ============= ADMIN MANAGEMENT ROUTES =============
 
+@api_router.post("/setup/first-admin")
+async def create_first_admin(admin_data: AdminCreate):
+    """Create the first admin account - only works if no admins exist yet"""
+    # Check if any admins already exist
+    admin_count = await db.users.count_documents({"role": "admin"})
+    if admin_count > 0:
+        raise HTTPException(status_code=403, detail="Er bestaat al een admin account. Log in om nieuwe admins toe te voegen.")
+    
+    # Check if username already exists
+    existing_user = await db.users.find_one({"username": admin_data.username}, {"_id": 0})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Gebruikersnaam is al in gebruik")
+    
+    # Create first admin user
+    admin_id = f"ADMIN-{str(uuid.uuid4())[:8].upper()}"
+    admin_doc = {
+        "id": admin_id,
+        "username": admin_data.username,
+        "email": admin_data.email,
+        "name": admin_data.name,
+        "role": "admin",
+        "password_hash": hash_password(admin_data.password),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.insert_one({"_id": admin_id, **admin_doc})
+    
+    logger.info(f"First admin account created: {admin_data.username}")
+    
+    # Remove password_hash from response
+    admin_doc.pop("password_hash")
+    
+    return {"message": "Eerste admin account aangemaakt! U kunt nu inloggen.", "admin": admin_doc}
+
+@api_router.get("/setup/status")
+async def check_setup_status():
+    """Check if the system has been set up (has admins)"""
+    admin_count = await db.users.count_documents({"role": "admin"})
+    return {
+        "has_admins": admin_count > 0,
+        "admin_count": admin_count,
+        "needs_setup": admin_count == 0
+    }
+
 @api_router.post("/admins")
 async def create_admin(admin_data: AdminCreate, current_user: User = Depends(get_current_user)):
     """Create a new admin account with username/password (super admin only)"""
