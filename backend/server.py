@@ -228,6 +228,9 @@ class WorkItem(BaseModel):
     unit: str  # Eenheid: m², lm, stuks, uur
     price: float  # Verkoopprijs ex BTW
     category: Optional[str] = None  # e.g., "Vloer", "Muur", "Plafond"
+    # Multi-tenant: component labels voor renovatiecalculator
+    component_label: Optional[str] = None  # "vloer" | "muur" | "plafond" | "elektriciteit" | "sanitair" | "verwarming" | "isolatie" | "overig"
+    room_types: List[str] = Field(default_factory=lambda: ["all"])  # ["all"] of ["bathroom", "kitchen"] etc.
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
 
