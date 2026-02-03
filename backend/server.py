@@ -7471,11 +7471,23 @@ async def scrape_property_url(url: str = Query(...), current_user: User = Depend
         # Log what we found
         logger.info(f"Scraped data: address={data.address}, price={data.asking_price}, area={data.living_area}")
         
-        return {
-            "success": True,
-            "data": data.model_dump(),
-            "message": "Gegevens opgehaald" if data.address or data.asking_price else "Gedeeltelijke gegevens - vul handmatig aan"
-        }
+        # Check if we got meaningful data
+        has_data = bool(data.address or data.asking_price > 0 or data.living_area > 0 or data.bedrooms > 0)
+        
+        if has_data:
+            return {
+                "success": True,
+                "data": data.model_dump(),
+                "message": "Gegevens opgehaald! Controleer en vul eventueel aan."
+            }
+        else:
+            # Cloudflare/bot protection likely blocked us
+            return {
+                "success": False,
+                "data": data.model_dump(),
+                "message": "De website blokkeert automatisch ophalen (anti-bot beveiliging). Kopieer de gegevens handmatig van de website.",
+                "hint": "Tip: Open de URL in een nieuw tabblad en kopieer de gegevens"
+            }
         
     except HTTPException:
         raise
@@ -7484,7 +7496,7 @@ async def scrape_property_url(url: str = Query(...), current_user: User = Depend
         return {
             "success": False,
             "data": ScrapedPropertyData().model_dump(),
-            "message": f"Kon gegevens niet ophalen: {str(e)}"
+            "message": f"Kon gegevens niet ophalen. Vul handmatig in."
         }
 
 # --- Work Item Labels (voor renovatiecalculator) ---
