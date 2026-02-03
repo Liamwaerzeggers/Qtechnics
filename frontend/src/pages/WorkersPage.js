@@ -14,6 +14,9 @@ export default function WorkersPage() {
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [resetPasswordDialog, setResetPasswordDialog] = useState({ open: false, worker: null });
+  const [newPassword, setNewPassword] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     username: '',
