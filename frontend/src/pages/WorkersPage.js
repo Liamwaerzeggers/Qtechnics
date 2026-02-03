@@ -332,6 +332,16 @@ Max Q`;
                     </Button>
 
                     <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setResetPasswordDialog({ open: true, worker })}
+                      className="hover:bg-blue-50 hover:text-blue-600"
+                      title="Wachtwoord resetten"
+                    >
+                      <KeyRound size={16} />
+                    </Button>
+
+                    <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDelete(worker.id, worker.name)}
@@ -346,6 +356,77 @@ Max Q`;
             ))}
           </div>
         )}
+
+        {/* Reset Password Dialog */}
+        <Dialog open={resetPasswordDialog.open} onOpenChange={(open) => {
+          if (!open) {
+            setResetPasswordDialog({ open: false, worker: null });
+            setNewPassword('');
+          }
+        }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Wachtwoord Resetten</DialogTitle>
+            </DialogHeader>
+            {resetPasswordDialog.worker && (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="bg-yellow-50 p-4 rounded-lg">
+                  <p className="text-sm" style={{color: '#92400E'}}>
+                    <strong>⚠️ Let op:</strong> Je staat op het punt om het wachtwoord te resetten voor:
+                  </p>
+                  <p className="text-lg font-bold mt-2" style={{color: '#3a190b'}}>
+                    {resetPasswordDialog.worker.name}
+                  </p>
+                  <p className="text-sm" style={{color: '#64748B'}}>
+                    @{resetPasswordDialog.worker.username}
+                  </p>
+                </div>
+
+                <div>
+                  <Label>Nieuw Wachtwoord * (min. 6 karakters)</Label>
+                  <Input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Nieuw wachtwoord"
+                    minLength={6}
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-2 justify-end">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      setResetPasswordDialog({ open: false, worker: null });
+                      setNewPassword('');
+                    }}
+                  >
+                    Annuleren
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={resettingPassword}
+                    style={{backgroundColor: '#500000'}}
+                  >
+                    {resettingPassword ? (
+                      <>
+                        <Loader2 size={16} className="mr-2 animate-spin" />
+                        Bezig...
+                      </>
+                    ) : (
+                      <>
+                        <KeyRound size={16} className="mr-2" />
+                        Wachtwoord Resetten
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Info Card */}
         <Card>
