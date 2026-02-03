@@ -428,14 +428,6 @@ export default function RealtorDashboard() {
                       placeholder="450"
                     />
                   </div>
-                  <div>
-                    <Label>Bron URL (optioneel)</Label>
-                    <Input
-                      value={formData.source_url}
-                      onChange={(e) => setFormData({...formData, source_url: e.target.value})}
-                      placeholder="https://immoweb.be/..."
-                    />
-                  </div>
                 </div>
                 
                 {/* Rooms Section */}
