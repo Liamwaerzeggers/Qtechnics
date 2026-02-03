@@ -36,6 +36,8 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 - [x] **Renovatiecalculator** - Automatische berekening op basis van kamerdimensies en werkposten met labels
 - [x] **Tenant Beheer** - Admin kan makelaars, investeerders en onderaannemers aanmaken/beheren
 - [x] **Mailto Welkomst-email** - Bij aanmaken van makelaar/investeerder wordt Outlook geopend met credentials
+- [x] **Property Scraping** - Werkt met Immoweb, Zimmo, Immoscoop EN elke makelaar website
+- [x] **Werkposten Labels Pagina** - Admin kan labels (vloer/muur/plafond/etc) toewijzen aan werkposten
 
 ### Nog te implementeren (Fase 2+)
 - [ ] **Property Scraping** - Automatisch panden importeren van Immoweb/Zimmo/Immoscoop
