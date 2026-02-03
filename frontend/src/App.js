@@ -253,6 +253,36 @@ function LandingPage() {
     }
   };
 
+  const handleTenantLogin = async (e) => {
+    e.preventDefault();
+    setLoggingIn(true);
+    
+    try {
+      const response = await axios.post(
+        `${API}/auth/tenant/login?username=${encodeURIComponent(loginUsername)}&password=${encodeURIComponent(loginPassword)}`,
+        {},
+        { withCredentials: true }
+      );
+      
+      setUser(response.data.user);
+      const role = response.data.user.role;
+      toast.success(`Welkom ${response.data.user.name}! 🏠`);
+      
+      if (role === 'realtor') {
+        navigate('/realtor');
+      } else if (role === 'investor') {
+        navigate('/investor');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Tenant login error:', error);
+      toast.error('Ongeldige inloggegevens');
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{backgroundColor: '#F8FAFC'}}>
       <div className="container mx-auto px-4 py-16">
