@@ -24,9 +24,9 @@ class TestAdminAuth:
     
     def test_admin_login(self):
         """Test admin can login with username/password"""
+        # Admin login uses query parameters
         response = requests.post(
-            f"{BASE_URL}/api/auth/admin/login",
-            json={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD}
+            f"{BASE_URL}/api/auth/admin/login?username={ADMIN_USERNAME}&password={ADMIN_PASSWORD}"
         )
         assert response.status_code == 200, f"Admin login failed: {response.text}"
         data = response.json()
@@ -43,18 +43,16 @@ class TestPropertyScraping:
     def admin_session(self):
         """Get admin session token"""
         response = requests.post(
-            f"{BASE_URL}/api/auth/admin/login",
-            json={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD}
+            f"{BASE_URL}/api/auth/admin/login?username={ADMIN_USERNAME}&password={ADMIN_PASSWORD}"
         )
-        assert response.status_code == 200
+        assert response.status_code == 200, f"Admin login failed: {response.text}"
         return response.json()["session_token"]
     
     @pytest.fixture
     def realtor_session(self):
         """Get realtor session token"""
         response = requests.post(
-            f"{BASE_URL}/api/auth/tenant/login",
-            json={"username": REALTOR_USERNAME, "password": REALTOR_PASSWORD}
+            f"{BASE_URL}/api/auth/tenant/login?username={REALTOR_USERNAME}&password={REALTOR_PASSWORD}"
         )
         if response.status_code != 200:
             pytest.skip(f"Realtor login failed: {response.text}")
@@ -97,7 +95,7 @@ class TestPropertyScraping:
         assert "bathrooms" in scraped
         assert "epc_score" in scraped
         
-        print(f"   Scraped data: address={scraped.get('address', 'N/A')}, price={scraped.get('asking_price', 0)}")
+        print(f"   Scraped data: address={scraped.get('address', 'N/A')[:50]}, price={scraped.get('asking_price', 0)}")
     
     def test_scrape_immoweb_url(self, admin_session):
         """Test scraping an Immoweb URL (may be blocked by anti-bot)"""
@@ -171,18 +169,16 @@ class TestWorkItemLabels:
     def admin_session(self):
         """Get admin session token"""
         response = requests.post(
-            f"{BASE_URL}/api/auth/admin/login",
-            json={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD}
+            f"{BASE_URL}/api/auth/admin/login?username={ADMIN_USERNAME}&password={ADMIN_PASSWORD}"
         )
-        assert response.status_code == 200
+        assert response.status_code == 200, f"Admin login failed: {response.text}"
         return response.json()["session_token"]
     
     @pytest.fixture
     def realtor_session(self):
         """Get realtor session token"""
         response = requests.post(
-            f"{BASE_URL}/api/auth/tenant/login",
-            json={"username": REALTOR_USERNAME, "password": REALTOR_PASSWORD}
+            f"{BASE_URL}/api/auth/tenant/login?username={REALTOR_USERNAME}&password={REALTOR_PASSWORD}"
         )
         if response.status_code != 200:
             pytest.skip(f"Realtor login failed: {response.text}")
@@ -383,8 +379,7 @@ class TestWorkItemsStats:
     def admin_session(self):
         """Get admin session token"""
         response = requests.post(
-            f"{BASE_URL}/api/auth/admin/login",
-            json={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD}
+            f"{BASE_URL}/api/auth/admin/login?username={ADMIN_USERNAME}&password={ADMIN_PASSWORD}"
         )
         assert response.status_code == 200
         return response.json()["session_token"]
@@ -418,8 +413,7 @@ class TestCleanup:
     def admin_session(self):
         """Get admin session token"""
         response = requests.post(
-            f"{BASE_URL}/api/auth/admin/login",
-            json={"username": ADMIN_USERNAME, "password": ADMIN_PASSWORD}
+            f"{BASE_URL}/api/auth/admin/login?username={ADMIN_USERNAME}&password={ADMIN_PASSWORD}"
         )
         assert response.status_code == 200
         return response.json()["session_token"]
