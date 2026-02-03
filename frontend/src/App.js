@@ -593,7 +593,10 @@ function App() {
             <Route path="/finances" element={<ProtectedRoute><FinancesPage /></ProtectedRoute>} />
             <Route path="/workers" element={<ProtectedRoute><WorkersPage /></ProtectedRoute>} />
             <Route path="/admins" element={<ProtectedRoute><AdminsPage /></ProtectedRoute>} />
+            <Route path="/tenants" element={<ProtectedRoute><TenantsPage /></ProtectedRoute>} />
             <Route path="/configurator" element={<ProtectedRoute><RoomConfiguratorPrototype /></ProtectedRoute>} />
+            <Route path="/realtor" element={<ProtectedRoute><RealtorDashboard /></ProtectedRoute>} />
+            <Route path="/investor" element={<ProtectedRoute><RealtorDashboard /></ProtectedRoute>} />
             {/* Customer Portal - No authentication, uses access token */}
             <Route path="/klant/:accessToken" element={<CustomerPortalPage />} />
           </Routes>
