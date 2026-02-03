@@ -60,8 +60,12 @@ class User(BaseModel):
     username: Optional[str] = None  # For username/password admins
     name: str
     picture: Optional[str] = None
-    role: str = "admin"  # admin or worker
+    role: str = "admin"  # admin, worker, subcontractor, realtor, investor
     password_hash: Optional[str] = None  # For username/password admins
+    # Multi-tenant profile links
+    subcontractor_id: Optional[str] = None  # Link to Subcontractor profile
+    realtor_id: Optional[str] = None  # Link to RealtorProfile
+    investor_id: Optional[str] = None  # Link to InvestorProfile
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserCreate(BaseModel):
