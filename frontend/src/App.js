@@ -258,7 +258,80 @@ function LandingPage() {
             Beheer leads, genereer offertes, zoek materialen en plan projecten - alles op één plek
           </p>
           
-          {!showWorkerLogin && !showAdminLogin ? (
+          {/* Setup Screen - First Time */}
+          {showSetup && needsSetup ? (
+            <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg">
+              <div className="text-center mb-6">
+                <span className="text-5xl">🚀</span>
+                <h2 className="text-2xl font-bold mt-4" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
+                  Welkom bij Max Q
+                </h2>
+                <p className="text-sm mt-2" style={{color: '#64748B'}}>
+                  Maak uw eerste admin account aan om te beginnen
+                </p>
+              </div>
+              
+              <form onSubmit={handleSetup} className="space-y-4 text-left">
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{color: '#1E293B'}}>Naam</label>
+                  <input
+                    type="text"
+                    value={setupData.name}
+                    onChange={(e) => setSetupData({...setupData, name: e.target.value})}
+                    className="w-full px-4 py-3 border rounded-lg"
+                    style={{borderColor: '#E5E7EB'}}
+                    placeholder="Uw volledige naam"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{color: '#1E293B'}}>Email</label>
+                  <input
+                    type="email"
+                    value={setupData.email}
+                    onChange={(e) => setSetupData({...setupData, email: e.target.value})}
+                    className="w-full px-4 py-3 border rounded-lg"
+                    style={{borderColor: '#E5E7EB'}}
+                    placeholder="uw@email.be"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{color: '#1E293B'}}>Gebruikersnaam</label>
+                  <input
+                    type="text"
+                    value={setupData.username}
+                    onChange={(e) => setSetupData({...setupData, username: e.target.value})}
+                    className="w-full px-4 py-3 border rounded-lg"
+                    style={{borderColor: '#E5E7EB'}}
+                    placeholder="Kies een gebruikersnaam"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{color: '#1E293B'}}>Wachtwoord</label>
+                  <input
+                    type="password"
+                    value={setupData.password}
+                    onChange={(e) => setSetupData({...setupData, password: e.target.value})}
+                    className="w-full px-4 py-3 border rounded-lg"
+                    style={{borderColor: '#E5E7EB'}}
+                    placeholder="Kies een sterk wachtwoord"
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loggingIn}
+                  className="w-full py-3 rounded-lg text-white font-semibold transition-colors"
+                  style={{backgroundColor: '#500000'}}
+                >
+                  {loggingIn ? 'Bezig...' : '🚀 Account Aanmaken'}
+                </button>
+              </form>
+            </div>
+          ) : !showWorkerLogin && !showAdminLogin ? (
             <div className="space-y-4">
               <button
                 data-testid="login-button"
