@@ -79,8 +79,36 @@ export default function TenantsPage() {
   const handleCreateRealtor = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API}/realtors`, realtorForm, { withCredentials: true });
-      toast.success('Makelaar aangemaakt!');
+      const response = await axios.post(`${API}/realtors`, realtorForm, { withCredentials: true });
+      
+      // Prepare welcome email
+      const subject = `Welkom bij Max Q - Uw makelaar account`;
+      const body = `Hallo ${realtorForm.contact_name},
+
+Uw Max Q makelaar account is aangemaakt!
+
+🔐 INLOGGEGEVENS:
+Gebruikersnaam: ${realtorForm.username}
+Wachtwoord: ${realtorForm.password}
+
+📱 LOGIN URL:
+${window.location.origin}
+Klik op "🏠 Makelaar / Investeerder Login"
+
+Met Max Q kunt u:
+• Panden toevoegen en beheren
+• Automatische renovatieberekeningen genereren
+• Kosteninzichten delen met investeerders
+
+BELANGRIJK: Bewaar deze email veilig.
+
+Met vriendelijke groet,
+Max Q Team`;
+
+      const mailtoLink = `mailto:${realtorForm.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailtoLink;
+      
+      toast.success('Makelaar aangemaakt! Email wordt voorbereid...');
       setRealtorDialogOpen(false);
       setRealtorForm({ company_name: '', contact_name: '', email: '', phone: '', username: '', password: '' });
       fetchAll();
