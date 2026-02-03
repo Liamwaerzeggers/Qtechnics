@@ -385,7 +385,8 @@ class TestAuthenticationFlow:
         me_resp = session.get(f"{BASE_URL}/api/auth/me")
         assert me_resp.status_code == 200
         data = me_resp.json()
-        assert "id" in data
+        # User ID can be in 'id' or '_id' field depending on user type
+        assert "id" in data or "_id" in data
         assert "name" in data
 
 
