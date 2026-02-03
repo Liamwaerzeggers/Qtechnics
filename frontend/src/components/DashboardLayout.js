@@ -27,6 +27,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
       { name: 'Financiën', path: '/finances', icon: TrendingUp, testId: 'nav-finances', adminOnly: true },
       { name: 'Kalender', path: '/calendar', icon: Calendar, testId: 'nav-calendar', adminOnly: true },
       { name: 'Materialen', path: '/materials', icon: Package, testId: 'nav-materials', adminOnly: true },
+      { name: 'Werk Labels', path: '/work-labels', icon: Tag, testId: 'nav-work-labels', adminOnly: true },
       { name: 'Configurator', path: '/configurator', icon: PenTool, testId: 'nav-configurator', adminOnly: true, badge: 'PROTO' },
       { name: 'Werkmannen', path: '/workers', icon: UserCog, testId: 'nav-workers', adminOnly: true },
       { name: 'Beheerders', path: '/admins', icon: ShieldCheck, testId: 'nav-admins', adminOnly: true },
