@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 class LegacyDocumentsTest:
-    def __init__(self, base_url="https://project-craft-4.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://maxqproject.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.session_token = None
         

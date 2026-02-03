@@ -3,7 +3,7 @@
 ## Testing Summary
 Date: 2025-01-27
 Tester: Backend Testing Agent
-Environment: Production (https://project-craft-4.preview.emergentagent.com)
+Environment: Production (https://maxqproject.preview.emergentagent.com)
 
 ## Backend Tests Completed
 
@@ -73,7 +73,7 @@ Environment: Production (https://project-craft-4.preview.emergentagent.com)
 - All database operations successful
 
 ## Test Environment Details
-- Backend URL: https://project-craft-4.preview.emergentagent.com/api
+- Backend URL: https://maxqproject.preview.emergentagent.com/api
 - Database: MongoDB (qtechnics)
 - Authentication: Admin credentials (test/test123)
 - File Storage: Local filesystem with API serving

@@ -11,7 +11,7 @@ import tempfile
 import os
 
 class PriorityTester:
-    def __init__(self, base_url="https://project-craft-4.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://maxqproject.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.session_token = None
         self.tests_run = 0
