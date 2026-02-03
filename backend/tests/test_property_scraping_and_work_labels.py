@@ -33,7 +33,6 @@ class TestAdminAuth:
         assert "session_token" in data
         assert data["user"]["role"] == "admin"
         print(f"✅ Admin login successful: {data['user']['name']}")
-        return data["session_token"]
 
 
 class TestPropertyScraping:
@@ -95,7 +94,7 @@ class TestPropertyScraping:
         assert "bathrooms" in scraped
         assert "epc_score" in scraped
         
-        print(f"   Scraped data: address={scraped.get('address', 'N/A')[:50]}, price={scraped.get('asking_price', 0)}")
+        print(f"   Scraped data: address={scraped.get('address', 'N/A')[:50] if scraped.get('address') else 'N/A'}, price={scraped.get('asking_price', 0)}")
     
     def test_scrape_immoweb_url(self, admin_session):
         """Test scraping an Immoweb URL (may be blocked by anti-bot)"""
@@ -192,10 +191,15 @@ class TestWorkItemLabels:
         )
         
         assert response.status_code == 200, f"Get work items failed: {response.text}"
-        work_items = response.json()
+        data = response.json()
+        
+        # Response is {total, work_items}
+        assert "total" in data
+        assert "work_items" in data
+        work_items = data["work_items"]
         
         assert isinstance(work_items, list)
-        print(f"✅ Found {len(work_items)} work items")
+        print(f"✅ Found {data['total']} work items")
         
         if len(work_items) > 0:
             # Check work item structure
@@ -210,16 +214,16 @@ class TestWorkItemLabels:
     
     def test_create_work_item_for_label_test(self, admin_session):
         """Create a test work item for label testing"""
+        # POST uses query parameters
         response = requests.post(
-            f"{BASE_URL}/api/work-items",
-            headers={"Authorization": f"Bearer {admin_session}"},
-            json={
-                "title": "TEST_Label_Test_Item",
-                "unit": "m²",
-                "price": 25.0,
-                "category": "Vloer"
-            }
+            f"{BASE_URL}/api/work-items?title=TEST_Label_Test_Item&unit=m²&price=25.0&category=Vloer",
+            headers={"Authorization": f"Bearer {admin_session}"}
         )
+        
+        # May fail if item already exists
+        if response.status_code == 400 and "bestaat al" in response.text:
+            print("✅ Test work item already exists")
+            return None
         
         assert response.status_code in [200, 201], f"Create work item failed: {response.text}"
         work_item = response.json()
@@ -235,7 +239,8 @@ class TestWorkItemLabels:
             f"{BASE_URL}/api/work-items",
             headers={"Authorization": f"Bearer {admin_session}"}
         )
-        work_items = response.json()
+        data = response.json()
+        work_items = data.get("work_items", [])
         
         if len(work_items) == 0:
             pytest.skip("No work items to test with")
@@ -260,7 +265,8 @@ class TestWorkItemLabels:
             f"{BASE_URL}/api/work-items",
             headers={"Authorization": f"Bearer {admin_session}"}
         )
-        work_items = response.json()
+        data = response.json()
+        work_items = data.get("work_items", [])
         
         if len(work_items) < 2:
             pytest.skip("Need at least 2 work items")
@@ -285,7 +291,8 @@ class TestWorkItemLabels:
             f"{BASE_URL}/api/work-items",
             headers={"Authorization": f"Bearer {admin_session}"}
         )
-        work_items = response.json()
+        data = response.json()
+        work_items = data.get("work_items", [])
         
         if len(work_items) < 3:
             pytest.skip("Need at least 3 work items")
@@ -306,7 +313,8 @@ class TestWorkItemLabels:
             f"{BASE_URL}/api/work-items",
             headers={"Authorization": f"Bearer {admin_session}"}
         )
-        work_items = response.json()
+        data = response.json()
+        work_items = data.get("work_items", [])
         
         if len(work_items) == 0:
             pytest.skip("No work items to test with")
@@ -333,7 +341,8 @@ class TestWorkItemLabels:
             print("✅ Realtors correctly denied access to work items")
             return
         
-        work_items = response.json()
+        data = response.json()
+        work_items = data.get("work_items", [])
         if len(work_items) == 0:
             pytest.skip("No work items to test with")
         
@@ -355,7 +364,8 @@ class TestWorkItemLabels:
             f"{BASE_URL}/api/work-items",
             headers={"Authorization": f"Bearer {admin_session}"}
         )
-        work_items = response.json()
+        data = response.json()
+        work_items = data.get("work_items", [])
         
         if len(work_items) == 0:
             pytest.skip("No work items to test with")
@@ -392,7 +402,8 @@ class TestWorkItemsStats:
         )
         
         assert response.status_code == 200
-        work_items = response.json()
+        data = response.json()
+        work_items = data.get("work_items", [])
         
         with_label = 0
         without_label = 0
@@ -428,7 +439,8 @@ class TestCleanup:
         if response.status_code != 200:
             return
         
-        work_items = response.json()
+        data = response.json()
+        work_items = data.get("work_items", [])
         deleted = 0
         
         for item in work_items:
