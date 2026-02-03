@@ -7235,6 +7235,258 @@ async def share_property(property_id: str, user_id: str = Query(...), current_us
     
     return {"message": "Pand gedeeld"}
 
+# --- Property Scraping ---
+
+class ScrapedPropertyData(BaseModel):
+    address: str = ""
+    postal_code: str = ""
+    city: str = ""
+    living_area: float = 0.0
+    plot_area: float = 0.0
+    bedrooms: int = 0
+    bathrooms: int = 0
+    construction_year: Optional[int] = None
+    epc_score: Optional[str] = None
+    epc_value: Optional[float] = None
+    asking_price: float = 0.0
+    photos: List[str] = []
+    source_platform: str = "unknown"
+    raw_description: str = ""
+
+async def scrape_immoweb(url: str) -> ScrapedPropertyData:
+    """Scrape property data from Immoweb.be"""
+    data = ScrapedPropertyData(source_platform="immoweb")
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "nl-BE,nl;q=0.9,en;q=0.8"
+    }
+    
+    async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
+        response = await client.get(url, headers=headers)
+        
+        if response.status_code != 200:
+            logger.warning(f"Immoweb scrape failed: {response.status_code}")
+            return data
+        
+        html = response.text
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        # Try to find JSON-LD data first (most reliable)
+        json_ld_scripts = soup.find_all('script', type='application/ld+json')
+        for script in json_ld_scripts:
+            try:
+                json_data = json.loads(script.string)
+                if isinstance(json_data, dict):
+                    if json_data.get('@type') == 'Product' or json_data.get('@type') == 'RealEstateListing':
+                        # Extract from JSON-LD
+                        if 'offers' in json_data:
+                            price_str = str(json_data['offers'].get('price', '0'))
+                            data.asking_price = float(re.sub(r'[^\d.]', '', price_str) or 0)
+                        if 'name' in json_data:
+                            data.address = json_data['name']
+            except:
+                pass
+        
+        # Extract from window.classified data (Immoweb specific)
+        scripts = soup.find_all('script')
+        for script in scripts:
+            if script.string and 'window.classified' in str(script.string):
+                try:
+                    # Find JSON in script
+                    match = re.search(r'window\.classified\s*=\s*({.*?});', script.string, re.DOTALL)
+                    if match:
+                        classified_data = json.loads(match.group(1))
+                        
+                        # Property details
+                        prop = classified_data.get('property', {})
+                        data.living_area = float(prop.get('netHabitableSurface', 0) or 0)
+                        data.plot_area = float(prop.get('land', {}).get('surface', 0) or 0)
+                        data.bedrooms = int(prop.get('bedroomCount', 0) or 0)
+                        data.bathrooms = int(prop.get('bathroomCount', 0) or 0)
+                        data.construction_year = prop.get('building', {}).get('constructionYear')
+                        
+                        # Location
+                        location = prop.get('location', {})
+                        data.postal_code = str(location.get('postalCode', ''))
+                        data.city = location.get('locality', '')
+                        street = location.get('street', '')
+                        number = location.get('number', '')
+                        data.address = f"{street} {number}".strip()
+                        
+                        # EPC
+                        certificates = prop.get('certificates', {})
+                        epc_data = certificates.get('epcScore')
+                        if epc_data:
+                            data.epc_score = epc_data
+                        
+                        # Price
+                        transaction = classified_data.get('transaction', {})
+                        if transaction.get('sale', {}).get('price'):
+                            data.asking_price = float(transaction['sale']['price'])
+                        
+                        # Photos
+                        media = classified_data.get('media', {})
+                        photos = media.get('pictures', [])
+                        data.photos = [p.get('largeUrl') or p.get('mediumUrl') or p.get('smallUrl') for p in photos[:10] if p.get('largeUrl') or p.get('mediumUrl')]
+                        
+                except Exception as e:
+                    logger.warning(f"Error parsing Immoweb data: {e}")
+        
+        # Fallback: parse HTML directly
+        if not data.address:
+            title = soup.find('h1', class_='classified__title')
+            if title:
+                data.address = title.get_text(strip=True)
+        
+        if not data.asking_price:
+            price_elem = soup.find('p', class_='classified__price')
+            if price_elem:
+                price_text = price_elem.get_text()
+                price_match = re.search(r'[\d\s,.]+', price_text)
+                if price_match:
+                    data.asking_price = float(re.sub(r'[^\d]', '', price_match.group()) or 0)
+    
+    return data
+
+async def scrape_zimmo(url: str) -> ScrapedPropertyData:
+    """Scrape property data from Zimmo.be"""
+    data = ScrapedPropertyData(source_platform="zimmo")
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+    }
+    
+    async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
+        response = await client.get(url, headers=headers)
+        
+        if response.status_code != 200:
+            return data
+        
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Title/Address
+        title = soup.find('h1')
+        if title:
+            data.address = title.get_text(strip=True)
+        
+        # Price
+        price_elem = soup.find('span', class_='price')
+        if price_elem:
+            price_text = price_elem.get_text()
+            data.asking_price = float(re.sub(r'[^\d]', '', price_text) or 0)
+        
+        # Features - look for key-value pairs
+        features = soup.find_all(['dt', 'dd', 'li'])
+        for i, elem in enumerate(features):
+            text = elem.get_text(strip=True).lower()
+            
+            if 'bewoonbare' in text or 'opp' in text:
+                next_elem = features[i+1] if i+1 < len(features) else None
+                if next_elem:
+                    match = re.search(r'(\d+)', next_elem.get_text())
+                    if match:
+                        data.living_area = float(match.group(1))
+            
+            if 'slaapkamer' in text:
+                match = re.search(r'(\d+)', text)
+                if match:
+                    data.bedrooms = int(match.group(1))
+            
+            if 'badkamer' in text:
+                match = re.search(r'(\d+)', text)
+                if match:
+                    data.bathrooms = int(match.group(1))
+            
+            if 'epc' in text:
+                match = re.search(r'([A-G])', text.upper())
+                if match:
+                    data.epc_score = match.group(1)
+        
+        # Photos
+        img_tags = soup.find_all('img', src=True)
+        for img in img_tags[:10]:
+            src = img.get('src', '')
+            if 'zimmo' in src and ('property' in src or 'photo' in src):
+                data.photos.append(src)
+    
+    return data
+
+async def scrape_immoscoop(url: str) -> ScrapedPropertyData:
+    """Scrape property data from Immoscoop.be"""
+    data = ScrapedPropertyData(source_platform="immoscoop")
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    }
+    
+    async with httpx.AsyncClient(follow_redirects=True, timeout=30.0) as client:
+        response = await client.get(url, headers=headers)
+        
+        if response.status_code != 200:
+            return data
+        
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Similar parsing logic as Zimmo
+        title = soup.find('h1')
+        if title:
+            data.address = title.get_text(strip=True)
+        
+        # Look for price
+        price_patterns = soup.find_all(text=re.compile(r'€\s*[\d\s.,]+'))
+        for price_text in price_patterns:
+            match = re.search(r'€\s*([\d\s.,]+)', str(price_text))
+            if match:
+                price_str = re.sub(r'[^\d]', '', match.group(1))
+                if price_str and len(price_str) > 4:  # Reasonable price
+                    data.asking_price = float(price_str)
+                    break
+    
+    return data
+
+@api_router.post("/properties/scrape")
+async def scrape_property_url(url: str = Query(...), current_user: User = Depends(get_current_user)):
+    """Scrape property data from a real estate URL"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    logger.info(f"Scraping property URL: {url}")
+    
+    # Determine which scraper to use
+    url_lower = url.lower()
+    
+    try:
+        if 'immoweb.be' in url_lower:
+            data = await scrape_immoweb(url)
+        elif 'zimmo.be' in url_lower:
+            data = await scrape_zimmo(url)
+        elif 'immoscoop.be' in url_lower:
+            data = await scrape_immoscoop(url)
+        else:
+            raise HTTPException(status_code=400, detail="URL niet ondersteund. Ondersteunde sites: Immoweb.be, Zimmo.be, Immoscoop.be")
+        
+        # Log what we found
+        logger.info(f"Scraped data: address={data.address}, price={data.asking_price}, area={data.living_area}")
+        
+        return {
+            "success": True,
+            "data": data.model_dump(),
+            "message": "Gegevens opgehaald" if data.address or data.asking_price else "Gedeeltelijke gegevens - vul handmatig aan"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Scraping error: {e}")
+        return {
+            "success": False,
+            "data": ScrapedPropertyData().model_dump(),
+            "message": f"Kon gegevens niet ophalen: {str(e)}"
+        }
+
 # --- Work Item Labels (voor renovatiecalculator) ---
 
 @api_router.put("/work-items/{work_item_id}/label")
