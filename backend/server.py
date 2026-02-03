@@ -4259,6 +4259,26 @@ async def toggle_worker_status(worker_id: str, current_user: User = Depends(get_
     
     return {"is_active": new_status}
 
+@api_router.post("/workers/{worker_id}/reset-password")
+async def reset_worker_password(worker_id: str, new_password: str = Query(..., min_length=6), current_user: User = Depends(get_current_user)):
+    """Reset worker password (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can reset passwords")
+    
+    worker = await db.workers.find_one({"id": worker_id}, {"_id": 0})
+    if not worker:
+        raise HTTPException(status_code=404, detail="Worker not found")
+    
+    # Hash new password
+    new_hash = hash_password(new_password)
+    await db.workers.update_one({"id": worker_id}, {"$set": {"password_hash": new_hash}})
+    
+    # Invalidate existing sessions for this worker
+    await db.sessions.delete_many({"user_id": worker_id})
+    
+    logger.info(f"Password reset for worker {worker_id} by admin {current_user.id}")
+    return {"message": "Password reset successfully", "worker_name": worker.get("name", "")}
+
 @api_router.post("/auth/admin/login")
 async def admin_login(username: str, password: str, response: Response):
     """Admin login with username/password"""
