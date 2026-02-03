@@ -119,6 +119,53 @@ Q Technics`;
     }
   };
 
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('Wachtwoord moet minimaal 6 karakters zijn');
+      return;
+    }
+
+    setResettingPassword(true);
+    try {
+      const response = await axios.post(
+        `${API}/workers/${resetPasswordDialog.worker.id}/reset-password?new_password=${encodeURIComponent(newPassword)}`,
+        {},
+        { withCredentials: true }
+      );
+      
+      // Prepare email with new password
+      const subject = `Nieuw wachtwoord - ${resetPasswordDialog.worker.name}`;
+      const body = `Hallo ${resetPasswordDialog.worker.name},
+
+Je wachtwoord is gereset. Hier zijn je nieuwe inloggegevens:
+
+🔐 NIEUWE INLOGGEGEVENS:
+Gebruikersnaam: ${resetPasswordDialog.worker.username}
+Nieuw Wachtwoord: ${newPassword}
+
+📱 LOGIN URL:
+${window.location.origin}
+
+BELANGRIJK: Bewaar deze email veilig.
+
+Met vriendelijke groet,
+Max Q`;
+
+      const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailtoLink;
+      
+      toast.success(`Wachtwoord gereset voor ${response.data.worker_name}! Email wordt voorbereid...`);
+      setResetPasswordDialog({ open: false, worker: null });
+      setNewPassword('');
+    } catch (error) {
+      console.error('Failed to reset password:', error);
+      toast.error(error.response?.data?.detail || 'Kon wachtwoord niet resetten');
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
