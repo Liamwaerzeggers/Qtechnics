@@ -111,11 +111,18 @@ export default function RealtorDashboard() {
           }));
           toast.success(response.data.message);
         } else {
-          toast.warning(response.data.message || 'Kon gegevens niet ophalen');
+          // Show warning but keep URL saved
+          toast.warning(
+            <div>
+              <p><strong>{response.data.message}</strong></p>
+              {response.data.hint && <p className="text-sm mt-1">{response.data.hint}</p>}
+            </div>,
+            { duration: 6000 }
+          );
         }
       } catch (error) {
         console.error('Scrape error:', error);
-        toast.error('Kon gegevens niet automatisch ophalen. Vul handmatig in.');
+        toast.warning('Website blokkeert automatisch ophalen. Vul de gegevens handmatig in.');
       } finally {
         setScraping(false);
       }
