@@ -165,9 +165,13 @@ function LandingPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      // Redirect workers directly to projects page
+      // Redirect based on role
       if (user.role === 'worker') {
         navigate('/projects');
+      } else if (user.role === 'realtor') {
+        navigate('/realtor');
+      } else if (user.role === 'investor') {
+        navigate('/investor');
       } else {
         navigate('/dashboard');
       }
