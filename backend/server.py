@@ -26,6 +26,8 @@ from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from openpyxl import Workbook
+import re
+from bs4 import BeautifulSoup
 
 # AI imports for floor plan analysis
 from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContent, ImageContent
