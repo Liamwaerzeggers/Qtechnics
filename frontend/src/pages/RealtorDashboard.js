@@ -83,8 +83,8 @@ export default function RealtorDashboard() {
   const handleUrlChange = async (url) => {
     setFormData(prev => ({...prev, source_url: url}));
     
-    // Check if it's a valid real estate URL
-    if (url && (url.includes('immoweb.be') || url.includes('zimmo.be') || url.includes('immoscoop.be'))) {
+    // Check if it looks like a valid URL
+    if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
       setScraping(true);
       try {
         const response = await axios.post(
@@ -122,7 +122,7 @@ export default function RealtorDashboard() {
         }
       } catch (error) {
         console.error('Scrape error:', error);
-        toast.warning('Website blokkeert automatisch ophalen. Vul de gegevens handmatig in.');
+        toast.warning('Kon gegevens niet automatisch ophalen. Vul de gegevens handmatig in.');
       } finally {
         setScraping(false);
       }
