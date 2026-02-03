@@ -285,6 +285,41 @@ export default function RealtorDashboard() {
                 <DialogTitle>Nieuw Pand Toevoegen</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* URL Import Section - NOW AT TOP */}
+                <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Link size={18} className="text-blue-600" />
+                    <Label className="text-blue-800 font-semibold">Importeer van Immoweb, Zimmo of Immoscoop</Label>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.source_url}
+                      onChange={(e) => handleUrlChange(e.target.value)}
+                      placeholder="Plak hier de URL van het pand (bijv. https://www.immoweb.be/nl/zoekertje/...)"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={scraping || !formData.source_url}
+                      onClick={() => handleUrlChange(formData.source_url)}
+                      className="whitespace-nowrap"
+                    >
+                      {scraping ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <>
+                          <Search size={16} className="mr-1" />
+                          Ophalen
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-blue-600 mt-2">
+                    💡 Plak een URL en de gegevens worden automatisch ingevuld. Je kunt ze daarna nog aanpassen.
+                  </p>
+                </div>
+
                 {/* Basic Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
