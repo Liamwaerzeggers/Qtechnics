@@ -30,11 +30,11 @@ db = client[os.environ['DB_NAME']]
 # Resend API key for email
 resend.api_key = os.environ.get('RESEND_API_KEY', '')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
-RECIPIENT_EMAILS = ['liam.waerzeggers@qtechnics.be', 'info@maxq.be']
+RECIPIENT_EMAILS = [e.strip() for e in os.environ.get('RECIPIENT_EMAILS', '').split(',') if e.strip()]
 
 # QTechnics Dashboard Webhook Configuration
-QTECHNICS_WEBHOOK_URL = "https://dashboard.qtechnics.be/api/webhook/lead"
-QTECHNICS_API_KEY = "qtechnics-webhook-2024-Xk9mP3nQ7vL2"
+QTECHNICS_WEBHOOK_URL = os.environ.get('QTECHNICS_WEBHOOK_URL', '')
+QTECHNICS_API_KEY = os.environ.get('QTECHNICS_API_KEY', '')
 
 # Create the main app without a prefix
 app = FastAPI()
