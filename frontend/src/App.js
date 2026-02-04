@@ -672,6 +672,7 @@ function App() {
             <Route path="/admins" element={<ProtectedRoute><AdminsPage /></ProtectedRoute>} />
             <Route path="/tenants" element={<ProtectedRoute><TenantsPage /></ProtectedRoute>} />
             <Route path="/work-labels" element={<ProtectedRoute><WorkItemLabelsPage /></ProtectedRoute>} />
+            <Route path="/maintenance" element={<ProtectedRoute><MaintenancePage /></ProtectedRoute>} />
             <Route path="/configurator" element={<ProtectedRoute><RoomConfiguratorPrototype /></ProtectedRoute>} />
             <Route path="/realtor" element={<ProtectedRoute><RealtorDashboard /></ProtectedRoute>} />
             <Route path="/investor" element={<ProtectedRoute><RealtorDashboard /></ProtectedRoute>} />
