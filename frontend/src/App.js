@@ -14,6 +14,7 @@ import ProjectenPage from './components/ProjectenPage';
 import ContactPage from './components/ContactPage';
 import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
+import StartPage from './components/StartPage';
 
 const Home = () => {
   return (
