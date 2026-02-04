@@ -52,6 +52,9 @@ function App() {
           {/* Admin pages without header/footer */}
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          
+          {/* Lead funnel page without header/footer */}
+          <Route path="/start" element={<StartPage />} />
         </Routes>
       </BrowserRouter>
     </div>
