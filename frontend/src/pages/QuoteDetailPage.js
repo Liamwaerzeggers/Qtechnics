@@ -727,16 +727,87 @@ Q Technics`;
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle>Line Items</CardTitle>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <Dialog open={isDialogOpen} onOpenChange={(open) => open ? setIsDialogOpen(true) : handleCloseDialog()}>
                 <DialogTrigger asChild>
                   <Button data-testid="add-item-button" style={{backgroundColor: '#500000'}}>
-                    <Plus className="mr-2" size={20} /> Item Toevoegen
+                    <Plus className="mr-2" size={20} /> Items Toevoegen
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Nieuw Item Toevoegen</DialogTitle>
+                    <DialogTitle className="flex items-center justify-between">
+                      <span>Items Toevoegen aan Offerte</span>
+                      {sessionAddedItems.length > 0 && (
+                        <span className="text-sm font-normal px-2 py-1 rounded-full" style={{backgroundColor: '#D1FAE5', color: '#065F46'}}>
+                          {sessionAddedItems.length} item(s) toegevoegd
+                        </span>
+                      )}
+                    </DialogTitle>
                   </DialogHeader>
+                  
+                  {/* Global VAT Setting */}
+                  <div className="p-3 rounded-lg mb-4" style={{backgroundColor: '#FEF3C7'}}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Label className="font-semibold" style={{color: '#92400E'}}>Standaard BTW voor nieuwe items:</Label>
+                        <Select 
+                          value={defaultVatRate.toString()} 
+                          onValueChange={(value) => {
+                            const rate = parseFloat(value);
+                            setDefaultVatRate(rate);
+                            setFormData(prev => ({...prev, vat_rate: rate}));
+                          }}
+                        >
+                          <SelectTrigger className="w-32" style={{backgroundColor: 'white'}}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">0%</SelectItem>
+                            <SelectItem value="6">6%</SelectItem>
+                            <SelectItem value="9">9%</SelectItem>
+                            <SelectItem value="21">21%</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {lineItems.length > 0 && (
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={handleApplyDefaultVat}
+                          style={{color: '#92400E', borderColor: '#92400E'}}
+                        >
+                          Pas toe op alles
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Session Added Items List */}
+                  {sessionAddedItems.length > 0 && (
+                    <div className="mb-4 p-3 rounded-lg" style={{backgroundColor: '#F0FDF4'}}>
+                      <div className="text-sm font-semibold mb-2" style={{color: '#166534'}}>
+                        Toegevoegd in deze sessie:
+                      </div>
+                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                        {sessionAddedItems.map((item, idx) => (
+                          <div key={idx} className="flex justify-between text-sm py-1 border-b border-green-100">
+                            <span className="truncate flex-1" style={{color: '#166534'}}>
+                              {item.item_type === 'arbeid' ? '🔧' : '📦'} {item.description}
+                            </span>
+                            <span className="ml-2 font-medium" style={{color: '#166534'}}>
+                              {item.quantity} x €{item.unit_price.toFixed(2)} = €{item.total.toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-green-200 flex justify-between font-semibold" style={{color: '#166534'}}>
+                        <span>Sessie totaal:</span>
+                        <span>€{sessionAddedItems.reduce((sum, item) => sum + item.total, 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
+                  
                   <form onSubmit={handleAddItem} className="space-y-4" data-testid="add-item-form">
                     <div>
                       <div className="flex justify-between items-center mb-2">
@@ -747,7 +818,7 @@ Q Technics`;
                           size="sm"
                           onClick={() => setUseCustomMaterial(!useCustomMaterial)}
                         >
-                          {useCustomMaterial ? 'Gebruik Materialen Lijst' : 'Custom Item'}
+                          {useCustomMaterial ? 'Gebruik Lijst' : 'Custom Item'}
                         </Button>
                       </div>
                     </div>
