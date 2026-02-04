@@ -1,6 +1,5 @@
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
-import { projects } from '../data/mock';
 
 const Projects = () => {
   return (
@@ -27,31 +26,65 @@ const Projects = () => {
 
         {/* Projects Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {projects.map((project) => (
-            <div
-              key={project.id}
-              className="group cursor-pointer"
-            >
-              <div className="relative overflow-hidden rounded-lg mb-4">
-                <img
-                  src={project.image}
-                  alt={project.title}
-                  className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
-              </div>
-              <div className="flex items-center text-sm text-[#6a5748] mb-2">
-                <span className="font-semibold text-[#4a3728] uppercase tracking-wider text-xs">
-                  {project.category}
-                </span>
-                <span className="mx-2">•</span>
-                <span>{project.location}</span>
-              </div>
-              <h3 className="text-xl font-bold text-[#4a3728] group-hover:text-[#c17f24] transition-colors">
-                {project.title}
-              </h3>
+          {/* Project 1 */}
+          <div className="group cursor-pointer">
+            <div className="relative overflow-hidden rounded-lg mb-4">
+              <img
+                src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&q=80"
+                alt="Volledige woning renovatie"
+                className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
             </div>
-          ))}
+            <div className="flex items-center text-sm text-[#6a5748] mb-2">
+              <span className="font-semibold text-[#4a3728] uppercase tracking-wider text-xs">TOTAALPROJECT</span>
+              <span className="mx-2">•</span>
+              <span>Hasselt</span>
+            </div>
+            <h3 className="text-xl font-bold text-[#4a3728] group-hover:text-[#c17f24] transition-colors">
+              Volledige woning renovatie
+            </h3>
+          </div>
+
+          {/* Project 2 */}
+          <div className="group cursor-pointer">
+            <div className="relative overflow-hidden rounded-lg mb-4">
+              <img
+                src="https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=600&q=80"
+                alt="Luxe badkamer met inloopdouche"
+                className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+            </div>
+            <div className="flex items-center text-sm text-[#6a5748] mb-2">
+              <span className="font-semibold text-[#4a3728] uppercase tracking-wider text-xs">BADKAMER</span>
+              <span className="mx-2">•</span>
+              <span>Genk</span>
+            </div>
+            <h3 className="text-xl font-bold text-[#4a3728] group-hover:text-[#c17f24] transition-colors">
+              Luxe badkamer met inloopdouche
+            </h3>
+          </div>
+
+          {/* Project 3 */}
+          <div className="group cursor-pointer">
+            <div className="relative overflow-hidden rounded-lg mb-4">
+              <img
+                src="https://images.unsplash.com/photo-1556909114-44e3e70034e2?w=600&q=80"
+                alt="Design keuken met kookeiland"
+                className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+            </div>
+            <div className="flex items-center text-sm text-[#6a5748] mb-2">
+              <span className="font-semibold text-[#4a3728] uppercase tracking-wider text-xs">KEUKEN</span>
+              <span className="mx-2">•</span>
+              <span>Lommel</span>
+            </div>
+            <h3 className="text-xl font-bold text-[#4a3728] group-hover:text-[#c17f24] transition-colors">
+              Design keuken met kookeiland
+            </h3>
+          </div>
         </div>
       </div>
     </section>
