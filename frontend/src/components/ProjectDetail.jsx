@@ -13,21 +13,20 @@ const ProjectDetail = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
-    fetchProject();
-  }, [id]);
-
-  const fetchProject = async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/projects/${id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setProject(data);
+    const loadProject = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/projects/${id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setProject(data);
+        }
+      } catch (error) {
+        console.error('Error fetching project:', error);
       }
-    } catch (error) {
-      console.error('Error fetching project:', error);
-    }
-    setLoading(false);
-  };
+      setLoading(false);
+    };
+    loadProject();
+  }, [id]);
 
   const allImages = project ? [project.mainImage, ...project.galleryImages].filter(Boolean) : [];
 
