@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin } from 'lucide-react';
 
+const scrollToTop = () => window.scrollTo(0, 0);
+
 const Footer = () => {
   return (
     <footer className="bg-[#3a190b] text-white">
@@ -12,14 +14,14 @@ const Footer = () => {
             <img 
               src="https://customer-assets.emergentagent.com/job_maxq-showcase/artifacts/rn05emza_logo%20maxq.png" 
               alt="Max Q" 
-              className="h-12 w-auto mb-6"
+              className="h-14 w-auto mb-6"
             />
             <p className="text-white/80 text-sm leading-relaxed mb-4">
               Max Q is de nieuwe naam voor premium renovaties en interieurprojecten, powered by de jarenlange technische expertise van Q Technics.
             </p>
-            <div className="text-xs text-white/50">
-              Powered by <span className="font-medium">emergent</span>
-            </div>
+            <a href="https://qtechnicsrenovaties.be" target="_blank" rel="noopener noreferrer" className="text-xs text-white/50 hover:text-white/70 transition-colors">
+              Powered by <span className="font-medium">Qtechnics</span>
+            </a>
           </div>
 
           {/* Renoveren Links */}
@@ -28,11 +30,11 @@ const Footer = () => {
               Renoveren
             </h3>
             <ul className="space-y-3">
-              <li><Link to="/technieken" className="text-white/80 hover:text-[#500000] transition-colors text-sm">Technieken</Link></li>
-              <li><Link to="/badkamers" className="text-white/80 hover:text-[#500000] transition-colors text-sm">Badkamers</Link></li>
-              <li><Link to="/keukens" className="text-white/80 hover:text-[#500000] transition-colors text-sm">Keukens</Link></li>
-              <li><Link to="/maatkasten" className="text-white/80 hover:text-[#500000] transition-colors text-sm">Maatkasten</Link></li>
-              <li><Link to="/afwerking" className="text-white/80 hover:text-[#500000] transition-colors text-sm">Afwerking</Link></li>
+              <li><Link to="/renoveren" onClick={scrollToTop} className="text-white/80 hover:text-white transition-colors text-sm">Technieken</Link></li>
+              <li><Link to="/renoveren" onClick={scrollToTop} className="text-white/80 hover:text-white transition-colors text-sm">Badkamers</Link></li>
+              <li><Link to="/renoveren" onClick={scrollToTop} className="text-white/80 hover:text-white transition-colors text-sm">Keukens</Link></li>
+              <li><Link to="/renoveren" onClick={scrollToTop} className="text-white/80 hover:text-white transition-colors text-sm">Maatkasten</Link></li>
+              <li><Link to="/renoveren" onClick={scrollToTop} className="text-white/80 hover:text-white transition-colors text-sm">Afwerking</Link></li>
             </ul>
           </div>
 
@@ -42,10 +44,10 @@ const Footer = () => {
               Navigatie
             </h3>
             <ul className="space-y-3">
-              <li><Link to="/" className="text-white/80 hover:text-white transition-colors text-sm">Home</Link></li>
-              <li><Link to="/renoveren" className="text-white/80 hover:text-white transition-colors text-sm">Renoveren</Link></li>
-              <li><Link to="/projecten" className="text-white/80 hover:text-white transition-colors text-sm">Projecten</Link></li>
-              <li><Link to="/contact" className="text-white/80 hover:text-white transition-colors text-sm">Contact</Link></li>
+              <li><Link to="/" onClick={scrollToTop} className="text-white/80 hover:text-white transition-colors text-sm">Home</Link></li>
+              <li><Link to="/renoveren" onClick={scrollToTop} className="text-white/80 hover:text-white transition-colors text-sm">Renoveren</Link></li>
+              <li><Link to="/projecten" onClick={scrollToTop} className="text-white/80 hover:text-white transition-colors text-sm">Projecten</Link></li>
+              <li><Link to="/contact" onClick={scrollToTop} className="text-white/80 hover:text-white transition-colors text-sm">Contact</Link></li>
             </ul>
           </div>
 
@@ -82,11 +84,11 @@ const Footer = () => {
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center text-sm text-white/60">
-            <p>© 2026 Max Q — Powered by <span className="font-medium">emergent</span>. Alle rechten voorbehouden.</p>
+            <p>© 2026 Max Q — Powered by <a href="https://qtechnicsrenovaties.be" target="_blank" rel="noopener noreferrer" className="font-medium hover:text-white transition-colors">Qtechnics</a>. Alle rechten voorbehouden.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <Link to="/admin" className="hover:text-white transition-colors">Admin</Link>
-              <Link to="/privacybeleid" className="hover:text-white transition-colors">Privacybeleid</Link>
-              <Link to="/voorwaarden" className="hover:text-white transition-colors">Algemene voorwaarden</Link>
+              <Link to="/admin" onClick={scrollToTop} className="hover:text-white transition-colors">Admin</Link>
+              <Link to="/privacybeleid" onClick={scrollToTop} className="hover:text-white transition-colors">Privacybeleid</Link>
+              <Link to="/voorwaarden" onClick={scrollToTop} className="hover:text-white transition-colors">Algemene voorwaarden</Link>
             </div>
           </div>
         </div>
