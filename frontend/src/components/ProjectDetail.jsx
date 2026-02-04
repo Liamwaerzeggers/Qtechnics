@@ -1,175 +1,77 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, MapPin, X } from 'lucide-react';
+import { ArrowLeft, MapPin } from 'lucide-react';
 import { Button } from './ui/button';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 function ProjectDetail() {
   const params = useParams();
-  const projectId = params.id;
+  const [project, setProject] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetch(BACKEND_URL + '/api/projects/' + params.id)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        setProject(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [params.id]);
+
+  const getUrl = (url) => url && url.startsWith('http') ? url : BACKEND_URL + url;
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3a190b]"></div></div>;
   
-  const [project, setProject] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  useEffect(function() {
-    async function loadProject() {
-      try {
-        const response = await fetch(BACKEND_URL + '/api/projects/' + projectId);
-        if (response.ok) {
-          const data = await response.json();
-          setProject(data);
-        }
-      } catch (error) {
-        console.error('Error:', error);
-      }
-      setLoading(false);
-    }
-    loadProject();
-  }, [projectId]);
-
-  function getImageUrl(url) {
-    if (!url) return '';
-    if (url.startsWith('http')) return url;
-    return BACKEND_URL + url;
-  }
-
-  function getCategoryLabel(cat) {
-    var labels = {
-      totaalproject: 'Totaalproject',
-      badkamer: 'Badkamer',
-      keuken: 'Keuken',
-      maatkasten: 'Maatkasten',
-      technieken: 'Technieken'
-    };
-    return labels[cat] || cat;
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3a190b]"></div>
-      </div>
-    );
-  }
-
-  if (!project) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <h1 className="text-2xl font-bold text-[#202020] mb-4">Project niet gevonden</h1>
-        <Link to="/projecten">
-          <Button variant="outline">Terug naar projecten</Button>
-        </Link>
-      </div>
-    );
-  }
-
-  var allImages = [project.mainImage].concat(project.galleryImages || []).filter(Boolean);
-
-  function openLightbox(index) {
-    setCurrentIndex(index);
-    setLightboxOpen(true);
-  }
-
-  function closeLightbox() {
-    setLightboxOpen(false);
-  }
-
-  function nextImage() {
-    setCurrentIndex(function(prev) {
-      return (prev + 1) % allImages.length;
-    });
-  }
-
-  function prevImage() {
-    setCurrentIndex(function(prev) {
-      return (prev - 1 + allImages.length) % allImages.length;
-    });
-  }
+  if (!project) return <div className="min-h-screen flex flex-col items-center justify-center"><h1 className="text-2xl font-bold mb-4">Project niet gevonden</h1><Link to="/projecten"><Button>Terug</Button></Link></div>;
 
   return (
     <div>
-      <div className="bg-gray-50 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link to="/projecten" className="inline-flex items-center text-[#3a190b] hover:text-[#500000]">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Terug naar projecten
-          </Link>
+      <div className="bg-gray-50 border-b py-4">
+        <div className="max-w-7xl mx-auto px-4">
+          <Link to="/projecten" className="inline-flex items-center text-[#3a190b]"><ArrowLeft className="h-4 w-4 mr-2" />Terug</Link>
         </div>
       </div>
 
-      {project.mainImage && (
-        <div 
-          className="relative h-[400px] md:h-[500px] bg-cover bg-center cursor-pointer"
-          style={{ backgroundImage: 'url(' + getImageUrl(project.mainImage) + ')' }}
-          onClick={function() { openLightbox(0); }}
-        >
-          <div className="absolute inset-0 bg-black/30" />
-          <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/70 to-transparent">
-            <div className="max-w-7xl mx-auto">
-              <span className="inline-block bg-[#3a190b] text-white text-xs font-semibold px-3 py-1 rounded mb-4">
-                {getCategoryLabel(project.category)}
-              </span>
-              <h1 className="text-3xl md:text-5xl font-bold text-white mb-2">{project.title}</h1>
-              <div className="flex items-center text-white/90">
-                <MapPin className="h-4 w-4 mr-2" />
-                {project.location}
-              </div>
-            </div>
+      <div className="relative h-96 bg-cover bg-center" style={{backgroundImage: `url(${getUrl(project.mainImage)})`}}>
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/70">
+          <div className="max-w-7xl mx-auto">
+            <span className="inline-block bg-[#3a190b] text-white text-xs px-3 py-1 rounded mb-4">{project.category}</span>
+            <h1 className="text-4xl font-bold text-white mb-2">{project.title}</h1>
+            <div className="flex items-center text-white/90"><MapPin className="h-4 w-4 mr-2" />{project.location}</div>
           </div>
         </div>
-      )}
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="grid lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2">
-            <h2 className="text-2xl font-bold text-[#202020] mb-6">Over dit project</h2>
-            <p className="text-lg text-[#202020]/80 leading-relaxed mb-6">{project.shortDescription}</p>
-            {project.fullDescription && (
-              <div className="text-[#202020]/80 leading-relaxed whitespace-pre-line">{project.fullDescription}</div>
-            )}
-
+            <h2 className="text-2xl font-bold mb-6">Over dit project</h2>
+            <p className="text-lg text-gray-700 mb-6">{project.shortDescription}</p>
+            {project.fullDescription && <p className="text-gray-600 whitespace-pre-line">{project.fullDescription}</p>}
+            
             {project.galleryImages && project.galleryImages.length > 0 && (
               <div className="mt-12">
-                <h2 className="text-2xl font-bold text-[#202020] mb-6">Foto's</h2>
+                <h2 className="text-2xl font-bold mb-6">Foto's</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {project.galleryImages.map(function(image, index) {
-                    return (
-                      <div 
-                        key={index}
-                        className="aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90"
-                        onClick={function() { openLightbox(index + 1); }}
-                      >
-                        <img src={getImageUrl(image)} alt={'Foto ' + (index + 1)} className="w-full h-full object-cover" />
-                      </div>
-                    );
-                  })}
+                  {project.galleryImages.map((img, i) => (
+                    <img key={i} src={getUrl(img)} alt="" className="aspect-square object-cover rounded-lg" />
+                  ))}
                 </div>
               </div>
             )}
           </div>
 
-          <div className="lg:col-span-1">
+          <div>
             <div className="bg-gray-50 rounded-lg p-6 sticky top-24">
-              <h3 className="text-lg font-bold text-[#202020] mb-4">Project details</h3>
-              <div className="space-y-4 mb-8">
-                <div>
-                  <span className="text-sm text-[#202020]/60">Categorie</span>
-                  <p className="font-medium text-[#202020]">{getCategoryLabel(project.category)}</p>
-                </div>
-                <div>
-                  <span className="text-sm text-[#202020]/60">Locatie</span>
-                  <p className="font-medium text-[#202020]">{project.location}</p>
-                </div>
-              </div>
-              <div className="pt-6 border-t border-gray-200">
-                <p className="text-sm text-[#202020]/70 mb-4">Geïnspireerd? Neem contact op.</p>
-                <Link to="/start" className="block">
-                  <Button className="w-full bg-[#3a190b] hover:bg-[#500000] text-white">Start uw project</Button>
-                </Link>
-              </div>
+              <h3 className="font-bold mb-4">Details</h3>
+              <p className="text-sm text-gray-500">Categorie</p>
+              <p className="font-medium mb-4">{project.category}</p>
+              <p className="text-sm text-gray-500">Locatie</p>
+              <p className="font-medium mb-6">{project.location}</p>
+              <Link to="/start"><Button className="w-full bg-[#3a190b] text-white">Start uw project</Button></Link>
             </div>
           </div>
         </div>
@@ -179,39 +81,9 @@ function ProjectDetail() {
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">Uw project hier?</h2>
           <p className="text-white/80 mb-8">Ontdek wat Max Q voor u kan betekenen.</p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/start">
-              <Button className="bg-white text-[#3a190b] hover:bg-gray-100">Gratis plaatsbezoek</Button>
-            </Link>
-            <Link to="/projecten">
-              <Button variant="outline" className="border-white text-white hover:bg-white hover:text-[#3a190b]">Meer projecten</Button>
-            </Link>
-          </div>
+          <Link to="/start"><Button className="bg-white text-[#3a190b]">Gratis plaatsbezoek</Button></Link>
         </div>
       </section>
-
-      {lightboxOpen && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center" onClick={closeLightbox}>
-          <button className="absolute top-4 right-4 text-white hover:text-gray-300" onClick={closeLightbox}>
-            <X className="h-8 w-8" />
-          </button>
-          
-          {allImages.length > 1 && (
-            <React.Fragment>
-              <button className="absolute left-4 text-white hover:text-gray-300 p-2" onClick={function(e) { e.stopPropagation(); prevImage(); }}>
-                <ArrowLeft className="h-8 w-8" />
-              </button>
-              <button className="absolute right-4 text-white hover:text-gray-300 p-2" onClick={function(e) { e.stopPropagation(); nextImage(); }}>
-                <ArrowRight className="h-8 w-8" />
-              </button>
-            </React.Fragment>
-          )}
-          
-          <img src={getImageUrl(allImages[currentIndex])} alt="Project foto" className="max-h-[90vh] max-w-[90vw] object-contain" onClick={function(e) { e.stopPropagation(); }} />
-          
-          <div className="absolute bottom-4 text-white text-sm">{currentIndex + 1} / {allImages.length}</div>
-        </div>
-      )}
     </div>
   );
 }
