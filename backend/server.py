@@ -83,6 +83,37 @@ class Lead(BaseModel):
     postalCode: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# Project Models
+class ProjectCreate(BaseModel):
+    title: str
+    category: str
+    location: str
+    shortDescription: str
+    fullDescription: Optional[str] = ""
+    featured: bool = False
+
+class ProjectUpdate(BaseModel):
+    title: Optional[str] = None
+    category: Optional[str] = None
+    location: Optional[str] = None
+    shortDescription: Optional[str] = None
+    fullDescription: Optional[str] = None
+    featured: Optional[bool] = None
+
+class Project(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    category: str
+    location: str
+    shortDescription: str
+    fullDescription: str = ""
+    mainImage: str = ""
+    galleryImages: List[str] = []
+    featured: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
