@@ -9,6 +9,7 @@ import Werkwijze from './components/Werkwijze';
 import Testimonials from './components/Testimonials';
 import CTA from './components/CTA';
 import Footer from './components/Footer';
+import RenoverenPage from './components/RenoverenPage';
 
 const Home = () => {
   return (
@@ -31,7 +32,7 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/renoveren" element={<Home />} />
+            <Route path="/renoveren" element={<RenoverenPage />} />
             <Route path="/projecten" element={<Home />} />
             <Route path="/werkwijze" element={<Home />} />
             <Route path="/contact" element={<Home />} />
