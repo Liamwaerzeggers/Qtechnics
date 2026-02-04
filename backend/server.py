@@ -354,8 +354,10 @@ async def update_project(project_id: str, input: ProjectUpdate):
     return updated
 
 @api_router.put("/projects/{project_id}/images")
-async def update_project_images(project_id: str, mainImage: str = None, galleryImages: List[str] = None):
+async def update_project_images(project_id: str, mainImage: str = None, galleryImages: str = None):
     """Update project images"""
+    import json as json_module
+    
     existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -364,7 +366,13 @@ async def update_project_images(project_id: str, mainImage: str = None, galleryI
     if mainImage is not None:
         update_data["mainImage"] = mainImage
     if galleryImages is not None:
-        update_data["galleryImages"] = galleryImages
+        # Parse JSON string to list
+        try:
+            gallery_list = json_module.loads(galleryImages)
+            if isinstance(gallery_list, list):
+                update_data["galleryImages"] = gallery_list
+        except (json_module.JSONDecodeError, TypeError):
+            pass
     
     if update_data:
         await db.projects.update_one({"id": project_id}, {"$set": update_data})
