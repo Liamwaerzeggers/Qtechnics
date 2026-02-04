@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, LogOut, Save, X, Image } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, Save, X, Upload, Image as ImageIcon } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -12,62 +12,7 @@ import {
   DialogTitle,
 } from './ui/dialog';
 
-const initialProjects = [
-  {
-    id: 1,
-    category: 'totaalproject',
-    title: 'Volledige woning renovatie',
-    location: 'Hasselt',
-    description: 'Complete renovatie van een jaren \'60 woning tot moderne gezinswoning.',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80',
-    featured: true,
-  },
-  {
-    id: 2,
-    category: 'badkamer',
-    title: 'Luxe badkamer met inloopdouche',
-    location: 'Genk',
-    description: 'Transformatie van een klassieke badkamer naar een moderne wellness-oase.',
-    image: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=600&q=80',
-    featured: true,
-  },
-  {
-    id: 3,
-    category: 'keuken',
-    title: 'Design keuken met kookeiland',
-    location: 'Lommel',
-    description: 'Strakke keuken met groot kookeiland en hoogwaardige afwerking.',
-    image: 'https://images.unsplash.com/photo-1556909114-44e3e70034e2?w=600&q=80',
-    featured: true,
-  },
-  {
-    id: 4,
-    category: 'maatkasten',
-    title: 'Inloopkast op maat',
-    location: 'Beringen',
-    description: 'Luxe inloopkast met slimme indeling en geïntegreerde verlichting.',
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80',
-    featured: false,
-  },
-  {
-    id: 5,
-    category: 'badkamer',
-    title: 'Moderne badkamer renovatie',
-    location: 'Ham',
-    description: 'Compacte badkamer getransformeerd tot functionele ruimte met stijlvolle afwerking.',
-    image: 'https://images.unsplash.com/photo-1620626011761-996317b8d101?w=600&q=80',
-    featured: false,
-  },
-  {
-    id: 6,
-    category: 'technieken',
-    title: 'Warmtepomp installatie',
-    location: 'Tessenderlo',
-    description: 'Vervanging oude gasketel door moderne lucht-water warmtepomp.',
-    image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&q=80',
-    featured: false,
-  },
-];
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const categories = [
   { id: 'totaalproject', label: 'Totaalproject' },
@@ -82,39 +27,101 @@ const AdminDashboard = () => {
   const [projects, setProjects] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const mainImageRef = useRef(null);
+  const galleryImageRef = useRef(null);
+  
   const [formData, setFormData] = useState({
     title: '',
     category: 'totaalproject',
     location: '',
-    description: '',
-    image: '',
+    shortDescription: '',
+    fullDescription: '',
+    mainImage: '',
+    galleryImages: [],
     featured: false,
   });
 
   useEffect(() => {
-    // Check if logged in
     if (!localStorage.getItem('maxq_admin')) {
       navigate('/admin');
       return;
     }
-    // Load projects from localStorage or use initial
-    const savedProjects = localStorage.getItem('maxq_projects');
-    if (savedProjects) {
-      setProjects(JSON.parse(savedProjects));
-    } else {
-      setProjects(initialProjects);
-      localStorage.setItem('maxq_projects', JSON.stringify(initialProjects));
-    }
+    fetchProjects();
   }, [navigate]);
+
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/projects`);
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data);
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('maxq_admin');
     navigate('/admin');
   };
 
-  const saveProjects = (newProjects) => {
-    setProjects(newProjects);
-    localStorage.setItem('maxq_projects', JSON.stringify(newProjects));
+  const uploadFile = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await fetch(`${BACKEND_URL}/api/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      throw new Error('Upload failed');
+    }
+    
+    return await response.json();
+  };
+
+  const handleMainImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setUploading(true);
+    try {
+      const result = await uploadFile(file);
+      setFormData({ ...formData, mainImage: result.url });
+    } catch (error) {
+      alert('Fout bij uploaden van afbeelding');
+    }
+    setUploading(false);
+  };
+
+  const handleGalleryImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    
+    setUploading(true);
+    try {
+      const uploadPromises = files.map(file => uploadFile(file));
+      const results = await Promise.all(uploadPromises);
+      const newUrls = results.map(r => r.url);
+      setFormData({ 
+        ...formData, 
+        galleryImages: [...formData.galleryImages, ...newUrls] 
+      });
+    } catch (error) {
+      alert('Fout bij uploaden van afbeeldingen');
+    }
+    setUploading(false);
+  };
+
+  const removeGalleryImage = (index) => {
+    setFormData({
+      ...formData,
+      galleryImages: formData.galleryImages.filter((_, i) => i !== index)
+    });
   };
 
   const openAddDialog = () => {
@@ -123,8 +130,10 @@ const AdminDashboard = () => {
       title: '',
       category: 'totaalproject',
       location: '',
-      description: '',
-      image: '',
+      shortDescription: '',
+      fullDescription: '',
+      mainImage: '',
+      galleryImages: [],
       featured: false,
     });
     setIsDialogOpen(true);
@@ -136,43 +145,99 @@ const AdminDashboard = () => {
       title: project.title,
       category: project.category,
       location: project.location,
-      description: project.description,
-      image: project.image,
+      shortDescription: project.shortDescription,
+      fullDescription: project.fullDescription || '',
+      mainImage: project.mainImage || '',
+      galleryImages: project.galleryImages || [],
       featured: project.featured,
     });
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
-    if (editingProject) {
-      // Update existing
-      const updated = projects.map((p) =>
-        p.id === editingProject.id ? { ...p, ...formData } : p
-      );
-      saveProjects(updated);
-    } else {
-      // Add new
-      const newProject = {
-        id: Date.now(),
-        ...formData,
-      };
-      saveProjects([...projects, newProject]);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      if (editingProject) {
+        // Update existing project
+        const response = await fetch(`${BACKEND_URL}/api/projects/${editingProject.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: formData.title,
+            category: formData.category,
+            location: formData.location,
+            shortDescription: formData.shortDescription,
+            fullDescription: formData.fullDescription,
+            featured: formData.featured,
+          }),
+        });
+        
+        if (response.ok) {
+          // Update images separately
+          await fetch(`${BACKEND_URL}/api/projects/${editingProject.id}/images?mainImage=${encodeURIComponent(formData.mainImage)}&galleryImages=${encodeURIComponent(JSON.stringify(formData.galleryImages))}`, {
+            method: 'PUT',
+          });
+        }
+      } else {
+        // Create new project
+        const response = await fetch(`${BACKEND_URL}/api/projects`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: formData.title,
+            category: formData.category,
+            location: formData.location,
+            shortDescription: formData.shortDescription,
+            fullDescription: formData.fullDescription,
+            featured: formData.featured,
+          }),
+        });
+        
+        if (response.ok) {
+          const newProject = await response.json();
+          // Update images
+          await fetch(`${BACKEND_URL}/api/projects/${newProject.id}/images?mainImage=${encodeURIComponent(formData.mainImage)}&galleryImages=${encodeURIComponent(JSON.stringify(formData.galleryImages))}`, {
+            method: 'PUT',
+          });
+        }
+      }
+      
+      await fetchProjects();
+      setIsDialogOpen(false);
+    } catch (error) {
+      alert('Fout bij opslaan van project');
     }
-    setIsDialogOpen(false);
+    setSaving(false);
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm('Weet u zeker dat u dit project wilt verwijderen?')) {
-      const filtered = projects.filter((p) => p.id !== id);
-      saveProjects(filtered);
+  const handleDelete = async (id) => {
+    if (!window.confirm('Weet u zeker dat u dit project wilt verwijderen?')) return;
+    
+    try {
+      await fetch(`${BACKEND_URL}/api/projects/${id}`, { method: 'DELETE' });
+      await fetchProjects();
+    } catch (error) {
+      alert('Fout bij verwijderen van project');
     }
   };
 
-  const toggleFeatured = (id) => {
-    const updated = projects.map((p) =>
-      p.id === id ? { ...p, featured: !p.featured } : p
-    );
-    saveProjects(updated);
+  const toggleFeatured = async (project) => {
+    try {
+      await fetch(`${BACKEND_URL}/api/projects/${project.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featured: !project.featured }),
+      });
+      await fetchProjects();
+    } catch (error) {
+      alert('Fout bij bijwerken van project');
+    }
+  };
+
+  const getImageUrl = (url) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    return `${BACKEND_URL}${url}`;
   };
 
   return (
@@ -217,99 +282,106 @@ const AdminDashboard = () => {
           </Button>
         </div>
 
-        {/* Projects Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Afbeelding</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Titel</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categorie</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Locatie</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uitgelicht</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acties</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {projects.map((project) => (
-                <tr key={project.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <img 
-                      src={project.image} 
-                      alt={project.title} 
-                      className="w-16 h-12 object-cover rounded"
-                    />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-[#202020]">{project.title}</div>
-                    <div className="text-sm text-[#202020]/70 truncate max-w-xs">{project.description}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="px-2 py-1 bg-gray-100 rounded text-xs uppercase">
-                      {project.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-[#202020]/70">{project.location}</td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => toggleFeatured(project.id)}
-                      className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                        project.featured 
-                          ? 'bg-[#3a190b] text-white' 
-                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                      }`}
+        {/* Projects Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.map((project) => (
+            <div key={project.id} className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="aspect-video relative">
+                {project.mainImage ? (
+                  <img 
+                    src={getImageUrl(project.mainImage)} 
+                    alt={project.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <ImageIcon className="h-12 w-12 text-gray-400" />
+                  </div>
+                )}
+                {project.featured && (
+                  <span className="absolute top-2 left-2 bg-[#3a190b] text-white text-xs px-2 py-1 rounded">
+                    Uitgelicht
+                  </span>
+                )}
+              </div>
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs uppercase font-semibold text-[#3a190b]">
+                    {project.category}
+                  </span>
+                  <span className="text-xs text-gray-400">•</span>
+                  <span className="text-xs text-gray-500">{project.location}</span>
+                </div>
+                <h3 className="font-bold text-[#202020] mb-2">{project.title}</h3>
+                <p className="text-sm text-gray-600 line-clamp-2 mb-4">{project.shortDescription}</p>
+                <div className="flex justify-between items-center">
+                  <button
+                    onClick={() => toggleFeatured(project)}
+                    className={`text-xs px-3 py-1 rounded transition-colors ${
+                      project.featured 
+                        ? 'bg-[#3a190b] text-white' 
+                        : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                    }`}
+                  >
+                    {project.featured ? 'Uitgelicht' : 'Niet uitgelicht'}
+                  </button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => openEditDialog(project)}
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-8 p-0"
                     >
-                      {project.featured ? 'Ja' : 'Nee'}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        onClick={() => openEditDialog(project)}
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        onClick={() => handleDelete(project.id)}
-                        size="sm"
-                        variant="outline"
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      onClick={() => handleDelete(project.id)}
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
+
+        {projects.length === 0 && (
+          <div className="text-center py-12">
+            <ImageIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 mb-4">Nog geen projecten toegevoegd</p>
+            <Button onClick={openAddDialog} className="bg-[#3a190b] hover:bg-[#500000] text-white">
+              <Plus className="h-4 w-4 mr-2" />
+              Voeg eerste project toe
+            </Button>
+          </div>
+        )}
       </main>
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingProject ? 'Project bewerken' : 'Nieuw project toevoegen'}
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="title">Titel *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Project titel"
-              />
-            </div>
-
+          <div className="space-y-6 py-4">
+            {/* Basic Info */}
             <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label htmlFor="title">Titel *</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Project titel"
+                />
+              </div>
               <div>
                 <Label htmlFor="category">Categorie *</Label>
                 <select
@@ -334,34 +406,108 @@ const AdminDashboard = () => {
               </div>
             </div>
 
+            {/* Descriptions */}
             <div>
-              <Label htmlFor="description">Beschrijving *</Label>
+              <Label htmlFor="shortDescription">Korte beschrijving *</Label>
               <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Korte beschrijving van het project"
-                rows={3}
+                id="shortDescription"
+                value={formData.shortDescription}
+                onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
+                placeholder="Korte beschrijving voor de projectenlijst"
+                rows={2}
               />
             </div>
 
             <div>
-              <Label htmlFor="image">Afbeelding URL *</Label>
-              <Input
-                id="image"
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                placeholder="https://..."
+              <Label htmlFor="fullDescription">Uitgebreide beschrijving</Label>
+              <Textarea
+                id="fullDescription"
+                value={formData.fullDescription}
+                onChange={(e) => setFormData({ ...formData, fullDescription: e.target.value })}
+                placeholder="Gedetailleerde beschrijving voor de detailpagina..."
+                rows={5}
               />
-              {formData.image && (
-                <img 
-                  src={formData.image} 
-                  alt="Preview" 
-                  className="mt-2 w-full h-32 object-cover rounded"
-                />
-              )}
             </div>
 
+            {/* Main Image */}
+            <div>
+              <Label>Hoofdafbeelding</Label>
+              <div className="mt-2">
+                {formData.mainImage ? (
+                  <div className="relative inline-block">
+                    <img 
+                      src={getImageUrl(formData.mainImage)} 
+                      alt="Hoofdafbeelding"
+                      className="h-40 object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={() => setFormData({ ...formData, mainImage: '' })}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div 
+                    onClick={() => mainImageRef.current?.click()}
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-[#3a190b] transition-colors"
+                  >
+                    <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">
+                      Klik om een afbeelding te uploaden<br />
+                      <span className="text-xs">PNG, JPG, JPEG, GIF, WEBP</span>
+                    </p>
+                  </div>
+                )}
+                <input
+                  ref={mainImageRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                  onChange={handleMainImageUpload}
+                  className="hidden"
+                />
+              </div>
+            </div>
+
+            {/* Gallery Images */}
+            <div>
+              <Label>Galerij afbeeldingen</Label>
+              <div className="mt-2 space-y-4">
+                <div className="grid grid-cols-4 gap-2">
+                  {formData.galleryImages.map((image, index) => (
+                    <div key={index} className="relative aspect-square">
+                      <img 
+                        src={getImageUrl(image)} 
+                        alt={`Galerij ${index + 1}`}
+                        className="w-full h-full object-cover rounded"
+                      />
+                      <button
+                        onClick={() => removeGalleryImage(index)}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <div 
+                    onClick={() => galleryImageRef.current?.click()}
+                    className="aspect-square border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer hover:border-[#3a190b] transition-colors"
+                  >
+                    <Plus className="h-6 w-6 text-gray-400" />
+                  </div>
+                </div>
+                <input
+                  ref={galleryImageRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                  multiple
+                  onChange={handleGalleryImageUpload}
+                  className="hidden"
+                />
+              </div>
+            </div>
+
+            {/* Featured Toggle */}
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -374,21 +520,32 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={saving}>
               <X className="h-4 w-4 mr-2" />
               Annuleren
             </Button>
             <Button 
               onClick={handleSave}
               className="bg-[#3a190b] hover:bg-[#500000] text-white"
+              disabled={saving || uploading || !formData.title || !formData.location || !formData.shortDescription}
             >
               <Save className="h-4 w-4 mr-2" />
-              Opslaan
+              {saving ? 'Opslaan...' : 'Opslaan'}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Loading Overlay */}
+      {uploading && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#3a190b] mx-auto mb-4"></div>
+            <p>Afbeelding uploaden...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
