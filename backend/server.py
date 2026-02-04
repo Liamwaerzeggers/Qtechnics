@@ -243,6 +243,52 @@ async def send_lead_notification_email(lead: Lead):
     except Exception as e:
         logger.error(f"Error in send_lead_notification_email: {str(e)}")
 
+async def sync_lead_to_qtechnics(lead: Lead):
+    """Sync lead to QTechnics Dashboard via webhook"""
+    try:
+        project_types_str = ', '.join([get_project_type_label(t) for t in lead.projectTypes])
+        
+        # Prepare webhook payload
+        webhook_data = {
+            "name": f"{lead.firstName} {lead.lastName}",
+            "email": lead.email,
+            "phone": lead.phone,
+            "address": lead.street,
+            "postal_code": lead.postalCode,
+            "city": lead.city,
+            "project_type": project_types_str,
+            "description": lead.description,
+            "source": "maxq.be",
+            "form_name": "Renovatie aanvraag",
+            "extra_data": {
+                "budget": get_budget_label(lead.budget),
+                "timeline": get_timeline_label(lead.timeline),
+                "lead_id": lead.id,
+            }
+        }
+        
+        headers = {
+            "Content-Type": "application/json",
+            "X-API-Key": QTECHNICS_API_KEY
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                QTECHNICS_WEBHOOK_URL,
+                json=webhook_data,
+                headers=headers,
+                timeout=30.0
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                logger.info(f"Lead synced to QTechnics: {lead.id} -> Lead ID: {result.get('lead_id')}, Project ID: {result.get('project_id')}")
+            else:
+                logger.error(f"Failed to sync lead to QTechnics: {response.status_code} - {response.text}")
+                
+    except Exception as e:
+        logger.error(f"Error syncing lead to QTechnics: {str(e)}")
+
 @api_router.post("/leads", response_model=Lead)
 async def create_lead(input: LeadCreate, background_tasks: BackgroundTasks):
     """Create a new lead and send notification emails"""
@@ -258,6 +304,9 @@ async def create_lead(input: LeadCreate, background_tasks: BackgroundTasks):
     
     # Send email notification in background
     background_tasks.add_task(send_lead_notification_email, lead_obj)
+    
+    # Sync to QTechnics Dashboard in background
+    background_tasks.add_task(sync_lead_to_qtechnics, lead_obj)
     
     return lead_obj
 
