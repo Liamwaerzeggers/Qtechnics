@@ -1101,6 +1101,141 @@ async def logout(response: Response, current_user: User = Depends(get_current_us
     response.delete_cookie(key="session_token", path="/")
     return {"message": "Logged out successfully"}
 
+# ============= WEBHOOK ROUTES (PUBLIC - API KEY AUTH) =============
+
+# API Key for webhook authentication (stored in environment or database)
+WEBHOOK_API_KEY = os.environ.get('WEBHOOK_API_KEY', 'qtechnics-webhook-2024-secure-key')
+
+async def verify_webhook_api_key(x_api_key: str = Header(None, alias="X-API-Key")):
+    """Verify the API key for webhook requests"""
+    if not x_api_key:
+        raise HTTPException(status_code=401, detail="API Key ontbreekt. Voeg X-API-Key header toe.")
+    if x_api_key != WEBHOOK_API_KEY:
+        raise HTTPException(status_code=403, detail="Ongeldige API Key")
+    return True
+
+@api_router.post("/webhook/lead")
+async def webhook_create_lead(
+    lead_data: WebsiteLeadWebhook,
+    api_key_valid: bool = Depends(verify_webhook_api_key)
+):
+    """
+    PUBLIC WEBHOOK: Create a lead from external website form submission.
+    
+    Authentication: X-API-Key header required
+    
+    This endpoint:
+    1. Creates a new lead with all form data
+    2. Automatically creates a project
+    3. Stores all extra form data in the lead description
+    """
+    try:
+        # Build full address if components provided
+        full_address = lead_data.address or ""
+        if lead_data.postal_code or lead_data.city:
+            address_parts = [lead_data.address or ""]
+            if lead_data.postal_code:
+                address_parts.append(lead_data.postal_code)
+            if lead_data.city:
+                address_parts.append(lead_data.city)
+            full_address = ", ".join(filter(None, address_parts))
+        
+        # Build comprehensive description with all form data
+        description_parts = []
+        
+        if lead_data.message:
+            description_parts.append(f"📝 Bericht:\n{lead_data.message}")
+        
+        if lead_data.description:
+            description_parts.append(f"📋 Omschrijving:\n{lead_data.description}")
+        
+        if lead_data.company_name:
+            description_parts.append(f"🏢 Bedrijf: {lead_data.company_name}")
+        
+        if lead_data.source:
+            description_parts.append(f"🌐 Bron: {lead_data.source}")
+        
+        if lead_data.form_name:
+            description_parts.append(f"📄 Formulier: {lead_data.form_name}")
+        
+        if lead_data.page_url:
+            description_parts.append(f"🔗 Pagina: {lead_data.page_url}")
+        
+        # Add any extra data fields
+        if lead_data.extra_data:
+            extra_info = []
+            for key, value in lead_data.extra_data.items():
+                if value:
+                    extra_info.append(f"• {key}: {value}")
+            if extra_info:
+                description_parts.append(f"📎 Extra info:\n" + "\n".join(extra_info))
+        
+        full_description = "\n\n".join(description_parts)
+        
+        # Determine if business
+        is_business = lead_data.is_business or bool(lead_data.vat_number) or bool(lead_data.company_name)
+        
+        # Create the lead
+        lead_id = f"LEAD-{str(uuid.uuid4())[:8].upper()}"
+        lead_doc = {
+            "id": lead_id,
+            "name": lead_data.company_name if lead_data.company_name else lead_data.name,
+            "email": lead_data.email,
+            "phone": lead_data.phone,
+            "address": full_address or "Via website formulier",
+            "project_type": lead_data.project_type or "Website aanvraag",
+            "description": full_description,
+            "vat_number": lead_data.vat_number,
+            "is_business": is_business,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "user_id": "website-webhook",  # System user for webhook leads
+            "source": lead_data.source or "website",
+            "contact_person": lead_data.name if lead_data.company_name else None,  # Store contact if company
+        }
+        
+        await db.leads.insert_one(lead_doc)
+        logger.info(f"Webhook: Created lead {lead_id} from {lead_data.source}")
+        
+        # AUTOMATICALLY CREATE PROJECT
+        project_id = f"PROJ-{str(uuid.uuid4())[:8].upper()}"
+        project_name = f"Project - {lead_data.company_name or lead_data.name}"
+        if lead_data.city:
+            project_name += f" ({lead_data.city})"
+        
+        project_doc = {
+            "id": project_id,
+            "lead_id": lead_id,
+            "name": project_name,
+            "status": "eerste bezoek",
+            "first_visit_date": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "user_id": "website-webhook",
+            "notes": f"Automatisch aangemaakt via website formulier.\n\n{full_description}"
+        }
+        
+        await db.projects.insert_one(project_doc)
+        logger.info(f"Webhook: Created project {project_id} for lead {lead_id}")
+        
+        return {
+            "success": True,
+            "message": "Lead en project succesvol aangemaakt",
+            "lead_id": lead_id,
+            "project_id": project_id
+        }
+        
+    except Exception as e:
+        logger.error(f"Webhook error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Fout bij aanmaken lead: {str(e)}")
+
+@api_router.get("/webhook/test")
+async def webhook_test(api_key_valid: bool = Depends(verify_webhook_api_key)):
+    """Test endpoint to verify API key is working"""
+    return {
+        "success": True,
+        "message": "API Key is geldig! Webhook verbinding werkt.",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
 # ============= LEAD ROUTES =============
 
 @api_router.post("/leads", response_model=Lead)
