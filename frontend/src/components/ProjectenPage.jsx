@@ -1,64 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Link } from 'react-router-dom';
 
-const projects = [
-  {
-    id: 1,
-    category: 'totaalproject',
-    title: 'Volledige woning renovatie',
-    location: 'Hasselt',
-    description: 'Complete renovatie van een jaren \'60 woning tot moderne gezinswoning.',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80',
-    featured: true,
-  },
-  {
-    id: 2,
-    category: 'badkamer',
-    title: 'Luxe badkamer met inloopdouche',
-    location: 'Genk',
-    description: 'Transformatie van een klassieke badkamer naar een moderne wellness-oase.',
-    image: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=600&q=80',
-    featured: true,
-  },
-  {
-    id: 3,
-    category: 'keuken',
-    title: 'Design keuken met kookeiland',
-    location: 'Lommel',
-    description: 'Strakke keuken met groot kookeiland en hoogwaardige afwerking.',
-    image: 'https://images.unsplash.com/photo-1556909114-44e3e70034e2?w=600&q=80',
-    featured: true,
-  },
-  {
-    id: 4,
-    category: 'maatkasten',
-    title: 'Inloopkast op maat',
-    location: 'Beringen',
-    description: 'Luxe inloopkast met slimme indeling en geïntegreerde verlichting.',
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80',
-    featured: false,
-  },
-  {
-    id: 5,
-    category: 'badkamer',
-    title: 'Moderne badkamer renovatie',
-    location: 'Ham',
-    description: 'Compacte badkamer getransformeerd tot functionele ruimte met stijlvolle afwerking.',
-    image: 'https://images.unsplash.com/photo-1620626011761-996317b8d101?w=600&q=80',
-    featured: false,
-  },
-  {
-    id: 6,
-    category: 'technieken',
-    title: 'Warmtepomp installatie',
-    location: 'Tessenderlo',
-    description: 'Vervanging oude gasketel door moderne lucht-water warmtepomp.',
-    image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&q=80',
-    featured: false,
-  },
-];
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const categories = [
   { id: 'alle', label: 'Alle' },
@@ -69,12 +14,102 @@ const categories = [
   { id: 'technieken', label: 'Technieken' },
 ];
 
+// Fallback projects for when database is empty
+const fallbackProjects = [
+  {
+    id: 'demo-1',
+    category: 'totaalproject',
+    title: 'Volledige woning renovatie',
+    location: 'Hasselt',
+    shortDescription: 'Complete renovatie van een jaren \'60 woning tot moderne gezinswoning.',
+    mainImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80',
+    featured: true,
+  },
+  {
+    id: 'demo-2',
+    category: 'badkamer',
+    title: 'Luxe badkamer met inloopdouche',
+    location: 'Genk',
+    shortDescription: 'Transformatie van een klassieke badkamer naar een moderne wellness-oase.',
+    mainImage: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=600&q=80',
+    featured: true,
+  },
+  {
+    id: 'demo-3',
+    category: 'keuken',
+    title: 'Design keuken met kookeiland',
+    location: 'Lommel',
+    shortDescription: 'Strakke keuken met groot kookeiland en hoogwaardige afwerking.',
+    mainImage: 'https://images.unsplash.com/photo-1556909114-44e3e70034e2?w=600&q=80',
+    featured: true,
+  },
+  {
+    id: 'demo-4',
+    category: 'maatkasten',
+    title: 'Inloopkast op maat',
+    location: 'Beringen',
+    shortDescription: 'Luxe inloopkast met slimme indeling en geïntegreerde verlichting.',
+    mainImage: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80',
+    featured: false,
+  },
+  {
+    id: 'demo-5',
+    category: 'badkamer',
+    title: 'Moderne badkamer renovatie',
+    location: 'Ham',
+    shortDescription: 'Compacte badkamer getransformeerd tot functionele ruimte met stijlvolle afwerking.',
+    mainImage: 'https://images.unsplash.com/photo-1620626011761-996317b8d101?w=600&q=80',
+    featured: false,
+  },
+  {
+    id: 'demo-6',
+    category: 'technieken',
+    title: 'Warmtepomp installatie',
+    location: 'Tessenderlo',
+    shortDescription: 'Vervanging oude gasketel door moderne lucht-water warmtepomp.',
+    mainImage: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&q=80',
+    featured: false,
+  },
+];
+
 const ProjectenPage = () => {
   const [activeCategory, setActiveCategory] = useState('alle');
+  const [projects, setProjects] = useState(fallbackProjects);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/projects`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.length > 0) {
+          setProjects(data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+    setLoading(false);
+  };
 
   const filteredProjects = activeCategory === 'alle' 
     ? projects 
     : projects.filter(p => p.category === activeCategory);
+
+  const getImageUrl = (url) => {
+    if (!url) return 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80';
+    if (url.startsWith('http')) return url;
+    return `${BACKEND_URL}${url}`;
+  };
+
+  const getCategoryLabel = (category) => {
+    const cat = categories.find(c => c.id === category);
+    return cat ? cat.label : category;
+  };
 
   return (
     <div>
@@ -114,38 +149,53 @@ const ProjectenPage = () => {
       {/* Projects Grid */}
       <section className="py-16 md:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProjects.map((project) => (
-              <div key={project.id} className="group cursor-pointer">
-                <div className="relative overflow-hidden rounded-lg mb-4">
-                  {project.featured && (
-                    <span className="absolute top-4 left-4 bg-[#3a190b] text-white text-xs font-semibold px-3 py-1 rounded z-10">
-                      Uitgelicht
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3a190b]"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredProjects.map((project) => (
+                <Link 
+                  key={project.id} 
+                  to={project.id.startsWith('demo-') ? '#' : `/projecten/${project.id}`}
+                  className="group cursor-pointer block"
+                  onClick={(e) => {
+                    if (project.id.startsWith('demo-')) {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  <div className="relative overflow-hidden rounded-lg mb-4">
+                    {project.featured && (
+                      <span className="absolute top-4 left-4 bg-[#3a190b] text-white text-xs font-semibold px-3 py-1 rounded z-10">
+                        Uitgelicht
+                      </span>
+                    )}
+                    <img
+                      src={getImageUrl(project.mainImage || project.image)}
+                      alt={project.title}
+                      className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+                  </div>
+                  <div className="flex items-center text-sm text-[#202020]/70 mb-2">
+                    <span className="font-semibold text-[#3a190b] uppercase tracking-wider text-xs">
+                      {getCategoryLabel(project.category)}
                     </span>
-                  )}
-                  <img
-                    src={project.image}
-                    alt={project.title}
-                    className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
-                </div>
-                <div className="flex items-center text-sm text-[#202020]/70 mb-2">
-                  <span className="font-semibold text-[#3a190b] uppercase tracking-wider text-xs">
-                    {project.category}
-                  </span>
-                  <span className="mx-2">•</span>
-                  <span>{project.location}</span>
-                </div>
-                <h3 className="text-xl font-bold text-[#202020] group-hover:text-[#500000] transition-colors mb-2">
-                  {project.title}
-                </h3>
-                <p className="text-[#202020]/70 text-sm leading-relaxed">
-                  {project.description}
-                </p>
-              </div>
-            ))}
-          </div>
+                    <span className="mx-2">•</span>
+                    <span>{project.location}</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-[#202020] group-hover:text-[#500000] transition-colors mb-2">
+                    {project.title}
+                  </h3>
+                  <p className="text-[#202020]/70 text-sm leading-relaxed">
+                    {project.shortDescription || project.description}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
