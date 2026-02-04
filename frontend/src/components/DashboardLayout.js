@@ -24,6 +24,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
       { name: 'Offertes', path: '/quotes', icon: FileText, testId: 'nav-quotes', adminOnly: true },
       { name: 'Projecten', path: '/projects', icon: FileSpreadsheet, testId: 'nav-projects', adminOnly: false },
       { name: 'Facturen', path: '/invoices', icon: FileText, testId: 'nav-invoices', adminOnly: true },
+      { name: 'Onderhoud', path: '/maintenance', icon: Wrench, testId: 'nav-maintenance', adminOnly: true },
       { name: 'Financiën', path: '/finances', icon: TrendingUp, testId: 'nav-finances', adminOnly: true },
       { name: 'Kalender', path: '/calendar', icon: Calendar, testId: 'nav-calendar', adminOnly: true },
       { name: 'Materialen', path: '/materials', icon: Package, testId: 'nav-materials', adminOnly: true },
