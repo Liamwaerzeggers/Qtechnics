@@ -11,6 +11,9 @@ import CTA from './components/CTA';
 import Footer from './components/Footer';
 import RenoverenPage from './components/RenoverenPage';
 import ProjectenPage from './components/ProjectenPage';
+import ContactPage from './components/ContactPage';
+import AdminLogin from './components/AdminLogin';
+import AdminDashboard from './components/AdminDashboard';
 
 const Home = () => {
   return (
@@ -25,20 +28,30 @@ const Home = () => {
   );
 };
 
+// Layout with Header and Footer
+const MainLayout = ({ children }) => (
+  <>
+    <Header />
+    <main>{children}</main>
+    <Footer />
+  </>
+);
+
 function App() {
   return (
     <div className="App">
       <BrowserRouter>
-        <Header />
-        <main>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/renoveren" element={<RenoverenPage />} />
-            <Route path="/projecten" element={<ProjectenPage />} />
-            <Route path="/contact" element={<Home />} />
-          </Routes>
-        </main>
-        <Footer />
+        <Routes>
+          {/* Public pages with header/footer */}
+          <Route path="/" element={<MainLayout><Home /></MainLayout>} />
+          <Route path="/renoveren" element={<MainLayout><RenoverenPage /></MainLayout>} />
+          <Route path="/projecten" element={<MainLayout><ProjectenPage /></MainLayout>} />
+          <Route path="/contact" element={<MainLayout><ContactPage /></MainLayout>} />
+          
+          {/* Admin pages without header/footer */}
+          <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        </Routes>
       </BrowserRouter>
     </div>
   );
