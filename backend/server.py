@@ -4722,7 +4722,7 @@ async def admin_login(username: str, password: str, response: Response):
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
-    await db.sessions.insert_one(session)
+    await db.user_sessions.insert_one(session)
     
     # Set cookie for session token
     response.set_cookie(
