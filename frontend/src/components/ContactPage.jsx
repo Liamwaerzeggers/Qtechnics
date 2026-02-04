@@ -214,9 +214,11 @@ const ContactPage = () => {
           <p className="text-white/80 text-lg mb-8">
             Plan een gratis en vrijblijvend plaatsbezoek. We komen graag bij u langs om uw project te bespreken.
           </p>
-          <Button className="bg-white text-[#3a190b] hover:bg-gray-100 px-6 py-3 text-base">
-            Plan een plaatsbezoek
-          </Button>
+          <Link to="/start">
+            <Button className="bg-white text-[#3a190b] hover:bg-gray-100 px-6 py-3 text-base">
+              Plan een plaatsbezoek
+            </Button>
+          </Link>
         </div>
       </section>
     </div>
