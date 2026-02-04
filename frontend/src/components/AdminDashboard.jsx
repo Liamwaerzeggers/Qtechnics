@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, LogOut, Save, X, Upload, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, Save, X, Upload, Image as ImageIcon, Users, FolderOpen, Mail, Phone, MapPin, Calendar, Euro, Clock, Eye, ExternalLink } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -9,6 +9,48 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
+// Helper functions for labels
+const getBudgetLabel = (budget) => {
+  const map = {
+    'under25k': '< €25.000',
+    '25k-50k': '€25.000 - €50.000',
+    '50k-100k': '€50.000 - €100.000',
+    '100k-200k': '€100.000 - €200.000',
+    'over200k': '> €200.000',
+    'unknown': 'Nog niet bepaald',
+  };
+  return map[budget] || budget;
+};
+
+const getTimelineLabel = (timeline) => {
+  const map = {
+    'asap': 'Zo snel mogelijk',
+    '1-3months': 'Binnen 1-3 maanden',
+    '3-6months': 'Binnen 3-6 maanden',
+    '6-12months': 'Binnen 6-12 maanden',
+    'exploring': 'Oriënterende fase',
+  };
+  return map[timeline] || timeline;
+};
+
+const getProjectTypeLabel = (type) => {
+  const map = {
+    'totaalrenovatie': 'Totaalrenovatie',
+    'badkamer': 'Badkamer',
+    'keuken': 'Keuken',
+    'technieken': 'Technieken',
+    'interieur': 'Interieur',
+  };
+  return map[type] || type;
+};
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('nl-BE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
+
+// Project Card Component
 const ProjectCard = ({ project, getImageUrl, onToggleFeatured, onEdit, onDelete }) => (
   <div className="bg-white rounded-lg shadow overflow-hidden">
     <div className="aspect-video relative bg-gray-200">
@@ -51,6 +93,59 @@ const ProjectCard = ({ project, getImageUrl, onToggleFeatured, onEdit, onDelete 
   </div>
 );
 
+// Lead Card Component
+const LeadCard = ({ lead, onView, onDelete }) => (
+  <div className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
+    <div className="flex justify-between items-start mb-3">
+      <div>
+        <h3 className="font-bold text-[#202020]">{lead.firstName} {lead.lastName}</h3>
+        <p className="text-sm text-gray-500">{lead.city}</p>
+      </div>
+      <span className="text-xs text-gray-400">{formatDate(lead.created_at)}</span>
+    </div>
+    
+    <div className="space-y-2 mb-4">
+      <div className="flex items-center gap-2 text-sm text-gray-600">
+        <Mail className="h-4 w-4 text-[#3a190b]" />
+        <a href={`mailto:${lead.email}`} className="hover:text-[#3a190b]">{lead.email}</a>
+      </div>
+      <div className="flex items-center gap-2 text-sm text-gray-600">
+        <Phone className="h-4 w-4 text-[#3a190b]" />
+        <a href={`tel:${lead.phone}`} className="hover:text-[#3a190b]">{lead.phone}</a>
+      </div>
+    </div>
+
+    <div className="flex flex-wrap gap-1 mb-3">
+      {lead.projectTypes?.map((type, i) => (
+        <span key={i} className="text-xs bg-[#3a190b]/10 text-[#3a190b] px-2 py-1 rounded">
+          {getProjectTypeLabel(type)}
+        </span>
+      ))}
+    </div>
+
+    <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
+      <span className="flex items-center gap-1">
+        <Euro className="h-3 w-3" />
+        {getBudgetLabel(lead.budget)}
+      </span>
+      <span className="flex items-center gap-1">
+        <Clock className="h-3 w-3" />
+        {getTimelineLabel(lead.timeline)}
+      </span>
+    </div>
+
+    <div className="flex justify-between items-center pt-3 border-t">
+      <Button onClick={() => onView(lead)} size="sm" variant="outline" className="text-xs">
+        <Eye className="h-3 w-3 mr-1" />Details
+      </Button>
+      <Button onClick={() => onDelete(lead.id)} size="sm" variant="outline" className="text-xs text-red-600">
+        <Trash2 className="h-3 w-3 mr-1" />Verwijderen
+      </Button>
+    </div>
+  </div>
+);
+
+// Gallery Image Component
 const GalleryImage = ({ img, index, getImageUrl, onRemove }) => (
   <div className="relative aspect-square">
     <img src={getImageUrl(img)} alt={`Gallery ${index}`} className="w-full h-full object-cover rounded" />
@@ -65,12 +160,22 @@ const AdminDashboard = () => {
   const mainImageRef = useRef(null);
   const galleryImageRef = useRef(null);
   
+  // Tab state
+  const [activeTab, setActiveTab] = useState('projects');
+  
+  // Projects state
   const [projects, setProjects] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   
+  // Leads state
+  const [leads, setLeads] = useState([]);
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false);
+  
+  // Project form state
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('totaalproject');
   const [location, setLocation] = useState('');
@@ -92,13 +197,28 @@ const AdminDashboard = () => {
     }
   }, []);
 
+  const loadLeads = useCallback(async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/leads`);
+      if (res.ok) {
+        const data = await res.json();
+        // Sort by date, newest first
+        data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        setLeads(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
   useEffect(() => {
     if (!localStorage.getItem('maxq_admin')) {
       navigate('/admin');
       return;
     }
     loadProjects();
-  }, [navigate, loadProjects]);
+    loadLeads();
+  }, [navigate, loadProjects, loadLeads]);
 
   const handleLogout = () => {
     localStorage.removeItem('maxq_admin');
@@ -228,11 +348,21 @@ const AdminDashboard = () => {
     setSaving(false);
   };
 
-  const handleDelete = async (id) => {
+  const handleDeleteProject = async (id) => {
     if (!window.confirm('Weet u zeker dat u dit project wilt verwijderen?')) return;
     try {
       await fetch(`${BACKEND_URL}/api/projects/${id}`, { method: 'DELETE' });
       await loadProjects();
+    } catch (error) {
+      alert('Fout bij verwijderen');
+    }
+  };
+
+  const handleDeleteLead = async (id) => {
+    if (!window.confirm('Weet u zeker dat u deze aanvraag wilt verwijderen?')) return;
+    try {
+      await fetch(`${BACKEND_URL}/api/leads/${id}`, { method: 'DELETE' });
+      await loadLeads();
     } catch (error) {
       alert('Fout bij verwijderen');
     }
@@ -251,6 +381,11 @@ const AdminDashboard = () => {
     }
   };
 
+  const viewLead = (lead) => {
+    setSelectedLead(lead);
+    setIsLeadDialogOpen(true);
+  };
+
   const canSave = title && location && shortDesc && !saving && !uploading;
 
   return (
@@ -267,41 +402,111 @@ const AdminDashboard = () => {
         </div>
       </header>
 
+      {/* Tab Navigation */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex gap-1">
+            <button
+              onClick={() => setActiveTab('projects')}
+              className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 ${
+                activeTab === 'projects' 
+                  ? 'text-[#3a190b] border-[#3a190b]' 
+                  : 'text-gray-500 border-transparent hover:text-[#3a190b]'
+              }`}
+            >
+              <FolderOpen className="h-5 w-5" />
+              Projecten
+              <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">{projects.length}</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('leads')}
+              className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 ${
+                activeTab === 'leads' 
+                  ? 'text-[#3a190b] border-[#3a190b]' 
+                  : 'text-gray-500 border-transparent hover:text-[#3a190b]'
+              }`}
+            >
+              <Users className="h-5 w-5" />
+              Aanvragen
+              {leads.length > 0 && (
+                <span className="bg-[#3a190b] text-white text-xs px-2 py-0.5 rounded-full">{leads.length}</span>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-[#202020]">Projecten Beheer</h1>
-            <p className="text-[#202020]/70">{projects.length} projecten</p>
-          </div>
-          <Button onClick={openAddDialog} className="bg-[#3a190b] hover:bg-[#500000] text-white">
-            <Plus className="h-4 w-4 mr-2" />Nieuw project
-          </Button>
-        </div>
+        {/* Projects Tab */}
+        {activeTab === 'projects' && (
+          <>
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h1 className="text-2xl font-bold text-[#202020]">Projecten Beheer</h1>
+                <p className="text-[#202020]/70">{projects.length} projecten</p>
+              </div>
+              <Button onClick={openAddDialog} className="bg-[#3a190b] hover:bg-[#500000] text-white">
+                <Plus className="h-4 w-4 mr-2" />Nieuw project
+              </Button>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map(project => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              getImageUrl={getImageUrl}
-              onToggleFeatured={toggleFeatured}
-              onEdit={openEditDialog}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {projects.map(project => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  getImageUrl={getImageUrl}
+                  onToggleFeatured={toggleFeatured}
+                  onEdit={openEditDialog}
+                  onDelete={handleDeleteProject}
+                />
+              ))}
+            </div>
 
-        {projects.length === 0 && (
-          <div className="text-center py-12">
-            <ImageIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">Nog geen projecten</p>
-            <Button onClick={openAddDialog} className="bg-[#3a190b] text-white">
-              <Plus className="h-4 w-4 mr-2" />Voeg project toe
-            </Button>
-          </div>
+            {projects.length === 0 && (
+              <div className="text-center py-12">
+                <ImageIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 mb-4">Nog geen projecten</p>
+                <Button onClick={openAddDialog} className="bg-[#3a190b] text-white">
+                  <Plus className="h-4 w-4 mr-2" />Voeg project toe
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Leads Tab */}
+        {activeTab === 'leads' && (
+          <>
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h1 className="text-2xl font-bold text-[#202020]">Aanvragen</h1>
+                <p className="text-[#202020]/70">{leads.length} aanvragen ontvangen</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {leads.map(lead => (
+                <LeadCard
+                  key={lead.id}
+                  lead={lead}
+                  onView={viewLead}
+                  onDelete={handleDeleteLead}
+                />
+              ))}
+            </div>
+
+            {leads.length === 0 && (
+              <div className="text-center py-12">
+                <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">Nog geen aanvragen ontvangen</p>
+              </div>
+            )}
+          </>
         )}
       </main>
 
+      {/* Project Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -387,6 +592,104 @@ const AdminDashboard = () => {
               <Save className="h-4 w-4 mr-2" />{saving ? 'Opslaan...' : 'Opslaan'}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lead Detail Dialog */}
+      <Dialog open={isLeadDialogOpen} onOpenChange={setIsLeadDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Aanvraag details</DialogTitle>
+          </DialogHeader>
+          
+          {selectedLead && (
+            <div className="space-y-6 py-4">
+              {/* Contact Info */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-bold text-[#202020] mb-3 flex items-center gap-2">
+                  <Users className="h-5 w-5 text-[#3a190b]" />
+                  Contactgegevens
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Naam</p>
+                    <p className="font-medium">{selectedLead.firstName} {selectedLead.lastName}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Email</p>
+                    <a href={`mailto:${selectedLead.email}`} className="font-medium text-[#3a190b] hover:underline">
+                      {selectedLead.email}
+                    </a>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Telefoon</p>
+                    <a href={`tel:${selectedLead.phone}`} className="font-medium text-[#3a190b] hover:underline">
+                      {selectedLead.phone}
+                    </a>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Adres</p>
+                    <p className="font-medium">
+                      {selectedLead.street && `${selectedLead.street}, `}
+                      {selectedLead.postalCode} {selectedLead.city}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Project Info */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-bold text-[#202020] mb-3 flex items-center gap-2">
+                  <FolderOpen className="h-5 w-5 text-[#3a190b]" />
+                  Projectdetails
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Type project</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {selectedLead.projectTypes?.map((type, i) => (
+                        <span key={i} className="text-sm bg-[#3a190b]/10 text-[#3a190b] px-2 py-1 rounded">
+                          {getProjectTypeLabel(type)}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Budget</p>
+                    <p className="font-medium">{getBudgetLabel(selectedLead.budget)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Planning</p>
+                    <p className="font-medium">{getTimelineLabel(selectedLead.timeline)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Aanvraag datum</p>
+                    <p className="font-medium">{formatDate(selectedLead.created_at)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-bold text-[#202020] mb-3">Omschrijving van het project</h3>
+                <p className="text-gray-700 whitespace-pre-line">{selectedLead.description || 'Geen omschrijving gegeven'}</p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t">
+                <a href={`mailto:${selectedLead.email}`} className="flex-1">
+                  <Button className="w-full bg-[#3a190b] text-white">
+                    <Mail className="h-4 w-4 mr-2" />Email versturen
+                  </Button>
+                </a>
+                <a href={`tel:${selectedLead.phone}`} className="flex-1">
+                  <Button variant="outline" className="w-full">
+                    <Phone className="h-4 w-4 mr-2" />Bellen
+                  </Button>
+                </a>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
