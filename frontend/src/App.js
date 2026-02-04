@@ -48,6 +48,7 @@ function App() {
           <Route path="/" element={<MainLayout><Home /></MainLayout>} />
           <Route path="/renoveren" element={<MainLayout><RenoverenPage /></MainLayout>} />
           <Route path="/projecten" element={<MainLayout><ProjectenPage /></MainLayout>} />
+          <Route path="/projecten/:id" element={<MainLayout><ProjectDetail /></MainLayout>} />
           <Route path="/contact" element={<MainLayout><ContactPage /></MainLayout>} />
           
           {/* Admin pages without header/footer */}
