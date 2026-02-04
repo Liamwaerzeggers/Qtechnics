@@ -267,6 +267,121 @@ async def get_leads():
     
     return leads
 
+# File upload endpoint
+ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.webp'}
+
+@api_router.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    """Upload an image file and return the URL"""
+    # Check file extension
+    file_ext = Path(file.filename).suffix.lower()
+    if file_ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"File type not allowed. Allowed: {', '.join(ALLOWED_EXTENSIONS)}")
+    
+    # Generate unique filename
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    file_path = UPLOAD_DIR / unique_filename
+    
+    # Save file
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        logger.error(f"Failed to save file: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to save file")
+    
+    # Return the URL
+    return {"url": f"/uploads/{unique_filename}", "filename": unique_filename}
+
+# Project endpoints
+@api_router.get("/projects", response_model=List[Project])
+async def get_projects():
+    """Get all projects"""
+    projects = await db.projects.find({}, {"_id": 0}).to_list(1000)
+    
+    for project in projects:
+        if isinstance(project.get('created_at'), str):
+            project['created_at'] = datetime.fromisoformat(project['created_at'])
+    
+    return projects
+
+@api_router.get("/projects/{project_id}", response_model=Project)
+async def get_project(project_id: str):
+    """Get a single project by ID"""
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    if isinstance(project.get('created_at'), str):
+        project['created_at'] = datetime.fromisoformat(project['created_at'])
+    
+    return project
+
+@api_router.post("/projects", response_model=Project)
+async def create_project(input: ProjectCreate):
+    """Create a new project"""
+    project_dict = input.model_dump()
+    project_obj = Project(**project_dict)
+    
+    doc = project_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    
+    await db.projects.insert_one(doc)
+    logger.info(f"New project created: {project_obj.id} - {project_obj.title}")
+    
+    return project_obj
+
+@api_router.put("/projects/{project_id}", response_model=Project)
+async def update_project(project_id: str, input: ProjectUpdate):
+    """Update a project"""
+    # Get existing project
+    existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Update only provided fields
+    update_data = {k: v for k, v in input.model_dump().items() if v is not None}
+    
+    if update_data:
+        await db.projects.update_one({"id": project_id}, {"$set": update_data})
+    
+    # Return updated project
+    updated = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if isinstance(updated.get('created_at'), str):
+        updated['created_at'] = datetime.fromisoformat(updated['created_at'])
+    
+    return updated
+
+@api_router.put("/projects/{project_id}/images")
+async def update_project_images(project_id: str, mainImage: str = None, galleryImages: List[str] = None):
+    """Update project images"""
+    existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    update_data = {}
+    if mainImage is not None:
+        update_data["mainImage"] = mainImage
+    if galleryImages is not None:
+        update_data["galleryImages"] = galleryImages
+    
+    if update_data:
+        await db.projects.update_one({"id": project_id}, {"$set": update_data})
+    
+    updated = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/projects/{project_id}")
+async def delete_project(project_id: str):
+    """Delete a project"""
+    result = await db.projects.delete_one({"id": project_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    return {"message": "Project deleted successfully"}
+
 # Include the router in the main app
 app.include_router(api_router)
 
