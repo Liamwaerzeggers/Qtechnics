@@ -3,7 +3,7 @@ import { Star } from 'lucide-react';
 
 const Testimonials = () => {
   return (
-    <section className="py-16 md:py-24 bg-[#4a3728]">
+    <section className="py-16 md:py-24 bg-[#3a190b]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
@@ -26,12 +26,12 @@ const Testimonials = () => {
               <Star className="h-5 w-5 fill-[#E5A033] text-[#E5A033]" />
               <Star className="h-5 w-5 fill-[#E5A033] text-[#E5A033]" />
             </div>
-            <p className="text-[#4a3728] mb-6 leading-relaxed">
+            <p className="text-[#202020] mb-6 leading-relaxed">
               "Max Q heeft onze volledige badkamer getransformeerd. Van ontwerp tot uitvoering: alles verliep vlekkeloos. Aanrader!"
             </p>
             <div>
-              <p className="font-bold text-[#4a3728]">Jan & Lies V.</p>
-              <p className="text-sm text-[#6a5748]">Hasselt — Badkamerrenovatie</p>
+              <p className="font-bold text-[#202020]">Jan & Lies V.</p>
+              <p className="text-sm text-[#202020]/70">Hasselt — Badkamerrenovatie</p>
             </div>
           </div>
 
@@ -44,12 +44,12 @@ const Testimonials = () => {
               <Star className="h-5 w-5 fill-[#E5A033] text-[#E5A033]" />
               <Star className="h-5 w-5 fill-[#E5A033] text-[#E5A033]" />
             </div>
-            <p className="text-[#4a3728] mb-6 leading-relaxed">
+            <p className="text-[#202020] mb-6 leading-relaxed">
               "Eindelijk een aannemer die doet wat hij belooft. Onze keuken is precies geworden zoals we hadden gedroomd."
             </p>
             <div>
-              <p className="font-bold text-[#4a3728]">Kevin D.</p>
-              <p className="text-sm text-[#6a5748]">Genk — Keuken op maat</p>
+              <p className="font-bold text-[#202020]">Kevin D.</p>
+              <p className="text-sm text-[#202020]/70">Genk — Keuken op maat</p>
             </div>
           </div>
 
@@ -62,12 +62,12 @@ const Testimonials = () => {
               <Star className="h-5 w-5 fill-[#E5A033] text-[#E5A033]" />
               <Star className="h-5 w-5 fill-[#E5A033] text-[#E5A033]" />
             </div>
-            <p className="text-[#4a3728] mb-6 leading-relaxed">
+            <p className="text-[#202020] mb-6 leading-relaxed">
               "Totaalrenovatie van ons huis. Het team van Max Q dacht met ons mee en leverde topkwaliteit. De technische kennis via Q Technics is een groot pluspunt."
             </p>
             <div>
-              <p className="font-bold text-[#4a3728]">An & Bart M.</p>
-              <p className="text-sm text-[#6a5748]">Lommel — Totaalrenovatie</p>
+              <p className="font-bold text-[#202020]">An & Bart M.</p>
+              <p className="text-sm text-[#202020]/70">Lommel — Totaalrenovatie</p>
             </div>
           </div>
         </div>
