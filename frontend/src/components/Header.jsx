@@ -59,9 +59,11 @@ const Header = () => {
               <Phone className="h-4 w-4 mr-2" />
               +32 494 80 80 21
             </a>
-            <Button className="bg-[#3a190b] hover:bg-[#500000] text-white px-4 py-2 text-sm">
-              Gratis plaatsbezoek
-            </Button>
+            <Link to="/start">
+              <Button className="bg-[#3a190b] hover:bg-[#500000] text-white px-4 py-2 text-sm">
+                Gratis plaatsbezoek
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -96,9 +98,11 @@ const Header = () => {
                 <Phone className="h-4 w-4 mr-2" />
                 +32 494 80 80 21
               </a>
-              <Button className="w-full bg-[#3a190b] hover:bg-[#500000] text-white">
-                Gratis plaatsbezoek
-              </Button>
+              <Link to="/start" onClick={() => setMobileMenuOpen(false)}>
+                <Button className="w-full bg-[#3a190b] hover:bg-[#500000] text-white">
+                  Gratis plaatsbezoek
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
