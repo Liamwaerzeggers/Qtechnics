@@ -11,6 +11,7 @@ import CTA from './components/CTA';
 import Footer from './components/Footer';
 import RenoverenPage from './components/RenoverenPage';
 import ProjectenPage from './components/ProjectenPage';
+import ProjectDetail from './components/ProjectDetail';
 import ContactPage from './components/ContactPage';
 import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
