@@ -1533,11 +1533,11 @@ async def update_line_item(quote_id: str, item_id: str, item_update: LineItemUpd
     update_data = {k: v for k, v in item_update.model_dump().items() if v is not None}
     
     if update_data:
-        # Recalculate totals if quantity or price changed
-        if "quantity" in update_data or "unit_price" in update_data:
+        # Recalculate totals if quantity, price, or vat_rate changed
+        if "quantity" in update_data or "unit_price" in update_data or "vat_rate" in update_data:
             quantity = update_data.get("quantity", existing_item["quantity"])
             unit_price = update_data.get("unit_price", existing_item["unit_price"])
-            vat_rate = existing_item.get("vat_rate", 21)
+            vat_rate = update_data.get("vat_rate", existing_item.get("vat_rate", 21))
             
             # Calculate all totals correctly
             total_excl_vat = quantity * unit_price
