@@ -737,6 +737,144 @@ class SubcontractorPriceCreate(BaseModel):
     price_min: Optional[float] = None
     price_max: Optional[float] = None
 
+# ============= MAINTENANCE MODELS =============
+
+# Onderhoudscontract/dossier
+class MaintenanceContract(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"MAINT-{str(uuid.uuid4())[:8].upper()}")
+    
+    # Klantgegevens (direct, geen lead nodig)
+    client_name: str
+    client_email: str = ""
+    client_phone: str = ""
+    client_address: str = ""
+    client_postal_code: str = ""
+    client_city: str = ""
+    
+    # Type onderhoud
+    maintenance_type: str  # "verwarming" | "ventilatie" | "waterfilter"
+    
+    # Omschrijving
+    description: str = ""
+    
+    # Planning
+    scheduled_date: Optional[str] = None  # Geplande onderhoudsdatum
+    last_maintenance_date: Optional[str] = None
+    next_maintenance_date: Optional[str] = None
+    
+    # Frequentie (voor terugkerend onderhoud)
+    frequency_months: int = 12  # Elke X maanden
+    
+    # Status
+    status: str = "gepland"  # "gepland" | "uitgevoerd" | "gefactureerd" | "geannuleerd"
+    
+    # Prijzen
+    service_price: float = 0.0  # Onderhoudsprijs
+    materials_cost: float = 0.0  # Materiaalkost (berekend uit purchases)
+    
+    # Notities
+    notes: str = ""
+    technician_notes: str = ""  # Technische opmerkingen na onderhoud
+    
+    # Gekoppelde facturen
+    invoice_ids: List[str] = []
+    
+    created_by: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MaintenanceContractCreate(BaseModel):
+    client_name: str
+    client_email: str = ""
+    client_phone: str = ""
+    client_address: str = ""
+    client_postal_code: str = ""
+    client_city: str = ""
+    maintenance_type: str
+    description: str = ""
+    scheduled_date: Optional[str] = None
+    frequency_months: int = 12
+    service_price: float = 0.0
+    notes: str = ""
+
+class MaintenanceContractUpdate(BaseModel):
+    client_name: Optional[str] = None
+    client_email: Optional[str] = None
+    client_phone: Optional[str] = None
+    client_address: Optional[str] = None
+    client_postal_code: Optional[str] = None
+    client_city: Optional[str] = None
+    maintenance_type: Optional[str] = None
+    description: Optional[str] = None
+    scheduled_date: Optional[str] = None
+    last_maintenance_date: Optional[str] = None
+    next_maintenance_date: Optional[str] = None
+    frequency_months: Optional[int] = None
+    status: Optional[str] = None
+    service_price: Optional[float] = None
+    notes: Optional[str] = None
+    technician_notes: Optional[str] = None
+
+# Aankoopfactuur voor onderhoud (klein materiaal)
+class MaintenancePurchase(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    maintenance_id: str  # Gekoppeld aan onderhoudsdossier
+    
+    supplier: str  # Leverancier
+    invoice_number: str = ""
+    invoice_date: str = ""
+    
+    description: str
+    amount: float  # Bedrag excl BTW
+    vat_amount: float = 0.0  # BTW bedrag
+    total_amount: float = 0.0  # Totaal incl BTW
+    
+    # Optioneel: foto van factuur
+    invoice_photo: Optional[str] = None  # Base64 of URL
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MaintenancePurchaseCreate(BaseModel):
+    supplier: str
+    invoice_number: str = ""
+    invoice_date: str = ""
+    description: str
+    amount: float
+    vat_amount: float = 0.0
+
+# Onderhoudsfactuur (verkoopfactuur)
+class MaintenanceInvoice(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"MINV-{str(uuid.uuid4())[:8].upper()}")
+    maintenance_id: str
+    
+    invoice_number: str = ""
+    invoice_date: str = ""
+    due_date: str = ""
+    
+    # Bedragen
+    service_amount: float = 0.0  # Onderhoudskost
+    materials_amount: float = 0.0  # Doorgerekende materialen
+    subtotal: float = 0.0
+    vat_rate: float = 21.0
+    vat_amount: float = 0.0
+    total_amount: float = 0.0
+    
+    # Status
+    status: str = "concept"  # "concept" | "verstuurd" | "betaald"
+    paid_date: Optional[str] = None
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MaintenanceInvoiceCreate(BaseModel):
+    service_amount: float
+    materials_amount: float = 0.0
+    vat_rate: float = 21.0
+    invoice_date: Optional[str] = None
+    due_date: Optional[str] = None
+
 # Realtor Profile (Makelaar)
 class RealtorProfile(BaseModel):
     model_config = ConfigDict(extra="ignore")
