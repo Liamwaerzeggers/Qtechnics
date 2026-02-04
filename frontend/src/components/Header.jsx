@@ -27,19 +27,11 @@ const Header = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex-shrink-0">
-            <div className="flex items-baseline">
-              <span className="text-3xl font-bold text-[#4a3728]" style={{ fontFamily: 'Georgia, serif' }}>
-                Max
-              </span>
-              <span className="text-3xl font-bold text-[#c17f24]" style={{ fontFamily: 'Georgia, serif' }}>
-                Q
-              </span>
-              <div className="flex flex-col ml-1 text-[6px] text-[#4a3728] leading-tight">
-                <span>interieur</span>
-                <span>techniek</span>
-                <span>totaalprojecten</span>
-              </div>
-            </div>
+            <img 
+              src="https://customer-assets.emergentagent.com/job_maxq-showcase/artifacts/rn05emza_logo%20maxq.png" 
+              alt="Max Q" 
+              className="h-10 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation */}
@@ -48,10 +40,10 @@ const Header = () => {
               <Link
                 key={link.name}
                 to={link.href}
-                className={`text-sm font-medium transition-colors hover:text-[#c17f24] ${
+                className={`text-sm font-medium transition-colors hover:text-[#500000] ${
                   location.pathname === link.href
-                    ? 'text-[#4a3728] border-b-2 border-[#c17f24]'
-                    : 'text-[#4a3728]'
+                    ? 'text-[#3a190b] border-b-2 border-[#500000]'
+                    : 'text-[#3a190b]'
                 }`}
               >
                 {link.name}
@@ -63,19 +55,19 @@ const Header = () => {
           <div className="hidden md:flex items-center space-x-4">
             <a
               href="tel:+32494808021"
-              className="flex items-center text-sm text-[#4a3728] hover:text-[#c17f24] transition-colors"
+              className="flex items-center text-sm text-[#3a190b] hover:text-[#500000] transition-colors"
             >
               <Phone className="h-4 w-4 mr-2" />
               +32 494 80 80 21
             </a>
-            <Button className="bg-[#4a3728] hover:bg-[#3a2a1e] text-white px-4 py-2 text-sm">
+            <Button className="bg-[#3a190b] hover:bg-[#500000] text-white px-4 py-2 text-sm">
               Gratis plaatsbezoek
             </Button>
           </div>
 
           {/* Mobile menu button */}
           <button
-            className="md:hidden p-2 text-[#4a3728]"
+            className="md:hidden p-2 text-[#3a190b]"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -91,7 +83,7 @@ const Header = () => {
               <Link
                 key={link.name}
                 to={link.href}
-                className="block text-[#4a3728] hover:text-[#c17f24] font-medium"
+                className="block text-[#3a190b] hover:text-[#500000] font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {link.name}
@@ -100,12 +92,12 @@ const Header = () => {
             <div className="pt-4 border-t border-gray-100">
               <a
                 href="tel:+32494808021"
-                className="flex items-center text-[#4a3728] mb-4"
+                className="flex items-center text-[#3a190b] mb-4"
               >
                 <Phone className="h-4 w-4 mr-2" />
                 +32 494 80 80 21
               </a>
-              <Button className="w-full bg-[#4a3728] hover:bg-[#3a2a1e] text-white">
+              <Button className="w-full bg-[#3a190b] hover:bg-[#500000] text-white">
                 Gratis plaatsbezoek
               </Button>
             </div>

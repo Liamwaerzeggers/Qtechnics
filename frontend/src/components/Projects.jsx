@@ -8,16 +8,16 @@ const Projects = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-12">
           <div>
-            <h2 className="text-3xl md:text-4xl font-bold text-[#4a3728] mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-[#202020] mb-4">
               Recente realisaties
             </h2>
-            <p className="text-[#6a5748] text-lg">
+            <p className="text-[#202020]/70 text-lg">
               Ontdek onze meest recente projecten en laat u inspireren.
             </p>
           </div>
           <a
             href="/projecten"
-            className="flex items-center text-[#4a3728] hover:text-[#c17f24] font-medium mt-4 md:mt-0 transition-colors group"
+            className="flex items-center text-[#3a190b] hover:text-[#500000] font-medium mt-4 md:mt-0 transition-colors group"
           >
             Alle projecten bekijken
             <ChevronRight className="h-5 w-5 ml-1 transition-transform group-hover:translate-x-1" />
@@ -36,12 +36,12 @@ const Projects = () => {
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
             </div>
-            <div className="flex items-center text-sm text-[#6a5748] mb-2">
-              <span className="font-semibold text-[#4a3728] uppercase tracking-wider text-xs">TOTAALPROJECT</span>
+            <div className="flex items-center text-sm text-[#202020]/70 mb-2">
+              <span className="font-semibold text-[#3a190b] uppercase tracking-wider text-xs">TOTAALPROJECT</span>
               <span className="mx-2">•</span>
               <span>Hasselt</span>
             </div>
-            <h3 className="text-xl font-bold text-[#4a3728] group-hover:text-[#c17f24] transition-colors">
+            <h3 className="text-xl font-bold text-[#202020] group-hover:text-[#500000] transition-colors">
               Volledige woning renovatie
             </h3>
           </div>
@@ -56,12 +56,12 @@ const Projects = () => {
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
             </div>
-            <div className="flex items-center text-sm text-[#6a5748] mb-2">
-              <span className="font-semibold text-[#4a3728] uppercase tracking-wider text-xs">BADKAMER</span>
+            <div className="flex items-center text-sm text-[#202020]/70 mb-2">
+              <span className="font-semibold text-[#3a190b] uppercase tracking-wider text-xs">BADKAMER</span>
               <span className="mx-2">•</span>
               <span>Genk</span>
             </div>
-            <h3 className="text-xl font-bold text-[#4a3728] group-hover:text-[#c17f24] transition-colors">
+            <h3 className="text-xl font-bold text-[#202020] group-hover:text-[#500000] transition-colors">
               Luxe badkamer met inloopdouche
             </h3>
           </div>
@@ -76,12 +76,12 @@ const Projects = () => {
               />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
             </div>
-            <div className="flex items-center text-sm text-[#6a5748] mb-2">
-              <span className="font-semibold text-[#4a3728] uppercase tracking-wider text-xs">KEUKEN</span>
+            <div className="flex items-center text-sm text-[#202020]/70 mb-2">
+              <span className="font-semibold text-[#3a190b] uppercase tracking-wider text-xs">KEUKEN</span>
               <span className="mx-2">•</span>
               <span>Lommel</span>
             </div>
-            <h3 className="text-xl font-bold text-[#4a3728] group-hover:text-[#c17f24] transition-colors">
+            <h3 className="text-xl font-bold text-[#202020] group-hover:text-[#500000] transition-colors">
               Design keuken met kookeiland
             </h3>
           </div>
