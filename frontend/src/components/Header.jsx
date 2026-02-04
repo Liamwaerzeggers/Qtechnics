@@ -2,11 +2,18 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Phone, Menu, X } from 'lucide-react';
 import { Button } from './ui/button';
-import { navigationLinks, companyInfo } from '../data/mock';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+
+  const navLinks = [
+    { name: 'Home', href: '/' },
+    { name: 'Renoveren', href: '/renoveren' },
+    { name: 'Projecten', href: '/projecten' },
+    { name: 'Werkwijze', href: '/werkwijze' },
+    { name: 'Contact', href: '/contact' },
+  ];
 
   return (
     <header className="bg-white sticky top-0 z-50 shadow-sm">
@@ -37,7 +44,7 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            {navigationLinks.map((link) => (
+            {navLinks.map((link) => (
               <Link
                 key={link.name}
                 to={link.href}
@@ -55,11 +62,11 @@ const Header = () => {
           {/* Right Side */}
           <div className="hidden md:flex items-center space-x-4">
             <a
-              href={`tel:${companyInfo.phone.replace(/\s/g, '')}`}
+              href="tel:+32494808021"
               className="flex items-center text-sm text-[#4a3728] hover:text-[#c17f24] transition-colors"
             >
               <Phone className="h-4 w-4 mr-2" />
-              {companyInfo.phone}
+              +32 494 80 80 21
             </a>
             <Button className="bg-[#4a3728] hover:bg-[#3a2a1e] text-white px-4 py-2 text-sm">
               Gratis plaatsbezoek
@@ -80,7 +87,7 @@ const Header = () => {
       {mobileMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-100">
           <div className="px-4 py-4 space-y-3">
-            {navigationLinks.map((link) => (
+            {navLinks.map((link) => (
               <Link
                 key={link.name}
                 to={link.href}
@@ -92,11 +99,11 @@ const Header = () => {
             ))}
             <div className="pt-4 border-t border-gray-100">
               <a
-                href={`tel:${companyInfo.phone.replace(/\s/g, '')}`}
+                href="tel:+32494808021"
                 className="flex items-center text-[#4a3728] mb-4"
               >
                 <Phone className="h-4 w-4 mr-2" />
-                {companyInfo.phone}
+                +32 494 80 80 21
               </a>
               <Button className="w-full bg-[#4a3728] hover:bg-[#3a2a1e] text-white">
                 Gratis plaatsbezoek
