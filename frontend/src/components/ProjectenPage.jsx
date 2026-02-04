@@ -159,16 +159,20 @@ const ProjectenPage = () => {
             Laat u inspireren door onze realisaties en ontdek wat Max Q voor u kan betekenen.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button className="bg-white text-[#3a190b] hover:bg-gray-100 px-6 py-3 text-base flex items-center gap-2 group">
-              Gratis plaatsbezoek aanvragen
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Button>
-            <Button
-              variant="outline"
-              className="border-white text-white hover:bg-white hover:text-[#3a190b] px-6 py-3 text-base"
-            >
-              Neem contact op
-            </Button>
+            <Link to="/start">
+              <Button className="bg-white text-[#3a190b] hover:bg-gray-100 px-6 py-3 text-base flex items-center gap-2 group">
+                Gratis plaatsbezoek aanvragen
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </Link>
+            <Link to="/contact">
+              <Button
+                variant="outline"
+                className="border-white text-white hover:bg-white hover:text-[#3a190b] px-6 py-3 text-base"
+              >
+                Neem contact op
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
