@@ -998,7 +998,7 @@ Q Technics`;
                                 </>
                               ) : workItemSearch ? (
                                 <div className="p-4 text-center" style={{color: '#94A3B8'}}>
-                                  Geen werk items gevonden voor "{workItemSearch}"
+                                  Geen werk items gevonden voor &quot;{workItemSearch}&quot;
                                 </div>
                               ) : (
                                 <>
