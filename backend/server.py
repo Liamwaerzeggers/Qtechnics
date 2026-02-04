@@ -8286,6 +8286,401 @@ async def tenant_login(username: str, password: str, response: Response):
     
     return {"user": user_response, "session_token": session_token}
 
+# ============= MAINTENANCE ENDPOINTS =============
+
+MAINTENANCE_TYPES = {
+    "verwarming": "Centrale Verwarming",
+    "ventilatie": "Ventilatie",
+    "waterfilter": "Waterfilter"
+}
+
+@api_router.post("/maintenance")
+async def create_maintenance_contract(contract: MaintenanceContractCreate, current_user: User = Depends(get_current_user)):
+    """Create a new maintenance contract/dossier"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen onderhoudsdossiers aanmaken")
+    
+    if contract.maintenance_type not in MAINTENANCE_TYPES:
+        raise HTTPException(status_code=400, detail=f"Ongeldig type. Kies uit: {', '.join(MAINTENANCE_TYPES.keys())}")
+    
+    # Create contract
+    new_contract = MaintenanceContract(
+        client_name=contract.client_name,
+        client_email=contract.client_email,
+        client_phone=contract.client_phone,
+        client_address=contract.client_address,
+        client_postal_code=contract.client_postal_code,
+        client_city=contract.client_city,
+        maintenance_type=contract.maintenance_type,
+        description=contract.description,
+        scheduled_date=contract.scheduled_date,
+        frequency_months=contract.frequency_months,
+        service_price=contract.service_price,
+        notes=contract.notes,
+        created_by=current_user.id
+    )
+    
+    contract_doc = new_contract.model_dump()
+    contract_doc["created_at"] = contract_doc["created_at"].isoformat()
+    contract_doc["updated_at"] = contract_doc["updated_at"].isoformat()
+    
+    await db.maintenance_contracts.insert_one(contract_doc)
+    
+    logger.info(f"Created maintenance contract: {new_contract.id} for {contract.client_name}")
+    
+    return {"message": "Onderhoudsdossier aangemaakt", "contract_id": new_contract.id}
+
+@api_router.get("/maintenance")
+async def get_maintenance_contracts(
+    status: Optional[str] = None,
+    maintenance_type: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all maintenance contracts"""
+    if current_user.role not in ["admin", "worker"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    filter_query = {}
+    if status:
+        filter_query["status"] = status
+    if maintenance_type:
+        filter_query["maintenance_type"] = maintenance_type
+    
+    contracts = await db.maintenance_contracts.find(filter_query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Add type labels
+    for contract in contracts:
+        contract["maintenance_type_label"] = MAINTENANCE_TYPES.get(contract.get("maintenance_type"), "Onbekend")
+    
+    return contracts
+
+@api_router.get("/maintenance/{contract_id}")
+async def get_maintenance_contract(contract_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific maintenance contract with purchases"""
+    if current_user.role not in ["admin", "worker"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    contract = await db.maintenance_contracts.find_one({"id": contract_id}, {"_id": 0})
+    if not contract:
+        raise HTTPException(status_code=404, detail="Onderhoudsdossier niet gevonden")
+    
+    # Get purchases
+    purchases = await db.maintenance_purchases.find({"maintenance_id": contract_id}, {"_id": 0}).to_list(100)
+    contract["purchases"] = purchases
+    
+    # Calculate total materials cost
+    contract["materials_cost"] = sum(p.get("amount", 0) for p in purchases)
+    
+    # Get invoices
+    invoices = await db.maintenance_invoices.find({"maintenance_id": contract_id}, {"_id": 0}).to_list(100)
+    contract["invoices"] = invoices
+    
+    contract["maintenance_type_label"] = MAINTENANCE_TYPES.get(contract.get("maintenance_type"), "Onbekend")
+    
+    return contract
+
+@api_router.put("/maintenance/{contract_id}")
+async def update_maintenance_contract(contract_id: str, update: MaintenanceContractUpdate, current_user: User = Depends(get_current_user)):
+    """Update a maintenance contract"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen dossiers wijzigen")
+    
+    contract = await db.maintenance_contracts.find_one({"id": contract_id})
+    if not contract:
+        raise HTTPException(status_code=404, detail="Onderhoudsdossier niet gevonden")
+    
+    update_data = {k: v for k, v in update.model_dump().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.maintenance_contracts.update_one({"id": contract_id}, {"$set": update_data})
+    
+    return {"message": "Onderhoudsdossier bijgewerkt"}
+
+@api_router.delete("/maintenance/{contract_id}")
+async def delete_maintenance_contract(contract_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a maintenance contract"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen dossiers verwijderen")
+    
+    result = await db.maintenance_contracts.delete_one({"id": contract_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Onderhoudsdossier niet gevonden")
+    
+    # Delete associated purchases and invoices
+    await db.maintenance_purchases.delete_many({"maintenance_id": contract_id})
+    await db.maintenance_invoices.delete_many({"maintenance_id": contract_id})
+    
+    return {"message": "Onderhoudsdossier verwijderd"}
+
+# --- Maintenance Purchases (Aankoopfacturen) ---
+
+@api_router.post("/maintenance/{contract_id}/purchases")
+async def add_maintenance_purchase(contract_id: str, purchase: MaintenancePurchaseCreate, current_user: User = Depends(get_current_user)):
+    """Add a purchase/expense to a maintenance contract"""
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen aankopen toevoegen")
+    
+    contract = await db.maintenance_contracts.find_one({"id": contract_id})
+    if not contract:
+        raise HTTPException(status_code=404, detail="Onderhoudsdossier niet gevonden")
+    
+    # Calculate total
+    total = purchase.amount + purchase.vat_amount
+    
+    new_purchase = MaintenancePurchase(
+        maintenance_id=contract_id,
+        supplier=purchase.supplier,
+        invoice_number=purchase.invoice_number,
+        invoice_date=purchase.invoice_date,
+        description=purchase.description,
+        amount=purchase.amount,
+        vat_amount=purchase.vat_amount,
+        total_amount=total
+    )
+    
+    purchase_doc = new_purchase.model_dump()
+    purchase_doc["created_at"] = purchase_doc["created_at"].isoformat()
+    
+    await db.maintenance_purchases.insert_one(purchase_doc)
+    
+    # Update contract's materials cost
+    all_purchases = await db.maintenance_purchases.find({"maintenance_id": contract_id}).to_list(100)
+    total_materials = sum(p.get("amount", 0) for p in all_purchases)
+    await db.maintenance_contracts.update_one(
+        {"id": contract_id},
+        {"$set": {"materials_cost": total_materials, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Aankoop toegevoegd", "purchase_id": new_purchase.id}
+
+@api_router.delete("/maintenance/{contract_id}/purchases/{purchase_id}")
+async def delete_maintenance_purchase(contract_id: str, purchase_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a purchase from a maintenance contract"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen aankopen verwijderen")
+    
+    result = await db.maintenance_purchases.delete_one({"id": purchase_id, "maintenance_id": contract_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Aankoop niet gevonden")
+    
+    # Recalculate materials cost
+    all_purchases = await db.maintenance_purchases.find({"maintenance_id": contract_id}).to_list(100)
+    total_materials = sum(p.get("amount", 0) for p in all_purchases)
+    await db.maintenance_contracts.update_one(
+        {"id": contract_id},
+        {"$set": {"materials_cost": total_materials, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": "Aankoop verwijderd"}
+
+# --- Maintenance Invoices (Verkoopfacturen) ---
+
+@api_router.post("/maintenance/{contract_id}/invoices")
+async def create_maintenance_invoice(contract_id: str, invoice: MaintenanceInvoiceCreate, current_user: User = Depends(get_current_user)):
+    """Create an invoice for a maintenance contract"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen facturen aanmaken")
+    
+    contract = await db.maintenance_contracts.find_one({"id": contract_id})
+    if not contract:
+        raise HTTPException(status_code=404, detail="Onderhoudsdossier niet gevonden")
+    
+    # Calculate amounts
+    subtotal = invoice.service_amount + invoice.materials_amount
+    vat_amount = subtotal * (invoice.vat_rate / 100)
+    total_amount = subtotal + vat_amount
+    
+    # Generate invoice number (MAINT-YYYY-XXXX)
+    year = datetime.now().year
+    count = await db.maintenance_invoices.count_documents({"invoice_number": {"$regex": f"^MAINT-{year}"}})
+    invoice_number = f"MAINT-{year}-{str(count + 1).zfill(4)}"
+    
+    # Set dates
+    invoice_date = invoice.invoice_date or datetime.now().strftime("%Y-%m-%d")
+    due_date = invoice.due_date or (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
+    
+    new_invoice = MaintenanceInvoice(
+        maintenance_id=contract_id,
+        invoice_number=invoice_number,
+        invoice_date=invoice_date,
+        due_date=due_date,
+        service_amount=invoice.service_amount,
+        materials_amount=invoice.materials_amount,
+        subtotal=subtotal,
+        vat_rate=invoice.vat_rate,
+        vat_amount=round(vat_amount, 2),
+        total_amount=round(total_amount, 2)
+    )
+    
+    invoice_doc = new_invoice.model_dump()
+    invoice_doc["created_at"] = invoice_doc["created_at"].isoformat()
+    
+    await db.maintenance_invoices.insert_one(invoice_doc)
+    
+    # Update contract status and link invoice
+    await db.maintenance_contracts.update_one(
+        {"id": contract_id},
+        {
+            "$set": {"status": "gefactureerd", "updated_at": datetime.now(timezone.utc).isoformat()},
+            "$push": {"invoice_ids": new_invoice.id}
+        }
+    )
+    
+    return {
+        "message": "Factuur aangemaakt",
+        "invoice_id": new_invoice.id,
+        "invoice_number": invoice_number,
+        "total_amount": total_amount
+    }
+
+@api_router.put("/maintenance/invoices/{invoice_id}/status")
+async def update_maintenance_invoice_status(invoice_id: str, status: str = Query(...), current_user: User = Depends(get_current_user)):
+    """Update invoice status (verstuurd, betaald)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen factuurstatus wijzigen")
+    
+    valid_statuses = ["concept", "verstuurd", "betaald"]
+    if status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Ongeldige status. Kies uit: {', '.join(valid_statuses)}")
+    
+    update_data = {"status": status}
+    if status == "betaald":
+        update_data["paid_date"] = datetime.now().strftime("%Y-%m-%d")
+    
+    result = await db.maintenance_invoices.update_one({"id": invoice_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Factuur niet gevonden")
+    
+    return {"message": f"Factuurstatus gewijzigd naar {status}"}
+
+# --- Maintenance Financial Overview ---
+
+@api_router.get("/maintenance/finances/overview")
+async def get_maintenance_finances(year: int = Query(default=None), month: int = Query(default=None), current_user: User = Depends(get_current_user)):
+    """Get financial overview for maintenance contracts"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen financiën bekijken")
+    
+    if not year:
+        year = datetime.now().year
+    
+    # Build date filter for invoices
+    if month:
+        start_date = f"{year}-{str(month).zfill(2)}-01"
+        if month == 12:
+            end_date = f"{year + 1}-01-01"
+        else:
+            end_date = f"{year}-{str(month + 1).zfill(2)}-01"
+    else:
+        start_date = f"{year}-01-01"
+        end_date = f"{year + 1}-01-01"
+    
+    # Get all paid invoices in period
+    invoices = await db.maintenance_invoices.find({
+        "status": "betaald",
+        "invoice_date": {"$gte": start_date, "$lt": end_date}
+    }, {"_id": 0}).to_list(1000)
+    
+    # Get all purchases in period
+    purchases = await db.maintenance_purchases.find({
+        "invoice_date": {"$gte": start_date, "$lt": end_date}
+    }, {"_id": 0}).to_list(1000)
+    
+    # Calculate totals
+    total_revenue = sum(inv.get("total_amount", 0) for inv in invoices)
+    total_service_revenue = sum(inv.get("service_amount", 0) for inv in invoices)
+    total_materials_revenue = sum(inv.get("materials_amount", 0) for inv in invoices)
+    total_costs = sum(p.get("amount", 0) for p in purchases)
+    total_profit = total_revenue - total_costs
+    
+    # Per type breakdown
+    type_breakdown = {}
+    for mtype, mlabel in MAINTENANCE_TYPES.items():
+        type_contracts = await db.maintenance_contracts.find({"maintenance_type": mtype}, {"_id": 0, "id": 1}).to_list(1000)
+        contract_ids = [c["id"] for c in type_contracts]
+        
+        type_invoices = [inv for inv in invoices if inv.get("maintenance_id") in contract_ids]
+        type_purchases = [p for p in purchases if p.get("maintenance_id") in contract_ids]
+        
+        type_revenue = sum(inv.get("total_amount", 0) for inv in type_invoices)
+        type_costs = sum(p.get("amount", 0) for p in type_purchases)
+        
+        type_breakdown[mtype] = {
+            "label": mlabel,
+            "revenue": type_revenue,
+            "costs": type_costs,
+            "profit": type_revenue - type_costs,
+            "contract_count": len(contract_ids),
+            "invoice_count": len(type_invoices)
+        }
+    
+    # Monthly breakdown (if no specific month)
+    monthly_data = []
+    if not month:
+        for m in range(1, 13):
+            m_start = f"{year}-{str(m).zfill(2)}-01"
+            if m == 12:
+                m_end = f"{year + 1}-01-01"
+            else:
+                m_end = f"{year}-{str(m + 1).zfill(2)}-01"
+            
+            m_invoices = [inv for inv in invoices if m_start <= inv.get("invoice_date", "") < m_end]
+            m_purchases = [p for p in purchases if m_start <= p.get("invoice_date", "") < m_end]
+            
+            m_revenue = sum(inv.get("total_amount", 0) for inv in m_invoices)
+            m_costs = sum(p.get("amount", 0) for p in m_purchases)
+            
+            monthly_data.append({
+                "month": m,
+                "month_name": ["Jan", "Feb", "Mrt", "Apr", "Mei", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"][m-1],
+                "revenue": m_revenue,
+                "costs": m_costs,
+                "profit": m_revenue - m_costs
+            })
+    
+    return {
+        "year": year,
+        "month": month,
+        "total_revenue": total_revenue,
+        "total_service_revenue": total_service_revenue,
+        "total_materials_revenue": total_materials_revenue,
+        "total_costs": total_costs,
+        "total_profit": total_profit,
+        "margin_percentage": round((total_profit / total_revenue * 100) if total_revenue > 0 else 0, 1),
+        "invoice_count": len(invoices),
+        "type_breakdown": type_breakdown,
+        "monthly_data": monthly_data
+    }
+
+# --- Mark maintenance as completed ---
+
+@api_router.post("/maintenance/{contract_id}/complete")
+async def complete_maintenance(contract_id: str, technician_notes: str = Query(default=""), current_user: User = Depends(get_current_user)):
+    """Mark a maintenance contract as completed"""
+    if current_user.role not in ["admin", "worker"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    contract = await db.maintenance_contracts.find_one({"id": contract_id})
+    if not contract:
+        raise HTTPException(status_code=404, detail="Onderhoudsdossier niet gevonden")
+    
+    today = datetime.now().strftime("%Y-%m-%d")
+    frequency = contract.get("frequency_months", 12)
+    next_date = (datetime.now() + timedelta(days=frequency * 30)).strftime("%Y-%m-%d")
+    
+    await db.maintenance_contracts.update_one(
+        {"id": contract_id},
+        {"$set": {
+            "status": "uitgevoerd",
+            "last_maintenance_date": today,
+            "next_maintenance_date": next_date,
+            "technician_notes": technician_notes,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Onderhoud gemarkeerd als uitgevoerd", "next_maintenance_date": next_date}
+
 # Include router
 app.include_router(api_router)
 
