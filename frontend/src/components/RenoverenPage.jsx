@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, Zap, Droplets, Wind, Plug, Bath, ChefHat, Paintbrush, Grid3X3, Check } from 'lucide-react';
 import { Button } from './ui/button';
+import { Link } from 'react-router-dom';
 
 const RenoverenPage = () => {
   return (
@@ -26,10 +27,12 @@ const RenoverenPage = () => {
               <strong>technieken</strong> — het onzichtbare fundament — en bouwen van daaruit aan een{' '}
               <strong>prachtig interieur</strong> met perfecte afwerking.
             </p>
-            <Button className="bg-white text-[#3a190b] hover:bg-gray-100 px-6 py-3 text-base flex items-center gap-2 group">
-              Start uw renovatie
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Button>
+            <Link to="/start">
+              <Button className="bg-white text-[#3a190b] hover:bg-gray-100 px-6 py-3 text-base flex items-center gap-2 group">
+                Start uw renovatie
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
