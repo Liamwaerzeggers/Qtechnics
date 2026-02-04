@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, Phone } from 'lucide-react';
 import { Button } from './ui/button';
+import { Link } from 'react-router-dom';
 
 const CTA = () => {
   return (
@@ -15,16 +16,20 @@ const CTA = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-            <Button className="bg-[#3a190b] hover:bg-[#500000] text-white px-6 py-3 text-base flex items-center gap-2 group">
-              Bereken uw renovatie
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Button>
-            <Button
-              variant="outline"
-              className="border-[#3a190b] text-[#3a190b] hover:bg-[#3a190b] hover:text-white px-6 py-3 text-base"
-            >
-              Gratis plaatsbezoek aanvragen
-            </Button>
+            <Link to="/start">
+              <Button className="bg-[#3a190b] hover:bg-[#500000] text-white px-6 py-3 text-base flex items-center gap-2 group">
+                Bereken uw renovatie
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </Link>
+            <Link to="/contact">
+              <Button
+                variant="outline"
+                className="border-[#3a190b] text-[#3a190b] hover:bg-[#3a190b] hover:text-white px-6 py-3 text-base"
+              >
+                Gratis plaatsbezoek aanvragen
+              </Button>
+            </Link>
           </div>
           
           <a
