@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, LogOut, Save, X, Upload, Image as ImageIcon } from 'lucide-react';
 import { Button } from './ui/button';
@@ -9,42 +9,37 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
-const categories = [
-  { id: 'totaalproject', label: 'Totaalproject' },
-  { id: 'badkamer', label: 'Badkamer' },
-  { id: 'keuken', label: 'Keuken' },
-  { id: 'maatkasten', label: 'Maatkasten' },
-  { id: 'technieken', label: 'Technieken' },
-];
-
-const getImageUrl = (url) => {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${BACKEND_URL}${url}`;
-};
-
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const mainImageRef = useRef(null);
+  const galleryImageRef = useRef(null);
+  
   const [projects, setProjects] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const mainImageRef = useRef(null);
-  const galleryImageRef = useRef(null);
   
-  const emptyForm = {
-    title: '',
-    category: 'totaalproject',
-    location: '',
-    shortDescription: '',
-    fullDescription: '',
-    mainImage: '',
-    galleryImages: [],
-    featured: false,
-  };
-  
-  const [formData, setFormData] = useState(emptyForm);
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('totaalproject');
+  const [location, setLocation] = useState('');
+  const [shortDesc, setShortDesc] = useState('');
+  const [fullDesc, setFullDesc] = useState('');
+  const [mainImage, setMainImage] = useState('');
+  const [galleryImages, setGalleryImages] = useState([]);
+  const [featured, setFeatured] = useState(false);
+
+  const loadProjects = useCallback(async () => {
+    try {
+      const res = await fetch(BACKEND_URL + '/api/projects');
+      if (res.ok) {
+        const data = await res.json();
+        setProjects(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   useEffect(() => {
     if (!localStorage.getItem('maxq_admin')) {
@@ -52,37 +47,34 @@ const AdminDashboard = () => {
       return;
     }
     loadProjects();
-  }, [navigate]);
-
-  const loadProjects = async () => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/projects`);
-      if (res.ok) setProjects(await res.json());
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  }, [navigate, loadProjects]);
 
   const handleLogout = () => {
     localStorage.removeItem('maxq_admin');
     navigate('/admin');
   };
 
+  const getImageUrl = (url) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    return BACKEND_URL + url;
+  };
+
   const uploadFile = async (file) => {
     const fd = new FormData();
     fd.append('file', file);
-    const res = await fetch(`${BACKEND_URL}/api/upload`, { method: 'POST', body: fd });
+    const res = await fetch(BACKEND_URL + '/api/upload', { method: 'POST', body: fd });
     if (!res.ok) throw new Error('Upload failed');
     return await res.json();
   };
 
   const handleMainImageUpload = async (e) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files && e.target.files[0];
     if (!file) return;
     setUploading(true);
     try {
       const result = await uploadFile(file);
-      setFormData(prev => ({ ...prev, mainImage: result.url }));
+      setMainImage(result.url);
     } catch (error) {
       alert('Fout bij uploaden');
     }
@@ -90,15 +82,13 @@ const AdminDashboard = () => {
   };
 
   const handleGalleryUpload = async (e) => {
-    const files = Array.from(e.target.files || []);
+    const files = e.target.files ? Array.from(e.target.files) : [];
     if (files.length === 0) return;
     setUploading(true);
     try {
       const results = await Promise.all(files.map(uploadFile));
-      setFormData(prev => ({ 
-        ...prev, 
-        galleryImages: [...prev.galleryImages, ...results.map(r => r.url)] 
-      }));
+      const newUrls = results.map(function(r) { return r.url; });
+      setGalleryImages(function(prev) { return prev.concat(newUrls); });
     } catch (error) {
       alert('Fout bij uploaden');
     }
@@ -106,58 +96,66 @@ const AdminDashboard = () => {
   };
 
   const removeGalleryImage = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      galleryImages: prev.galleryImages.filter((_, i) => i !== index)
-    }));
+    setGalleryImages(function(prev) {
+      return prev.filter(function(_, i) { return i !== index; });
+    });
+  };
+
+  const resetForm = () => {
+    setTitle('');
+    setCategory('totaalproject');
+    setLocation('');
+    setShortDesc('');
+    setFullDesc('');
+    setMainImage('');
+    setGalleryImages([]);
+    setFeatured(false);
   };
 
   const openAddDialog = () => {
     setEditingProject(null);
-    setFormData(emptyForm);
+    resetForm();
     setIsDialogOpen(true);
   };
 
   const openEditDialog = (project) => {
     setEditingProject(project);
-    setFormData({
-      title: project.title || '',
-      category: project.category || 'totaalproject',
-      location: project.location || '',
-      shortDescription: project.shortDescription || '',
-      fullDescription: project.fullDescription || '',
-      mainImage: project.mainImage || '',
-      galleryImages: project.galleryImages || [],
-      featured: project.featured || false,
-    });
+    setTitle(project.title || '');
+    setCategory(project.category || 'totaalproject');
+    setLocation(project.location || '');
+    setShortDesc(project.shortDescription || '');
+    setFullDesc(project.fullDescription || '');
+    setMainImage(project.mainImage || '');
+    setGalleryImages(project.galleryImages || []);
+    setFeatured(project.featured || false);
     setIsDialogOpen(true);
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const body = {
-        title: formData.title,
-        category: formData.category,
-        location: formData.location,
-        shortDescription: formData.shortDescription,
-        fullDescription: formData.fullDescription,
-        featured: formData.featured,
-      };
+      const body = JSON.stringify({
+        title: title,
+        category: category,
+        location: location,
+        shortDescription: shortDesc,
+        fullDescription: fullDesc,
+        featured: featured,
+      });
       
-      let projectId = editingProject?.id;
+      let projectId = editingProject ? editingProject.id : null;
       
       if (editingProject) {
-        await fetch(`${BACKEND_URL}/api/projects/${projectId}`, {
+        await fetch(BACKEND_URL + '/api/projects/' + projectId, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          body: body,
         });
       } else {
-        const res = await fetch(`${BACKEND_URL}/api/projects`, {
+        const res = await fetch(BACKEND_URL + '/api/projects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          body: body,
         });
         if (res.ok) {
           const newProject = await res.json();
@@ -165,11 +163,10 @@ const AdminDashboard = () => {
         }
       }
       
-      // Update images
-      const params = new URLSearchParams();
-      params.set('mainImage', formData.mainImage);
-      params.set('galleryImages', JSON.stringify(formData.galleryImages));
-      await fetch(`${BACKEND_URL}/api/projects/${projectId}/images?${params}`, { method: 'PUT' });
+      if (projectId) {
+        const params = 'mainImage=' + encodeURIComponent(mainImage) + '&galleryImages=' + encodeURIComponent(JSON.stringify(galleryImages));
+        await fetch(BACKEND_URL + '/api/projects/' + projectId + '/images?' + params, { method: 'PUT' });
+      }
       
       await loadProjects();
       setIsDialogOpen(false);
@@ -182,7 +179,7 @@ const AdminDashboard = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Weet u zeker dat u dit project wilt verwijderen?')) return;
     try {
-      await fetch(`${BACKEND_URL}/api/projects/${id}`, { method: 'DELETE' });
+      await fetch(BACKEND_URL + '/api/projects/' + id, { method: 'DELETE' });
       await loadProjects();
     } catch (error) {
       alert('Fout bij verwijderen');
@@ -191,16 +188,18 @@ const AdminDashboard = () => {
 
   const toggleFeatured = async (project) => {
     try {
-      await fetch(`${BACKEND_URL}/api/projects/${project.id}`, {
+      await fetch(BACKEND_URL + '/api/projects/' + project.id, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ featured: !project.featured }),
       });
       await loadProjects();
     } catch (error) {
-      alert('Fout');
+      console.error(error);
     }
   };
+
+  const canSave = title && location && shortDesc && !saving && !uploading;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -228,36 +227,38 @@ const AdminDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
-            <div key={project.id} className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="aspect-video relative bg-gray-200">
-                {project.mainImage ? (
-                  <img src={getImageUrl(project.mainImage)} alt={project.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center"><ImageIcon className="h-12 w-12 text-gray-400" /></div>
-                )}
-                {project.featured && <span className="absolute top-2 left-2 bg-[#3a190b] text-white text-xs px-2 py-1 rounded">Uitgelicht</span>}
-              </div>
-              <div className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs uppercase font-semibold text-[#3a190b]">{project.category}</span>
-                  <span className="text-xs text-gray-400">•</span>
-                  <span className="text-xs text-gray-500">{project.location}</span>
+          {projects.map(function(project) {
+            return (
+              <div key={project.id} className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="aspect-video relative bg-gray-200">
+                  {project.mainImage ? (
+                    <img src={getImageUrl(project.mainImage)} alt={project.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center"><ImageIcon className="h-12 w-12 text-gray-400" /></div>
+                  )}
+                  {project.featured && <span className="absolute top-2 left-2 bg-[#3a190b] text-white text-xs px-2 py-1 rounded">Uitgelicht</span>}
                 </div>
-                <h3 className="font-bold text-[#202020] mb-2">{project.title}</h3>
-                <p className="text-sm text-gray-600 line-clamp-2 mb-4">{project.shortDescription}</p>
-                <div className="flex justify-between items-center">
-                  <button onClick={() => toggleFeatured(project)} className={`text-xs px-3 py-1 rounded ${project.featured ? 'bg-[#3a190b] text-white' : 'bg-gray-200 text-gray-600'}`}>
-                    {project.featured ? 'Uitgelicht' : 'Niet uitgelicht'}
-                  </button>
-                  <div className="flex gap-2">
-                    <Button onClick={() => openEditDialog(project)} size="sm" variant="outline" className="h-8 w-8 p-0"><Edit className="h-4 w-4" /></Button>
-                    <Button onClick={() => handleDelete(project.id)} size="sm" variant="outline" className="h-8 w-8 p-0 text-red-600"><Trash2 className="h-4 w-4" /></Button>
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs uppercase font-semibold text-[#3a190b]">{project.category}</span>
+                    <span className="text-xs text-gray-400">•</span>
+                    <span className="text-xs text-gray-500">{project.location}</span>
+                  </div>
+                  <h3 className="font-bold text-[#202020] mb-2">{project.title}</h3>
+                  <p className="text-sm text-gray-600 line-clamp-2 mb-4">{project.shortDescription}</p>
+                  <div className="flex justify-between items-center">
+                    <button onClick={function() { toggleFeatured(project); }} className={project.featured ? 'text-xs px-3 py-1 rounded bg-[#3a190b] text-white' : 'text-xs px-3 py-1 rounded bg-gray-200 text-gray-600'}>
+                      {project.featured ? 'Uitgelicht' : 'Niet uitgelicht'}
+                    </button>
+                    <div className="flex gap-2">
+                      <Button onClick={function() { openEditDialog(project); }} size="sm" variant="outline" className="h-8 w-8 p-0"><Edit className="h-4 w-4" /></Button>
+                      <Button onClick={function() { handleDelete(project.id); }} size="sm" variant="outline" className="h-8 w-8 p-0 text-red-600"><Trash2 className="h-4 w-4" /></Button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {projects.length === 0 && (
@@ -279,40 +280,44 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <Label>Titel *</Label>
-                <Input value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} placeholder="Project titel" />
+                <Input value={title} onChange={function(e) { setTitle(e.target.value); }} placeholder="Project titel" />
               </div>
               <div>
                 <Label>Categorie</Label>
-                <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full h-10 rounded-md border px-3 text-sm">
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                <select value={category} onChange={function(e) { setCategory(e.target.value); }} className="w-full h-10 rounded-md border px-3 text-sm">
+                  <option value="totaalproject">Totaalproject</option>
+                  <option value="badkamer">Badkamer</option>
+                  <option value="keuken">Keuken</option>
+                  <option value="maatkasten">Maatkasten</option>
+                  <option value="technieken">Technieken</option>
                 </select>
               </div>
               <div>
                 <Label>Locatie *</Label>
-                <Input value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} placeholder="Stad" />
+                <Input value={location} onChange={function(e) { setLocation(e.target.value); }} placeholder="Stad" />
               </div>
             </div>
 
             <div>
               <Label>Korte beschrijving *</Label>
-              <Textarea value={formData.shortDescription} onChange={(e) => setFormData({...formData, shortDescription: e.target.value})} rows={2} />
+              <Textarea value={shortDesc} onChange={function(e) { setShortDesc(e.target.value); }} rows={2} />
             </div>
 
             <div>
               <Label>Uitgebreide beschrijving</Label>
-              <Textarea value={formData.fullDescription} onChange={(e) => setFormData({...formData, fullDescription: e.target.value})} rows={4} />
+              <Textarea value={fullDesc} onChange={function(e) { setFullDesc(e.target.value); }} rows={4} />
             </div>
 
             <div>
               <Label>Hoofdafbeelding</Label>
               <div className="mt-2">
-                {formData.mainImage ? (
+                {mainImage ? (
                   <div className="relative inline-block">
-                    <img src={getImageUrl(formData.mainImage)} alt="Main" className="h-40 object-cover rounded-lg" />
-                    <button onClick={() => setFormData({...formData, mainImage: ''})} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"><X className="h-4 w-4" /></button>
+                    <img src={getImageUrl(mainImage)} alt="Main" className="h-40 object-cover rounded-lg" />
+                    <button onClick={function() { setMainImage(''); }} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"><X className="h-4 w-4" /></button>
                   </div>
                 ) : (
-                  <div onClick={() => mainImageRef.current?.click()} className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-[#3a190b]">
+                  <div onClick={function() { mainImageRef.current && mainImageRef.current.click(); }} className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-[#3a190b]">
                     <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-500">Klik om te uploaden (PNG, JPG, etc.)</p>
                   </div>
@@ -324,13 +329,15 @@ const AdminDashboard = () => {
             <div>
               <Label>Galerij afbeeldingen</Label>
               <div className="mt-2 grid grid-cols-4 gap-2">
-                {formData.galleryImages.map((img, i) => (
-                  <div key={i} className="relative aspect-square">
-                    <img src={getImageUrl(img)} alt={`Gallery ${i}`} className="w-full h-full object-cover rounded" />
-                    <button onClick={() => removeGalleryImage(i)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"><X className="h-3 w-3" /></button>
-                  </div>
-                ))}
-                <div onClick={() => galleryImageRef.current?.click()} className="aspect-square border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer hover:border-[#3a190b]">
+                {galleryImages.map(function(img, i) {
+                  return (
+                    <div key={i} className="relative aspect-square">
+                      <img src={getImageUrl(img)} alt={'Gallery ' + i} className="w-full h-full object-cover rounded" />
+                      <button onClick={function() { removeGalleryImage(i); }} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"><X className="h-3 w-3" /></button>
+                    </div>
+                  );
+                })}
+                <div onClick={function() { galleryImageRef.current && galleryImageRef.current.click(); }} className="aspect-square border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer hover:border-[#3a190b]">
                   <Plus className="h-6 w-6 text-gray-400" />
                 </div>
               </div>
@@ -338,14 +345,14 @@ const AdminDashboard = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <input type="checkbox" id="featured" checked={formData.featured} onChange={(e) => setFormData({...formData, featured: e.target.checked})} />
+              <input type="checkbox" id="featured" checked={featured} onChange={function(e) { setFeatured(e.target.checked); }} />
               <Label htmlFor="featured">Uitgelicht</Label>
             </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}><X className="h-4 w-4 mr-2" />Annuleren</Button>
-            <Button onClick={handleSave} disabled={saving || uploading || !formData.title || !formData.location || !formData.shortDescription} className="bg-[#3a190b] text-white">
+            <Button variant="outline" onClick={function() { setIsDialogOpen(false); }}><X className="h-4 w-4 mr-2" />Annuleren</Button>
+            <Button onClick={handleSave} disabled={!canSave} className="bg-[#3a190b] text-white">
               <Save className="h-4 w-4 mr-2" />{saving ? 'Opslaan...' : 'Opslaan'}
             </Button>
           </div>
