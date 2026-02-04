@@ -1216,6 +1216,26 @@ async def webhook_create_lead(
         await db.projects.insert_one(project_doc)
         logger.info(f"Webhook: Created project {project_id} for lead {lead_id}")
         
+        # CREATE CELEBRATION for new website lead
+        celebration_id = f"CELEB-{str(uuid.uuid4())[:8].upper()}"
+        celebration = {
+            "id": celebration_id,
+            "type": "new_website_lead",  # Different type for website leads
+            "lead_id": lead_id,
+            "project_id": project_id,
+            "lead_name": lead_data.company_name or lead_data.name,
+            "project_name": project_name,
+            "project_type": lead_data.project_type or "Website aanvraag",
+            "city": lead_data.city,
+            "source": lead_data.source or "website",
+            "form_name": lead_data.form_name,
+            "message_preview": (lead_data.message or lead_data.description or "")[:100],
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "seen_by": []  # Track which admins have seen this
+        }
+        await db.celebrations.insert_one(celebration)
+        logger.info(f"Webhook: Created celebration {celebration_id} for new lead")
+        
         return {
             "success": True,
             "message": "Lead en project succesvol aangemaakt",
