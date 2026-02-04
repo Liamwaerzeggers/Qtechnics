@@ -9,6 +9,57 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
+const ProjectCard = ({ project, getImageUrl, onToggleFeatured, onEdit, onDelete }) => (
+  <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="aspect-video relative bg-gray-200">
+      {project.mainImage ? (
+        <img src={getImageUrl(project.mainImage)} alt={project.title} className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center">
+          <ImageIcon className="h-12 w-12 text-gray-400" />
+        </div>
+      )}
+      {project.featured && (
+        <span className="absolute top-2 left-2 bg-[#3a190b] text-white text-xs px-2 py-1 rounded">Uitgelicht</span>
+      )}
+    </div>
+    <div className="p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-xs uppercase font-semibold text-[#3a190b]">{project.category}</span>
+        <span className="text-xs text-gray-400">•</span>
+        <span className="text-xs text-gray-500">{project.location}</span>
+      </div>
+      <h3 className="font-bold text-[#202020] mb-2">{project.title}</h3>
+      <p className="text-sm text-gray-600 line-clamp-2 mb-4">{project.shortDescription}</p>
+      <div className="flex justify-between items-center">
+        <button 
+          onClick={() => onToggleFeatured(project)}
+          className={project.featured ? 'text-xs px-3 py-1 rounded bg-[#3a190b] text-white' : 'text-xs px-3 py-1 rounded bg-gray-200 text-gray-600'}
+        >
+          {project.featured ? 'Uitgelicht' : 'Niet uitgelicht'}
+        </button>
+        <div className="flex gap-2">
+          <Button onClick={() => onEdit(project)} size="sm" variant="outline" className="h-8 w-8 p-0">
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button onClick={() => onDelete(project.id)} size="sm" variant="outline" className="h-8 w-8 p-0 text-red-600">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const GalleryImage = ({ img, index, getImageUrl, onRemove }) => (
+  <div className="relative aspect-square">
+    <img src={getImageUrl(img)} alt={`Gallery ${index}`} className="w-full h-full object-cover rounded" />
+    <button onClick={() => onRemove(index)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5">
+      <X className="h-3 w-3" />
+    </button>
+  </div>
+);
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const mainImageRef = useRef(null);
@@ -31,7 +82,7 @@ const AdminDashboard = () => {
 
   const loadProjects = useCallback(async () => {
     try {
-      const res = await fetch(BACKEND_URL + '/api/projects');
+      const res = await fetch(`${BACKEND_URL}/api/projects`);
       if (res.ok) {
         const data = await res.json();
         setProjects(data);
@@ -57,19 +108,19 @@ const AdminDashboard = () => {
   const getImageUrl = (url) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
-    return BACKEND_URL + url;
+    return `${BACKEND_URL}${url}`;
   };
 
   const uploadFile = async (file) => {
     const fd = new FormData();
     fd.append('file', file);
-    const res = await fetch(BACKEND_URL + '/api/upload', { method: 'POST', body: fd });
+    const res = await fetch(`${BACKEND_URL}/api/upload`, { method: 'POST', body: fd });
     if (!res.ok) throw new Error('Upload failed');
     return await res.json();
   };
 
   const handleMainImageUpload = async (e) => {
-    const file = e.target.files && e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
     try {
@@ -87,8 +138,8 @@ const AdminDashboard = () => {
     setUploading(true);
     try {
       const results = await Promise.all(files.map(uploadFile));
-      const newUrls = results.map(function(r) { return r.url; });
-      setGalleryImages(function(prev) { return prev.concat(newUrls); });
+      const newUrls = results.map(r => r.url);
+      setGalleryImages(prev => [...prev, ...newUrls]);
     } catch (error) {
       alert('Fout bij uploaden');
     }
@@ -96,9 +147,7 @@ const AdminDashboard = () => {
   };
 
   const removeGalleryImage = (index) => {
-    setGalleryImages(function(prev) {
-      return prev.filter(function(_, i) { return i !== index; });
-    });
+    setGalleryImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const resetForm = () => {
@@ -135,27 +184,27 @@ const AdminDashboard = () => {
     setSaving(true);
     try {
       const body = JSON.stringify({
-        title: title,
-        category: category,
-        location: location,
+        title,
+        category,
+        location,
         shortDescription: shortDesc,
         fullDescription: fullDesc,
-        featured: featured,
+        featured,
       });
       
-      let projectId = editingProject ? editingProject.id : null;
+      let projectId = editingProject?.id || null;
       
       if (editingProject) {
-        await fetch(BACKEND_URL + '/api/projects/' + projectId, {
+        await fetch(`${BACKEND_URL}/api/projects/${projectId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: body,
+          body,
         });
       } else {
-        const res = await fetch(BACKEND_URL + '/api/projects', {
+        const res = await fetch(`${BACKEND_URL}/api/projects`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: body,
+          body,
         });
         if (res.ok) {
           const newProject = await res.json();
@@ -164,8 +213,11 @@ const AdminDashboard = () => {
       }
       
       if (projectId) {
-        const params = 'mainImage=' + encodeURIComponent(mainImage) + '&galleryImages=' + encodeURIComponent(JSON.stringify(galleryImages));
-        await fetch(BACKEND_URL + '/api/projects/' + projectId + '/images?' + params, { method: 'PUT' });
+        const params = new URLSearchParams({
+          mainImage,
+          galleryImages: JSON.stringify(galleryImages)
+        });
+        await fetch(`${BACKEND_URL}/api/projects/${projectId}/images?${params}`, { method: 'PUT' });
       }
       
       await loadProjects();
@@ -179,7 +231,7 @@ const AdminDashboard = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Weet u zeker dat u dit project wilt verwijderen?')) return;
     try {
-      await fetch(BACKEND_URL + '/api/projects/' + id, { method: 'DELETE' });
+      await fetch(`${BACKEND_URL}/api/projects/${id}`, { method: 'DELETE' });
       await loadProjects();
     } catch (error) {
       alert('Fout bij verwijderen');
@@ -188,7 +240,7 @@ const AdminDashboard = () => {
 
   const toggleFeatured = async (project) => {
     try {
-      await fetch(BACKEND_URL + '/api/projects/' + project.id, {
+      await fetch(`${BACKEND_URL}/api/projects/${project.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ featured: !project.featured }),
@@ -227,45 +279,25 @@ const AdminDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map(function(project) {
-            return (
-              <div key={project.id} className="bg-white rounded-lg shadow overflow-hidden">
-                <div className="aspect-video relative bg-gray-200">
-                  {project.mainImage ? (
-                    <img src={getImageUrl(project.mainImage)} alt={project.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center"><ImageIcon className="h-12 w-12 text-gray-400" /></div>
-                  )}
-                  {project.featured && <span className="absolute top-2 left-2 bg-[#3a190b] text-white text-xs px-2 py-1 rounded">Uitgelicht</span>}
-                </div>
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs uppercase font-semibold text-[#3a190b]">{project.category}</span>
-                    <span className="text-xs text-gray-400">•</span>
-                    <span className="text-xs text-gray-500">{project.location}</span>
-                  </div>
-                  <h3 className="font-bold text-[#202020] mb-2">{project.title}</h3>
-                  <p className="text-sm text-gray-600 line-clamp-2 mb-4">{project.shortDescription}</p>
-                  <div className="flex justify-between items-center">
-                    <button onClick={function() { toggleFeatured(project); }} className={project.featured ? 'text-xs px-3 py-1 rounded bg-[#3a190b] text-white' : 'text-xs px-3 py-1 rounded bg-gray-200 text-gray-600'}>
-                      {project.featured ? 'Uitgelicht' : 'Niet uitgelicht'}
-                    </button>
-                    <div className="flex gap-2">
-                      <Button onClick={function() { openEditDialog(project); }} size="sm" variant="outline" className="h-8 w-8 p-0"><Edit className="h-4 w-4" /></Button>
-                      <Button onClick={function() { handleDelete(project.id); }} size="sm" variant="outline" className="h-8 w-8 p-0 text-red-600"><Trash2 className="h-4 w-4" /></Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {projects.map(project => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              getImageUrl={getImageUrl}
+              onToggleFeatured={toggleFeatured}
+              onEdit={openEditDialog}
+              onDelete={handleDelete}
+            />
+          ))}
         </div>
 
         {projects.length === 0 && (
           <div className="text-center py-12">
             <ImageIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 mb-4">Nog geen projecten</p>
-            <Button onClick={openAddDialog} className="bg-[#3a190b] text-white"><Plus className="h-4 w-4 mr-2" />Voeg project toe</Button>
+            <Button onClick={openAddDialog} className="bg-[#3a190b] text-white">
+              <Plus className="h-4 w-4 mr-2" />Voeg project toe
+            </Button>
           </div>
         )}
       </main>
@@ -280,11 +312,11 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <Label>Titel *</Label>
-                <Input value={title} onChange={function(e) { setTitle(e.target.value); }} placeholder="Project titel" />
+                <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Project titel" />
               </div>
               <div>
                 <Label>Categorie</Label>
-                <select value={category} onChange={function(e) { setCategory(e.target.value); }} className="w-full h-10 rounded-md border px-3 text-sm">
+                <select value={category} onChange={e => setCategory(e.target.value)} className="w-full h-10 rounded-md border px-3 text-sm">
                   <option value="totaalproject">Totaalproject</option>
                   <option value="badkamer">Badkamer</option>
                   <option value="keuken">Keuken</option>
@@ -294,18 +326,18 @@ const AdminDashboard = () => {
               </div>
               <div>
                 <Label>Locatie *</Label>
-                <Input value={location} onChange={function(e) { setLocation(e.target.value); }} placeholder="Stad" />
+                <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="Stad" />
               </div>
             </div>
 
             <div>
               <Label>Korte beschrijving *</Label>
-              <Textarea value={shortDesc} onChange={function(e) { setShortDesc(e.target.value); }} rows={2} />
+              <Textarea value={shortDesc} onChange={e => setShortDesc(e.target.value)} rows={2} />
             </div>
 
             <div>
               <Label>Uitgebreide beschrijving</Label>
-              <Textarea value={fullDesc} onChange={function(e) { setFullDesc(e.target.value); }} rows={4} />
+              <Textarea value={fullDesc} onChange={e => setFullDesc(e.target.value)} rows={4} />
             </div>
 
             <div>
@@ -314,10 +346,12 @@ const AdminDashboard = () => {
                 {mainImage ? (
                   <div className="relative inline-block">
                     <img src={getImageUrl(mainImage)} alt="Main" className="h-40 object-cover rounded-lg" />
-                    <button onClick={function() { setMainImage(''); }} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"><X className="h-4 w-4" /></button>
+                    <button onClick={() => setMainImage('')} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1">
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
                 ) : (
-                  <div onClick={function() { mainImageRef.current && mainImageRef.current.click(); }} className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-[#3a190b]">
+                  <div onClick={() => mainImageRef.current?.click()} className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-[#3a190b]">
                     <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-500">Klik om te uploaden (PNG, JPG, etc.)</p>
                   </div>
@@ -329,15 +363,10 @@ const AdminDashboard = () => {
             <div>
               <Label>Galerij afbeeldingen</Label>
               <div className="mt-2 grid grid-cols-4 gap-2">
-                {galleryImages.map(function(img, i) {
-                  return (
-                    <div key={i} className="relative aspect-square">
-                      <img src={getImageUrl(img)} alt={'Gallery ' + i} className="w-full h-full object-cover rounded" />
-                      <button onClick={function() { removeGalleryImage(i); }} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"><X className="h-3 w-3" /></button>
-                    </div>
-                  );
-                })}
-                <div onClick={function() { galleryImageRef.current && galleryImageRef.current.click(); }} className="aspect-square border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer hover:border-[#3a190b]">
+                {galleryImages.map((img, i) => (
+                  <GalleryImage key={i} img={img} index={i} getImageUrl={getImageUrl} onRemove={removeGalleryImage} />
+                ))}
+                <div onClick={() => galleryImageRef.current?.click()} className="aspect-square border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer hover:border-[#3a190b]">
                   <Plus className="h-6 w-6 text-gray-400" />
                 </div>
               </div>
@@ -345,13 +374,15 @@ const AdminDashboard = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <input type="checkbox" id="featured" checked={featured} onChange={function(e) { setFeatured(e.target.checked); }} />
+              <input type="checkbox" id="featured" checked={featured} onChange={e => setFeatured(e.target.checked)} />
               <Label htmlFor="featured">Uitgelicht</Label>
             </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="outline" onClick={function() { setIsDialogOpen(false); }}><X className="h-4 w-4 mr-2" />Annuleren</Button>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <X className="h-4 w-4 mr-2" />Annuleren
+            </Button>
             <Button onClick={handleSave} disabled={!canSave} className="bg-[#3a190b] text-white">
               <Save className="h-4 w-4 mr-2" />{saving ? 'Opslaan...' : 'Opslaan'}
             </Button>
