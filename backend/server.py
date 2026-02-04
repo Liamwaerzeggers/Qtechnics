@@ -1049,10 +1049,19 @@ async def create_session(request: SessionRequest, response: Response):
     
     return SessionResponse(user=user, session_token=session_token)
 
-@api_router.get("/auth/me", response_model=User)
+@api_router.get("/auth/me")
 async def get_me(current_user: User = Depends(get_current_user)):
     """Get current authenticated user"""
-    return current_user
+    # Return user data with 'id' instead of '_id' for frontend compatibility
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "username": current_user.username,
+        "name": current_user.name,
+        "picture": current_user.picture,
+        "role": current_user.role,
+        "created_at": current_user.created_at.isoformat() if isinstance(current_user.created_at, datetime) else current_user.created_at
+    }
 
 @api_router.post("/auth/logout")
 async def logout(response: Response, current_user: User = Depends(get_current_user), session_token: Optional[str] = Cookie(None)):
