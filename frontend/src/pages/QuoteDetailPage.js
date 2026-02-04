@@ -1187,10 +1187,27 @@ Q Technics`;
                           <SelectItem value="21">21% (Hoog tarief)</SelectItem>
                         </SelectContent>
                       </Select>
+                      {formData.vat_rate !== defaultVatRate && (
+                        <p className="text-xs mt-1" style={{color: '#F59E0B'}}>
+                          ⚠️ Afwijkend van standaard BTW ({defaultVatRate}%)
+                        </p>
+                      )}
                     </div>
-                    <Button data-testid="submit-item-button" type="submit" className="w-full" style={{backgroundColor: '#500000'}}>
-                      Toevoegen
-                    </Button>
+                    
+                    <div className="flex gap-2 pt-2">
+                      <Button data-testid="submit-item-button" type="submit" className="flex-1" style={{backgroundColor: '#500000'}}>
+                        <Plus size={16} className="mr-1" />
+                        Toevoegen & Volgende
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={handleCloseDialog}
+                        className="px-6"
+                      >
+                        Klaar
+                      </Button>
+                    </div>
                   </form>
                 </DialogContent>
               </Dialog>
