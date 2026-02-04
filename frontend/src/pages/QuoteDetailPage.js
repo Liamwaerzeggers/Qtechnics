@@ -22,6 +22,8 @@ export default function QuoteDetailPage() {
   const [lineItems, setLineItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [defaultVatRate, setDefaultVatRate] = useState(21); // Global VAT setting for quote
+  const [sessionAddedItems, setSessionAddedItems] = useState([]); // Items added in current session
   const [formData, setFormData] = useState({
     description: '',
     quantity: '',
