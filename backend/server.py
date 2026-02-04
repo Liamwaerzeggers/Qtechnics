@@ -44,6 +44,37 @@ class StatusCheck(BaseModel):
 class StatusCheckCreate(BaseModel):
     client_name: str
 
+# Lead/Aanvraag Model
+class LeadCreate(BaseModel):
+    projectTypes: List[str]
+    budget: str
+    timeline: str
+    description: str
+    firstName: str
+    lastName: str
+    email: EmailStr
+    phone: str
+    street: Optional[str] = ""
+    city: str
+    postalCode: Optional[str] = ""
+
+class Lead(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    projectTypes: List[str]
+    budget: str
+    timeline: str
+    description: str
+    firstName: str
+    lastName: str
+    email: str
+    phone: str
+    street: str = ""
+    city: str
+    postalCode: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
