@@ -216,6 +216,8 @@ export default function QuoteDetailPage() {
           const autoAddResponse = await axios.post(`${API}/work-items/auto-add?${params.toString()}`, {}, { withCredentials: true });
           if (autoAddResponse.data.created) {
             toast.info(`"${formData.description}" toegevoegd aan werk items catalogus`);
+            // Refresh work items list
+            fetchWorkItems();
           }
         } catch (autoAddError) {
           // Silently fail - the item might already exist or there was an error
@@ -247,6 +249,7 @@ export default function QuoteDetailPage() {
             
             if (autoAddResponse.data.created) {
               toast.info(`"${formData.description}" toegevoegd aan materialen catalogus met foto 📷`);
+              fetchMaterials(); // Refresh materials list
             } else if (autoAddResponse.data.material?.image_url) {
               toast.info(`Foto toegevoegd aan bestaand materiaal "${formData.description}" 📷`);
             }
@@ -260,6 +263,7 @@ export default function QuoteDetailPage() {
             const autoAddResponse = await axios.post(`${API}/materials/auto-add?${params.toString()}`, {}, { withCredentials: true });
             if (autoAddResponse.data.created) {
               toast.info(`"${formData.description}" toegevoegd aan materialen catalogus`);
+              fetchMaterials(); // Refresh materials list
             }
           }
         } catch (autoAddError) {
@@ -275,16 +279,67 @@ export default function QuoteDetailPage() {
         unit_price: parseFloat(formData.unit_price)
       }, { withCredentials: true });
       
-      toast.success('Item toegevoegd!');
-      setIsDialogOpen(false);
-      setFormData({ description: '', quantity: '', unit_price: '', item_type: 'materiaal', vat_rate: 21, unit: 'm²' });
+      // Track added item in session
+      const addedItem = {
+        description: formData.description,
+        quantity: parseFloat(formData.quantity),
+        unit_price: parseFloat(formData.unit_price),
+        item_type: formData.item_type,
+        total: parseFloat(formData.quantity) * parseFloat(formData.unit_price)
+      };
+      setSessionAddedItems(prev => [...prev, addedItem]);
+      
+      toast.success('Item toegevoegd! ✓');
+      
+      // Reset form but keep dialog open and preserve default VAT
+      setFormData({ 
+        description: '', 
+        quantity: '', 
+        unit_price: '', 
+        item_type: 'materiaal', 
+        vat_rate: defaultVatRate, // Use default VAT
+        unit: 'm²' 
+      });
       setMaterialSearch('');
+      setWorkItemSearch('');
       setMaterialImage(null);
       setUseCustomMaterial(false);
+      
+      // Refresh quote data to update totals
       fetchQuoteData();
-      fetchMaterials(); // Refresh materials list
     } catch (error) {
       toast.error('Kon item niet toevoegen');
+    }
+  };
+  
+  // Close dialog and reset session
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setSessionAddedItems([]);
+    setFormData({ description: '', quantity: '', unit_price: '', item_type: 'materiaal', vat_rate: defaultVatRate, unit: 'm²' });
+    setMaterialSearch('');
+    setWorkItemSearch('');
+    setMaterialImage(null);
+    setUseCustomMaterial(false);
+  };
+  
+  // Apply default VAT to all items in quote
+  const handleApplyDefaultVat = async () => {
+    if (!window.confirm(`Weet je zeker dat je BTW ${defaultVatRate}% wilt toepassen op alle items?`)) return;
+    
+    try {
+      // Update all line items to use the default VAT rate
+      for (const item of lineItems) {
+        await axios.put(
+          `${API}/quotes/${quoteId}/items/${item.id}`,
+          { vat_rate: defaultVatRate },
+          { withCredentials: true }
+        );
+      }
+      toast.success(`BTW ${defaultVatRate}% toegepast op alle items`);
+      fetchQuoteData();
+    } catch (error) {
+      toast.error('Kon BTW niet bijwerken');
     }
   };
 
