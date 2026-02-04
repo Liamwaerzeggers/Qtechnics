@@ -243,7 +243,7 @@ const RenoverenPage = () => {
                 className="rounded-lg shadow-lg w-full h-[500px] object-cover"
               />
               <div className="absolute -bottom-6 -left-6 bg-[#3a190b] text-white p-6 rounded-lg shadow-lg max-w-xs">
-                <p className="text-3xl font-bold mb-1">15+</p>
+                <p className="text-3xl font-bold mb-1">35+</p>
                 <p className="text-white/80 text-sm">jaar ervaring in renovaties en technische installaties</p>
               </div>
             </div>
