@@ -146,6 +146,35 @@ class LeadUpdate(BaseModel):
     vat_number: Optional[str] = None
     is_business: Optional[bool] = None
 
+# Webhook model for external lead submissions (from website)
+class WebsiteLeadWebhook(BaseModel):
+    """Model for leads submitted from external website forms"""
+    # Required fields
+    name: str
+    email: str
+    phone: str
+    
+    # Optional fields - all extra form data
+    address: Optional[str] = None
+    postal_code: Optional[str] = None
+    city: Optional[str] = None
+    project_type: Optional[str] = "Website aanvraag"
+    description: Optional[str] = None
+    message: Optional[str] = None  # Contact form message
+    
+    # Business fields
+    company_name: Optional[str] = None
+    vat_number: Optional[str] = None
+    is_business: bool = False
+    
+    # Extra metadata
+    source: Optional[str] = "website"  # Where the lead came from
+    form_name: Optional[str] = None  # Which form was submitted
+    page_url: Optional[str] = None  # Which page the form was on
+    
+    # Any extra fields from the form (flexible)
+    extra_data: Optional[dict] = None
+
 # Quote Models
 class Quote(BaseModel):
     model_config = ConfigDict(extra="ignore")
