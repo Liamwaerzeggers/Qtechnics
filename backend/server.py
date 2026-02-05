@@ -8960,12 +8960,29 @@ async def complete_maintenance(contract_id: str, technician_notes: str = Query(d
 # Include router
 app.include_router(api_router)
 
+# CORS configuration - explicit origins for mobile browser compatibility
+cors_origins = os.environ.get('CORS_ORIGINS', '')
+if cors_origins:
+    origins_list = [o.strip() for o in cors_origins.split(',') if o.strip()]
+else:
+    # Default origins including common production and preview URLs
+    origins_list = [
+        "https://dashboard.qtechnics.be",
+        "https://www.dashboard.qtechnics.be",
+        "http://localhost:3000",
+        "http://localhost:8001",
+    ]
+    # Add preview URL pattern
+    import re
+    
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=["*"],  # Allow all origins
+    allow_origin_regex=r"https://.*\.preview\.emergentagent\.com",  # Also allow preview URLs
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 logging.basicConfig(
