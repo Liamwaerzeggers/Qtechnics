@@ -5066,12 +5066,42 @@ async def upload_first_visit_photo(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Read file content and convert to base64 for persistent storage
+    # Read file content
     import base64
     file_content = await file.read()
-    base64_data = base64.b64encode(file_content).decode('utf-8')
     
     file_extension = file.filename.split(".")[-1].lower()
+    
+    # Convert HEIC/HEIF to JPEG for browser compatibility
+    if file_extension in ["heic", "heif"]:
+        try:
+            from PIL import Image
+            import pillow_heif
+            import io
+            
+            # Register HEIF opener with Pillow
+            pillow_heif.register_heif_opener()
+            
+            # Open HEIC image and convert to JPEG
+            heic_image = Image.open(io.BytesIO(file_content))
+            
+            # Convert to RGB if necessary (HEIC can have alpha channel)
+            if heic_image.mode in ('RGBA', 'P'):
+                heic_image = heic_image.convert('RGB')
+            
+            # Save as JPEG
+            output_buffer = io.BytesIO()
+            heic_image.save(output_buffer, format='JPEG', quality=85)
+            file_content = output_buffer.getvalue()
+            file_extension = "jpg"
+            
+            logger.info(f"Converted HEIC image to JPEG for project {project_id}")
+        except ImportError:
+            logger.warning("pillow-heif not installed, storing HEIC as-is")
+        except Exception as e:
+            logger.error(f"Failed to convert HEIC: {str(e)}, storing as-is")
+    
+    base64_data = base64.b64encode(file_content).decode('utf-8')
     unique_filename = f"{uuid.uuid4()}.{file_extension}"
     
     # Determine content type
@@ -5080,7 +5110,9 @@ async def upload_first_visit_photo(
         "jpeg": "image/jpeg",
         "png": "image/png",
         "gif": "image/gif",
-        "webp": "image/webp"
+        "webp": "image/webp",
+        "heic": "image/heic",
+        "heif": "image/heif"
     }
     content_type = content_types.get(file_extension, "image/jpeg")
     
