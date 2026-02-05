@@ -4877,12 +4877,24 @@ async def reset_worker_password(worker_id: str, new_password: str = Query(..., m
     return {"message": "Password reset successfully", "worker_name": worker.get("name", "")}
 
 @api_router.post("/auth/admin/login")
-async def admin_login(username: str, password: str, response: Response):
-    """Admin login with username/password"""
-    logger.info(f"Admin login attempt for username: {username}")
+async def admin_login(
+    response: Response,
+    login_data: Optional[AdminLoginRequest] = None,
+    username: Optional[str] = None,
+    password: Optional[str] = None
+):
+    """Admin login with username/password - accepts both JSON body and query params"""
+    # Support both JSON body and query params (query params for backwards compatibility)
+    actual_username = login_data.username if login_data else username
+    actual_password = login_data.password if login_data else password
+    
+    if not actual_username or not actual_password:
+        raise HTTPException(status_code=400, detail="Gebruikersnaam en wachtwoord zijn verplicht")
+    
+    logger.info(f"Admin login attempt for username: {actual_username}")
     
     # Check if admin exists - INCLUDE _id in result
-    admin = await db.users.find_one({"username": username, "role": "admin"})
+    admin = await db.users.find_one({"username": actual_username, "role": "admin"})
     
     logger.info(f"Admin found: {admin is not None}")
     if admin:
