@@ -4955,10 +4955,22 @@ async def admin_login(
     }
 
 @api_router.post("/auth/worker/login")
-async def worker_login(username: str, password: str, response: Response):
+async def worker_login(
+    response: Response,
+    login_data: Optional[WorkerLoginRequest] = None,
+    username: Optional[str] = None,
+    password: Optional[str] = None
+):
     """Worker login with username/password - ONLY for workers"""
+    # Support both JSON body and query params
+    actual_username = login_data.username if login_data else username
+    actual_password = login_data.password if login_data else password
+    
+    if not actual_username or not actual_password:
+        raise HTTPException(status_code=400, detail="Gebruikersnaam en wachtwoord zijn verplicht")
+    
     # Check if worker exists
-    worker = await db.workers.find_one({"username": username}, {"_id": 0})
+    worker = await db.workers.find_one({"username": actual_username}, {"_id": 0})
     
     if not worker:
         raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
@@ -4966,7 +4978,7 @@ async def worker_login(username: str, password: str, response: Response):
     if not worker.get("is_active", True):
         raise HTTPException(status_code=403, detail="Account is gedeactiveerd / Обліковий запис деактивовано")
     
-    if not verify_password(password, worker["password_hash"]):
+    if not verify_password(actual_password, worker["password_hash"]):
         raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
     
     # Create session for worker
