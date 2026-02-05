@@ -4882,20 +4882,49 @@ async def reset_worker_password(worker_id: str, new_password: str = Query(..., m
 
 @api_router.post("/auth/admin/login")
 async def admin_login(
+    request: Request,
     response: Response,
     login_data: Optional[AdminLoginRequest] = None,
     username: Optional[str] = None,
     password: Optional[str] = None
 ):
     """Admin login with username/password - accepts both JSON body and query params"""
+    # Log request details for debugging mobile issues
+    user_agent = request.headers.get("user-agent", "unknown")
+    content_type = request.headers.get("content-type", "none")
+    logger.info(f"Login request - User-Agent: {user_agent[:50]}... Content-Type: {content_type}")
+    
     # Support both JSON body and query params (query params for backwards compatibility)
-    actual_username = login_data.username if login_data else username
-    actual_password = login_data.password if login_data else password
+    actual_username = None
+    actual_password = None
+    
+    if login_data:
+        actual_username = login_data.username
+        actual_password = login_data.password
+        logger.info(f"Login via JSON body for user: {actual_username}")
+    elif username and password:
+        actual_username = username
+        actual_password = password
+        logger.info(f"Login via query params for user: {actual_username}")
+    else:
+        # Try to parse body manually if pydantic didn't catch it
+        try:
+            body = await request.json()
+            actual_username = body.get("username")
+            actual_password = body.get("password")
+            logger.info(f"Login via manual JSON parse for user: {actual_username}")
+        except:
+            pass
     
     if not actual_username or not actual_password:
+        logger.warning(f"Login failed - missing credentials. Has login_data: {login_data is not None}, Has query params: {username is not None}")
         raise HTTPException(status_code=400, detail="Gebruikersnaam en wachtwoord zijn verplicht")
     
-    logger.info(f"Admin login attempt for username: {actual_username}")
+    # Strip whitespace that mobile keyboards might add
+    actual_username = actual_username.strip()
+    actual_password = actual_password.strip()
+    
+    logger.info(f"Admin login attempt for username: '{actual_username}' (length: {len(actual_username)})")
     
     # Check if admin exists - INCLUDE _id in result
     admin = await db.users.find_one({"username": actual_username, "role": "admin"})
