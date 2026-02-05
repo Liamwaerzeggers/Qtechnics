@@ -5292,16 +5292,21 @@ async def update_first_visit_notes(
     current_user: User = Depends(get_current_user)
 ):
     """Update first visit notes"""
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    # Admins can update any project's notes
+    if current_user.role == "admin":
+        project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    else:
+        project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
     
     await db.projects.update_one(
         {"id": project_id},
         {"$set": {"first_visit_notes": notes}}
     )
     
-    return {"message": "Notes updated"}
+    return {"message": "Notities opgeslagen"}
 
 @api_router.post("/projects/{project_id}/designs")
 async def upload_3d_design(
