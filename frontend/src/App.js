@@ -214,9 +214,9 @@ function LandingPage() {
     
     try {
       const response = await axios.post(
-        `${API}/auth/worker/login?username=${encodeURIComponent(loginUsername)}&password=${encodeURIComponent(loginPassword)}`,
-        {},
-        { withCredentials: true }
+        `${API}/auth/worker/login`,
+        { username: loginUsername, password: loginPassword },
+        { withCredentials: true, headers: { 'Content-Type': 'application/json' } }
       );
       
       setUser(response.data.user);
@@ -227,7 +227,7 @@ function LandingPage() {
       if (error.response?.status === 403) {
         toast.error('Account is gedeactiveerd. Neem contact op met je beheerder. / Обліковий запис деактивовано. Зверніться до адміністратора.');
       } else {
-        toast.error('Ongeldige inloggegevens / Невірні дані для входу');
+        toast.error('Ongeldige inloggegevens / Невірні дані voor входу');
       }
     } finally {
       setLoggingIn(false);
