@@ -5859,12 +5859,25 @@ async def get_admins(current_user: User = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Only admins can view admins")
     
     # Get admins with password_hash (email/password logins, not OAuth)
-    admins = await db.users.find(
-        {"role": "admin", "password_hash": {"$exists": True}}, 
-        {"_id": 0, "password_hash": 0}
-    ).to_list(1000)
+    admins_cursor = db.users.find(
+        {"role": "admin", "password_hash": {"$exists": True}}
+    )
+    admins = await admins_cursor.to_list(1000)
     
-    return admins
+    # Normalize the response - ensure each admin has an 'id' field
+    result = []
+    for admin in admins:
+        admin_data = {
+            "id": admin.get("id") or admin.get("_id"),
+            "username": admin.get("username"),
+            "email": admin.get("email"),
+            "name": admin.get("name"),
+            "role": "admin",
+            "created_at": admin.get("created_at")
+        }
+        result.append(admin_data)
+    
+    return result
 
 @api_router.delete("/admins/{admin_id}")
 async def delete_admin(admin_id: str, current_user: User = Depends(get_current_user)):
