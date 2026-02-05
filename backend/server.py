@@ -146,6 +146,11 @@ class LeadUpdate(BaseModel):
     vat_number: Optional[str] = None
     is_business: Optional[bool] = None
 
+# Login models for JSON body (more reliable than URL params on mobile)
+class AdminLoginRequest(BaseModel):
+    username: str
+    password: str
+
 # Webhook model for external lead submissions (from website)
 class WebsiteLeadWebhook(BaseModel):
     """Model for leads submitted from external website forms"""
