@@ -4095,16 +4095,38 @@ async def upload_work_slip_photo(
     if not slip:
         raise HTTPException(status_code=404, detail="Work slip not found")
     
+    # Read file content
+    content = await file.read()
+    file_extension = Path(file.filename).suffix.lower().replace(".", "")
+    
+    # Convert HEIC/HEIF to JPEG for browser compatibility
+    if file_extension in ["heic", "heif"]:
+        try:
+            from PIL import Image
+            import pillow_heif
+            import io
+            
+            pillow_heif.register_heif_opener()
+            heic_image = Image.open(io.BytesIO(content))
+            if heic_image.mode in ('RGBA', 'P'):
+                heic_image = heic_image.convert('RGB')
+            
+            output_buffer = io.BytesIO()
+            heic_image.save(output_buffer, format='JPEG', quality=85)
+            content = output_buffer.getvalue()
+            file_extension = "jpg"
+            logger.info(f"Converted HEIC work slip photo to JPEG")
+        except Exception as e:
+            logger.error(f"Failed to convert HEIC: {str(e)}")
+    
     # Save file to disk
     upload_dir = Path(__file__).parent / "uploads" / "work_slips" / project_id
     upload_dir.mkdir(parents=True, exist_ok=True)
     
-    file_extension = Path(file.filename).suffix
-    unique_filename = f"{slip_id}_{uuid.uuid4().hex[:8]}{file_extension}"
+    unique_filename = f"{slip_id}_{uuid.uuid4().hex[:8]}.{file_extension}"
     file_path = upload_dir / unique_filename
     
     with open(file_path, "wb") as f:
-        content = await file.read()
         f.write(content)
     
     # Add to work slip photos array
