@@ -240,9 +240,9 @@ function LandingPage() {
     
     try {
       const response = await axios.post(
-        `${API}/auth/admin/login?username=${encodeURIComponent(loginUsername)}&password=${encodeURIComponent(loginPassword)}`,
-        {},
-        { withCredentials: true }
+        `${API}/auth/admin/login`,
+        { username: loginUsername, password: loginPassword },
+        { withCredentials: true, headers: { 'Content-Type': 'application/json' } }
       );
       
       setUser(response.data.user);
