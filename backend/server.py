@@ -5701,6 +5701,56 @@ async def check_setup_status():
         "needs_setup": admin_count == 0
     }
 
+# Emergency password reset with secret key (for when locked out)
+EMERGENCY_RESET_KEY = os.environ.get('EMERGENCY_RESET_KEY', 'qtechnics-nood-reset-2024-Zx7pK9mN')
+
+@api_router.post("/setup/emergency-reset")
+async def emergency_password_reset(
+    username: str = Query(..., description="Username of the admin to reset"),
+    new_password: str = Query(..., min_length=6, description="New password"),
+    emergency_key: str = Query(..., description="Emergency reset key")
+):
+    """
+    Emergency password reset for when locked out.
+    Requires the emergency reset key from environment variable.
+    """
+    if emergency_key != EMERGENCY_RESET_KEY:
+        logger.warning(f"Emergency reset attempted with invalid key for user: {username}")
+        raise HTTPException(status_code=403, detail="Ongeldige nood-reset sleutel")
+    
+    # Find the admin user
+    admin = await db.users.find_one({"username": username, "role": "admin"})
+    if not admin:
+        raise HTTPException(status_code=404, detail=f"Admin '{username}' niet gevonden")
+    
+    # Reset the password
+    new_hash = hash_password(new_password)
+    await db.users.update_one(
+        {"username": username, "role": "admin"},
+        {"$set": {"password_hash": new_hash}}
+    )
+    
+    logger.info(f"Emergency password reset for admin: {username}")
+    
+    return {
+        "success": True,
+        "message": f"Wachtwoord voor '{username}' is gereset. U kunt nu inloggen.",
+        "username": username
+    }
+
+@api_router.get("/setup/list-admins")
+async def list_admin_usernames(emergency_key: str = Query(..., description="Emergency reset key")):
+    """List all admin usernames (for emergency recovery)"""
+    if emergency_key != EMERGENCY_RESET_KEY:
+        raise HTTPException(status_code=403, detail="Ongeldige nood-reset sleutel")
+    
+    admins = await db.users.find(
+        {"role": "admin"}, 
+        {"_id": 0, "username": 1, "email": 1, "name": 1}
+    ).to_list(100)
+    
+    return {"admins": admins}
+
 @api_router.post("/admins")
 async def create_admin(admin_data: AdminCreate, current_user: User = Depends(get_current_user)):
     """Create a new admin account with username/password (super admin only)"""
