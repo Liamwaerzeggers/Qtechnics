@@ -5873,16 +5873,40 @@ async def delete_admin(admin_id: str, current_user: User = Depends(get_current_u
         raise HTTPException(status_code=403, detail="Only admins can delete admins")
     
     if admin_id == current_user.id:
-        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+        raise HTTPException(status_code=400, detail="Je kunt jezelf niet verwijderen")
     
-    result = await db.users.delete_one({"id": admin_id, "password_hash": {"$exists": True}})
+    # Try to find admin by id field first, then by _id
+    admin = await db.users.find_one({
+        "$or": [
+            {"id": admin_id, "role": "admin"},
+            {"_id": admin_id, "role": "admin"}
+        ],
+        "password_hash": {"$exists": True}
+    })
+    
+    if not admin:
+        raise HTTPException(status_code=404, detail="Beheerder niet gevonden")
+    
+    # Check if trying to delete yourself (check both id and _id)
+    admin_actual_id = admin.get("id") or admin.get("_id")
+    if admin_actual_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Je kunt jezelf niet verwijderen")
+    
+    # Delete by the actual document identifier
+    if admin.get("id"):
+        result = await db.users.delete_one({"id": admin_id, "role": "admin"})
+    else:
+        result = await db.users.delete_one({"_id": admin_id, "role": "admin"})
+    
     if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Admin not found")
+        raise HTTPException(status_code=404, detail="Kon beheerder niet verwijderen")
     
-    # Also delete sessions
+    # Also delete sessions for this admin
+    await db.user_sessions.delete_many({"user_id": admin_id})
     await db.sessions.delete_many({"user_id": admin_id})
     
-    return {"message": "Admin deleted successfully"}
+    logger.info(f"Admin {admin_id} deleted by {current_user.id}")
+    return {"message": "Beheerder succesvol verwijderd"}
 
 @api_router.post("/admins/{admin_id}/reset-password")
 async def reset_admin_password(admin_id: str, new_password: str = Query(..., min_length=6), current_user: User = Depends(get_current_user)):
