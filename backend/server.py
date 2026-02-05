@@ -4901,14 +4901,14 @@ async def admin_login(
         logger.info(f"Has password_hash: {admin.get('password_hash') is not None}")
     
     if not admin or not admin.get("password_hash"):
-        logger.warning(f"Login failed - admin not found or no password_hash for: {username}")
+        logger.warning(f"Login failed - admin not found or no password_hash for: {actual_username}")
         raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
     
-    password_valid = verify_password(password, admin["password_hash"])
+    password_valid = verify_password(actual_password, admin["password_hash"])
     logger.info(f"Password valid: {password_valid}")
     
     if not password_valid:
-        logger.warning(f"Login failed - invalid password for: {username}")
+        logger.warning(f"Login failed - invalid password for: {actual_username}")
         raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
     
     # Create session for admin
