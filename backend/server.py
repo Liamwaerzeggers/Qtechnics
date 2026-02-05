@@ -151,6 +151,10 @@ class AdminLoginRequest(BaseModel):
     username: str
     password: str
 
+class WorkerLoginRequest(BaseModel):
+    username: str
+    password: str
+
 # Webhook model for external lead submissions (from website)
 class WebsiteLeadWebhook(BaseModel):
     """Model for leads submitted from external website forms"""
