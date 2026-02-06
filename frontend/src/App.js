@@ -7,6 +7,7 @@ import Services from './components/Services';
 import Projects from './components/Projects';
 import Werkwijze from './components/Werkwijze';
 import Testimonials from './components/Testimonials';
+import FAQ from './components/FAQ';
 import CTA from './components/CTA';
 import Footer from './components/Footer';
 import RenoverenPage from './components/RenoverenPage';
@@ -36,6 +37,7 @@ const Home = () => {
       <Projects />
       <Werkwijze />
       <Testimonials />
+      <FAQ />
       <CTA />
     </>
   );
