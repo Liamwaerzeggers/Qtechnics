@@ -46,8 +46,12 @@ const getCategoryLabel = (category) => {
 const getImageUrl = (url) => {
   if (!url) return 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80';
   if (url.startsWith('http')) return url;
+  // For uploaded images, construct the full URL
   if (url.startsWith('/uploads/')) {
     return `${BACKEND_URL}/api${url}`;
+  }
+  if (url.startsWith('/api/uploads/')) {
+    return `${BACKEND_URL}${url}`;
   }
   return `${BACKEND_URL}${url}`;
 };
