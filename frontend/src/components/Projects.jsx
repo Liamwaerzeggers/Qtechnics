@@ -120,6 +120,22 @@ const Projects = () => {
   return (
     <section className="py-16 md:py-24 bg-white" aria-labelledby="projects-heading">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Partner Badge */}
+        <div className="flex items-center justify-center gap-4 mb-10 pb-8 border-b border-gray-100">
+          <div className="flex items-center gap-4">
+            <img 
+              src="https://customer-assets.emergentagent.com/job_5156f510-8e20-4fea-9392-108b3325c528/artifacts/o1xk0fzg_NEVES%20MOOI%20OP%20MAAT%20CREATIONS%20SUR%20MESURE%20JPEG%20544X420.webp" 
+              alt="Neves - Mooi op Maat" 
+              className="h-12 w-auto"
+            />
+            <div className="text-left">
+              <p className="text-xs text-[#202020]/50 uppercase tracking-wider">Onze Belgische partner</p>
+              <p className="text-sm text-[#3a190b] font-medium">voor maatwerk & schrijnwerk</p>
+            </div>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-12">
           <div>
