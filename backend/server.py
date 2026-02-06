@@ -354,8 +354,8 @@ async def upload_file(file: UploadFile = File(...)):
         logger.error(f"Failed to save file: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to save file")
     
-    # Return the URL
-    return {"url": f"/uploads/{unique_filename}", "filename": unique_filename}
+    # Return the URL (use /api/uploads/ for proper ingress routing)
+    return {"url": f"/api/uploads/{unique_filename}", "filename": unique_filename}
 
 # Project endpoints
 @api_router.get("/projects", response_model=List[Project])
