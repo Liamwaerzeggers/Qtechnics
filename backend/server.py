@@ -333,29 +333,63 @@ async def delete_lead(lead_id: str):
 
 # File upload endpoint
 ALLOWED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.webp'}
+MIME_TYPES = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg', 
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp'
+}
 
 @api_router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
-    """Upload an image file and return the URL"""
+    """Upload an image file and store in MongoDB for persistence"""
     # Check file extension
     file_ext = Path(file.filename).suffix.lower()
     if file_ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"File type not allowed. Allowed: {', '.join(ALLOWED_EXTENSIONS)}")
     
-    # Generate unique filename
-    unique_filename = f"{uuid.uuid4()}{file_ext}"
-    file_path = UPLOAD_DIR / unique_filename
+    # Generate unique ID
+    image_id = str(uuid.uuid4())
     
-    # Save file
-    try:
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    except Exception as e:
-        logger.error(f"Failed to save file: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to save file")
+    # Read file content and encode as base64
+    import base64
+    content = await file.read()
+    base64_content = base64.b64encode(content).decode('utf-8')
     
-    # Return the URL (use /api/uploads/ for proper ingress routing)
-    return {"url": f"/api/uploads/{unique_filename}", "filename": unique_filename}
+    # Store in MongoDB
+    image_doc = {
+        "id": image_id,
+        "filename": file.filename,
+        "content_type": MIME_TYPES.get(file_ext, 'image/jpeg'),
+        "data": base64_content,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.images.insert_one(image_doc)
+    logger.info(f"Image stored in MongoDB: {image_id}")
+    
+    # Return the URL to fetch this image
+    return {"url": f"/api/images/{image_id}", "filename": file.filename, "id": image_id}
+
+@api_router.get("/images/{image_id}")
+async def get_image(image_id: str):
+    """Serve an image from MongoDB"""
+    from fastapi.responses import Response
+    import base64
+    
+    image_doc = await db.images.find_one({"id": image_id}, {"_id": 0})
+    if not image_doc:
+        raise HTTPException(status_code=404, detail="Image not found")
+    
+    # Decode base64 content
+    image_data = base64.b64decode(image_doc["data"])
+    
+    return Response(
+        content=image_data,
+        media_type=image_doc.get("content_type", "image/jpeg"),
+        headers={"Cache-Control": "public, max-age=31536000"}  # Cache for 1 year
+    )
 
 # Project endpoints
 @api_router.get("/projects", response_model=List[Project])
