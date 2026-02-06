@@ -39,11 +39,11 @@ QTECHNICS_API_KEY = os.environ.get('QTECHNICS_API_KEY', '')
 # Create the main app without a prefix
 app = FastAPI()
 
-# Mount uploads directory for static file serving
-app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
-
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
+
+# Mount uploads directory under /api/uploads for proper routing through ingress
+app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 
 # Define Models
