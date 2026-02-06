@@ -5,7 +5,7 @@ Clone van de interior design website maxq.be met alle functionaliteiten, aangepa
 
 ## Core Requirements
 1. **Website Pages:**
-   - Homepage met hero, services, projecten preview, testimonials, CTA
+   - Homepage met hero, services, projecten preview, testimonials, FAQ, CTA
    - Renoveren pagina met alle diensten
    - Projecten pagina met filtering en klikbare detail pagina's
    - Contact pagina met formulier
@@ -22,6 +22,26 @@ Clone van de interior design website maxq.be met alle functionaliteiten, aangepa
    - Email notificaties via Resend (niet geconfigureerd)
 
 ## What's Been Implemented
+
+### UI/Branding (2026-02-06)
+- [x] Logo vergroot (h-14)
+- [x] "Powered by Qtechnics" met link naar qtechnicsrenovaties.be
+- [x] Browser titel: "Max Q | Renovaties & Interieur in Limburg"
+- [x] Custom favicon
+- [x] Scroll-to-top bij navigatie
+
+### SEO & AI Optimalisatie (2026-02-06)
+- [x] Meta tags (title, description, keywords, geo)
+- [x] Open Graph & Twitter Cards
+- [x] Schema.org LocalBusiness structured data
+- [x] Schema.org FAQPage structured data
+- [x] robots.txt met AI crawler permissions
+- [x] llms.txt voor AI-systemen
+- [x] sitemap.xml
+- [x] manifest.json voor PWA
+- [x] FAQ sectie met 6 veelgestelde vragen
+
+### Eerder Geïmplementeerd
 - [x] Homepage met alle secties
 - [x] Renoveren pagina
 - [x] Projecten pagina met database integratie
@@ -32,60 +52,60 @@ Clone van de interior design website maxq.be met alle functionaliteiten, aangepa
 - [x] Admin dashboard met Projecten tab
 - [x] Admin dashboard met Aanvragen tab
 - [x] Bestandsupload voor projectafbeeldingen
-- [x] Webhook synchronisatie code (endpoint 404 op bestemming)
-- [x] Logo vergroot en "Powered by Qtechnics" branding
-- [x] Scroll-to-top bij navigatie
-- [x] Deployment blockers opgelost
+- [x] Webhook synchronisatie code
 
 ## Architecture
 ```
 /app
 ├── backend/
-│   ├── .env (MONGO_URL, DB_NAME, CORS_ORIGINS, RECIPIENT_EMAILS, QTECHNICS_WEBHOOK_URL, QTECHNICS_API_KEY)
+│   ├── .env
 │   ├── requirements.txt
-│   ├── server.py (FastAPI met alle endpoints)
-│   └── uploads/ (geüploade afbeeldingen)
+│   ├── server.py
+│   └── uploads/
 └── frontend/
-    ├── .env (REACT_APP_BACKEND_URL)
-    ├── package.json
+    ├── public/
+    │   ├── index.html (SEO meta tags, structured data)
+    │   ├── robots.txt
+    │   ├── sitemap.xml
+    │   ├── llms.txt
+    │   └── manifest.json
+    ├── .env
     └── src/
-        ├── App.js (Router met ScrollToTop)
+        ├── App.js
         └── components/
-            ├── Header.jsx (met Qtechnics branding)
-            ├── Footer.jsx (met Qtechnics branding)
-            ├── AdminDashboard.jsx (Projecten + Aanvragen tabs)
-            ├── ProjectDetail.jsx (met fotogalerij)
+            ├── Header.jsx
+            ├── Footer.jsx
+            ├── Hero.jsx (SEO optimized)
+            ├── FAQ.jsx (met FAQPage schema)
+            ├── AdminDashboard.jsx
+            ├── ProjectDetail.jsx
             └── ...
 ```
 
-## Key API Endpoints
-- `GET/POST /api/projects` - Projecten lijst/aanmaken
-- `GET/PUT/DELETE /api/projects/{id}` - Project CRUD
-- `PUT /api/projects/{id}/images` - Project afbeeldingen updaten
-- `POST /api/upload` - Bestand uploaden
-- `GET/POST /api/leads` - Leads lijst/aanmaken
-- `DELETE /api/leads/{id}` - Lead verwijderen
-
-## Database Schema
-**projects:** id, title, category, location, shortDescription, fullDescription, mainImage, galleryImages[], featured, created_at
-**leads:** id, firstName, lastName, email, phone, street, city, postalCode, projectTypes[], budget, timeline, description, created_at
+## SEO Files
+- **robots.txt**: AI crawlers (GPTBot, ChatGPT-User, anthropic-ai, PerplexityBot) explicitly allowed
+- **llms.txt**: Complete bedrijfsinformatie voor AI-systemen
+- **sitemap.xml**: Alle pagina's met prioriteit en update frequentie
+- **Structured Data**: LocalBusiness, FAQPage, BreadcrumbList
 
 ## Pending/Backlog
 ### P0 (Kritiek)
-- [ ] Webhook endpoint activeren op dashboard.qtechnics.be
+- [ ] Website deployen naar maxq.be domein
+- [ ] Indienen bij Google Search Console
 
 ### P1 (Belangrijk)
-- [ ] Resend API key configureren voor email notificaties
-- [ ] Backend authenticatie voor admin (nu frontend-only)
+- [ ] Webhook endpoint activeren op dashboard.qtechnics.be
+- [ ] Resend API key configureren
+- [ ] Google Business Profile aanmaken/updaten
+- [ ] Backend authenticatie voor admin
 
 ### P2 (Nice-to-have)
-- [ ] Privacybeleid pagina
-- [ ] Algemene voorwaarden pagina
-- [ ] Admin dashboard voor leads statistieken
+- [ ] Blog sectie voor extra SEO content
+- [ ] Privacybeleid & Algemene voorwaarden pagina's
+- [ ] Admin dashboard statistieken
 
 ## Credentials
 - **Admin Panel:** /admin → username: admin, password: maxq2024
-- **QTechnics Webhook:** API Key in backend/.env
 
 ## Last Updated
-2026-02-04
+2026-02-06
