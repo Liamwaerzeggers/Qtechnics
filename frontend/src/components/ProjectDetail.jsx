@@ -77,6 +77,10 @@ const ProjectDetail = () => {
   const getUrl = (url) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
+    // Support both old /uploads/ and new /api/uploads/ paths
+    if (url.startsWith('/uploads/')) {
+      return `${BACKEND_URL}/api${url}`;
+    }
     return `${BACKEND_URL}${url}`;
   };
 
