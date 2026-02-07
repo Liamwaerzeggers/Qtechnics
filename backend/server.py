@@ -5990,12 +5990,12 @@ async def debug_sales_check():
     sold_quotes = await db.quotes.count_documents({"is_sold": True})
     approved_quotes = await db.quotes.count_documents({"status": "goedgekeurd"})
     
-    # Count legacy documents
-    total_legacy = await db.legacy_quote_documents.count_documents({})
-    sold_legacy = await db.legacy_quote_documents.count_documents({"is_sold": True})
+    # Count legacy documents (CORRECT collection name: legacy_documents)
+    total_legacy = await db.legacy_documents.count_documents({})
+    sold_legacy = await db.legacy_documents.count_documents({"is_sold": True})
     
     # Get sample of legacy docs to see their structure
-    legacy_sample = await db.legacy_quote_documents.find({}).limit(3).to_list(3)
+    legacy_sample = await db.legacy_documents.find({}).limit(3).to_list(3)
     legacy_info = []
     for doc in legacy_sample:
         legacy_info.append({
@@ -6011,7 +6011,7 @@ async def debug_sales_check():
     sold_quotes_data = await db.quotes.find({"is_sold": True}, {"total_incl_vat": 1}).to_list(1000)
     quotes_total = sum(q.get("total_incl_vat", 0) for q in sold_quotes_data)
     
-    sold_legacy_data = await db.legacy_quote_documents.find({"is_sold": True}, {"total_price": 1}).to_list(1000)
+    sold_legacy_data = await db.legacy_documents.find({"is_sold": True}, {"total_price": 1}).to_list(1000)
     legacy_total = sum(d.get("total_price", 0) for d in sold_legacy_data)
     
     return {
