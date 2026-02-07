@@ -5095,9 +5095,11 @@ async def admin_login(
     session_token = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(days=30)
     
-    # Use _id as user_id
+    # Use id field or convert _id to string
+    user_id = admin.get("id") or str(admin.get("_id", ""))
+    
     session = {
-        "user_id": admin["_id"],  # Use the _id from database
+        "user_id": user_id,
         "session_token": session_token,
         "expires_at": expires_at.isoformat(),
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -5117,10 +5119,10 @@ async def admin_login(
     
     # Return admin user data
     admin_data = {
-        "id": admin["_id"],  # Use _id from database
+        "id": user_id,
         "username": admin["username"],
-        "email": admin["email"],
-        "name": admin["name"],
+        "email": admin.get("email", ""),
+        "name": admin.get("name", admin["username"]),
         "role": "admin",
         "created_at": admin.get("created_at", datetime.now(timezone.utc).isoformat())
     }
