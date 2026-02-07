@@ -5931,6 +5931,41 @@ async def check_setup_status():
         "needs_setup": admin_count == 0
     }
 
+@api_router.get("/test-login/{username}/{password}")
+async def test_login_debug(username: str, password: str):
+    """DEBUG: Test login credentials - returns detailed info about what's happening"""
+    username = username.strip()
+    password = password.strip()
+    
+    # Find admin exact match
+    admin_exact = await db.users.find_one({"username": username, "role": "admin"})
+    
+    # Find admin case-insensitive
+    admin_case_insensitive = await db.users.find_one({
+        "username": {"$regex": f"^{username}$", "$options": "i"},
+        "role": "admin"
+    })
+    
+    admin = admin_exact or admin_case_insensitive
+    
+    result = {
+        "username_received": username,
+        "username_length": len(username),
+        "password_length": len(password),
+        "admin_found_exact": admin_exact is not None,
+        "admin_found_case_insensitive": admin_case_insensitive is not None,
+        "has_password_hash": admin.get("password_hash") is not None if admin else False,
+    }
+    
+    if admin and admin.get("password_hash"):
+        result["password_valid"] = verify_password(password, admin["password_hash"])
+        result["stored_username"] = admin.get("username")
+    else:
+        result["password_valid"] = False
+        result["stored_username"] = None
+    
+    return result
+
 # Emergency password reset with secret key (for when locked out)
 EMERGENCY_RESET_KEY = os.environ.get('EMERGENCY_RESET_KEY', 'qtechnics-nood-reset-2024-Zx7pK9mN')
 
