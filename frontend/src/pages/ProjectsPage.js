@@ -292,6 +292,60 @@ export default function ProjectsPage() {
           </div>
         )}
 
+        {/* Potential Sales Banner */}
+        {!isWorker && totalPotentialSales > 0 && (
+          <div className="p-4 rounded-xl flex items-center justify-between" style={{backgroundColor: '#FEF3C7'}}>
+            <div className="flex items-center gap-3">
+              <TrendingUp size={24} style={{color: '#D97706'}} />
+              <div>
+                <p className="font-semibold" style={{color: '#92400E'}}>
+                  Potentiële verkoop: €{totalPotentialSales.toLocaleString('nl-NL', {minimumFractionDigits: 2})}
+                </p>
+                <p className="text-sm" style={{color: '#B45309'}}>
+                  Offertes goedgekeurd maar nog niet verkocht - push die sales! 💪
+                </p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setActiveTab('potential')}
+              style={{borderColor: '#D97706', color: '#D97706'}}
+            >
+              Bekijk offertes
+            </Button>
+          </div>
+        )}
+
+        {/* Tabs */}
+        {!isWorker && (
+          <div className="flex gap-2 border-b pb-2">
+            <button
+              onClick={() => setActiveTab('active')}
+              className={`px-4 py-2 rounded-t-lg font-medium transition-all ${
+                activeTab === 'active' 
+                  ? 'text-white' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              style={activeTab === 'active' ? {backgroundColor: '#500000'} : {}}
+            >
+              Actief ({activeProjects.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('not_sold')}
+              className={`px-4 py-2 rounded-t-lg font-medium transition-all flex items-center gap-2 ${
+                activeTab === 'not_sold' 
+                  ? 'text-white' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+              style={activeTab === 'not_sold' ? {backgroundColor: '#DC2626'} : {}}
+            >
+              <XCircle size={16} />
+              Niet Verkocht ({notSoldProjects.length})
+            </button>
+          </div>
+        )}
+
         <div className="flex justify-between items-center">
           <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
             {isWorker ? 'Projecten / Проєкти' : 'Projecten'}
