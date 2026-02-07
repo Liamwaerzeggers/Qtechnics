@@ -2548,10 +2548,12 @@ async def get_projects(current_user: User = Depends(get_current_user)):
                 }, {"_id": 0, "total_incl_vat": 1}).to_list(100)
                 total_sales = sum(q.get("total_incl_vat", 0) for q in sold_quotes)
                 
-                # Get SOLD legacy documents
+                # Get SOLD legacy documents - check both lead_id and project_id
                 sold_legacy = await db.legacy_quote_documents.find({
-                    "lead_id": lead_id,
-                    "is_sold": True
+                    "$or": [
+                        {"lead_id": lead_id, "is_sold": True},
+                        {"project_id": project["id"], "is_sold": True}
+                    ]
                 }, {"_id": 0, "total_price": 1}).to_list(100)
                 total_sales += sum(d.get("total_price", 0) for d in sold_legacy)
                 
@@ -2562,6 +2564,13 @@ async def get_projects(current_user: User = Depends(get_current_user)):
                     "$or": [{"is_sold": False}, {"is_sold": {"$exists": False}}]
                 }, {"_id": 0, "total_incl_vat": 1}).to_list(100)
                 project["potential_sales"] = sum(q.get("total_incl_vat", 0) for q in potential_quotes)
+            else:
+                # No lead_id - check legacy docs by project_id only
+                sold_legacy = await db.legacy_quote_documents.find({
+                    "project_id": project["id"],
+                    "is_sold": True
+                }, {"_id": 0, "total_price": 1}).to_list(100)
+                total_sales = sum(d.get("total_price", 0) for d in sold_legacy)
             
             if total_sales > 0:
                 project["profit"] = total_sales - total_costs
