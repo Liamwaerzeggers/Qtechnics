@@ -2549,7 +2549,7 @@ async def get_projects(current_user: User = Depends(get_current_user)):
                 total_sales = sum(q.get("total_incl_vat", 0) for q in sold_quotes)
                 
                 # Get SOLD legacy documents - check both lead_id and project_id
-                sold_legacy = await db.legacy_quote_documents.find({
+                sold_legacy = await db.legacy_documents.find({
                     "$or": [
                         {"lead_id": lead_id, "is_sold": True},
                         {"project_id": project["id"], "is_sold": True}
@@ -2566,7 +2566,7 @@ async def get_projects(current_user: User = Depends(get_current_user)):
                 project["potential_sales"] = sum(q.get("total_incl_vat", 0) for q in potential_quotes)
             else:
                 # No lead_id - check legacy docs by project_id only
-                sold_legacy = await db.legacy_quote_documents.find({
+                sold_legacy = await db.legacy_documents.find({
                     "project_id": project["id"],
                     "is_sold": True
                 }, {"_id": 0, "total_price": 1}).to_list(100)
@@ -3531,7 +3531,7 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
         total_actual_sales = sum(q.get("total_incl_vat", 0) for q in sold_quotes)
         
         # Add legacy documents that are marked as sold
-        sold_legacy = await db.legacy_quote_documents.find({"is_sold": True}, {"_id": 0, "total_price": 1}).to_list(1000)
+        sold_legacy = await db.legacy_documents.find({"is_sold": True}, {"_id": 0, "total_price": 1}).to_list(1000)
         total_actual_sales += sum(d.get("total_price", 0) for d in sold_legacy)
         
         # Calculate POTENTIAL sales (approved but not sold)
@@ -3543,7 +3543,7 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
         
         # Count sold vs potential quotes
         sold_quotes_count = await db.quotes.count_documents({"is_sold": True})
-        sold_legacy_count = await db.legacy_quote_documents.count_documents({"is_sold": True})
+        sold_legacy_count = await db.legacy_documents.count_documents({"is_sold": True})
         total_sold_count = sold_quotes_count + sold_legacy_count
         
         potential_quotes_count = await db.quotes.count_documents({
@@ -6091,7 +6091,7 @@ async def mark_all_approved_quotes_as_sold(current_user: User = Depends(get_curr
     )
     
     # Also update legacy documents
-    legacy_result = await db.legacy_quote_documents.update_many(
+    legacy_result = await db.legacy_documents.update_many(
         {
             "status": "goedgekeurd",
             "$or": [{"is_sold": False}, {"is_sold": {"$exists": False}}]
