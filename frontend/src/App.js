@@ -298,6 +298,11 @@ function LandingPage() {
         { withCredentials: true }
       );
       
+      // Store token in localStorage for mobile browser compatibility
+      if (response.data.session_token) {
+        localStorage.setItem('session_token', response.data.session_token);
+      }
+      
       setUser(response.data.user);
       const role = response.data.user.role;
       toast.success(`Welkom ${response.data.user.name}! 🏠`);
