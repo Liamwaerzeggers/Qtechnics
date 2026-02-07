@@ -552,6 +552,7 @@ export default function ProjectsPage() {
                       )}
                     </div>
                   )}
+                </div>
               </CardContent>
             </Card>
           ))}
