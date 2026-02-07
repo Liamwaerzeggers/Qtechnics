@@ -5937,6 +5937,54 @@ async def create_first_admin(admin_data: AdminCreate):
     
     return {"message": "Eerste admin account aangemaakt! U kunt nu inloggen.", "admin": admin_doc}
 
+@api_router.get("/debug/sales-check")
+async def debug_sales_check():
+    """DEBUG: Check why sales might be zero"""
+    # Count all quotes
+    total_quotes = await db.quotes.count_documents({})
+    sold_quotes = await db.quotes.count_documents({"is_sold": True})
+    approved_quotes = await db.quotes.count_documents({"status": "goedgekeurd"})
+    
+    # Count legacy documents
+    total_legacy = await db.legacy_quote_documents.count_documents({})
+    sold_legacy = await db.legacy_quote_documents.count_documents({"is_sold": True})
+    
+    # Get sample of legacy docs to see their structure
+    legacy_sample = await db.legacy_quote_documents.find({}).limit(3).to_list(3)
+    legacy_info = []
+    for doc in legacy_sample:
+        legacy_info.append({
+            "name": doc.get("name"),
+            "is_sold": doc.get("is_sold"),
+            "total_price": doc.get("total_price"),
+            "project_id": doc.get("project_id"),
+            "lead_id": doc.get("lead_id"),
+            "has_is_sold_field": "is_sold" in doc
+        })
+    
+    # Calculate what SHOULD be the total
+    sold_quotes_data = await db.quotes.find({"is_sold": True}, {"total_incl_vat": 1}).to_list(1000)
+    quotes_total = sum(q.get("total_incl_vat", 0) for q in sold_quotes_data)
+    
+    sold_legacy_data = await db.legacy_quote_documents.find({"is_sold": True}, {"total_price": 1}).to_list(1000)
+    legacy_total = sum(d.get("total_price", 0) for d in sold_legacy_data)
+    
+    return {
+        "quotes": {
+            "total": total_quotes,
+            "sold": sold_quotes,
+            "approved": approved_quotes,
+            "sold_value": quotes_total
+        },
+        "legacy_documents": {
+            "total": total_legacy,
+            "sold": sold_legacy,
+            "sold_value": legacy_total,
+            "sample": legacy_info
+        },
+        "total_sales_should_be": quotes_total + legacy_total
+    }
+
 @api_router.get("/setup/status")
 async def check_setup_status():
     """Check if the system has been set up (has admins)"""
