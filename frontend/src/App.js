@@ -31,14 +31,23 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
 const API = `${BACKEND_URL}/api`;
 const AUTH_URL = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(window.location.origin + '/auth/callback')}`;
 
-// Setup axios interceptor for global 401 handling
+// Setup axios interceptor for authentication and global 401 handling
+axios.interceptors.request.use((config) => {
+  // Add Authorization header from localStorage for mobile browser compatibility
+  const token = localStorage.getItem('session_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear any stored user state - the AuthProvider will handle the redirect
+      // Clear any stored token
+      localStorage.removeItem('session_token');
       console.warn('Session expired or invalid - redirecting to login');
-      // Don't redirect here, let the component handle it via AuthContext
     }
     return Promise.reject(error);
   }
