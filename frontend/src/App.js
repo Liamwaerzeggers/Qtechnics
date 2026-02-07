@@ -58,10 +58,19 @@ function AuthProvider({ children }) {
 
   const checkAuth = async () => {
     try {
-      const response = await axios.get(`${API}/auth/me`, { withCredentials: true });
+      // Get token from localStorage for mobile browser compatibility
+      const storedToken = localStorage.getItem('session_token');
+      const headers = storedToken ? { 'Authorization': `Bearer ${storedToken}` } : {};
+      
+      const response = await axios.get(`${API}/auth/me`, { 
+        withCredentials: true,
+        headers 
+      });
       setUser(response.data);
     } catch (error) {
       setUser(null);
+      // Clear invalid token
+      localStorage.removeItem('session_token');
     } finally {
       setLoading(false);
     }
@@ -70,10 +79,13 @@ function AuthProvider({ children }) {
   const logout = async () => {
     try {
       await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
+      localStorage.removeItem('session_token');
       setUser(null);
       toast.success('Uitgelogd');
     } catch (error) {
       console.error('Logout error:', error);
+      localStorage.removeItem('session_token');
+      setUser(null);
     }
   };
 
