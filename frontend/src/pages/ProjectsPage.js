@@ -419,12 +419,13 @@ export default function ProjectsPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
+          {(activeTab === 'not_sold' ? notSoldProjects : filteredProjects.filter(p => p.status !== 'niet verkocht')).map((project) => (
             <Card 
               key={project.id} 
               data-testid={`project-card-${project.id}`} 
               className="cursor-pointer hover:shadow-lg transition-all relative group" 
               onClick={() => isWorker ? navigate(`/projects/${project.id}/work-slips`) : navigate(`/projects/${project.id}`)}
+              style={activeTab === 'not_sold' ? {borderLeft: '4px solid #DC2626'} : {}}
             >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
@@ -435,8 +436,12 @@ export default function ProjectsPage() {
                         <span 
                           className="text-xs font-semibold px-3 py-1 rounded-full"
                           style={{
-                            backgroundColor: project.status === 'voltooid' ? '#DCFCE7' : project.status === 'in uitvoering' ? '#f5e6e6' : '#FEF3C7',
-                            color: project.status === 'voltooid' ? '#166534' : project.status === 'in uitvoering' ? '#500000' : '#92400E'
+                            backgroundColor: project.status === 'voltooid' ? '#DCFCE7' : 
+                              project.status === 'in uitvoering' ? '#f5e6e6' : 
+                              project.status === 'niet verkocht' ? '#FEE2E2' : '#FEF3C7',
+                            color: project.status === 'voltooid' ? '#166534' : 
+                              project.status === 'in uitvoering' ? '#500000' : 
+                              project.status === 'niet verkocht' ? '#991B1B' : '#92400E'
                           }}
                         >
                           {project.status}
@@ -450,7 +455,7 @@ export default function ProjectsPage() {
                           </span>
                         )}
                       </div>
-                      {!isWorker && typeof project.profit === 'number' && (
+                      {!isWorker && typeof project.profit === 'number' && project.status !== 'niet verkocht' && (
                         <span 
                           className="text-xs font-semibold px-3 py-1 rounded-full"
                           style={{
@@ -467,6 +472,22 @@ export default function ProjectsPage() {
                         </span>
                       )}
                     </div>
+                    
+                    {/* Show potential sales if exists */}
+                    {!isWorker && project.potential_sales > 0 && project.status !== 'niet verkocht' && (
+                      <div className="text-xs px-2 py-1 rounded mb-2 inline-block" style={{backgroundColor: '#FEF3C7', color: '#92400E'}}>
+                        💡 Potentieel: €{project.potential_sales.toLocaleString('nl-NL', {minimumFractionDigits: 2})}
+                      </div>
+                    )}
+                    
+                    {/* Show not sold reason */}
+                    {project.status === 'niet verkocht' && project.not_sold_reason && (
+                      <div className="text-xs p-2 rounded mb-2" style={{backgroundColor: '#FEE2E2', color: '#991B1B'}}>
+                        <AlertCircle size={12} className="inline mr-1" />
+                        {project.not_sold_reason}
+                      </div>
+                    )}
+                    
                     {project.start_date && (
                       <p className="text-sm mt-2" style={{color: '#64748B'}}>Start: {new Date(project.start_date).toLocaleDateString('nl-NL')}</p>
                     )}
