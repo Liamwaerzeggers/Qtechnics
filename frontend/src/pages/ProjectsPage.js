@@ -549,8 +549,8 @@ export default function ProjectsPage() {
                         <XCircle size={18} />
                       </Button>
                     )}
-                  )}
-                </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
