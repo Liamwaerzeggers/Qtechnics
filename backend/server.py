@@ -2714,6 +2714,58 @@ async def toggle_worker_visibility(project_id: str, current_user: User = Depends
         "message": f"Project is nu {'zichtbaar' if new_visibility else 'verborgen'} voor werkmannen"
     }
 
+@api_router.put("/projects/{project_id}/mark-not-sold")
+async def mark_project_not_sold(
+    project_id: str, 
+    reason: str = Query(..., description="Reden waarom niet verkocht"),
+    current_user: User = Depends(get_current_user)
+):
+    """Mark a project as not sold with a reason"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can mark projects as not sold")
+    
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {
+            "status": "niet verkocht",
+            "is_sold": False,
+            "not_sold_reason": reason,
+            "not_sold_date": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    logger.info(f"Project {project_id} marked as not sold. Reason: {reason}")
+    
+    return {
+        "message": "Project gemarkeerd als niet verkocht",
+        "reason": reason
+    }
+
+@api_router.put("/projects/{project_id}/reactivate")
+async def reactivate_project(project_id: str, current_user: User = Depends(get_current_user)):
+    """Reactivate a project that was marked as not sold"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can reactivate projects")
+    
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {
+            "status": "offerte in opmaak",
+            "not_sold_reason": None,
+            "not_sold_date": None
+        }}
+    )
+    
+    return {"message": "Project opnieuw geactiveerd"}
+
 @api_router.post("/projects/{project_id}/invoices")
 async def add_invoice_to_project(project_id: str, invoice: InvoiceUpload, current_user: User = Depends(get_current_user)):
     """Add an invoice to project costs (all admins can add)"""
