@@ -5048,8 +5048,17 @@ async def admin_login(
     
     logger.info(f"Admin login attempt for username: '{actual_username}' (length: {len(actual_username)})")
     
-    # Check if admin exists - INCLUDE _id in result
+    # Check if admin exists - try exact match first, then case-insensitive
     admin = await db.users.find_one({"username": actual_username, "role": "admin"})
+    
+    # If not found, try case-insensitive search (mobile keyboards often capitalize)
+    if not admin:
+        admin = await db.users.find_one({
+            "username": {"$regex": f"^{actual_username}$", "$options": "i"},
+            "role": "admin"
+        })
+        if admin:
+            logger.info(f"Found admin via case-insensitive match: {admin.get('username')}")
     
     logger.info(f"Admin found: {admin is not None}")
     if admin:
