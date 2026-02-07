@@ -2532,21 +2532,37 @@ async def get_projects(current_user: User = Depends(get_current_user)):
             total_sales = project.get("sales_price", 0) or 0
             total_costs = project.get("total_costs", 0) or 0
             
-            # If no sales_price stored, fall back to calculating from approved quotes
-            if total_sales == 0:
-                lead_id = project.get("lead_id")
-                if lead_id:
-                    approved_quotes = await db.quotes.find({
-                        "lead_id": lead_id,
-                        "status": "goedgekeurd"
-                    }, {"_id": 0, "total_incl_vat": 1}).to_list(100)
-                    total_sales = sum(q.get("total_incl_vat", 0) for q in approved_quotes)
+            # Calculate from SOLD quotes only (not just approved)
+            lead_id = project.get("lead_id")
+            if lead_id:
+                # Get SOLD quotes only for actual sales
+                sold_quotes = await db.quotes.find({
+                    "lead_id": lead_id,
+                    "is_sold": True
+                }, {"_id": 0, "total_incl_vat": 1}).to_list(100)
+                total_sales = sum(q.get("total_incl_vat", 0) for q in sold_quotes)
+                
+                # Get SOLD legacy documents
+                sold_legacy = await db.legacy_quote_documents.find({
+                    "lead_id": lead_id,
+                    "is_sold": True
+                }, {"_id": 0, "total_price": 1}).to_list(100)
+                total_sales += sum(d.get("total_price", 0) for d in sold_legacy)
+                
+                # Calculate potential sales (approved but not sold)
+                potential_quotes = await db.quotes.find({
+                    "lead_id": lead_id,
+                    "status": "goedgekeurd",
+                    "$or": [{"is_sold": False}, {"is_sold": {"$exists": False}}]
+                }, {"_id": 0, "total_incl_vat": 1}).to_list(100)
+                project["potential_sales"] = sum(q.get("total_incl_vat", 0) for q in potential_quotes)
             
             if total_sales > 0:
                 project["profit"] = total_sales - total_costs
-                project["sales_price"] = total_sales  # Ensure sales_price is in response
+                project["sales_price"] = total_sales
             else:
                 project["profit"] = None
+                project["sales_price"] = 0
     
     return projects
 
