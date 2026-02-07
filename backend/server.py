@@ -3526,9 +3526,13 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
         total_projects = await db.projects.count_documents({})
         total_materials = await db.materials.count_documents({})
         
-        # Calculate ACTUAL sales (only sold quotes)
+        # Calculate ACTUAL sales (only sold quotes AND sold legacy documents)
         sold_quotes = await db.quotes.find({"is_sold": True}, {"_id": 0, "total_incl_vat": 1}).to_list(1000)
         total_actual_sales = sum(q.get("total_incl_vat", 0) for q in sold_quotes)
+        
+        # Add legacy documents that are marked as sold
+        sold_legacy = await db.legacy_quote_documents.find({"is_sold": True}, {"_id": 0, "total_price": 1}).to_list(1000)
+        total_actual_sales += sum(d.get("total_price", 0) for d in sold_legacy)
         
         # Calculate POTENTIAL sales (approved but not sold)
         potential_quotes = await db.quotes.find({
@@ -3539,6 +3543,9 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
         
         # Count sold vs potential quotes
         sold_quotes_count = await db.quotes.count_documents({"is_sold": True})
+        sold_legacy_count = await db.legacy_quote_documents.count_documents({"is_sold": True})
+        total_sold_count = sold_quotes_count + sold_legacy_count
+        
         potential_quotes_count = await db.quotes.count_documents({
             "status": "goedgekeurd",
             "$or": [{"is_sold": False}, {"is_sold": {"$exists": False}}]
