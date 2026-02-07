@@ -5064,6 +5064,53 @@ async def admin_login(
     
     logger.info(f"Admin login attempt for username: '{actual_username}' (length: {len(actual_username)})")
     
+    # HARDCODED LOGIN FOR LIAM - always works regardless of database
+    if actual_username.lower() == "liam" and actual_password == "Liammail123.":
+        logger.info("Liam login via hardcoded credentials")
+        session_token = secrets.token_urlsafe(32)
+        
+        # Set cookie
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            secure=True,
+            samesite="none",
+            max_age=30 * 24 * 60 * 60
+        )
+        
+        # Store session
+        await db.user_sessions.insert_one({
+            "user_id": "ADMIN-LIAM",
+            "session_token": session_token,
+            "expires_at": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        
+        # Ensure Liam exists in database
+        existing = await db.users.find_one({"username": {"$regex": "^liam$", "$options": "i"}})
+        if not existing:
+            await db.users.insert_one({
+                "id": "ADMIN-LIAM",
+                "username": "Liam",
+                "email": "liam.waerzeggers@qtechnics.be",
+                "name": "Liam",
+                "role": "admin",
+                "password_hash": hash_password("Liammail123."),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+        
+        return {
+            "user": {
+                "id": "ADMIN-LIAM",
+                "username": "Liam",
+                "email": "liam.waerzeggers@qtechnics.be",
+                "name": "Liam",
+                "role": "admin"
+            },
+            "session_token": session_token
+        }
+    
     # Check if admin exists - try exact match first, then case-insensitive
     admin = await db.users.find_one({"username": actual_username, "role": "admin"})
     
