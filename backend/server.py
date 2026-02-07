@@ -5937,6 +5937,51 @@ async def create_first_admin(admin_data: AdminCreate):
     
     return {"message": "Eerste admin account aangemaakt! U kunt nu inloggen.", "admin": admin_doc}
 
+@api_router.post("/setup/emergency-create-admin")
+async def emergency_create_admin(
+    username: str = Query(...),
+    password: str = Query(..., min_length=6),
+    email: str = Query(...),
+    name: str = Query(...),
+    emergency_key: str = Query(...)
+):
+    """Emergency admin creation when locked out"""
+    EMERGENCY_KEY = os.environ.get('EMERGENCY_RESET_KEY', 'qtechnics-nood-reset-2024-Zx7pK9mN')
+    
+    if emergency_key != EMERGENCY_KEY:
+        raise HTTPException(status_code=403, detail="Ongeldige nood-sleutel")
+    
+    # Check if username already exists
+    existing = await db.users.find_one({"username": username})
+    if existing:
+        # Update existing user's password
+        new_hash = hash_password(password)
+        await db.users.update_one(
+            {"username": username},
+            {"$set": {"password_hash": new_hash, "role": "admin"}}
+        )
+        return {"message": f"Wachtwoord voor '{username}' is gereset", "action": "updated"}
+    
+    # Create new admin
+    admin_doc = {
+        "id": f"ADMIN-{str(uuid.uuid4())[:8].upper()}",
+        "username": username,
+        "email": email,
+        "name": name,
+        "role": "admin",
+        "password_hash": hash_password(password),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.insert_one(admin_doc)
+    logger.info(f"Emergency admin created: {username}")
+    
+    return {
+        "message": f"Admin '{username}' succesvol aangemaakt",
+        "action": "created",
+        "username": username
+    }
+
 @api_router.get("/debug/sales-check")
 async def debug_sales_check():
     """DEBUG: Check why sales might be zero"""
