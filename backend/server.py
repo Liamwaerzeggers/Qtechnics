@@ -5937,6 +5937,7 @@ async def create_first_admin(admin_data: AdminCreate):
     
     return {"message": "Eerste admin account aangemaakt! U kunt nu inloggen.", "admin": admin_doc}
 
+@api_router.get("/setup/emergency-create-admin")
 @api_router.post("/setup/emergency-create-admin")
 async def emergency_create_admin(
     username: str = Query(...),
