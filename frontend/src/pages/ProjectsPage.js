@@ -522,10 +522,33 @@ export default function ProjectsPage() {
                       size="sm"
                       onClick={(e) => handleDeleteProject(e, project.id, project.name)}
                       className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-orange-50 hover:text-orange-600"
-                      title={project.is_archived ? "Project is gearchiveerd" : "Project archiveren (verbergen voor werkmannen)"}
+                      title="Project verwijderen"
                     >
                       <Trash2 size={18} />
                     </Button>
+                    
+                    {/* Not Sold / Reactivate buttons */}
+                    {project.status === 'niet verkocht' ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => handleReactivateProject(e, project.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-green-50 hover:text-green-600"
+                        title="Project opnieuw activeren"
+                      >
+                        <RefreshCw size={18} />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => openNotSoldDialog(e, project)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600"
+                        title="Markeer als niet verkocht"
+                      >
+                        <XCircle size={18} />
+                      </Button>
+                    )}
                   )}
                 </div>
               </CardContent>
@@ -533,9 +556,57 @@ export default function ProjectsPage() {
           ))}
         </div>
 
-        {filteredProjects.length === 0 && (
+        {/* Not Sold Dialog */}
+        <Dialog open={notSoldDialogOpen} onOpenChange={setNotSoldDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Project markeren als niet verkocht</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm" style={{color: '#64748B'}}>
+                Project: <strong>{selectedProjectForNotSold?.name}</strong>
+              </p>
+              <div>
+                <Label>Reden waarom niet verkocht *</Label>
+                <Textarea
+                  value={notSoldReason}
+                  onChange={(e) => setNotSoldReason(e.target.value)}
+                  placeholder="Bijv: Te duur, andere aannemer gekozen, project uitgesteld..."
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleMarkNotSold}
+                  style={{backgroundColor: '#DC2626'}}
+                  className="flex-1"
+                >
+                  <XCircle className="mr-2" size={16} />
+                  Markeer als niet verkocht
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setNotSoldDialogOpen(false);
+                    setNotSoldReason('');
+                  }}
+                >
+                  Annuleren
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {filteredProjects.length === 0 && activeTab === 'active' && (
           <div className="text-center py-12">
             <p style={{color: '#94A3B8'}}>Nog geen projecten</p>
+          </div>
+        )}
+        
+        {notSoldProjects.length === 0 && activeTab === 'not_sold' && (
+          <div className="text-center py-12">
+            <p style={{color: '#94A3B8'}}>Geen niet-verkochte projecten 🎉</p>
           </div>
         )}
       </div>
