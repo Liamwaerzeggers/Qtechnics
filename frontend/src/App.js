@@ -245,6 +245,11 @@ function LandingPage() {
         { withCredentials: true, headers: { 'Content-Type': 'application/json' } }
       );
       
+      // Store token in localStorage for mobile browser compatibility
+      if (response.data.session_token) {
+        localStorage.setItem('session_token', response.data.session_token);
+      }
+      
       setUser(response.data.user);
       toast.success(`Welkom ${response.data.user.name}! 👨‍💼`);
       navigate('/dashboard');
