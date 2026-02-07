@@ -281,11 +281,16 @@ class Project(BaseModel):
     lead_id: Optional[str] = None  # NEW: Optional link to lead
     quote_id: Optional[str] = None  # BLIJFT: Backward compatible (was verplicht)
     name: str
-    status: str = "gepland"  # eerste bezoek, offerte in opmaak, gepland, in uitvoering, voltooid
+    status: str = "gepland"  # eerste bezoek, offerte in opmaak, gepland, in uitvoering, voltooid, niet verkocht
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     notes: Optional[str] = None
     color: str = "#1E40AF"  # Default blue color
+    
+    # Sales tracking
+    is_sold: bool = False  # Whether the project has been sold
+    not_sold_reason: Optional[str] = None  # Reason if marked as "niet verkocht"
+    not_sold_date: Optional[datetime] = None  # When marked as niet verkocht
     
     # NIEUWE SECTIE: Eerste Bezoek
     # Support both old format (List[str]) and new format (List[dict] with room)
@@ -312,7 +317,8 @@ class Project(BaseModel):
     invoice_uploads: List[dict] = []  # [{filename, total_excl_vat, total_incl_vat, vat_amount, upload_date}]
     total_costs: float = 0.0
     total_costs_incl_vat: float = 0.0
-    sales_price: float = 0.0  # Total from approved quotes (incl VAT)
+    sales_price: float = 0.0  # Total from SOLD quotes only (incl VAT)
+    potential_sales: float = 0.0  # Total from approved but not sold quotes
     profit: Optional[float] = 0.0
     profit_margin: float = 0.0
     is_archived: bool = False  # Soft delete - hidden from workers when True
