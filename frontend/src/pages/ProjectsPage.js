@@ -35,6 +35,10 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('active'); // 'active', 'potential', 'not_sold'
+  const [notSoldDialogOpen, setNotSoldDialogOpen] = useState(false);
+  const [selectedProjectForNotSold, setSelectedProjectForNotSold] = useState(null);
+  const [notSoldReason, setNotSoldReason] = useState('');
   const [formData, setFormData] = useState({
     quote_id: '',
     name: '',
@@ -43,8 +47,15 @@ export default function ProjectsPage() {
     notes: ''
   });
 
-  // Calculate total sales from all projects
-  const totalSales = projects.reduce((sum, p) => sum + (p.sales_price || 0), 0);
+  // Filter projects by status
+  const activeProjects = projects.filter(p => p.status !== 'niet verkocht');
+  const notSoldProjects = projects.filter(p => p.status === 'niet verkocht');
+  
+  // Calculate total SOLD sales (only is_sold quotes count)
+  const totalSales = activeProjects.reduce((sum, p) => sum + (p.sales_price || 0), 0);
+  
+  // Calculate potential sales (approved but not sold)
+  const totalPotentialSales = activeProjects.reduce((sum, p) => sum + (p.potential_sales || 0), 0);
   
   // Find current and next milestone
   const currentMilestone = MILESTONES.filter(m => totalSales >= m.amount).pop();
