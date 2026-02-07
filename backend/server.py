@@ -5966,6 +5966,38 @@ async def test_login_debug(username: str, password: str):
     
     return result
 
+@api_router.post("/quotes/mark-all-approved-as-sold")
+async def mark_all_approved_quotes_as_sold(current_user: User = Depends(get_current_user)):
+    """Mark all approved quotes as sold (one-time migration)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can do this")
+    
+    # Find all approved quotes that are not yet marked as sold
+    result = await db.quotes.update_many(
+        {
+            "status": "goedgekeurd",
+            "$or": [{"is_sold": False}, {"is_sold": {"$exists": False}}]
+        },
+        {"$set": {"is_sold": True, "sold_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Also update legacy documents
+    legacy_result = await db.legacy_quote_documents.update_many(
+        {
+            "status": "goedgekeurd",
+            "$or": [{"is_sold": False}, {"is_sold": {"$exists": False}}]
+        },
+        {"$set": {"is_sold": True, "sold_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    logger.info(f"Marked {result.modified_count} quotes and {legacy_result.modified_count} legacy docs as sold")
+    
+    return {
+        "message": f"Alle goedgekeurde offertes zijn nu als verkocht gemarkeerd",
+        "quotes_updated": result.modified_count,
+        "legacy_docs_updated": legacy_result.modified_count
+    }
+
 # Emergency password reset with secret key (for when locked out)
 EMERGENCY_RESET_KEY = os.environ.get('EMERGENCY_RESET_KEY', 'qtechnics-nood-reset-2024-Zx7pK9mN')
 
