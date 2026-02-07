@@ -517,40 +517,41 @@ export default function ProjectsPage() {
                     )}
                   </div>
                   {!isWorker && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => handleDeleteProject(e, project.id, project.name)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-orange-50 hover:text-orange-600"
-                      title="Project verwijderen"
-                    >
-                      <Trash2 size={18} />
-                    </Button>
+                    <div className="flex flex-col gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => handleDeleteProject(e, project.id, project.name)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-orange-50 hover:text-orange-600"
+                        title="Project verwijderen"
+                      >
+                        <Trash2 size={18} />
+                      </Button>
                     
-                    {/* Not Sold / Reactivate buttons */}
-                    {project.status === 'niet verkocht' ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => handleReactivateProject(e, project.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-green-50 hover:text-green-600"
-                        title="Project opnieuw activeren"
-                      >
-                        <RefreshCw size={18} />
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => openNotSoldDialog(e, project)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600"
-                        title="Markeer als niet verkocht"
-                      >
-                        <XCircle size={18} />
-                      </Button>
-                    )}
-                  </div>
-                )}
+                      {/* Not Sold / Reactivate buttons */}
+                      {project.status === 'niet verkocht' ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleReactivateProject(e, project.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-green-50 hover:text-green-600"
+                          title="Project opnieuw activeren"
+                        >
+                          <RefreshCw size={18} />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => openNotSoldDialog(e, project)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600"
+                          title="Markeer als niet verkocht"
+                        >
+                          <XCircle size={18} />
+                        </Button>
+                      )}
+                    </div>
+                  )}
               </CardContent>
             </Card>
           ))}
