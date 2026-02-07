@@ -149,6 +149,50 @@ export default function ProjectsPage() {
     }
   };
 
+  const handleMarkNotSold = async () => {
+    if (!selectedProjectForNotSold || !notSoldReason.trim()) {
+      toast.error('Vul een reden in');
+      return;
+    }
+    
+    try {
+      await axios.put(
+        `${API}/projects/${selectedProjectForNotSold.id}/mark-not-sold?reason=${encodeURIComponent(notSoldReason)}`,
+        {},
+        { withCredentials: true }
+      );
+      toast.success('Project gemarkeerd als niet verkocht');
+      setNotSoldDialogOpen(false);
+      setSelectedProjectForNotSold(null);
+      setNotSoldReason('');
+      fetchData();
+    } catch (error) {
+      toast.error('Kon project niet updaten');
+    }
+  };
+
+  const handleReactivateProject = async (e, projectId) => {
+    e.stopPropagation();
+    
+    try {
+      await axios.put(
+        `${API}/projects/${projectId}/reactivate`,
+        {},
+        { withCredentials: true }
+      );
+      toast.success('Project opnieuw geactiveerd');
+      fetchData();
+    } catch (error) {
+      toast.error('Kon project niet reactiveren');
+    }
+  };
+
+  const openNotSoldDialog = (e, project) => {
+    e.stopPropagation();
+    setSelectedProjectForNotSold(project);
+    setNotSoldDialogOpen(true);
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
