@@ -3459,6 +3459,24 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
         total_projects = await db.projects.count_documents({})
         total_materials = await db.materials.count_documents({})
         
+        # Calculate ACTUAL sales (only sold quotes)
+        sold_quotes = await db.quotes.find({"is_sold": True}, {"_id": 0, "total_incl_vat": 1}).to_list(1000)
+        total_actual_sales = sum(q.get("total_incl_vat", 0) for q in sold_quotes)
+        
+        # Calculate POTENTIAL sales (approved but not sold)
+        potential_quotes = await db.quotes.find({
+            "status": "goedgekeurd",
+            "$or": [{"is_sold": False}, {"is_sold": {"$exists": False}}]
+        }, {"_id": 0, "total_incl_vat": 1}).to_list(1000)
+        total_potential_sales = sum(q.get("total_incl_vat", 0) for q in potential_quotes)
+        
+        # Count sold vs potential quotes
+        sold_quotes_count = await db.quotes.count_documents({"is_sold": True})
+        potential_quotes_count = await db.quotes.count_documents({
+            "status": "goedgekeurd",
+            "$or": [{"is_sold": False}, {"is_sold": {"$exists": False}}]
+        })
+        
         # Get recent items - exclude MongoDB _id field
         recent_leads = await db.leads.find({}, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
         recent_quotes = await db.quotes.find({}, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
@@ -3508,6 +3526,10 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
         total_quotes = 0
         total_projects = 0
         total_materials = 0
+        total_actual_sales = 0
+        total_potential_sales = 0
+        sold_quotes_count = 0
+        potential_quotes_count = 0
         recent_leads = []
         recent_quotes = []
         material_reminders = []
@@ -3517,6 +3539,10 @@ async def get_dashboard_stats(current_user: User = Depends(get_current_user)):
         "total_quotes": total_quotes,
         "total_projects": total_projects,
         "total_materials": total_materials,
+        "total_actual_sales": total_actual_sales,
+        "total_potential_sales": total_potential_sales,
+        "sold_quotes_count": sold_quotes_count,
+        "potential_quotes_count": potential_quotes_count,
         "recent_leads": recent_leads,
         "recent_quotes": recent_quotes,
         "material_reminders": material_reminders
