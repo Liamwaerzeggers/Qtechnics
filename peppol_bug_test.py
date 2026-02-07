@@ -12,7 +12,7 @@ import json
 from datetime import datetime
 
 class PeppolBugTester:
-    def __init__(self, base_url="https://realtor-hub-43.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://fixndash.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.session_token = None
         
