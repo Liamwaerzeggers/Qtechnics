@@ -1029,14 +1029,14 @@ async def get_current_user(session_token: Optional[str] = Cookie(None), authoriz
     # Check hardcoded admins first
     if user_id in HARDCODED_ADMINS:
         admin = HARDCODED_ADMINS[user_id]
-        return User(
-            _id=admin["id"],
-            id=admin["id"],
-            email=admin["email"],
-            username=admin["username"],
-            name=admin["name"],
-            role=admin["role"]
-        )
+        user_dict = {
+            "_id": admin["id"],
+            "email": admin["email"],
+            "username": admin["username"],
+            "name": admin["name"],
+            "role": admin["role"]
+        }
+        return User(**user_dict)
     
     # Try to find in database - first by id field
     user_doc = await db.users.find_one({"id": user_id})
