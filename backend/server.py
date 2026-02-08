@@ -5065,8 +5065,17 @@ async def admin_login(
     logger.info(f"Admin login attempt for username: '{actual_username}' (length: {len(actual_username)})")
     
     # HARDCODED LOGIN FOR LIAM - always works regardless of database
-    # Accept both with and without trailing period for convenience
-    if actual_username.lower() == "liam" and actual_password in ["Liammail123.", "Liammail123"]:
+    # Log exact credentials for debugging (will be removed later)
+    logger.info(f"LOGIN ATTEMPT: username='{actual_username}' (len={len(actual_username)}), password='{actual_password}' (len={len(actual_password)})")
+    
+    # Accept ANY case variation of liam and common password variants
+    username_match = actual_username.lower().strip() == "liam"
+    password_variants = ["Liammail123.", "Liammail123", "liammail123.", "liammail123", "LiamMail123.", "LiamMail123"]
+    password_match = actual_password.strip() in password_variants
+    
+    logger.info(f"Username match: {username_match}, Password match: {password_match}")
+    
+    if username_match and password_match:
         logger.info("Liam login via hardcoded credentials")
         session_token = secrets.token_urlsafe(32)
         
