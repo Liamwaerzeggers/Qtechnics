@@ -162,6 +162,7 @@ function LandingPage() {
   const [loginUsername, setLoginUsername] = React.useState('');
   const [loginPassword, setLoginPassword] = React.useState('');
   const [loggingIn, setLoggingIn] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
   
   // Setup form state
   const [setupData, setSetupData] = React.useState({
