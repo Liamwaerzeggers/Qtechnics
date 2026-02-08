@@ -232,24 +232,22 @@ function LandingPage() {
     try {
       const response = await axios.post(
         `${API}/auth/worker/login`,
-        { username: loginUsername, password: loginPassword },
-        { withCredentials: true, headers: { 'Content-Type': 'application/json' } }
+        { username: loginUsername, password: loginPassword }
       );
       
-      // Store token in localStorage for mobile browser compatibility
       if (response.data.session_token) {
-        localStorage.setItem('session_token', response.data.session_token);
+        localStorage.setItem('auth_token', response.data.session_token);
       }
       
       setUser(response.data.user);
-      toast.success(`Welkom ${response.data.user.name}! 👷`);
+      toast.success(`Welkom ${response.data.user.name}!`);
       navigate('/projects');
     } catch (error) {
       console.error('Worker login error:', error);
       if (error.response?.status === 403) {
-        toast.error('Account is gedeactiveerd. Neem contact op met je beheerder. / Обліковий запис деактивовано. Зверніться до адміністратора.');
+        toast.error('Account is gedeactiveerd');
       } else {
-        toast.error('Ongeldige inloggegevens / Невірні дані voor входу');
+        toast.error('Ongeldige inloggegevens');
       }
     } finally {
       setLoggingIn(false);
