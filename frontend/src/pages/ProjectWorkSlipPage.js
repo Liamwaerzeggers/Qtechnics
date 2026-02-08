@@ -7,6 +7,12 @@ import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 // Hardcoded translations voor veelvoorkomende termen
 const translations = {
   nl_to_uk: {
@@ -143,7 +149,7 @@ export default function ProjectWorkSlipPage() {
 
   const fetchUser = async () => {
     try {
-      const response = await axios.get(`${window.location.origin}/api/auth/me`, { withCredentials: true });
+      const response = await axios.get(`${window.location.origin}/api/auth/me`, { headers: getAuthHeaders() });
       setCurrentUser(response.data);
     } catch (error) {
       console.error('Failed to fetch user:', error);
@@ -169,7 +175,7 @@ export default function ProjectWorkSlipPage() {
     try {
       const response = await axios.get(
         `${process.env.REACT_APP_BACKEND_URL}/api/projects/${projectId}`,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       setProject(response.data);
     } catch (error) {
@@ -182,7 +188,7 @@ export default function ProjectWorkSlipPage() {
     try {
       const response = await axios.get(
         `${window.location.origin}/api/projects/${projectId}/quote-materials`,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       console.log('Quote materials loaded:', response.data);
       setQuoteMaterials(response.data || []);
@@ -196,7 +202,7 @@ export default function ProjectWorkSlipPage() {
     try {
       const response = await axios.get(
         `${process.env.REACT_APP_BACKEND_URL}/api/projects/${projectId}/work-slips`,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       setWorkSlips(response.data || []);
     } catch (error) {
@@ -304,7 +310,7 @@ export default function ProjectWorkSlipPage() {
       const response = await axios.post(
         `${process.env.REACT_APP_BACKEND_URL}/api/projects/${projectId}/work-slips`,
         slipData,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       const slipId = response.data.id;
@@ -319,8 +325,7 @@ export default function ProjectWorkSlipPage() {
             `${process.env.REACT_APP_BACKEND_URL}/api/projects/${projectId}/work-slips/${slipId}/photos`,
             formData,
             { 
-              withCredentials: true,
-              headers: { 'Content-Type': 'multipart/form-data' }
+              headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
             }
           );
         }

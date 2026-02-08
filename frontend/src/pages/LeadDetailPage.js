@@ -11,6 +11,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, FileText, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 export default function LeadDetailPage() {
   const { leadId } = useParams();
   const navigate = useNavigate();
@@ -34,7 +40,7 @@ export default function LeadDetailPage() {
 
   const fetchLead = async () => {
     try {
-      const response = await axios.get(`${API}/leads/${leadId}`, { withCredentials: true });
+      const response = await axios.get(`${API}/leads/${leadId}`, { headers: getAuthHeaders() });
       setLead(response.data);
       setFormData({
         name: response.data.name,
@@ -55,7 +61,7 @@ export default function LeadDetailPage() {
 
   const handleSave = async () => {
     try {
-      const response = await axios.put(`${API}/leads/${leadId}`, formData, { withCredentials: true });
+      const response = await axios.put(`${API}/leads/${leadId}`, formData, { headers: getAuthHeaders() });
       setLead(response.data);
       setEditing(false);
       toast.success('Lead bijgewerkt!');
@@ -66,7 +72,7 @@ export default function LeadDetailPage() {
 
   const handleCreateQuote = async () => {
     try {
-      const response = await axios.post(`${API}/quotes`, { lead_id: leadId }, { withCredentials: true });
+      const response = await axios.post(`${API}/quotes`, { lead_id: leadId }, { headers: getAuthHeaders() });
       toast.success('Offerte aangemaakt!');
       navigate(`/quotes/${response.data.id}`);
     } catch (error) {

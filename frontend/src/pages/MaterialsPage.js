@@ -9,6 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Upload, Search, Package, Wrench, Plus, Save, Trash2, Edit2, X, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 export default function MaterialsPage() {
   const [activeTab, setActiveTab] = useState('materials'); // 'materials' or 'work'
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,7 +44,7 @@ export default function MaterialsPage() {
   const loadAllWorkItems = async () => {
     setLoadingWorkItems(true);
     try {
-      const response = await axios.get(`${API}/work-items/all`, { withCredentials: true });
+      const response = await axios.get(`${API}/work-items/all`, { headers: getAuthHeaders() });
       setWorkItems(response.data.work_items || []);
     } catch (error) {
       console.error('Error loading work items:', error);
@@ -76,8 +82,7 @@ export default function MaterialsPage() {
     setUploading(true);
     try {
       const response = await axios.post(`${API}${endpoint}`, formData, {
-        withCredentials: true,
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 60000
       });
       const itemType = activeTab === 'materials' ? 'materialen' : 'werk items';
@@ -109,7 +114,7 @@ export default function MaterialsPage() {
 
     setSearching(true);
     try {
-      const response = await axios.get(`${API}${endpoint}?q=${encodeURIComponent(searchQuery)}`, { withCredentials: true });
+      const response = await axios.get(`${API}${endpoint}?q=${encodeURIComponent(searchQuery)}`, { headers: getAuthHeaders() });
       setSearchResults(activeTab === 'materials' ? response.data.results || response.data : response.data);
       toast.success(`${response.data.length || response.data.count || 0} resultaten gevonden`);
     } catch (error) {
@@ -142,7 +147,7 @@ export default function MaterialsPage() {
         params.append('category', newWorkItem.category);
       }
       
-      await axios.post(`${API}/work-items?${params.toString()}`, {}, { withCredentials: true });
+      await axios.post(`${API}/work-items?${params.toString()}`, {}, { headers: getAuthHeaders() });
       toast.success('Werk item toegevoegd!');
       setNewWorkItem({ title: '', unit: 'm²', price: '', category: '' });
       setShowNewForm(false);
@@ -175,7 +180,7 @@ export default function MaterialsPage() {
         price: parseFloat(editValues.price)
       });
       
-      await axios.put(`${API}/work-items/${itemId}?${params.toString()}`, {}, { withCredentials: true });
+      await axios.put(`${API}/work-items/${itemId}?${params.toString()}`, {}, { headers: getAuthHeaders() });
       toast.success('Werk item bijgewerkt!');
       setEditingId(null);
       loadAllWorkItems();
@@ -194,7 +199,7 @@ export default function MaterialsPage() {
     }
 
     try {
-      await axios.delete(`${API}/work-items/${itemId}`, { withCredentials: true });
+      await axios.delete(`${API}/work-items/${itemId}`, { headers: getAuthHeaders() });
       toast.success('Werk item verwijderd!');
       loadAllWorkItems();
     } catch (error) {

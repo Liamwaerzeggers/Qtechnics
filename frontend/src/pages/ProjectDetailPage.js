@@ -14,6 +14,12 @@ import ProjectCostsTab from './ProjectCostsTab';
 import ProjectWorkSlipsTab from './ProjectWorkSlipsTab';
 import ProjectPlanningTab from './ProjectPlanningTab';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 export default function ProjectDetailPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -42,12 +48,12 @@ export default function ProjectDetailPage() {
 
   const fetchProjectData = async () => {
     try {
-      const projectResponse = await axios.get(`${API}/projects/${projectId}`, { withCredentials: true });
+      const projectResponse = await axios.get(`${API}/projects/${projectId}`, { headers: getAuthHeaders() });
       setProject(projectResponse.data);
       
       // Fetch quotes for this project
       if (projectResponse.data.lead_id) {
-        const quotesResponse = await axios.get(`${API}/quotes`, { withCredentials: true });
+        const quotesResponse = await axios.get(`${API}/quotes`, { headers: getAuthHeaders() });
         const projectQuotes = quotesResponse.data.filter(q => q.lead_id === projectResponse.data.lead_id);
         setQuotes(projectQuotes);
         
@@ -61,7 +67,7 @@ export default function ProjectDetailPage() {
       
       // Fetch legacy documents
       try {
-        const legacyRes = await axios.get(`${API}/projects/${projectId}/legacy-documents`, { withCredentials: true });
+        const legacyRes = await axios.get(`${API}/projects/${projectId}/legacy-documents`, { headers: getAuthHeaders() });
         setLegacyDocuments(legacyRes.data || []);
       } catch (e) {
         console.log('No legacy documents or endpoint not available');
@@ -104,8 +110,7 @@ export default function ProjectDetailPage() {
         `${API}/projects/${projectId}/legacy-documents?${params.toString()}`,
         formData,
         { 
-          withCredentials: true,
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
         }
       );
       
@@ -115,7 +120,7 @@ export default function ProjectDetailPage() {
       if (fileInputRef.current) fileInputRef.current.value = '';
       
       // Refresh documents and project data (for updated sales_price)
-      const legacyRes = await axios.get(`${API}/projects/${projectId}/legacy-documents`, { withCredentials: true });
+      const legacyRes = await axios.get(`${API}/projects/${projectId}/legacy-documents`, { headers: getAuthHeaders() });
       setLegacyDocuments(legacyRes.data || []);
       fetchProjectData(); // Refresh project to get updated sales_price
     } catch (error) {
@@ -130,7 +135,7 @@ export default function ProjectDetailPage() {
     try {
       const response = await axios.get(
         `${API}/legacy-documents/${doc.id}/download`,
-        { withCredentials: true, responseType: 'blob' }
+        { headers: getAuthHeaders(), responseType: 'blob' }
       );
       
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -149,7 +154,7 @@ export default function ProjectDetailPage() {
     if (!window.confirm('Weet u zeker dat u dit document wilt verwijderen?')) return;
     
     try {
-      await axios.delete(`${API}/legacy-documents/${docId}`, { withCredentials: true });
+      await axios.delete(`${API}/legacy-documents/${docId}`, { headers: getAuthHeaders() });
       toast.success('Document verwijderd');
       setLegacyDocuments(prev => prev.filter(d => d.id !== docId));
       fetchProjectData(); // Refresh project to update sales_price
@@ -164,7 +169,7 @@ export default function ProjectDetailPage() {
       await axios.put(
         `${API}/legacy-documents/${doc.id}`,
         { visible_to_customer: newVisibility },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       setLegacyDocuments(prev => prev.map(d => 
@@ -182,7 +187,7 @@ export default function ProjectDetailPage() {
       await axios.put(
         `${API}/legacy-documents/${doc.id}`,
         { total_price: parseFloat(newPrice) || null },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       setLegacyDocuments(prev => prev.map(d => 
@@ -212,7 +217,7 @@ export default function ProjectDetailPage() {
             project_type: project.project_type || 'Renovatie',
             description: `Automatisch aangemaakt voor bestaand project: ${project.name || project.id}`
           },
-          { withCredentials: true }
+          { headers: getAuthHeaders() }
         );
         
         leadId = leadResponse.data.id;
@@ -221,7 +226,7 @@ export default function ProjectDetailPage() {
         await axios.put(
           `${API}/projects/${project.id}`,
           { lead_id: leadId },
-          { withCredentials: true }
+          { headers: getAuthHeaders() }
         );
         
         toast.success('Lead aangemaakt en gekoppeld aan project');
@@ -230,7 +235,7 @@ export default function ProjectDetailPage() {
       const response = await axios.post(
         `${API}/quotes`,
         { lead_id: leadId },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       toast.success('Offerte aangemaakt! 📄');
@@ -246,7 +251,7 @@ export default function ProjectDetailPage() {
       await axios.put(
         `${API}/quotes/${quoteId}`,
         { status: newStatus },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Offerte status bijgewerkt!');
       fetchProjectData(); // Refresh to show updated data
@@ -262,7 +267,7 @@ export default function ProjectDetailPage() {
       await axios.put(
         `${API}/quotes/${quoteId}`,
         { is_sold: isSold },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       if (isSold) {
         toast.success('🎉 Offerte gemarkeerd als verkocht! Project status is nu "in uitvoering"');
@@ -282,7 +287,7 @@ export default function ProjectDetailPage() {
       await axios.put(
         `${API}/legacy-documents/${docId}`,
         { is_sold: isSold },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       if (isSold) {
         toast.success('🎉 Offerte gemarkeerd als verkocht! Project status is nu "in uitvoering"');
@@ -796,7 +801,7 @@ function CustomerPortalTab({ project, onUpdate }) {
       const response = await axios.post(
         `${API}/projects/${project.id}/generate-customer-link?force_new=${forceNew}`,
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       const baseUrl = window.location.origin;
       setCustomerLink(`${baseUrl}/klant/${response.data.token}`);
@@ -829,7 +834,7 @@ function CustomerPortalTab({ project, onUpdate }) {
       await axios.post(
         `${API}/projects/${project.id}/customer-messages`,
         { message: newMessage },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Bericht verzonden naar klant!');
       setNewMessage('');

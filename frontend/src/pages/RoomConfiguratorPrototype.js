@@ -25,6 +25,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 // Default colors for materials (visual only, no price impact)
 const DEFAULT_COLORS = [
   { name: 'Wit', hex: '#FFFFFF' },
@@ -80,8 +86,8 @@ export default function RoomConfiguratorPrototype() {
     setLoading(true);
     try {
       const [workItemsRes, materialsRes] = await Promise.all([
-        axios.get(`${API}/work-items/all`, { withCredentials: true }),
-        axios.get(`${API}/configurator/materials`, { withCredentials: true })
+        axios.get(`${API}/work-items/all`, { headers: getAuthHeaders() }),
+        axios.get(`${API}/configurator/materials`, { headers: getAuthHeaders() })
       ]);
       
       setWorkItems(workItemsRes.data.work_items || []);

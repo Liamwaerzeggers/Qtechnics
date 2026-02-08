@@ -12,6 +12,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 const COMPONENT_LABELS = [
   { value: 'vloer', label: 'Vloer', icon: Square, color: 'bg-amber-100 text-amber-700' },
   { value: 'muur', label: 'Muur', icon: Layers, color: 'bg-blue-100 text-blue-700' },
@@ -46,7 +52,7 @@ export default function WorkItemLabelsPage() {
 
   const fetchWorkItems = async () => {
     try {
-      const response = await axios.get(`${API}/work-items`, { withCredentials: true });
+      const response = await axios.get(`${API}/work-items`, { headers: getAuthHeaders() });
       setWorkItems(response.data.work_items || []);
     } catch (error) {
       console.error('Error fetching work items:', error);
@@ -62,7 +68,7 @@ export default function WorkItemLabelsPage() {
       await axios.put(
         `${API}/work-items/${workItemId}/label?component_label=${newLabel}&room_types=all`,
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       // Update local state
@@ -93,7 +99,7 @@ export default function WorkItemLabelsPage() {
       await axios.put(
         `${API}/work-items/${workItemId}/label?component_label=${item.component_label}&room_types=${roomTypes}`,
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       setWorkItems(prev => prev.map(w => 

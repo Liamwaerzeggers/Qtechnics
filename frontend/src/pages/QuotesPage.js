@@ -9,6 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Search, Plus, Folder, FolderOpen, ChevronDown, ChevronRight, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 export default function QuotesPage() {
   const navigate = useNavigate();
   const [quotes, setQuotes] = useState([]);
@@ -25,9 +31,9 @@ export default function QuotesPage() {
   const fetchData = async () => {
     try {
       const [quotesRes, projectsRes, leadsRes] = await Promise.all([
-        axios.get(`${API}/quotes`, { withCredentials: true }),
-        axios.get(`${API}/projects`, { withCredentials: true }),
-        axios.get(`${API}/leads`, { withCredentials: true })
+        axios.get(`${API}/quotes`, { headers: getAuthHeaders() }),
+        axios.get(`${API}/projects`, { headers: getAuthHeaders() }),
+        axios.get(`${API}/leads`, { headers: getAuthHeaders() })
       ]);
       
       setQuotes(quotesRes.data);

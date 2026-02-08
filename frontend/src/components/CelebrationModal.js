@@ -6,6 +6,12 @@ import { Trophy, X, PartyPopper, Sparkles, User, MapPin, MessageSquare, External
 import { Button } from './ui/button';
 import { useNavigate } from 'react-router-dom';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 export default function CelebrationModal() {
   const [celebrations, setCelebrations] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -18,7 +24,7 @@ export default function CelebrationModal() {
 
   const checkCelebrations = async () => {
     try {
-      const response = await axios.get(`${API}/celebrations/pending`, { withCredentials: true });
+      const response = await axios.get(`${API}/celebrations/pending`, { headers: getAuthHeaders() });
       if (response.data && response.data.length > 0) {
         setCelebrations(response.data);
         setIsVisible(true);
@@ -67,7 +73,7 @@ export default function CelebrationModal() {
     const current = celebrations[currentIndex];
     if (current) {
       try {
-        await axios.post(`${API}/celebrations/${current.id}/mark-seen`, {}, { withCredentials: true });
+        await axios.post(`${API}/celebrations/${current.id}/mark-seen`, {}, { headers: getAuthHeaders() });
       } catch (error) {
         console.error('Failed to mark celebration as seen:', error);
       }
@@ -85,7 +91,7 @@ export default function CelebrationModal() {
     const current = celebrations[currentIndex];
     if (current) {
       try {
-        await axios.post(`${API}/celebrations/${current.id}/mark-seen`, {}, { withCredentials: true });
+        await axios.post(`${API}/celebrations/${current.id}/mark-seen`, {}, { headers: getAuthHeaders() });
       } catch (error) {
         console.error('Failed to mark celebration as seen:', error);
       }

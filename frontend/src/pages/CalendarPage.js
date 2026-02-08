@@ -20,6 +20,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 // Color palette for teams - each new team gets a different color based on index
@@ -243,7 +249,7 @@ export default function CalendarPage() {
 
   const fetchQuickTasks = async () => {
     try {
-      const response = await axios.get(`${API}/quick-tasks`, { withCredentials: true });
+      const response = await axios.get(`${API}/quick-tasks`, { headers: getAuthHeaders() });
       setQuickTasks(response.data);
     } catch (error) {
       console.error('Failed to fetch quick tasks:', error);
@@ -264,7 +270,7 @@ export default function CalendarPage() {
         end_date: newTask.end_date || newTask.start_date || null, // If only start_date, use same for end
         team_name: newTask.team_name || null
       };
-      await axios.post(`${API}/quick-tasks`, taskData, { withCredentials: true });
+      await axios.post(`${API}/quick-tasks`, taskData, { headers: getAuthHeaders() });
       toast.success('Taak toegevoegd');
       setNewTask({ title: '', description: '', start_date: '', end_date: '', team_name: null, multi_day: false });
       setShowAddTask(false);
@@ -277,7 +283,7 @@ export default function CalendarPage() {
 
   const updateQuickTask = async (taskId, updates) => {
     try {
-      await axios.put(`${API}/quick-tasks/${taskId}`, updates, { withCredentials: true });
+      await axios.put(`${API}/quick-tasks/${taskId}`, updates, { headers: getAuthHeaders() });
       fetchQuickTasks();
     } catch (error) {
       console.error('Failed to update quick task:', error);
@@ -288,7 +294,7 @@ export default function CalendarPage() {
   const deleteQuickTask = async (taskId) => {
     if (!window.confirm('Weet u zeker dat u deze taak wilt verwijderen?')) return;
     try {
-      await axios.delete(`${API}/quick-tasks/${taskId}`, { withCredentials: true });
+      await axios.delete(`${API}/quick-tasks/${taskId}`, { headers: getAuthHeaders() });
       toast.success('Taak verwijderd');
       fetchQuickTasks();
     } catch (error) {
@@ -300,8 +306,8 @@ export default function CalendarPage() {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API}/projects`, { withCredentials: true });
-      const leadsResponse = await axios.get(`${API}/leads`, { withCredentials: true });
+      const response = await axios.get(`${API}/projects`, { headers: getAuthHeaders() });
+      const leadsResponse = await axios.get(`${API}/leads`, { headers: getAuthHeaders() });
       const leadsMap = {};
       leadsResponse.data.forEach(lead => {
         leadsMap[lead.id] = lead;
@@ -355,7 +361,7 @@ export default function CalendarPage() {
       await axios.put(
         `${API}/projects/${projectId}`,
         { scheduled_days: updatedScheduledDays },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       if (showToast) {
         fetchProjects();

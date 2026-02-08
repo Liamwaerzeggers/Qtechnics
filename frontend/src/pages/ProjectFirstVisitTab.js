@@ -7,6 +7,12 @@ import { Card, CardContent } from '../components/ui/card';
 import { Camera, Upload, Trash2, Save, Loader2, X, Download, ZoomIn, Plus, Edit2, Check, FileImage, Sparkles, FileText, Folder, FolderOpen, ChevronDown, ChevronRight, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 // Room options for organizing photos
 const ROOM_OPTIONS = [
   'Badkamer', 'Keuken', 'Woonkamer', 'Slaapkamer', 'Toilet', 
@@ -106,7 +112,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
   useEffect(() => {
     const fetchWorkItems = async () => {
       try {
-        const response = await axios.get(`${API}/work-items?limit=1000`, { withCredentials: true });
+        const response = await axios.get(`${API}/work-items?limit=1000`, { headers: getAuthHeaders() });
         setWorkItems(response.data.work_items || []);
       } catch (error) {
         console.error('Failed to fetch work items:', error);
@@ -217,7 +223,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
             ? roomMeasurements.map(rm => rm.id === editingRoomId ? roomData : rm)
             : [...roomMeasurements, roomData]
         },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
 
       toast.success(editingRoomId ? 'Meting bijgewerkt!' : 'Ruimte meting toegevoegd!');
@@ -259,7 +265,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
       await axios.put(
         `${API}/projects/${project.id}`,
         { room_measurements: roomMeasurements.filter(rm => rm.id !== roomId) },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Meting verwijderd');
       onUpdate();
@@ -298,7 +304,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
         await axios.post(
           `${API}/projects/${project.id}/measurements`,
           m,
-          { withCredentials: true }
+          { headers: getAuthHeaders() }
         );
       }
 
@@ -306,14 +312,14 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
       const response = await axios.post(
         `${API}/projects/${project.id}/generate-quote`,
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       // Clear room measurements
       await axios.put(
         `${API}/projects/${project.id}`,
         { room_measurements: [] },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
 
       toast.success(`Offerte ${response.data.quote_id} gegenereerd!`);
@@ -349,7 +355,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
       await axios.post(
         `${API}/projects/${project.id}/measurements`,
         measurement,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
 
       toast.success(`${selectedWorkItem.title} toegevoegd!`);
@@ -371,7 +377,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
     try {
       await axios.delete(
         `${API}/projects/${project.id}/measurements/${measurementId}`,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Meting verwijderd');
       onUpdate();
@@ -391,7 +397,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
       const response = await axios.post(
         `${API}/projects/${project.id}/generate-quote`,
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       toast.success(`Offerte ${response.data.quote_id} gegenereerd! ${response.data.line_items_count} werk items toegevoegd. Nu kunt u materialen toevoegen.`);
@@ -443,8 +449,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
         `${API}/projects/${project.id}/analyze-floor-plan`,
         formData,
         { 
-          withCredentials: true,
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
         }
       );
       
@@ -546,7 +551,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
         unit: unit,
         price: parseFloat(price) || 0
       });
-      const response = await axios.post(`${API}/work-items/auto-add?${params.toString()}`, {}, { withCredentials: true });
+      const response = await axios.post(`${API}/work-items/auto-add?${params.toString()}`, {}, { headers: getAuthHeaders() });
       
       const workItem = response.data.work_item;
       if (response.data.created) {
@@ -576,7 +581,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
       });
       
       // Refresh work items list
-      const workItemsResponse = await axios.get(`${API}/work-items`, { withCredentials: true });
+      const workItemsResponse = await axios.get(`${API}/work-items`, { headers: getAuthHeaders() });
       setWorkItems(workItemsResponse.data.work_items || []);
       
     } catch (error) {
@@ -635,7 +640,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
       await axios.put(
         `${API}/projects/${project.id}`,
         { floor_plan_analyses: updatedAnalyses },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       toast.success('Grondplan analyse opgeslagen!');
@@ -653,7 +658,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
       await axios.put(
         `${API}/projects/${project.id}`,
         { floor_plan_analyses: updatedAnalyses },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       toast.success('Analyse verwijderd');
@@ -685,7 +690,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
       await axios.put(
         `${API}/projects/${project.id}`,
         { floor_plan_analyses: updatedAnalyses },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       toast.success('Grondplan analyse bijgewerkt!');
@@ -737,7 +742,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
       const response = await axios.post(
         `${API}/projects/${project.id}/generate-quote-from-analysis/${analysisId}`,
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       toast.success(`Offerte ${response.data.quote_id} aangemaakt met ${response.data.line_items_count} werk items!`);
@@ -835,8 +840,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
           `${API}/projects/${project.id}/first-visit/photos?room=${encodeURIComponent(selectedRoom)}`,
           formData,
           { 
-            withCredentials: true,
-            headers: { 'Content-Type': 'multipart/form-data' }
+            headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
           }
         );
 
@@ -868,7 +872,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
     try {
       await axios.delete(
         `${API}/projects/${project.id}/first-visit/photos/${photoFilename}`,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       // Filter out the deleted photo (works for both formats)
@@ -898,7 +902,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
       await axios.put(
         `${API}/projects/${project.id}/first-visit/notes?notes=${encodeURIComponent(notes)}`,
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       toast.success('Notities opgeslagen! 📝');

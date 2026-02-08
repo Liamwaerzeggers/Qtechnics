@@ -11,6 +11,12 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 export default function ProjectDetailPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -33,7 +39,7 @@ export default function ProjectDetailPage() {
   
   const fetchInvoices = async () => {
     try {
-      const response = await axios.get(`${API}/projects/${projectId}/customer-invoices`, { withCredentials: true });
+      const response = await axios.get(`${API}/projects/${projectId}/customer-invoices`, { headers: getAuthHeaders() });
       setInvoices(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to fetch invoices:', error);
@@ -49,7 +55,7 @@ export default function ProjectDetailPage() {
           milestone: milestone, 
           milestone_percentage: percentage 
         },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Factuur aangemaakt!');
       fetchInvoices();
@@ -74,7 +80,7 @@ export default function ProjectDetailPage() {
 
   const fetchProjectData = async () => {
     try {
-      const projectRes = await axios.get(`${API}/projects/${projectId}`, { withCredentials: true });
+      const projectRes = await axios.get(`${API}/projects/${projectId}`, { headers: getAuthHeaders() });
       setProject(projectRes.data);
       setCostData({
         labor_cost_per_hour: projectRes.data.labor_cost_per_hour || 0,
@@ -84,7 +90,7 @@ export default function ProjectDetailPage() {
       });
       
       if (projectRes.data.quote_id) {
-        const quoteRes = await axios.get(`${API}/quotes/${projectRes.data.quote_id}`, { withCredentials: true });
+        const quoteRes = await axios.get(`${API}/quotes/${projectRes.data.quote_id}`, { headers: getAuthHeaders() });
         setQuote(quoteRes.data);
       }
     } catch (error) {
@@ -96,7 +102,7 @@ export default function ProjectDetailPage() {
 
   const handleStatusChange = async (newStatus) => {
     try {
-      await axios.put(`${API}/projects/${projectId}`, { status: newStatus }, { withCredentials: true });
+      await axios.put(`${API}/projects/${projectId}`, { status: newStatus }, { headers: getAuthHeaders() });
       setProject({ ...project, status: newStatus });
       toast.success('Status bijgewerkt');
     } catch (error) {
@@ -106,7 +112,7 @@ export default function ProjectDetailPage() {
 
   const handleSaveCosts = async () => {
     try {
-      const response = await axios.put(`${API}/projects/${projectId}`, costData, { withCredentials: true });
+      const response = await axios.put(`${API}/projects/${projectId}`, costData, { headers: getAuthHeaders() });
       setProject(response.data);
       setEditingCosts(false);
       toast.success('Kosten bijgewerkt!');
@@ -123,7 +129,7 @@ export default function ProjectDetailPage() {
     
     axios.delete(
       `${API}/projects/${projectId}/invoices/${invoiceIndex}`,
-      { withCredentials: true }
+      { headers: getAuthHeaders() }
     )
     .then(() => {
       toast.success('Factuur verwijderd en kosten aangepast');
@@ -214,7 +220,7 @@ export default function ProjectDetailPage() {
                     await axios.put(
                       `${API}/projects/${projectId}`, 
                       { color: newColor },
-                      { withCredentials: true }
+                      { headers: getAuthHeaders() }
                     );
                     setProject({ ...project, color: newColor });
                     toast.success('Kleur bijgewerkt');
@@ -552,7 +558,7 @@ export default function ProjectDetailPage() {
                               try {
                                 const response = await axios.get(
                                   `${API}/invoices/${invoice.id}/pdf`,
-                                  { withCredentials: true, responseType: 'blob' }
+                                  { headers: getAuthHeaders(), responseType: 'blob' }
                                 );
                                 const url = window.URL.createObjectURL(new Blob([response.data]));
                                 const link = document.createElement('a');
@@ -608,8 +614,7 @@ export default function ProjectDetailPage() {
                         `${API}/projects/${projectId}/invoices/upload`,
                         formData,
                         { 
-                          withCredentials: true,
-                          headers: { 'Content-Type': 'multipart/form-data' }
+                          headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
                         }
                       );
                       

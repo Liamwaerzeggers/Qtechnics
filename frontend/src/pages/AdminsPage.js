@@ -10,6 +10,12 @@ import { Label } from '../components/ui/label';
 import { Users, Plus, Trash2, Lock, Unlock, Loader2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 export default function AdminsPage() {
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +36,7 @@ export default function AdminsPage() {
 
   const fetchAdmins = async () => {
     try {
-      const response = await axios.get(`${API}/admins`, { withCredentials: true });
+      const response = await axios.get(`${API}/admins`, { headers: getAuthHeaders() });
       setAdmins(response.data);
     } catch (error) {
       console.error('Failed to fetch admins:', error);
@@ -54,7 +60,7 @@ export default function AdminsPage() {
     }
 
     try {
-      const response = await axios.post(`${API}/admins`, formData, { withCredentials: true });
+      const response = await axios.post(`${API}/admins`, formData, { headers: getAuthHeaders() });
       
       // Send email with account details
       const subject = 'Je beheerder account bij Q Technics';
@@ -100,7 +106,7 @@ Q Technics`;
     }
 
     try {
-      await axios.delete(`${API}/admins/${workerId}`, { withCredentials: true });
+      await axios.delete(`${API}/admins/${workerId}`, { headers: getAuthHeaders() });
       toast.success('Beheerder verwijderd');
       fetchAdmins();
     } catch (error) {
@@ -111,7 +117,7 @@ Q Technics`;
 
   const handleToggleStatus = async (workerId) => {
     try {
-      const response = await axios.post(`${API}/admins/${workerId}/toggle`, {}, { withCredentials: true });
+      const response = await axios.post(`${API}/admins/${workerId}/toggle`, {}, { headers: getAuthHeaders() });
       toast.success(response.data.is_active ? 'Beheerder geactiveerd' : 'Beheerder gedeactiveerd');
       fetchAdmins();
     } catch (error) {
@@ -133,7 +139,7 @@ Q Technics`;
       const response = await axios.post(
         `${API}/admins/${adminId}/reset-password?new_password=${encodeURIComponent(newPassword)}`,
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       // Prepare email with new password

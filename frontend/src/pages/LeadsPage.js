@@ -12,6 +12,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 export default function LeadsPage() {
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
@@ -46,7 +52,7 @@ export default function LeadsPage() {
 
   const fetchLeads = async () => {
     try {
-      const response = await axios.get(`${API}/leads`, { withCredentials: true });
+      const response = await axios.get(`${API}/leads`, { headers: getAuthHeaders() });
       setLeads(response.data);
       setFilteredLeads(response.data);
     } catch (error) {
@@ -59,7 +65,7 @@ export default function LeadsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API}/leads`, formData, { withCredentials: true });
+      await axios.post(`${API}/leads`, formData, { headers: getAuthHeaders() });
       toast.success('Lead aangemaakt!');
       setIsDialogOpen(false);
       setFormData({ name: '', email: '', phone: '', address: '', project_type: '', description: '' });

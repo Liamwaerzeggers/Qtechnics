@@ -6,6 +6,12 @@ import { Card, CardContent } from '../components/ui/card';
 import { Upload, Download, Trash2, Loader2, Folder, FolderOpen, ChevronDown, ChevronRight, Plus, X, Image as ImageIcon, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 const ROOM_OPTIONS = [
   'Badkamer', 'Keuken', 'Woonkamer', 'Slaapkamer', 'Toilet', 
   'Gang', 'Garage', 'Tuin', 'Zolder', 'Kelder', 'Algemeen'
@@ -77,8 +83,7 @@ export default function Project3DDesignTab({ project, onUpdate }) {
           `${API}/projects/${project.id}/designs?room=${encodeURIComponent(selectedRoom)}`,
           formData,
           { 
-            withCredentials: true,
-            headers: { 'Content-Type': 'multipart/form-data' }
+            headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
           }
         );
 
@@ -108,7 +113,7 @@ export default function Project3DDesignTab({ project, onUpdate }) {
     try {
       await axios.delete(
         `${API}/projects/${project.id}/designs?filename=${encodeURIComponent(filename)}`,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       setDesigns(prev => prev.filter(d => d.filename !== filename));

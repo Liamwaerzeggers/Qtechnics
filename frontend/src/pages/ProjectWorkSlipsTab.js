@@ -8,6 +8,12 @@ import { FileText, Clock, Users, Euro, Trash2, Edit2, Save, X, Loader2, Eye, Eye
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 export default function ProjectWorkSlipsTab({ project, onUpdate }) {
   const navigate = useNavigate();
   const [workSlips, setWorkSlips] = useState([]);
@@ -23,7 +29,7 @@ export default function ProjectWorkSlipsTab({ project, onUpdate }) {
     try {
       const response = await axios.get(
         `${API}/projects/${project.id}/work-slips`,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       setWorkSlips(response.data);
     } catch (error) {
@@ -64,7 +70,7 @@ export default function ProjectWorkSlipsTab({ project, onUpdate }) {
       await axios.put(
         `${API}/projects/${project.id}/work-slips/${slipId}`,
         editData,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Werkbon bijgewerkt! ✅');
       setEditingId(null);
@@ -84,7 +90,7 @@ export default function ProjectWorkSlipsTab({ project, onUpdate }) {
     try {
       await axios.delete(
         `${API}/projects/${project.id}/work-slips/${slipId}`,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Werkbon verwijderd');
       fetchWorkSlips();
@@ -100,7 +106,7 @@ export default function ProjectWorkSlipsTab({ project, onUpdate }) {
       await axios.put(
         `${API}/projects/${project.id}/work-slips/${slipId}/visibility`,
         { visible_to_customer: !currentVisibility },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success(currentVisibility ? 'Werkbon verborgen voor klant' : 'Werkbon zichtbaar voor klant');
       fetchWorkSlips();

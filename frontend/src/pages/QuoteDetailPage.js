@@ -12,6 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Plus, Download, Trash2, Search, Mail, Scissors, Loader2, Edit2, Check, X, Upload, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 export default function QuoteDetailPage() {
   const { quoteId } = useParams();
   const navigate = useNavigate();
@@ -122,15 +128,15 @@ export default function QuoteDetailPage() {
   const fetchQuoteData = async () => {
     try {
       const [quoteRes, itemsRes] = await Promise.all([
-        axios.get(`${API}/quotes/${quoteId}`, { withCredentials: true }),
-        axios.get(`${API}/quotes/${quoteId}/items`, { withCredentials: true })
+        axios.get(`${API}/quotes/${quoteId}`, { headers: getAuthHeaders() }),
+        axios.get(`${API}/quotes/${quoteId}/items`, { headers: getAuthHeaders() })
       ]);
       
       setQuote(quoteRes.data);
       setLineItems(itemsRes.data);
       
       if (quoteRes.data.lead_id) {
-        const leadRes = await axios.get(`${API}/leads/${quoteRes.data.lead_id}`, { withCredentials: true });
+        const leadRes = await axios.get(`${API}/leads/${quoteRes.data.lead_id}`, { headers: getAuthHeaders() });
         setLead(leadRes.data);
       }
     } catch (error) {
@@ -153,7 +159,7 @@ export default function QuoteDetailPage() {
 
   const fetchMaterials = async () => {
     try {
-      const response = await axios.get(`${API}/materials?limit=15000`, { withCredentials: true });
+      const response = await axios.get(`${API}/materials?limit=15000`, { headers: getAuthHeaders() });
       const materialsList = response.data.materials || [];
       setMaterials(materialsList);
       console.log('✓ Loaded materials:', materialsList.length);
@@ -168,7 +174,7 @@ export default function QuoteDetailPage() {
 
   const fetchWorkItems = async () => {
     try {
-      const response = await axios.get(`${API}/work-items?limit=15000`, { withCredentials: true });
+      const response = await axios.get(`${API}/work-items?limit=15000`, { headers: getAuthHeaders() });
       const workItemsList = response.data.work_items || [];
       setWorkItems(workItemsList);
       console.log('✓ Loaded work items:', workItemsList.length);
@@ -213,7 +219,7 @@ export default function QuoteDetailPage() {
             unit: formData.unit || 'm²',
             price: parseFloat(formData.unit_price)
           });
-          const autoAddResponse = await axios.post(`${API}/work-items/auto-add?${params.toString()}`, {}, { withCredentials: true });
+          const autoAddResponse = await axios.post(`${API}/work-items/auto-add?${params.toString()}`, {}, { headers: getAuthHeaders() });
           if (autoAddResponse.data.created) {
             toast.info(`"${formData.description}" toegevoegd aan werk items catalogus`);
             // Refresh work items list
@@ -242,8 +248,7 @@ export default function QuoteDetailPage() {
               `${API}/materials/create-with-image`,
               formDataUpload,
               { 
-                withCredentials: true,
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
               }
             );
             
@@ -260,7 +265,7 @@ export default function QuoteDetailPage() {
               price: parseFloat(formData.unit_price),
               unit: formData.unit || 'stuk'
             });
-            const autoAddResponse = await axios.post(`${API}/materials/auto-add?${params.toString()}`, {}, { withCredentials: true });
+            const autoAddResponse = await axios.post(`${API}/materials/auto-add?${params.toString()}`, {}, { headers: getAuthHeaders() });
             if (autoAddResponse.data.created) {
               toast.info(`"${formData.description}" toegevoegd aan materialen catalogus`);
               fetchMaterials(); // Refresh materials list
@@ -277,7 +282,7 @@ export default function QuoteDetailPage() {
         ...formData,
         quantity: parseFloat(formData.quantity),
         unit_price: parseFloat(formData.unit_price)
-      }, { withCredentials: true });
+      }, { headers: getAuthHeaders() });
       
       // Track added item in session
       const addedItem = {
@@ -333,7 +338,7 @@ export default function QuoteDetailPage() {
         await axios.put(
           `${API}/quotes/${quoteId}/items/${item.id}`,
           { vat_rate: defaultVatRate },
-          { withCredentials: true }
+          { headers: getAuthHeaders() }
         );
       }
       toast.success(`BTW ${defaultVatRate}% toegepast op alle items`);
@@ -347,7 +352,7 @@ export default function QuoteDetailPage() {
     if (!window.confirm('Weet je zeker dat je dit item wil verwijderen?')) return;
     
     try {
-      await axios.delete(`${API}/quotes/${quoteId}/items/${itemId}`, { withCredentials: true });
+      await axios.delete(`${API}/quotes/${quoteId}/items/${itemId}`, { headers: getAuthHeaders() });
       toast.success('Item verwijderd');
       fetchQuoteData();
     } catch (error) {
@@ -388,7 +393,7 @@ export default function QuoteDetailPage() {
       await axios.put(
         `${API}/quotes/${quoteId}/items/${itemId}`,
         { quantity, unit_price },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Item bijgewerkt! ✏️');
       setEditingItem(null);
@@ -403,8 +408,7 @@ export default function QuoteDetailPage() {
   const handleDownloadPDF = async () => {
     try {
       const response = await axios.get(`${API}/quotes/${quoteId}/export/pdf`, {
-        withCredentials: true,
-        responseType: 'blob'
+        headers: getAuthHeaders(), responseType: 'blob'
       });
       
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -423,8 +427,7 @@ export default function QuoteDetailPage() {
   const handleDownloadExcel = async () => {
     try {
       const response = await axios.get(`${API}/quotes/${quoteId}/export/excel`, {
-        withCredentials: true,
-        responseType: 'blob'
+        headers: getAuthHeaders(), responseType: 'blob'
       });
       
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -458,7 +461,7 @@ export default function QuoteDetailPage() {
     
     setSplitting(true);
     try {
-      const response = await axios.post(`${API}/quotes/${quoteId}/split`, {}, { withCredentials: true });
+      const response = await axios.post(`${API}/quotes/${quoteId}/split`, {}, { headers: getAuthHeaders() });
       
       toast.success(response.data.message);
       
@@ -498,8 +501,7 @@ export default function QuoteDetailPage() {
       // First, download the PDF
       toast.info('PDF wordt gedownload...');
       const response = await axios.get(`${API}/quotes/${quoteId}/export/pdf`, {
-        withCredentials: true,
-        responseType: 'blob'
+        headers: getAuthHeaders(), responseType: 'blob'
       });
       
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -540,7 +542,7 @@ Q Technics`;
 
   const handleStatusChange = async (newStatus) => {
     try {
-      await axios.put(`${API}/quotes/${quoteId}`, { status: newStatus }, { withCredentials: true });
+      await axios.put(`${API}/quotes/${quoteId}`, { status: newStatus }, { headers: getAuthHeaders() });
       setQuote({ ...quote, status: newStatus });
       toast.success('Status bijgewerkt');
     } catch (error) {
@@ -666,7 +668,7 @@ Q Technics`;
                   onValueChange={async (value) => {
                     try {
                       const newRoom = value === 'none' ? null : value;
-                      await axios.put(`${API}/quotes/${quoteId}`, { room: newRoom }, { withCredentials: true });
+                      await axios.put(`${API}/quotes/${quoteId}`, { room: newRoom }, { headers: getAuthHeaders() });
                       setQuote(prev => ({ ...prev, room: newRoom }));
                       toast.success('Kamer bijgewerkt');
                     } catch (error) {

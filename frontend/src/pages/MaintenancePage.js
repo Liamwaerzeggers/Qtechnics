@@ -17,6 +17,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 const MAINTENANCE_TYPES = [
   { value: 'verwarming', label: 'Centrale Verwarming', icon: Flame, color: 'bg-orange-100 text-orange-700' },
   { value: 'ventilatie', label: 'Ventilatie', icon: Wind, color: 'bg-blue-100 text-blue-700' },
@@ -78,7 +84,7 @@ export default function MaintenancePage() {
 
   const fetchContracts = async () => {
     try {
-      const response = await axios.get(`${API}/maintenance`, { withCredentials: true });
+      const response = await axios.get(`${API}/maintenance`, { headers: getAuthHeaders() });
       setContracts(response.data);
     } catch (error) {
       console.error('Error fetching contracts:', error);
@@ -90,7 +96,7 @@ export default function MaintenancePage() {
 
   const fetchContractDetails = async (contractId) => {
     try {
-      const response = await axios.get(`${API}/maintenance/${contractId}`, { withCredentials: true });
+      const response = await axios.get(`${API}/maintenance/${contractId}`, { headers: getAuthHeaders() });
       setSelectedContract(response.data);
     } catch (error) {
       console.error('Error fetching contract details:', error);
@@ -107,7 +113,7 @@ export default function MaintenancePage() {
         frequency_months: parseInt(formData.frequency_months) || 12
       };
       
-      await axios.post(`${API}/maintenance`, payload, { withCredentials: true });
+      await axios.post(`${API}/maintenance`, payload, { headers: getAuthHeaders() });
       toast.success('Onderhoudsdossier aangemaakt!');
       setIsAddDialogOpen(false);
       resetForm();
@@ -129,7 +135,7 @@ export default function MaintenancePage() {
     if (!window.confirm('Weet je zeker dat je dit dossier wilt verwijderen? Alle gekoppelde aankopen en facturen worden ook verwijderd.')) return;
     
     try {
-      await axios.delete(`${API}/maintenance/${contractId}`, { withCredentials: true });
+      await axios.delete(`${API}/maintenance/${contractId}`, { headers: getAuthHeaders() });
       toast.success('Dossier verwijderd');
       fetchContracts();
       if (selectedContract?.id === contractId) {
@@ -149,7 +155,7 @@ export default function MaintenancePage() {
       await axios.post(
         `${API}/maintenance/${selectedContract.id}/complete?technician_notes=${encodeURIComponent(notes || '')}`,
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Onderhoud gemarkeerd als uitgevoerd!');
       fetchContracts();
@@ -168,7 +174,7 @@ export default function MaintenancePage() {
         ...purchaseForm,
         amount: parseFloat(purchaseForm.amount) || 0,
         vat_amount: parseFloat(purchaseForm.vat_amount) || 0
-      }, { withCredentials: true });
+      }, { headers: getAuthHeaders() });
       
       toast.success('Aankoop toegevoegd!');
       setIsPurchaseDialogOpen(false);
@@ -183,7 +189,7 @@ export default function MaintenancePage() {
     if (!selectedContract || !window.confirm('Aankoop verwijderen?')) return;
     
     try {
-      await axios.delete(`${API}/maintenance/${selectedContract.id}/purchases/${purchaseId}`, { withCredentials: true });
+      await axios.delete(`${API}/maintenance/${selectedContract.id}/purchases/${purchaseId}`, { headers: getAuthHeaders() });
       toast.success('Aankoop verwijderd');
       fetchContractDetails(selectedContract.id);
     } catch (error) {
@@ -200,7 +206,7 @@ export default function MaintenancePage() {
         service_amount: parseFloat(invoiceForm.service_amount) || 0,
         materials_amount: parseFloat(invoiceForm.materials_amount) || 0,
         vat_rate: parseFloat(invoiceForm.vat_rate) || 21
-      }, { withCredentials: true });
+      }, { headers: getAuthHeaders() });
       
       toast.success(`Factuur ${response.data.invoice_number} aangemaakt! Totaal: €${response.data.total_amount.toFixed(2)}`);
       setIsInvoiceDialogOpen(false);

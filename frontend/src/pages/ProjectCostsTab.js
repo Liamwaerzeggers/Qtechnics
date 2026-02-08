@@ -9,6 +9,12 @@ import { Loader2, Upload, Trash2, Send, Plus, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '../components/ui/switch';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate }) {
   const [editingCosts, setEditingCosts] = useState(false);
   const [costData, setCostData] = useState({
@@ -51,7 +57,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
 
   const fetchInvoices = async () => {
     try {
-      const response = await axios.get(`${API}/projects/${project.id}/customer-invoices`, { withCredentials: true });
+      const response = await axios.get(`${API}/projects/${project.id}/customer-invoices`, { headers: getAuthHeaders() });
       setInvoices(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to fetch invoices:', error);
@@ -61,7 +67,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
   
   const fetchManualEntries = async () => {
     try {
-      const response = await axios.get(`${API}/projects/${project.id}/manual-invoices`, { withCredentials: true });
+      const response = await axios.get(`${API}/projects/${project.id}/manual-invoices`, { headers: getAuthHeaders() });
       setManualEntries(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Failed to fetch manual entries:', error);
@@ -86,7 +92,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
           invoice_date: manualFormData.invoice_date,
           send_via_billit: manualFormData.send_via_billit
         },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       toast.success(response.data.message);
@@ -114,7 +120,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
     }
     
     try {
-      await axios.delete(`${API}/projects/${project.id}/manual-invoices/${entryId}`, { withCredentials: true });
+      await axios.delete(`${API}/projects/${project.id}/manual-invoices/${entryId}`, { headers: getAuthHeaders() });
       toast.success('Registratie verwijderd');
       fetchManualEntries();
       onUpdate();
@@ -129,7 +135,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
 
   const handleSaveCosts = async () => {
     try {
-      await axios.put(`${API}/projects/${project.id}`, costData, { withCredentials: true });
+      await axios.put(`${API}/projects/${project.id}`, costData, { headers: getAuthHeaders() });
       setEditingCosts(false);
       toast.success('Kosten bijgewerkt! 💰');
       onUpdate();
@@ -143,7 +149,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
       const response = await axios.post(
         `${API}/projects/${project.id}/calculate-labor-costs`,
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success(`Arbeidskosten berekend! ${response.data.work_slips_count} werkbonnen verwerkt. Totaal: ${response.data.total_hours.toFixed(1)} uur × €30 = €${response.data.total_labor_cost.toFixed(2)}`);
       onUpdate();
@@ -165,7 +171,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
           milestone: milestone, 
           milestone_percentage: percentage 
         },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Factuur aangemaakt! 📄');
       fetchInvoices();
@@ -190,7 +196,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
       const response = await axios.post(
         `${API}/invoices/${invoiceId}/send-to-billit`,
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       // Show success message with transport type info
       const transportMsg = response.data.transport_type === 'Peppol' 
@@ -213,7 +219,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
       const response = await axios.post(
         `${API}/invoices/${invoiceId}/retry-billit`,
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Factuur opnieuw verstuurd! 📧');
       fetchInvoices();
@@ -293,8 +299,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
         `${API}/projects/${project.id}/invoices/upload`,
         formData,
         { 
-          withCredentials: true,
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
         }
       );
       toast.success('Factuur geüpload! 📄');
@@ -316,7 +321,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
     try {
       await axios.delete(
         `${API}/projects/${project.id}/invoices/${invoiceIndex}`,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Factuur verwijderd en kosten aangepast');
       onUpdate();
@@ -330,7 +335,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
     try {
       const response = await axios.get(
         `${API}/invoices/${invoice.id}/pdf`,
-        { withCredentials: true, responseType: 'blob' }
+        { headers: getAuthHeaders(), responseType: 'blob' }
       );
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');

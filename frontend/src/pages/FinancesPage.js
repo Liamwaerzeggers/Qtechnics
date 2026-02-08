@@ -8,6 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 export default function FinancesPage() {
   const [projects, setProjects] = useState([]);
   const [manualInvoices, setManualInvoices] = useState([]);
@@ -22,8 +28,8 @@ export default function FinancesPage() {
   const fetchData = async () => {
     try {
       const [projectsRes, manualRes] = await Promise.all([
-        axios.get(`${API}/projects`, { withCredentials: true }),
-        axios.get(`${API}/all-manual-invoices`, { withCredentials: true })
+        axios.get(`${API}/projects`, { headers: getAuthHeaders() }),
+        axios.get(`${API}/all-manual-invoices`, { headers: getAuthHeaders() })
       ]);
       setProjects(projectsRes.data);
       setManualInvoices(manualRes.data || []);

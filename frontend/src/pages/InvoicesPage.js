@@ -6,6 +6,12 @@ import { FileText, Download, CheckCircle, Clock, AlertCircle, Mail } from 'lucid
 import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 const API = process.env.REACT_APP_BACKEND_URL;
 
 export default function InvoicesPage() {
@@ -21,13 +27,13 @@ export default function InvoicesPage() {
     try {
       setLoading(true);
       // We need to get all projects first, then their invoices
-      const projectsRes = await axios.get(`${API}/api/projects`, { withCredentials: true });
+      const projectsRes = await axios.get(`${API}/api/projects`, { headers: getAuthHeaders() });
       const projects = projectsRes.data;
       
       let allInvoices = [];
       for (const project of projects) {
         try {
-          const invoicesRes = await axios.get(`${API}/api/projects/${project.id}/customer-invoices`, { withCredentials: true });
+          const invoicesRes = await axios.get(`${API}/api/projects/${project.id}/customer-invoices`, { headers: getAuthHeaders() });
           const projectInvoices = invoicesRes.data.map(inv => ({
             ...inv,
             projectName: project.name,
@@ -55,8 +61,7 @@ export default function InvoicesPage() {
       const response = await axios.get(
         `${API}/api/invoices/${invoiceId}/pdf`,
         { 
-          withCredentials: true,
-          responseType: 'blob'
+          headers: getAuthHeaders(), responseType: 'blob'
         }
       );
       
@@ -77,13 +82,13 @@ export default function InvoicesPage() {
   const handleSendEmail = async (invoice) => {
     try {
       // Get customer email from project/lead
-      const projectRes = await axios.get(`${API}/api/projects/${invoice.projectId}`, { withCredentials: true });
+      const projectRes = await axios.get(`${API}/api/projects/${invoice.projectId}`, { headers: getAuthHeaders() });
       const project = projectRes.data;
       
-      const quoteRes = await axios.get(`${API}/api/quotes/${project.quote_id}`, { withCredentials: true });
+      const quoteRes = await axios.get(`${API}/api/quotes/${project.quote_id}`, { headers: getAuthHeaders() });
       const quote = quoteRes.data;
       
-      const leadRes = await axios.get(`${API}/api/leads/${quote.lead_id}`, { withCredentials: true });
+      const leadRes = await axios.get(`${API}/api/leads/${quote.lead_id}`, { headers: getAuthHeaders() });
       const customerEmail = leadRes.data.email;
       const customerName = leadRes.data.name;
       
@@ -92,8 +97,7 @@ export default function InvoicesPage() {
       const pdfResponse = await axios.get(
         `${API}/api/invoices/${invoice.id}/pdf`,
         { 
-          withCredentials: true,
-          responseType: 'blob'
+          headers: getAuthHeaders(), responseType: 'blob'
         }
       );
       
@@ -160,7 +164,7 @@ Q Technics`;
           payment_status: newStatus,
           paid_date: paidDate
         },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success(newStatus === 'paid' ? 'Factuur gemarkeerd als betaald' : 'Factuur gemarkeerd als onbetaald');
       fetchAllInvoices();

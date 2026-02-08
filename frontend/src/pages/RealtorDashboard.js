@@ -15,6 +15,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 const ROOM_TYPES = [
   { value: 'living', label: 'Woonkamer' },
   { value: 'bedroom', label: 'Slaapkamer' },
@@ -67,7 +73,7 @@ export default function RealtorDashboard() {
 
   const fetchProperties = async () => {
     try {
-      const response = await axios.get(`${API}/properties`, { withCredentials: true });
+      const response = await axios.get(`${API}/properties`, { headers: getAuthHeaders() });
       setProperties(response.data);
     } catch (error) {
       console.error('Error fetching properties:', error);
@@ -90,7 +96,7 @@ export default function RealtorDashboard() {
         const response = await axios.post(
           `${API}/properties/scrape?url=${encodeURIComponent(url)}`,
           {},
-          { withCredentials: true }
+          { headers: getAuthHeaders() }
         );
         
         if (response.data.success && response.data.data) {
@@ -184,7 +190,7 @@ export default function RealtorDashboard() {
         }))
       };
       
-      await axios.post(`${API}/properties`, payload, { withCredentials: true });
+      await axios.post(`${API}/properties`, payload, { headers: getAuthHeaders() });
       toast.success('Pand toegevoegd!');
       setIsAddDialogOpen(false);
       setFormData({
@@ -204,7 +210,7 @@ export default function RealtorDashboard() {
     if (!window.confirm('Weet je zeker dat je dit pand wilt verwijderen?')) return;
     
     try {
-      await axios.delete(`${API}/properties/${propertyId}`, { withCredentials: true });
+      await axios.delete(`${API}/properties/${propertyId}`, { headers: getAuthHeaders() });
       toast.success('Pand verwijderd');
       fetchProperties();
       if (selectedProperty?.id === propertyId) {
@@ -218,16 +224,16 @@ export default function RealtorDashboard() {
   const handleCalculate = async (propertyId) => {
     setCalculationLoading(true);
     try {
-      const response = await axios.post(`${API}/properties/${propertyId}/calculate`, {}, { withCredentials: true });
+      const response = await axios.post(`${API}/properties/${propertyId}/calculate`, {}, { headers: getAuthHeaders() });
       toast.success(`Berekening klaar! Geschatte kost: €${response.data.total_realistic.toLocaleString('nl-BE')}`);
       fetchProperties();
       
       // Fetch updated property with calculation
-      const propResponse = await axios.get(`${API}/properties/${propertyId}`, { withCredentials: true });
+      const propResponse = await axios.get(`${API}/properties/${propertyId}`, { headers: getAuthHeaders() });
       setSelectedProperty(propResponse.data);
       
       // Fetch calculation details
-      const calcResponse = await axios.get(`${API}/properties/${propertyId}/calculation`, { withCredentials: true });
+      const calcResponse = await axios.get(`${API}/properties/${propertyId}/calculation`, { headers: getAuthHeaders() });
       setSelectedProperty(prev => ({ ...prev, calculation: calcResponse.data }));
     } catch (error) {
       console.error('Calculation error:', error);
@@ -243,7 +249,7 @@ export default function RealtorDashboard() {
     // Fetch calculation if exists
     if (property.renovation_calculation_id) {
       try {
-        const calcResponse = await axios.get(`${API}/properties/${property.id}/calculation`, { withCredentials: true });
+        const calcResponse = await axios.get(`${API}/properties/${property.id}/calculation`, { headers: getAuthHeaders() });
         setSelectedProperty(prev => ({ ...prev, calculation: calcResponse.data }));
       } catch (error) {
         console.log('No calculation found');
@@ -781,7 +787,7 @@ function RoomCalculationCard({ roomCalc, propertyId, onUpdate }) {
       await axios.put(
         `${API}/properties/${propertyId}/calculation/items/${itemId}?included=${!currentIncluded}`,
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       onUpdate();
     } catch (error) {

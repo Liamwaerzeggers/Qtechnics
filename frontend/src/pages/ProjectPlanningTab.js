@@ -9,6 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Calendar, Plus, Trash2, Save, Package, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpdate }) {
   const [startDate, setStartDate] = useState(project?.start_date ? project.start_date.split('T')[0] : '');
   const [endDate, setEndDate] = useState(project?.end_date ? project.end_date.split('T')[0] : '');
@@ -27,7 +33,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
   useEffect(() => {
     const fetchCatalogMaterials = async () => {
       try {
-        const response = await axios.get(`${API}/materials`, { withCredentials: true });
+        const response = await axios.get(`${API}/materials`, { headers: getAuthHeaders() });
         setCatalogMaterials(response.data || []);
       } catch (error) {
         console.error('Error fetching catalog materials:', error);
@@ -42,7 +48,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
       const materials = [];
       for (const quote of approvedQuotes) {
         try {
-          const response = await axios.get(`${API}/quotes/${quote.id}/items`, { withCredentials: true });
+          const response = await axios.get(`${API}/quotes/${quote.id}/items`, { headers: getAuthHeaders() });
           const materialItems = response.data.filter(item => item.item_type === 'materiaal');
           materials.push(...materialItems);
         } catch (error) {
@@ -82,7 +88,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
           catalog_id: data.catalog_id,
           order_reminder_date: data.order_reminder_date || null
         },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       // Update local state
@@ -108,7 +114,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
       await axios.put(
         `${API}/projects/${project.id}/scheduled-days/${periodId}/materials/${materialId}`,
         { is_ordered: isOrdered },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       // Update local state
@@ -136,7 +142,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
     try {
       await axios.delete(
         `${API}/projects/${project.id}/scheduled-days/${periodId}/materials/${materialId}`,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       // Update local state
@@ -180,7 +186,7 @@ export default function ProjectPlanningTab({ project, approvedQuotes = [], onUpd
           scheduled_days: scheduledDays,
           required_materials: requiredMaterials
         },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Planning opgeslagen! 📅');
       onUpdate();

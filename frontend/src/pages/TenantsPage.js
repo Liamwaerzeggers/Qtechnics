@@ -15,6 +15,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 const SUBCONTRACTOR_CATEGORIES = [
   { value: 'dak', label: 'Dakwerken' },
   { value: 'ramen', label: 'Ramen & Deuren' },
@@ -60,9 +66,9 @@ export default function TenantsPage() {
     setLoading(true);
     try {
       const [realtorsRes, investorsRes, subcontractorsRes] = await Promise.all([
-        axios.get(`${API}/realtors`, { withCredentials: true }).catch(() => ({ data: [] })),
-        axios.get(`${API}/investors`, { withCredentials: true }).catch(() => ({ data: [] })),
-        axios.get(`${API}/subcontractors`, { withCredentials: true }).catch(() => ({ data: [] }))
+        axios.get(`${API}/realtors`, { headers: getAuthHeaders() }).catch(() => ({ data: [] })),
+        axios.get(`${API}/investors`, { headers: getAuthHeaders() }).catch(() => ({ data: [] })),
+        axios.get(`${API}/subcontractors`, { headers: getAuthHeaders() }).catch(() => ({ data: [] }))
       ]);
       
       setRealtors(realtorsRes.data || []);
@@ -79,7 +85,7 @@ export default function TenantsPage() {
   const handleCreateRealtor = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${API}/realtors`, realtorForm, { withCredentials: true });
+      const response = await axios.post(`${API}/realtors`, realtorForm, { headers: getAuthHeaders() });
       
       // Prepare welcome email
       const subject = `Welkom bij Max Q - Uw makelaar account`;
@@ -120,7 +126,7 @@ Max Q Team`;
   const handleDeleteRealtor = async (realtorId) => {
     if (!window.confirm('Weet je zeker dat je deze makelaar wilt verwijderen?')) return;
     try {
-      await axios.delete(`${API}/realtors/${realtorId}`, { withCredentials: true });
+      await axios.delete(`${API}/realtors/${realtorId}`, { headers: getAuthHeaders() });
       toast.success('Makelaar verwijderd');
       fetchAll();
     } catch (error) {
@@ -135,7 +141,7 @@ Max Q Team`;
       const response = await axios.post(`${API}/investors`, {
         ...investorForm,
         target_roi: parseFloat(investorForm.target_roi) || 10
-      }, { withCredentials: true });
+      }, { headers: getAuthHeaders() });
       
       // Prepare welcome email
       const subject = `Welkom bij Max Q - Uw investeerder account`;
@@ -177,7 +183,7 @@ Max Q Team`;
   const handleCreateSubcontractor = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API}/subcontractors`, subcontractorForm, { withCredentials: true });
+      await axios.post(`${API}/subcontractors`, subcontractorForm, { headers: getAuthHeaders() });
       toast.success('Onderaannemer aangemaakt!');
       setSubcontractorDialogOpen(false);
       setSubcontractorForm({ company_name: '', contact_name: '', email: '', phone: '', vat_number: '', category: '', password: '' });

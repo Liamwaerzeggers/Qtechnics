@@ -8,6 +8,12 @@ import { Button } from '../components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Textarea } from '../components/ui/textarea';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: \`Bearer \${token}\` } : {};
+};
+
 export default function ProjectWorkSlipPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -32,7 +38,7 @@ export default function ProjectWorkSlipPage() {
     try {
       const response = await axios.get(
         `${process.env.REACT_APP_BACKEND_URL}/api/projects/${projectId}`,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       setProject(response.data);
     } catch (error) {
@@ -46,7 +52,7 @@ export default function ProjectWorkSlipPage() {
       setLoading(true);
       const response = await axios.get(
         `${process.env.REACT_APP_BACKEND_URL}/api/projects/${projectId}/work-slips`,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       setWorkSlips(response.data);
     } catch (error) {
@@ -61,7 +67,7 @@ export default function ProjectWorkSlipPage() {
       await axios.post(
         `${process.env.REACT_APP_BACKEND_URL}/api/projects/${projectId}/work-slips`,
         { ...newSlip, project_id: projectId, date: new Date(newSlip.date).toISOString() },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Werkbon aangemaakt');
       setIsCreateDialogOpen(false);
@@ -78,7 +84,7 @@ export default function ProjectWorkSlipPage() {
       await axios.put(
         `${process.env.REACT_APP_BACKEND_URL}/api/projects/${projectId}/work-slips/${slipId}`,
         updates,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Werkbon bijgewerkt');
       setEditingSlip(null);
@@ -95,7 +101,7 @@ export default function ProjectWorkSlipPage() {
     try {
       await axios.delete(
         `${process.env.REACT_APP_BACKEND_URL}/api/projects/${projectId}/work-slips/${slipId}`,
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Werkbon verwijderd');
       fetchWorkSlips();
@@ -114,8 +120,7 @@ export default function ProjectWorkSlipPage() {
         `${process.env.REACT_APP_BACKEND_URL}/api/projects/${projectId}/work-slips/${slipId}/photos`,
         formData,
         { 
-          withCredentials: true,
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
         }
       );
       toast.success('Foto toegevoegd');
