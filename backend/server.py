@@ -976,6 +976,17 @@ class WorkItemLabel(BaseModel):
 
 # ============= AUTH DEPENDENCIES =============
 
+# Hardcoded admin users (same as auth_simple.py)
+HARDCODED_ADMINS = {
+    "ADMIN-LIAM": {
+        "id": "ADMIN-LIAM",
+        "username": "Liam",
+        "email": "liam.waerzeggers@qtechnics.be",
+        "name": "Liam",
+        "role": "admin"
+    }
+}
+
 async def get_current_user(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)) -> User:
     """Get current user from session token (cookie or header)"""
     token = session_token
@@ -1012,21 +1023,36 @@ async def get_current_user(session_token: Optional[str] = Cookie(None), authoriz
         await db.sessions.delete_one({"session_token": token})
         raise HTTPException(status_code=401, detail="Session expired")
     
-    # Find user - check both users (admins) and workers collections
+    # Find user
     user_id = session["user_id"]
     
-    # First try to find as admin (using _id which can be email or ObjectId)
-    user_doc = await db.users.find_one({"_id": user_id})
+    # Check hardcoded admins first
+    if user_id in HARDCODED_ADMINS:
+        admin = HARDCODED_ADMINS[user_id]
+        return User(
+            _id=admin["id"],
+            id=admin["id"],
+            email=admin["email"],
+            username=admin["username"],
+            name=admin["name"],
+            role=admin["role"]
+        )
+    
+    # Try to find in database - first by id field
+    user_doc = await db.users.find_one({"id": user_id})
     
     if not user_doc:
-        # Check if it's a worker (workers have custom 'id' field like WORKER-XXX)
+        # Try by _id
+        user_doc = await db.users.find_one({"_id": user_id})
+    
+    if not user_doc:
+        # Check if it's a worker
         worker_doc = await db.workers.find_one({"id": user_id}, {"_id": 0})
         if worker_doc:
-            # Convert worker to User format
             user_doc = {
                 "id": worker_doc["id"],
                 "username": worker_doc.get("username"),
-                "email": worker_doc.get("username") + "@worker.local",  # Dummy email for compatibility
+                "email": worker_doc.get("username") + "@worker.local",
                 "name": worker_doc.get("name", ""),
                 "role": "worker",
                 "created_at": worker_doc.get("created_at", datetime.now(timezone.utc).isoformat())
