@@ -10,6 +10,12 @@ import { Package, AlertTriangle, CheckCircle } from 'lucide-react';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -30,7 +36,9 @@ export default function Dashboard() {
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get(`${API}/dashboard/stats`, { withCredentials: true });
+      const response = await axios.get(`${API}/dashboard/stats`, { 
+        headers: getAuthHeaders()
+      });
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -41,7 +49,9 @@ export default function Dashboard() {
 
   const fetchMaterialReminders = async () => {
     try {
-      const response = await axios.get(`${API}/dashboard/material-reminders`, { withCredentials: true });
+      const response = await axios.get(`${API}/dashboard/material-reminders`, { 
+        headers: getAuthHeaders()
+      });
       setMaterialReminders(response.data || []);
     } catch (error) {
       console.error('Error fetching material reminders:', error);
@@ -53,7 +63,7 @@ export default function Dashboard() {
       await axios.put(
         `${API}/projects/${projectId}/scheduled-days/${periodId}/materials/${materialId}`,
         { is_ordered: true },
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Materiaal gemarkeerd als besteld ✓');
       fetchMaterialReminders(); // Refresh the list
