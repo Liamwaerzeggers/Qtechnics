@@ -202,3 +202,33 @@ async def logout(authorization: Optional[str] = Header(None)):
 async def test():
     """Simple test endpoint"""
     return {"status": "ok", "message": "Auth2 werkt!"}
+
+@router.get("/debug")
+async def debug_auth(authorization: Optional[str] = Header(None)):
+    """Debug endpoint to see what's happening with auth"""
+    from server import db
+    
+    result = {
+        "has_auth_header": authorization is not None,
+        "token_preview": None,
+        "session_found": False,
+        "user_id": None,
+        "is_hardcoded_admin": False
+    }
+    
+    if authorization:
+        parts = authorization.split()
+        if len(parts) == 2:
+            token = parts[1]
+            result["token_preview"] = token[:15] + "..."
+            
+            session = await db.user_sessions.find_one({"session_token": token})
+            if not session:
+                session = await db.sessions.find_one({"session_token": token})
+            
+            if session:
+                result["session_found"] = True
+                result["user_id"] = session.get("user_id")
+                result["is_hardcoded_admin"] = session.get("user_id") == "ADMIN-LIAM"
+    
+    return result
