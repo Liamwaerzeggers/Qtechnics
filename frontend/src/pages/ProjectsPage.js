@@ -86,8 +86,8 @@ export default function ProjectsPage() {
   const fetchData = async () => {
     try {
       const [projectsRes, quotesRes] = await Promise.all([
-        axios.get(`${API}/projects`, { withCredentials: true }),
-        axios.get(`${API}/quotes`, { withCredentials: true })
+        axios.get(`${API}/projects`, { headers: getAuthHeaders() }),
+        axios.get(`${API}/quotes`, { headers: getAuthHeaders() })
       ]);
       setProjects(projectsRes.data);
       setFilteredProjects(projectsRes.data);
@@ -110,7 +110,7 @@ export default function ProjectsPage() {
       if (data.start_date) data.start_date = new Date(data.start_date).toISOString();
       if (data.end_date) data.end_date = new Date(data.end_date).toISOString();
       
-      await axios.post(`${API}/projects`, data, { withCredentials: true });
+      await axios.post(`${API}/projects`, data, { headers: getAuthHeaders() });
       toast.success('Project aangemaakt!');
       setIsDialogOpen(false);
       setFormData({ quote_id: '', name: '', start_date: '', end_date: '', notes: '' });
@@ -128,7 +128,7 @@ export default function ProjectsPage() {
     }
 
     try {
-      await axios.delete(`${API}/projects/${projectId}`, { withCredentials: true });
+      await axios.delete(`${API}/projects/${projectId}`, { headers: getAuthHeaders() });
       toast.success('Project verwijderd');
       fetchData();
     } catch (error) {
@@ -144,7 +144,7 @@ export default function ProjectsPage() {
       const response = await axios.put(
         `${API}/projects/${projectId}/toggle-worker-visibility`, 
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       
       toast.success(response.data.message);
@@ -165,7 +165,7 @@ export default function ProjectsPage() {
       await axios.put(
         `${API}/projects/${selectedProjectForNotSold.id}/mark-not-sold?reason=${encodeURIComponent(notSoldReason)}`,
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Project gemarkeerd als niet verkocht');
       setNotSoldDialogOpen(false);
@@ -184,7 +184,7 @@ export default function ProjectsPage() {
       await axios.put(
         `${API}/projects/${projectId}/reactivate`,
         {},
-        { withCredentials: true }
+        { headers: getAuthHeaders() }
       );
       toast.success('Project opnieuw geactiveerd');
       fetchData();
