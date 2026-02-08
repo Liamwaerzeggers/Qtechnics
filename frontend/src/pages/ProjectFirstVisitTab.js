@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 // Helper to get auth headers
 const getAuthHeaders = () => {
   const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
-  return token ? { Authorization: `Bearer \${token}` } : {};
+  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 // Room options for organizing photos

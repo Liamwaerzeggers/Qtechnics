@@ -17,7 +17,7 @@ import ProjectPlanningTab from './ProjectPlanningTab';
 // Helper to get auth headers
 const getAuthHeaders = () => {
   const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
-  return token ? { Authorization: `Bearer \${token}` } : {};
+  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 export default function ProjectDetailPage() {

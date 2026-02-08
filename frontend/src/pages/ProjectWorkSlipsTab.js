@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 // Helper to get auth headers
 const getAuthHeaders = () => {
   const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
-  return token ? { Authorization: `Bearer \${token}` } : {};
+  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 export default function ProjectWorkSlipsTab({ project, onUpdate }) {
