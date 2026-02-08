@@ -509,6 +509,15 @@ function LandingPage() {
                 </div>
                 
                 <button
+                  type="submit"
+                  disabled={loggingIn}
+                  className="w-full px-8 py-4 rounded-full text-lg font-semibold text-white transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{backgroundColor: '#3B82F6', fontFamily: 'Inter, sans-serif'}}
+                >
+                  {loggingIn ? 'Inloggen...' : 'Inloggen'}
+                </button>
+                
+                <button
                   type="button"
                   onClick={() => { setShowTenantLogin(false); setLoginUsername(''); setLoginPassword(''); }}
                   className="text-sm underline transition-all hover:opacity-80 w-full"
