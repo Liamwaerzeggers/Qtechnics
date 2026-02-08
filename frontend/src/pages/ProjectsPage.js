@@ -14,6 +14,12 @@ import { Plus, Search, Trash2, Trophy, Target, Flame, Star, Rocket, XCircle, Ref
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 // Milestone definitions - Max Q branding colors
 const MILESTONES = [
   { amount: 100000, label: '€100K', icon: '🎯', color: '#7a1f1f', message: 'Goede start!' },
