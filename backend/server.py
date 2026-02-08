@@ -5018,6 +5018,81 @@ async def reset_worker_password(worker_id: str, new_password: str = Query(..., m
     logger.info(f"Password reset for worker {worker_id} by admin {current_user.id}")
     return {"message": "Password reset successfully", "worker_name": worker.get("name", "")}
 
+@api_router.get("/auth/test-mobile")
+async def test_mobile(request: Request):
+    """Simple test endpoint to verify mobile connectivity"""
+    user_agent = request.headers.get("user-agent", "unknown")
+    return {
+        "status": "ok",
+        "message": "Backend is bereikbaar!",
+        "user_agent": user_agent[:100],
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+@api_router.post("/auth/simple-login")
+async def simple_login(request: Request, response: Response):
+    """Ultra-simple login endpoint for debugging - accepts ANY format"""
+    try:
+        # Try to get credentials from ANY source
+        body_raw = await request.body()
+        body_text = body_raw.decode('utf-8') if body_raw else ""
+        
+        username = None
+        password = None
+        
+        # Try JSON
+        try:
+            import json
+            data = json.loads(body_text)
+            username = data.get("username", "").strip()
+            password = data.get("password", "").strip()
+        except:
+            pass
+        
+        # Log everything for debugging
+        logger.info(f"SIMPLE LOGIN - Raw body: {body_text[:200]}")
+        logger.info(f"SIMPLE LOGIN - Parsed: username='{username}', password='{password}'")
+        
+        if not username or not password:
+            return {"error": "Missing credentials", "received_body": body_text[:100]}
+        
+        # Check for Liam - super simple check
+        if username.lower() == "liam" and password in ["Liammail123.", "Liammail123", "liammail123.", "liammail123"]:
+            session_token = secrets.token_urlsafe(32)
+            
+            # Store session
+            await db.user_sessions.insert_one({
+                "user_id": "ADMIN-LIAM",
+                "session_token": session_token,
+                "expires_at": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+            
+            return {
+                "success": True,
+                "user": {
+                    "id": "ADMIN-LIAM",
+                    "username": "Liam",
+                    "email": "liam.waerzeggers@qtechnics.be",
+                    "name": "Liam",
+                    "role": "admin"
+                },
+                "session_token": session_token
+            }
+        else:
+            return {
+                "error": "Invalid credentials",
+                "debug": {
+                    "username_received": username,
+                    "username_length": len(username) if username else 0,
+                    "password_length": len(password) if password else 0,
+                    "username_match": username.lower() == "liam" if username else False
+                }
+            }
+    except Exception as e:
+        logger.error(f"Simple login error: {str(e)}")
+        return {"error": str(e)}
+
 @api_router.post("/auth/admin/login")
 async def admin_login(
     request: Request,
