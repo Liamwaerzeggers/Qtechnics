@@ -31,19 +31,29 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
 const API = `${BACKEND_URL}/api`;
 const AUTH_URL = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(window.location.origin + '/auth/callback')}`;
 
-// Setup axios interceptor for authentication
+// Create axios instance with auth
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+// Setup axios interceptor for authentication - runs on EVERY request
 axios.interceptors.request.use((config) => {
-  // Check both possible token keys for backwards compatibility
   const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
   if (token) {
+    config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
   }
+  console.log('Axios request:', config.url, 'Has token:', !!token);
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
 
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.log('Axios error:', error.response?.status, error.config?.url);
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('session_token');
@@ -52,6 +62,9 @@ axios.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Export for other components
+export { API, getAuthHeaders };
 
 // Auth Context
 const AuthContext = React.createContext(null);
