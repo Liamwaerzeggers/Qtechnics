@@ -280,7 +280,9 @@ function LandingPage() {
       });
       
       if (response.data.success && response.data.token) {
+        // Store under both keys for compatibility
         localStorage.setItem('auth_token', response.data.token);
+        localStorage.setItem('session_token', response.data.token);
         setUser(response.data.user);
         toast.success(`Welkom ${response.data.user.name}!`);
         navigate('/dashboard');
