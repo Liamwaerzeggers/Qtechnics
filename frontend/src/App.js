@@ -67,18 +67,27 @@ function AuthProvider({ children }) {
 
   const checkAuth = async () => {
     try {
-      const storedToken = localStorage.getItem('auth_token');
+      // Check both possible token keys for backwards compatibility
+      const storedToken = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
       if (!storedToken) {
         setUser(null);
         setLoading(false);
         return;
       }
       
-      const response = await axios.get(`${API}/auth2/me`);
-      setUser(response.data);
+      // Try new endpoint first, fall back to old one
+      try {
+        const response = await axios.get(`${API}/auth2/me`);
+        setUser(response.data);
+      } catch (e) {
+        // Try old endpoint
+        const response = await axios.get(`${API}/auth/me`);
+        setUser(response.data);
+      }
     } catch (error) {
       setUser(null);
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('session_token');
     } finally {
       setLoading(false);
     }
@@ -88,9 +97,13 @@ function AuthProvider({ children }) {
     try {
       await axios.post(`${API}/auth2/logout`);
     } catch (error) {
-      console.error('Logout error:', error);
+      // Try old endpoint
+      try {
+        await axios.post(`${API}/auth/logout`);
+      } catch (e) {}
     }
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('session_token');
     setUser(null);
     toast.success('Uitgelogd');
   };
