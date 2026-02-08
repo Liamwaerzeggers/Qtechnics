@@ -65,19 +65,18 @@ function AuthProvider({ children }) {
 
   const checkAuth = async () => {
     try {
-      // Get token from localStorage for mobile browser compatibility
-      const storedToken = localStorage.getItem('session_token');
-      const headers = storedToken ? { 'Authorization': `Bearer ${storedToken}` } : {};
+      const storedToken = localStorage.getItem('auth_token');
+      if (!storedToken) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
       
-      const response = await axios.get(`${API}/auth/me`, { 
-        withCredentials: true,
-        headers 
-      });
+      const response = await axios.get(`${API}/auth2/me`);
       setUser(response.data);
     } catch (error) {
       setUser(null);
-      // Clear invalid token
-      localStorage.removeItem('session_token');
+      localStorage.removeItem('auth_token');
     } finally {
       setLoading(false);
     }
@@ -85,15 +84,13 @@ function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
-      localStorage.removeItem('session_token');
-      setUser(null);
-      toast.success('Uitgelogd');
+      await axios.post(`${API}/auth2/logout`);
     } catch (error) {
       console.error('Logout error:', error);
-      localStorage.removeItem('session_token');
-      setUser(null);
     }
+    localStorage.removeItem('auth_token');
+    setUser(null);
+    toast.success('Uitgelogd');
   };
 
   return (
