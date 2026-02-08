@@ -9505,8 +9505,9 @@ async def complete_maintenance(contract_id: str, technician_notes: str = Query(d
     
     return {"message": "Onderhoud gemarkeerd als uitgevoerd", "next_maintenance_date": next_date}
 
-# Include router
+# Include routers
 app.include_router(api_router)
+app.include_router(auth2_router, prefix="/api")
 
 # CORS configuration - explicit origins for mobile browser compatibility
 cors_origins = os.environ.get('CORS_ORIGINS', '')
