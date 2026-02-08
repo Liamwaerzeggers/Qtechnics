@@ -266,23 +266,32 @@ function LandingPage() {
     setLoggingIn(true);
     
     try {
+      // Try simple-login first (more reliable on mobile)
+      console.log('Attempting login with:', { username: loginUsername, passwordLength: loginPassword.length });
+      
       const response = await axios.post(
-        `${API}/auth/admin/login`,
-        { username: loginUsername, password: loginPassword },
-        { withCredentials: true, headers: { 'Content-Type': 'application/json' } }
+        `${API}/auth/simple-login`,
+        { username: loginUsername.trim(), password: loginPassword.trim() },
+        { headers: { 'Content-Type': 'application/json' } }
       );
       
-      // Store token in localStorage for mobile browser compatibility
-      if (response.data.session_token) {
-        localStorage.setItem('session_token', response.data.session_token);
-      }
+      console.log('Login response:', response.data);
       
-      setUser(response.data.user);
-      toast.success(`Welkom ${response.data.user.name}! 👨‍💼`);
-      navigate('/dashboard');
+      if (response.data.success && response.data.session_token) {
+        localStorage.setItem('session_token', response.data.session_token);
+        setUser(response.data.user);
+        toast.success(`Welkom ${response.data.user.name}! 👨‍💼`);
+        navigate('/dashboard');
+      } else if (response.data.error) {
+        console.error('Login failed:', response.data);
+        toast.error(`Login mislukt: ${response.data.error}`);
+      } else {
+        toast.error('Onverwachte fout bij inloggen');
+      }
     } catch (error) {
       console.error('Admin login error:', error);
-      toast.error('Ongeldige inloggegevens');
+      const errorMsg = error.response?.data?.detail || error.response?.data?.error || 'Verbindingsfout';
+      toast.error(`Fout: ${errorMsg}`);
     } finally {
       setLoggingIn(false);
     }
