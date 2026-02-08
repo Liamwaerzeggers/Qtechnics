@@ -287,18 +287,16 @@ function LandingPage() {
     try {
       const response = await axios.post(
         `${API}/auth/tenant/login?username=${encodeURIComponent(loginUsername)}&password=${encodeURIComponent(loginPassword)}`,
-        {},
-        { withCredentials: true }
+        {}
       );
       
-      // Store token in localStorage for mobile browser compatibility
       if (response.data.session_token) {
-        localStorage.setItem('session_token', response.data.session_token);
+        localStorage.setItem('auth_token', response.data.session_token);
       }
       
       setUser(response.data.user);
       const role = response.data.user.role;
-      toast.success(`Welkom ${response.data.user.name}! 🏠`);
+      toast.success(`Welkom ${response.data.user.name}!`);
       
       if (role === 'realtor') {
         navigate('/realtor');
