@@ -769,4 +769,4 @@ function App() {
 }
 
 export default App;
-export { useAuth, API };
+export { useAuth };
