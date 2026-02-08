@@ -33,7 +33,8 @@ const AUTH_URL = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(
 
 // Setup axios interceptor for authentication
 axios.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
+  // Check both possible token keys for backwards compatibility
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -45,6 +46,7 @@ axios.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('session_token');
       console.warn('Session expired');
     }
     return Promise.reject(error);
