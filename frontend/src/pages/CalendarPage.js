@@ -214,6 +214,8 @@ export default function CalendarPage() {
   const [teams, setTeams] = useState(['Team 1', 'Team 2', 'Team 3']);
   const [showAddTeam, setShowAddTeam] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
+  const [editingTeam, setEditingTeam] = useState(null);
+  const [editTeamName, setEditTeamName] = useState('');
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverDate, setDragOverDate] = useState(null);
   const [quickTasks, setQuickTasks] = useState([]);
