@@ -16,7 +16,9 @@ import {
   X,
   GripVertical,
   Briefcase,
-  Trash2
+  Trash2,
+  Pencil,
+  Check
 } from 'lucide-react';
 import { toast } from 'sonner';
 
