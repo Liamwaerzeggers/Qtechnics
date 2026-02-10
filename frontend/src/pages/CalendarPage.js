@@ -18,9 +18,23 @@ import {
   Briefcase,
   Trash2,
   Pencil,
-  Check
+  Check,
+  CheckCircle2,
+  PartyPopper
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Encouraging messages for completing tasks
+const COMPLETION_MESSAGES = [
+  "Goed gedaan! 💪",
+  "Top werk! ⭐",
+  "Lekker bezig! 🔥",
+  "Weer eentje afgevinkt! ✅",
+  "Geweldig! Blijf zo doorgaan! 🚀",
+  "Mooi! Op naar de volgende! 🎯",
+  "Yes! Taak voltooid! 🎉",
+  "Sterk werk! 💯"
+];
 
 // Helper to get auth headers
 const getAuthHeaders = () => {
