@@ -448,6 +448,58 @@ export default function CalendarPage() {
     }
   };
 
+  // Mark a task as completed
+  const markTaskCompleted = async (item) => {
+    const randomMessage = COMPLETION_MESSAGES[Math.floor(Math.random() * COMPLETION_MESSAGES.length)];
+    
+    if (item.isQuickTask) {
+      // Update quick task
+      await updateQuickTask(item.id, { completed: true, completed_at: new Date().toISOString() });
+      toast.success(randomMessage, {
+        icon: <PartyPopper className="w-5 h-5 text-yellow-500" />
+      });
+      fetchQuickTasks();
+    } else {
+      // Update project scheduled work
+      const project = item.project || projects.find(p => 
+        (p.scheduled_days || []).some(sd => sd.id === item.id)
+      );
+      
+      if (project) {
+        const updatedScheduledDays = (project.scheduled_days || []).map(p => 
+          p.id === item.id ? { ...p, completed: true, completed_at: new Date().toISOString() } : p
+        );
+        await updateScheduledWork(project.id, updatedScheduledDays, false);
+        toast.success(randomMessage, {
+          icon: <PartyPopper className="w-5 h-5 text-yellow-500" />
+        });
+        fetchProjects();
+      }
+    }
+  };
+
+  // Mark a task as not completed (undo)
+  const markTaskNotCompleted = async (item) => {
+    if (item.isQuickTask) {
+      await updateQuickTask(item.id, { completed: false, completed_at: null });
+      toast.info('Taak weer actief');
+      fetchQuickTasks();
+    } else {
+      const project = item.project || projects.find(p => 
+        (p.scheduled_days || []).some(sd => sd.id === item.id)
+      );
+      
+      if (project) {
+        const updatedScheduledDays = (project.scheduled_days || []).map(p => 
+          p.id === item.id ? { ...p, completed: false, completed_at: null } : p
+        );
+        await updateScheduledWork(project.id, updatedScheduledDays, false);
+        toast.info('Taak weer actief');
+        fetchProjects();
+      }
+    }
+  };
+
   // Drag handlers for team assignment
   const handleDragStart = (e, project, period, isQuickTask = false) => {
     // Store the original project ID for reference when project might be null
