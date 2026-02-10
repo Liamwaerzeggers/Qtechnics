@@ -567,6 +567,8 @@ class QuickTask(BaseModel):
     start_date: Optional[str] = None  # YYYY-MM-DD, optional for small tasks
     end_date: Optional[str] = None  # YYYY-MM-DD, optional for small tasks
     team_name: Optional[str] = None  # Assigned team
+    completed: bool = False  # Task completion status
+    completed_at: Optional[str] = None  # ISO datetime when completed
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
 
@@ -583,6 +585,8 @@ class QuickTaskUpdate(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     team_name: Optional[str] = None
+    completed: Optional[bool] = None
+    completed_at: Optional[str] = None
 
 # ============= MULTI-TENANT MODELS =============
 
