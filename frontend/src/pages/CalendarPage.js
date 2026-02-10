@@ -1086,38 +1086,49 @@ export default function CalendarPage() {
                         key={item.id || idx}
                         draggable
                         onDragStart={(e) => handleDragStart(e, item.project, item, item.isQuickTask)}
-                        className="bg-white rounded-lg p-2 shadow-sm border cursor-grab hover:shadow-md transition-all active:cursor-grabbing"
+                        className="bg-white rounded-lg p-2 shadow-sm border cursor-grab hover:shadow-md transition-all active:cursor-grabbing group"
                       >
                         <div className="flex items-center gap-1">
+                          {/* Complete button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markTaskCompleted(item);
+                            }}
+                            className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 flex items-center justify-center transition-all group-hover:border-green-400"
+                            title="Markeer als voltooid"
+                          >
+                            <Check className="w-3 h-3 text-gray-300 group-hover:text-green-500" />
+                          </button>
                           {item.isQuickTask && <Briefcase className="w-3 h-3 text-purple-500 flex-shrink-0" />}
-                          <p className="font-semibold text-xs text-gray-800 truncate">{item.projectName}</p>
+                          <p className="font-semibold text-xs text-gray-800 truncate flex-1">{item.projectName}</p>
                           {item.isQuickTask && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 deleteQuickTask(item.id);
                               }}
-                              className="ml-auto text-gray-400 hover:text-red-500"
+                              className="text-gray-400 hover:text-red-500"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
                           )}
                         </div>
                         {item.description && (
-                          <p className="text-xs text-blue-600 font-medium truncate">{item.description}</p>
+                          <p className="text-xs text-blue-600 font-medium truncate ml-6">{item.description}</p>
                         )}
                         {item.address && (
-                          <p className="text-[10px] text-gray-500 flex items-center gap-1 truncate">
+                          <p className="text-[10px] text-gray-500 flex items-center gap-1 truncate ml-6">
                             <MapPin className="w-3 h-3 flex-shrink-0" />
                             {item.address}
                           </p>
                         )}
-                        <p className="text-[10px] text-gray-400 mt-1">
+                        <p className="text-[10px] text-gray-400 mt-1 ml-6">
                           📅 {formatDate(item.start_date)} → {formatDate(item.end_date)}
                         </p>
                         <button 
                           onClick={() => goToDate(item.start_date)}
-                          className="text-[10px] text-blue-500 hover:underline mt-1"
+                          className="text-[10px] text-blue-500 hover:underline mt-1 ml-6"
                         >
                           Toon in agenda ↓
                         </button>
