@@ -840,10 +840,7 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
           `${API}/projects/${project.id}/first-visit/photos?room=${encodeURIComponent(selectedRoom)}`,
           formData,
           { 
-            headers: { 
-              ...getAuthHeaders(),
-              'Content-Type': 'multipart/form-data' 
-            }
+            headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
           }
         );
 
