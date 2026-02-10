@@ -1308,21 +1308,51 @@ export default function CalendarPage() {
                       >
                         {dayWork.map((item, workIdx) => {
                             const teamColor = getTeamColor(item.team_name);
+                            const isCompleted = item.completed;
                             
                             return (
                               <div
                                 key={workIdx}
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, item.project, item, item.isQuickTask)}
+                                draggable={!isCompleted}
+                                onDragStart={(e) => !isCompleted && handleDragStart(e, item.project, item, item.isQuickTask)}
                                 onClick={() => item.project && navigate(`/projects/${item.project.id}`)}
-                                className={`${teamColor.light} border ${teamColor.border} rounded-lg p-1.5 mb-1.5 cursor-grab hover:shadow-md transition-all active:cursor-grabbing`}
+                                className={`${isCompleted ? 'bg-gray-100 border-gray-300' : teamColor.light + ' border ' + teamColor.border} rounded-lg p-1.5 mb-1.5 ${isCompleted ? 'cursor-default opacity-60' : 'cursor-grab hover:shadow-md'} transition-all active:cursor-grabbing relative`}
                               >
+                                {isCompleted && (
+                                  <div className="absolute top-1 right-1">
+                                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                  </div>
+                                )}
                                 <div className="flex items-center gap-1 mb-0.5">
-                                  {item.isQuickTask && <Briefcase className={`w-3 h-3 ${teamColor.text} flex-shrink-0`} />}
-                                  <p className={`font-semibold text-[11px] ${teamColor.text} truncate`}>{item.projectName}</p>
+                                  {!isCompleted && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        markTaskCompleted(item);
+                                      }}
+                                      className="flex-shrink-0 w-4 h-4 rounded-full border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 flex items-center justify-center transition-all"
+                                      title="Markeer als voltooid"
+                                    >
+                                      <Check className="w-2 h-2 text-gray-300 hover:text-green-500" />
+                                    </button>
+                                  )}
+                                  {isCompleted && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        markTaskNotCompleted(item);
+                                      }}
+                                      className="flex-shrink-0 w-4 h-4 rounded-full bg-green-500 flex items-center justify-center transition-all hover:bg-green-600"
+                                      title="Markeer als niet voltooid"
+                                    >
+                                      <Check className="w-2 h-2 text-white" />
+                                    </button>
+                                  )}
+                                  {item.isQuickTask && <Briefcase className={`w-3 h-3 ${isCompleted ? 'text-gray-400' : teamColor.text} flex-shrink-0`} />}
+                                  <p className={`font-semibold text-[11px] ${isCompleted ? 'text-gray-500 line-through' : teamColor.text} truncate`}>{item.projectName}</p>
                                 </div>
                                 {item.description && (
-                                  <p className="text-[10px] text-blue-600 font-medium truncate">{item.description}</p>
+                                  <p className={`text-[10px] ${isCompleted ? 'text-gray-400 line-through' : 'text-blue-600'} font-medium truncate`}>{item.description}</p>
                                 )}
                                 {item.address && (
                                   <p className="text-[9px] text-gray-500 flex items-center gap-0.5 truncate">
