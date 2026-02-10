@@ -637,12 +637,13 @@ export default function CalendarPage() {
   };
 
   // Get ALL work for a team (not filtered by week) - includes quick tasks
+  // EXCLUDES completed tasks - they should not show in team tiles
   const getWorkByTeam = (teamName) => {
     const work = [];
-    // Add project scheduled work
+    // Add project scheduled work (exclude completed)
     projects.forEach(project => {
       (project.scheduled_days || []).forEach(period => {
-        if (period.team_name === teamName) {
+        if (period.team_name === teamName && !period.completed) {
           work.push({
             ...period,
             project,
@@ -653,9 +654,9 @@ export default function CalendarPage() {
         }
       });
     });
-    // Add quick tasks
+    // Add quick tasks (exclude completed)
     quickTasks.forEach(task => {
-      if (task.team_name === teamName) {
+      if (task.team_name === teamName && !task.completed) {
         work.push({
           ...task,
           project: null,
