@@ -358,6 +358,64 @@ export default function CalendarPage() {
     fetchProjects();
   };
 
+  const startEditingTeam = (teamName) => {
+    setEditingTeam(teamName);
+    setEditTeamName(teamName);
+  };
+
+  const cancelEditingTeam = () => {
+    setEditingTeam(null);
+    setEditTeamName('');
+  };
+
+  const saveTeamRename = async () => {
+    if (!editTeamName.trim()) {
+      toast.error('Team naam mag niet leeg zijn');
+      return;
+    }
+    
+    if (editTeamName.trim() === editingTeam) {
+      cancelEditingTeam();
+      return;
+    }
+    
+    // Check if new name already exists
+    if (teams.includes(editTeamName.trim())) {
+      toast.error('Deze team naam bestaat al');
+      return;
+    }
+    
+    const oldName = editingTeam;
+    const newName = editTeamName.trim();
+    
+    // Update all scheduled work with the new team name
+    for (const project of projects) {
+      const hasTeamWork = project.scheduled_days?.some(p => p.team_name === oldName);
+      if (hasTeamWork) {
+        const updatedScheduledDays = project.scheduled_days.map(p => 
+          p.team_name === oldName ? { ...p, team_name: newName } : p
+        );
+        await updateScheduledWork(project.id, updatedScheduledDays, false);
+      }
+    }
+    
+    // Update quick tasks with the new team name
+    for (const task of quickTasks) {
+      if (task.team_name === oldName) {
+        await updateQuickTask(task.id, { team_name: newName });
+      }
+    }
+    
+    // Update teams array
+    const newTeams = teams.map(t => t === oldName ? newName : t);
+    saveTeams(newTeams);
+    
+    toast.success(`Team hernoemd naar "${newName}"`);
+    cancelEditingTeam();
+    fetchProjects();
+    fetchQuickTasks();
+  };
+
   const updateScheduledWork = async (projectId, updatedScheduledDays, showToast = true) => {
     try {
       await axios.put(
