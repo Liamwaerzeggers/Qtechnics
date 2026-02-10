@@ -958,6 +958,7 @@ export default function CalendarPage() {
           {teams.map((teamName, teamIndex) => {
             const teamColor = getTeamColorByIndex(teamIndex);
             const teamWork = getWorkByTeam(teamName);
+            const isEditing = editingTeam === teamName;
             
             return (
               <Card 
@@ -968,13 +969,42 @@ export default function CalendarPage() {
               >
                 <CardHeader className={`${teamColor.bg} text-white py-2 rounded-t-lg`}>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      {teamName}
-                    </CardTitle>
-                    <button onClick={() => removeTeam(teamName)} className="text-white/70 hover:text-white">
-                      <X className="w-4 h-4" />
-                    </button>
+                    {isEditing ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <Users className="w-4 h-4 flex-shrink-0" />
+                        <Input
+                          value={editTeamName}
+                          onChange={(e) => setEditTeamName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveTeamRename();
+                            if (e.key === 'Escape') cancelEditingTeam();
+                          }}
+                          className="h-6 text-sm py-0 px-2 bg-white/20 border-white/30 text-white placeholder-white/50 w-full"
+                          autoFocus
+                        />
+                        <button onClick={saveTeamRename} className="text-white hover:text-green-200">
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button onClick={cancelEditingTeam} className="text-white/70 hover:text-white">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Users className="w-4 h-4" />
+                          {teamName}
+                        </CardTitle>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => startEditingTeam(teamName)} className="text-white/70 hover:text-white">
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                          <button onClick={() => removeTeam(teamName)} className="text-white/70 hover:text-white">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="p-2 space-y-2 max-h-[300px] overflow-y-auto">
