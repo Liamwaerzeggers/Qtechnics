@@ -48,86 +48,123 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 - **Frontend**: React + Tailwind CSS + Shadcn/UI
 - **Backend**: FastAPI + Motor (async MongoDB)
 - **Database**: MongoDB
-- **3rd Party**: Billit, Resend (email), emergentintegrations (AI), canvas-confetti
 
-## Nieuwe API Endpoints (Multi-Tenant)
+## Laatste Updates (Februari 2025)
 
-### Realtors
-- `POST /api/realtors` - Nieuwe makelaar aanmaken (admin only)
-- `GET /api/realtors` - Alle makelaars ophalen (admin only)
-- `DELETE /api/realtors/{id}` - Makelaar verwijderen
+### Authenticatie Systeem - Volledig Herschreven
+- **Nieuw auth systeem** (`/api/auth2/`) met simpele token-based auth
+- Token opslag in `localStorage` onder beide keys (`auth_token` en `session_token`) voor compatibiliteit
+- Hardcoded admin "Liam" werkt met `Liammail123` of `Liammail123.`
+- Alle API calls gebruiken nu `Authorization: Bearer` headers ipv cookies
 
-### Investors
-- `POST /api/investors` - Nieuwe investeerder aanmaken
-- `GET /api/investors` - Alle investeerders ophalen
+### Kalender Verbeteringen
+- **Teams hernoemen** - Klik op potlood icoon bij team naam
+- **Taken afvinken** - Ronde checkbox naast elke taak in team tiles en kalender
+- **Voltooide taken** - Verdwijnen uit team tiles, blijven zichtbaar in kalender (grijs/doorgestreept)
+- **Aanmoedigende berichten** bij voltooien van taak met confetti animatie
 
-### Subcontractors
-- `POST /api/subcontractors` - Nieuwe onderaannemer
-- `GET /api/subcontractors` - Alle onderaannemers
-- `POST /api/subcontractors/{id}/prices` - Prijs toevoegen
-- `GET /api/subcontractors/{id}/prices` - Prijzen ophalen
+### Project Notities Systeem (Nieuw!)
+- **Algemene notities sectie** per project (`project_notes` array in Project model)
+- **ProjectNotesBanner component** - Zichtbaar bovenaan elke project pagina, ongeacht actieve tab
+- **Bullet point weergave** - Eerste bezoek notities + algemene notities in één overzicht
+- **Notitie als taak toewijzen** - Admin kan notitie omzetten naar taak voor medewerker
+- **Worker taak systeem** - `worker_tasks` collection in database
 
-### Properties
-- `POST /api/properties` - Nieuw pand toevoegen
-- `GET /api/properties` - Eigen panden ophalen (tenant isolated)
-- `GET /api/properties/{id}` - Pand details
-- `PUT /api/properties/{id}` - Pand bewerken
-- `DELETE /api/properties/{id}` - Pand verwijderen
-- `POST /api/properties/{id}/rooms` - Kamer toevoegen
-- `PUT /api/properties/{id}/rooms/{room_id}` - Kamer bewerken
-- `DELETE /api/properties/{id}/rooms/{room_id}` - Kamer verwijderen
-- `POST /api/properties/{id}/share` - Pand delen met investeerder
+### Worker Task Banner (Nieuw!)
+- **Globale notificatie banner** voor werkmannen
+- **Popup bovenaan elk scherm** met openstaande taken
+- **Navigatie** tussen meerdere taken
+- **Direct voltooien** met confetti animatie en aanmoedigende boodschap
+- **Minimaliseren** naar klein icoon in rechterhoek
 
-### Renovation Calculator
-- `POST /api/properties/{id}/calculate` - Berekening uitvoeren
-- `GET /api/properties/{id}/calculation` - Berekening ophalen
-- `PUT /api/properties/{id}/calculation/items/{item_id}` - Item in/uitsluiten
+## API Endpoints
 
-### Work Items
-- `PUT /api/work-items/{id}/label` - Component label toekennen (vloer, muur, plafond, etc.)
+### Project Notities
+- `GET /api/projects/{id}/notes` - Alle notities ophalen
+- `POST /api/projects/{id}/notes` - Nieuwe notitie toevoegen
+- `PUT /api/projects/{id}/notes/{note_id}` - Notitie bewerken
+- `DELETE /api/projects/{id}/notes/{note_id}` - Notitie verwijderen
+- `POST /api/projects/{id}/notes/{note_id}/assign` - Notitie toewijzen aan medewerker
 
-### Auth
-- `POST /api/auth/tenant/login` - Login voor makelaars/investeerders
+### Worker Tasks
+- `GET /api/worker-tasks/my` - Mijn taken ophalen
+- `GET /api/worker-tasks/pending` - Openstaande taken
+- `PUT /api/worker-tasks/{id}/seen` - Taak als gezien markeren
+- `PUT /api/worker-tasks/{id}/complete` - Taak voltooien
+- `GET /api/admin/worker-tasks` - Admin: alle taken
 
-## Geïmplementeerde Features (Eerder)
+## Database Schema Wijzigingen
 
-### 2025-02-03 (Deze sessie)
-- [x] **Wachtwoord Reset** - Admins kunnen wachtwoorden resetten
-- [x] **Multi-Tenant Platform** - Makelaars, investeerders, onderaannemers
-- [x] **Renovatiecalculator** - Automatische berekening per kamer
-- [x] **Tenant Dashboard** - Makelaar kan panden beheren
-- [x] **Mailto Welkomst-email** - Bij aanmaken accounts
+### Project Model
+```javascript
+{
+  // ... bestaande velden
+  project_notes: [{
+    id: string,
+    text: string,
+    created_at: string,
+    created_by: string,
+    created_by_name: string,
+    is_task: boolean,
+    assigned_to: string | null,
+    assigned_to_name: string | null,
+    task_id: string | null,
+    task_completed: boolean,
+    task_completed_at: string | null
+  }]
+}
+```
 
-### 2025-01-30
-- [x] **"Verkocht" Toggle** - Switch op offertes en legacy documenten
-- [x] **Viering Animatie** - Confetti bij nieuwe verkoop
-- [x] **Materialen per Werk** - Materialen koppelen aan werkperiodes
-- [x] **Gamification Banner** - Team Sales Leaderboard
+### Worker Tasks Collection
+```javascript
+{
+  id: string,           // "TASK-XXXXXXXX"
+  project_id: string,
+  project_name: string,
+  note_id: string,
+  text: string,
+  assigned_to: string,  // Worker ID
+  assigned_to_name: string,
+  assigned_by: string,  // Admin ID
+  assigned_by_name: string,
+  created_at: string,
+  completed: boolean,
+  completed_at: string | null,
+  seen: boolean
+}
+```
 
-### 2025-01-29
-- [x] **Gefaseerde Facturatie** - Handmatig factuurbedragen registreren
-- [x] **Email notificaties** - Automatische email naar klant bij nieuwe portaal content
+### QuickTask Model Update
+```javascript
+{
+  // ... bestaande velden
+  completed: boolean,
+  completed_at: string | null
+}
+```
 
-## Backlog
+## Bestanden Gewijzigd/Toegevoegd
+- `/app/backend/server.py` - Project notes en worker tasks endpoints
+- `/app/backend/auth_simple.py` - Nieuw simpel auth systeem
+- `/app/frontend/src/components/ProjectNotesBanner.js` - Nieuw
+- `/app/frontend/src/components/WorkerTaskBanner.js` - Nieuw
+- `/app/frontend/src/components/DashboardLayout.js` - WorkerTaskBanner toegevoegd
+- `/app/frontend/src/pages/ProjectDetailPage.js` - ProjectNotesBanner toegevoegd
+- `/app/frontend/src/pages/CalendarPage.js` - Team rename en taak afvinken
+- `/app/frontend/src/pages/Dashboard.js` - Auth headers fix
+- `/app/frontend/src/pages/ProjectsPage.js` - Auth headers fix
+- Alle andere pages - `withCredentials: true` vervangen door `headers: getAuthHeaders()`
 
-### P0 - Kritiek
-- [ ] Foto's niet zichtbaar in productie (user verificatie nodig)
-- [ ] Login fix (eerste admin setup) verificatie na deployment
+## Inloggegevens
+- **Admin**: `liam` / `Liammail123` (of `Liammail123.`)
+- **Test account (preview)**: `test` / `test123`
 
-### P1 - Hoog
-- [ ] Property scraping (Immoweb/Zimmo/Immoscoop)
-- [ ] Room Configurator afmaken
-- [ ] Geverifieerd Resend domein voor productie emails
+## Bekende Issues
+- `server.py` is 9000+ regels - moet gerefactored worden naar routers/services/models
+- Foto upload limiet van 5 - moet onderzocht worden
 
-### P2 - Medium
-- [ ] Backend API stabiliteit verbeteren
-- [ ] server.py refactoren naar package structuur
-
-### P3 - Laag
-- [ ] Investeerder ROI dashboard
-- [ ] Onderaannemers prijzen in calculatie
-
-## Test Credentials
-- **Admin:** `test` / `test123`
-- **Makelaar:** `liamtest` / `test123`
-- **Makelaar (test):** `immogent` / `test123`
+## Volgende Prioriteiten
+1. Server.py refactoring - opsplitsen in modules
+2. Realtor MVP features afmaken
+3. Onderaannemers Module (Fase 2)
+4. Investeerders Module (Fase 3)
