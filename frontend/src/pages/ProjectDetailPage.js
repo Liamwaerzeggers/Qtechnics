@@ -402,6 +402,15 @@ export default function ProjectDetailPage() {
           </div>
         </div>
 
+        {/* Project Notes Banner - visible on all tabs */}
+        {user?.role === 'admin' && (
+          <ProjectNotesBanner 
+            project={project} 
+            onUpdate={fetchProjectData}
+            workers={workers}
+          />
+        )}
+
         {/* Tab Content */}
         <div>
           {activeTab === 'first-visit' && (
