@@ -301,6 +301,10 @@ class Project(BaseModel):
     first_visit_notes: str = ""  # Notes from first visit
     first_visit_date: Optional[datetime] = None
     
+    # NIEUWE SECTIE: Algemene Project Notities (doorlopend)
+    # [{id, text, created_at, created_by, is_task, assigned_to, task_completed, task_completed_at}]
+    project_notes: List[dict] = []
+    
     # NIEUWE SECTIE: Metingen & Werk Items (voor offerte generatie)
     measurements: List[dict] = []  # [{work_item_id, title, quantity, unit, price, vat_rate}]
     room_measurements: List[dict] = []  # [{id, room_name, surface_type, length, width, height, area, work_items}]
