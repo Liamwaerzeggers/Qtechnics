@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { API } from '../App';
+import { API, useAuth } from '../App';
 import DashboardLayout from '../components/DashboardLayout';
+import ProjectNotesBanner from '../components/ProjectNotesBanner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, FileText, Camera, Folder, Receipt, Briefcase, CalendarDays, Users, Copy, Link, Check, Upload, Trash2, Download, File, Eye, EyeOff, Trophy } from 'lucide-react';
@@ -24,11 +25,13 @@ export default function ProjectDetailPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [project, setProject] = useState(null);
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('first-visit');
   const [approvedQuotes, setApprovedQuotes] = useState([]); // All approved quotes
+  const [workers, setWorkers] = useState([]);
   
   // Legacy documents state
   const [legacyDocuments, setLegacyDocuments] = useState([]);
@@ -44,7 +47,17 @@ export default function ProjectDetailPage() {
 
   useEffect(() => {
     fetchProjectData();
+    fetchWorkers();
   }, [projectId, location.key]); // Re-fetch when location changes (e.g., returning from quote page)
+
+  const fetchWorkers = async () => {
+    try {
+      const response = await axios.get(`${API}/workers`, { headers: getAuthHeaders() });
+      setWorkers(response.data.filter(w => w.is_active !== false) || []);
+    } catch (error) {
+      console.error('Error fetching workers:', error);
+    }
+  };
 
   const fetchProjectData = async () => {
     try {
