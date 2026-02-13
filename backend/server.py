@@ -5683,6 +5683,231 @@ async def update_first_visit_notes(
     
     return {"message": "Notities opgeslagen"}
 
+# ============= PROJECT NOTES & WORKER TASKS =============
+
+@api_router.get("/projects/{project_id}/notes")
+async def get_project_notes(project_id: str, current_user: User = Depends(get_current_user)):
+    """Get all notes for a project (both first visit and general notes)"""
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    return {
+        "first_visit_notes": project.get("first_visit_notes", ""),
+        "project_notes": project.get("project_notes", [])
+    }
+
+@api_router.post("/projects/{project_id}/notes")
+async def add_project_note(project_id: str, note: dict, current_user: User = Depends(get_current_user)):
+    """Add a new note to a project"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen notities toevoegen")
+    
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    new_note = {
+        "id": str(uuid.uuid4())[:8],
+        "text": note.get("text", ""),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user.id,
+        "created_by_name": current_user.name or current_user.username,
+        "is_task": False,
+        "assigned_to": None,
+        "task_completed": False,
+        "task_completed_at": None
+    }
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$push": {"project_notes": new_note}}
+    )
+    
+    return new_note
+
+@api_router.put("/projects/{project_id}/notes/{note_id}")
+async def update_project_note(project_id: str, note_id: str, note: dict, current_user: User = Depends(get_current_user)):
+    """Update a project note"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen notities bewerken")
+    
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    project_notes = project.get("project_notes", [])
+    updated = False
+    for i, n in enumerate(project_notes):
+        if n.get("id") == note_id:
+            project_notes[i] = {**n, **note}
+            updated = True
+            break
+    
+    if not updated:
+        raise HTTPException(status_code=404, detail="Notitie niet gevonden")
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"project_notes": project_notes}}
+    )
+    
+    return {"message": "Notitie bijgewerkt"}
+
+@api_router.delete("/projects/{project_id}/notes/{note_id}")
+async def delete_project_note(project_id: str, note_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a project note"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen notities verwijderen")
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$pull": {"project_notes": {"id": note_id}}}
+    )
+    
+    # Also delete any associated worker task
+    await db.worker_tasks.delete_many({"note_id": note_id})
+    
+    return {"message": "Notitie verwijderd"}
+
+@api_router.post("/projects/{project_id}/notes/{note_id}/assign")
+async def assign_note_as_task(project_id: str, note_id: str, assignment: dict, current_user: User = Depends(get_current_user)):
+    """Assign a project note as a task to a worker"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen taken toewijzen")
+    
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    # Find the note
+    project_notes = project.get("project_notes", [])
+    note = None
+    for n in project_notes:
+        if n.get("id") == note_id:
+            note = n
+            break
+    
+    if not note:
+        raise HTTPException(status_code=404, detail="Notitie niet gevonden")
+    
+    # Get worker info
+    worker_id = assignment.get("worker_id")
+    worker = await db.workers.find_one({"id": worker_id}, {"_id": 0})
+    if not worker:
+        raise HTTPException(status_code=404, detail="Medewerker niet gevonden")
+    
+    # Create worker task
+    worker_task = {
+        "id": f"TASK-{str(uuid.uuid4())[:8].upper()}",
+        "project_id": project_id,
+        "project_name": project.get("name", ""),
+        "note_id": note_id,
+        "text": note.get("text", ""),
+        "assigned_to": worker_id,
+        "assigned_to_name": worker.get("name", worker.get("username", "")),
+        "assigned_by": current_user.id,
+        "assigned_by_name": current_user.name or current_user.username,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "completed": False,
+        "completed_at": None,
+        "seen": False
+    }
+    
+    await db.worker_tasks.insert_one(worker_task)
+    
+    # Update the note to mark it as a task
+    for i, n in enumerate(project_notes):
+        if n.get("id") == note_id:
+            project_notes[i]["is_task"] = True
+            project_notes[i]["assigned_to"] = worker_id
+            project_notes[i]["assigned_to_name"] = worker.get("name", worker.get("username", ""))
+            project_notes[i]["task_id"] = worker_task["id"]
+            break
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"project_notes": project_notes}}
+    )
+    
+    return worker_task
+
+# Worker Task endpoints
+@api_router.get("/worker-tasks/my")
+async def get_my_worker_tasks(current_user: User = Depends(get_current_user)):
+    """Get all tasks assigned to the current worker"""
+    tasks = await db.worker_tasks.find(
+        {"assigned_to": current_user.id, "completed": False},
+        {"_id": 0}
+    ).to_list(100)
+    return tasks
+
+@api_router.get("/worker-tasks/pending")
+async def get_pending_worker_tasks(current_user: User = Depends(get_current_user)):
+    """Get all pending (unseen) tasks for the current worker"""
+    tasks = await db.worker_tasks.find(
+        {"assigned_to": current_user.id, "completed": False},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return tasks
+
+@api_router.put("/worker-tasks/{task_id}/seen")
+async def mark_task_seen(task_id: str, current_user: User = Depends(get_current_user)):
+    """Mark a task as seen by the worker"""
+    await db.worker_tasks.update_one(
+        {"id": task_id, "assigned_to": current_user.id},
+        {"$set": {"seen": True}}
+    )
+    return {"message": "Taak gezien"}
+
+@api_router.put("/worker-tasks/{task_id}/complete")
+async def complete_worker_task(task_id: str, current_user: User = Depends(get_current_user)):
+    """Mark a worker task as completed"""
+    task = await db.worker_tasks.find_one({"id": task_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Taak niet gevonden")
+    
+    # Only assigned worker or admin can complete
+    if task.get("assigned_to") != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen de toegewezen medewerker kan deze taak voltooien")
+    
+    completed_at = datetime.now(timezone.utc).isoformat()
+    
+    # Update worker task
+    await db.worker_tasks.update_one(
+        {"id": task_id},
+        {"$set": {"completed": True, "completed_at": completed_at}}
+    )
+    
+    # Update project note
+    project_id = task.get("project_id")
+    note_id = task.get("note_id")
+    
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if project:
+        project_notes = project.get("project_notes", [])
+        for i, n in enumerate(project_notes):
+            if n.get("id") == note_id:
+                project_notes[i]["task_completed"] = True
+                project_notes[i]["task_completed_at"] = completed_at
+                break
+        
+        await db.projects.update_one(
+            {"id": project_id},
+            {"$set": {"project_notes": project_notes}}
+        )
+    
+    return {"message": "Taak voltooid!", "completed_at": completed_at}
+
+@api_router.get("/admin/worker-tasks")
+async def get_all_worker_tasks(current_user: User = Depends(get_current_user)):
+    """Admin: Get all worker tasks"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins")
+    
+    tasks = await db.worker_tasks.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return tasks
+
 @api_router.post("/projects/{project_id}/designs")
 async def upload_3d_design(
     project_id: str, 
