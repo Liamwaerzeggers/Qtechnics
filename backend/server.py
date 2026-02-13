@@ -592,6 +592,31 @@ class QuickTaskUpdate(BaseModel):
     completed: Optional[bool] = None
     completed_at: Optional[str] = None
 
+# ============= WORKER TASK MODELS =============
+
+class WorkerTask(BaseModel):
+    """Task assigned to a worker from a project note"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"TASK-{str(uuid.uuid4())[:8].upper()}")
+    project_id: str
+    project_name: str
+    note_id: str  # Reference to the project note
+    text: str  # The task description
+    assigned_to: str  # Worker ID
+    assigned_to_name: str  # Worker name for display
+    assigned_by: str  # Admin ID who assigned
+    assigned_by_name: str  # Admin name
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    completed: bool = False
+    completed_at: Optional[str] = None
+    seen: bool = False  # Whether worker has seen the notification
+
+class WorkerTaskCreate(BaseModel):
+    project_id: str
+    note_id: str
+    text: str
+    assigned_to: str
+
 # ============= MULTI-TENANT MODELS =============
 
 # Room binnen een Property
