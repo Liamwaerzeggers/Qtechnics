@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../App';
 import { FileText, FileSpreadsheet, Calendar, Package, Users, LogOut, LayoutDashboard, Menu, X, TrendingUp, UserCog, ShieldCheck, PenTool, Building2, Tag, Wrench } from 'lucide-react';
 import CelebrationModal from './CelebrationModal';
+import WorkerTaskBanner from './WorkerTaskBanner';
 
 export default function DashboardLayout({ children, showBackToDashboard = false }) {
   const { user, logout } = useAuth();
@@ -45,6 +46,9 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
 
   return (
     <div className="min-h-screen" style={{backgroundColor: '#F8FAFC'}}>
+      {/* Worker Task Banner - shows pending tasks for workers at the top of every page */}
+      {user?.role === 'worker' && <WorkerTaskBanner user={user} />}
+      
       {/* Celebration Modal - shows when there are new sales */}
       {user?.role === 'admin' && <CelebrationModal />}
       
