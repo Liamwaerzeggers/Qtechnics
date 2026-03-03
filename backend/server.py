@@ -5800,15 +5800,17 @@ async def assign_note_as_task(project_id: str, note_id: str, assignment: dict, c
         admin_info = HARDCODED_ADMINS[admin_id]
         admin_name = admin_info.get("name", admin_info.get("username", ""))
     else:
-        # Check in database
-        admin = await db.users.find_one({"id": admin_id, "role": "admin"}, {"_id": 0})
+        # Check in database - try multiple query patterns
+        admin = await db.users.find_one({"id": admin_id}, {"_id": 0})
         if not admin:
-            admin = await db.users.find_one({"_id": admin_id, "role": "admin"})
+            admin = await db.users.find_one({"_id": admin_id})
         if admin:
             admin_name = admin.get("name", admin.get("username", ""))
     
     if not admin_name:
-        raise HTTPException(status_code=404, detail="Beheerder niet gevonden")
+        # Last resort: use the admin_id as name (it might be a display name)
+        logger.warning(f"Admin not found in DB: {admin_id}, using ID as fallback")
+        admin_name = admin_id
     
     # Create task
     task = {
