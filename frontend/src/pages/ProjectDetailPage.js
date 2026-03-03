@@ -64,6 +64,7 @@ export default function ProjectDetailPage() {
   const fetchAdmins = async () => {
     try {
       const response = await axios.get(`${API}/admins`, { headers: getAuthHeaders() });
+      console.log('Fetched admins:', response.data);
       setAdmins(response.data || []);
     } catch (error) {
       console.error('Error fetching admins:', error);
