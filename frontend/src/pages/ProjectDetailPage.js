@@ -418,7 +418,7 @@ export default function ProjectDetailPage() {
           <ProjectNotesBanner 
             project={project} 
             onUpdate={fetchProjectData}
-            workers={workers}
+            admins={admins}
           />
         )}
 
