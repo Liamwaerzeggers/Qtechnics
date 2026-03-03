@@ -47,15 +47,15 @@ export default function ProjectDetailPage() {
 
   useEffect(() => {
     fetchProjectData();
-    fetchAdmins();
+    fetchWorkers();
   }, [projectId, location.key]); // Re-fetch when location changes (e.g., returning from quote page)
 
-  const fetchAdmins = async () => {
+  const fetchWorkers = async () => {
     try {
-      const response = await axios.get(`${API}/admins`, { headers: getAuthHeaders() });
-      setWorkers(response.data || []);
+      const response = await axios.get(`${API}/workers`, { headers: getAuthHeaders() });
+      setWorkers(response.data.filter(w => w.is_active !== false) || []);
     } catch (error) {
-      console.error('Error fetching admins:', error);
+      console.error('Error fetching workers:', error);
     }
   };
 
