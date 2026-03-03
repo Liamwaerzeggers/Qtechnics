@@ -5833,9 +5833,9 @@ async def assign_note_as_task(project_id: str, note_id: str, assignment: dict, c
     for i, n in enumerate(project_notes):
         if n.get("id") == note_id:
             project_notes[i]["is_task"] = True
-            project_notes[i]["assigned_to"] = worker_id
-            project_notes[i]["assigned_to_name"] = worker.get("name", worker.get("username", ""))
-            project_notes[i]["task_id"] = worker_task["id"]
+            project_notes[i]["assigned_to"] = admin_id
+            project_notes[i]["assigned_to_name"] = admin_name
+            project_notes[i]["task_id"] = task["id"]
             break
     
     await db.projects.update_one(
@@ -5843,7 +5843,7 @@ async def assign_note_as_task(project_id: str, note_id: str, assignment: dict, c
         {"$set": {"project_notes": project_notes}}
     )
     
-    return worker_task
+    return task
 
 # Worker Task endpoints
 @api_router.get("/worker-tasks/my")
