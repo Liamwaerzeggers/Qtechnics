@@ -5772,7 +5772,7 @@ async def delete_project_note(project_id: str, note_id: str, current_user: User 
 
 @api_router.post("/projects/{project_id}/notes/{note_id}/assign")
 async def assign_note_as_task(project_id: str, note_id: str, assignment: dict, current_user: User = Depends(get_current_user)):
-    """Assign a project note as a task to a worker"""
+    """Assign a project note as a task to an admin"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Alleen admins kunnen taken toewijzen")
     
@@ -5791,21 +5791,34 @@ async def assign_note_as_task(project_id: str, note_id: str, assignment: dict, c
     if not note:
         raise HTTPException(status_code=404, detail="Notitie niet gevonden")
     
-    # Get worker info
-    worker_id = assignment.get("worker_id")
-    worker = await db.workers.find_one({"id": worker_id}, {"_id": 0})
-    if not worker:
-        raise HTTPException(status_code=404, detail="Medewerker niet gevonden")
+    # Get admin info - check both admin_id and worker_id for compatibility
+    admin_id = assignment.get("admin_id") or assignment.get("worker_id")
     
-    # Create worker task
-    worker_task = {
+    # First check in hardcoded admins
+    admin_name = None
+    if admin_id in HARDCODED_ADMINS:
+        admin_info = HARDCODED_ADMINS[admin_id]
+        admin_name = admin_info.get("name", admin_info.get("username", ""))
+    else:
+        # Check in database
+        admin = await db.users.find_one({"id": admin_id, "role": "admin"}, {"_id": 0})
+        if not admin:
+            admin = await db.users.find_one({"_id": admin_id, "role": "admin"})
+        if admin:
+            admin_name = admin.get("name", admin.get("username", ""))
+    
+    if not admin_name:
+        raise HTTPException(status_code=404, detail="Beheerder niet gevonden")
+    
+    # Create task
+    task = {
         "id": f"TASK-{str(uuid.uuid4())[:8].upper()}",
         "project_id": project_id,
         "project_name": project.get("name", ""),
         "note_id": note_id,
         "text": note.get("text", ""),
-        "assigned_to": worker_id,
-        "assigned_to_name": worker.get("name", worker.get("username", "")),
+        "assigned_to": admin_id,
+        "assigned_to_name": admin_name,
         "assigned_by": current_user.id,
         "assigned_by_name": current_user.name or current_user.username,
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -5814,7 +5827,7 @@ async def assign_note_as_task(project_id: str, note_id: str, assignment: dict, c
         "seen": False
     }
     
-    await db.worker_tasks.insert_one(worker_task)
+    await db.worker_tasks.insert_one(task)
     
     # Update the note to mark it as a task
     for i, n in enumerate(project_notes):
