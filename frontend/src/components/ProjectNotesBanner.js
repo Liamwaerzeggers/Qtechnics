@@ -273,24 +273,24 @@ export default function ProjectNotesBanner({ project, onUpdate, admins = [] }) {
                           {assigningNote === note.id ? (
                             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                               <select
-                                value={selectedWorker}
-                                onChange={(e) => setSelectedWorker(e.target.value)}
+                                value={selectedAdmin}
+                                onChange={(e) => setSelectedAdmin(e.target.value)}
                                 className="text-xs border rounded px-1 py-0.5"
                               >
-                                <option value="">Kies...</option>
-                                {workers.map(w => (
-                                  <option key={w.id} value={w.id}>{w.name || w.username}</option>
+                                <option value="">Kies beheerder...</option>
+                                {admins.map(a => (
+                                  <option key={a.id} value={a.id}>{a.name || a.username}</option>
                                 ))}
                               </select>
                               <button
-                                onClick={() => assignNoteToWorker(note.id)}
+                                onClick={() => assignNoteToAdmin(note.id)}
                                 className="text-blue-500 hover:text-blue-700"
                                 title="Toewijzen"
                               >
                                 <Send className="w-3 h-3" />
                               </button>
                               <button
-                                onClick={() => { setAssigningNote(null); setSelectedWorker(''); }}
+                                onClick={() => { setAssigningNote(null); setSelectedAdmin(''); }}
                                 className="text-gray-400 hover:text-gray-600"
                               >
                                 ✕
@@ -300,7 +300,7 @@ export default function ProjectNotesBanner({ project, onUpdate, admins = [] }) {
                             <button
                               onClick={(e) => { e.stopPropagation(); setAssigningNote(note.id); }}
                               className="text-gray-400 hover:text-blue-500"
-                              title="Toewijzen aan medewerker"
+                              title="Toewijzen aan beheerder"
                             >
                               <User className="w-3 h-3" />
                             </button>
