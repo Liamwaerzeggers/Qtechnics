@@ -25,13 +25,13 @@ const COMPLETION_MESSAGES = [
   "Sterk werk! 💯"
 ];
 
-export default function ProjectNotesBanner({ project, onUpdate, workers = [] }) {
+export default function ProjectNotesBanner({ project, onUpdate, admins = [] }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [projectNotes, setProjectNotes] = useState([]);
   const [newNoteText, setNewNoteText] = useState('');
   const [showAddNote, setShowAddNote] = useState(false);
   const [assigningNote, setAssigningNote] = useState(null);
-  const [selectedWorker, setSelectedWorker] = useState('');
+  const [selectedAdmin, setSelectedAdmin] = useState('');
   
   useEffect(() => {
     if (project?.id) {
