@@ -83,21 +83,21 @@ export default function ProjectNotesBanner({ project, onUpdate, admins = [] }) {
     }
   };
   
-  const assignNoteToWorker = async (noteId) => {
-    if (!selectedWorker) {
-      toast.error('Selecteer een medewerker');
+  const assignNoteToAdmin = async (noteId) => {
+    if (!selectedAdmin) {
+      toast.error('Selecteer een beheerder');
       return;
     }
     
     try {
       await axios.post(`${API}/projects/${project.id}/notes/${noteId}/assign`,
-        { worker_id: selectedWorker },
+        { admin_id: selectedAdmin },
         { headers: getAuthHeaders() }
       );
       setAssigningNote(null);
-      setSelectedWorker('');
+      setSelectedAdmin('');
       fetchNotes();
-      toast.success('Taak toegewezen aan medewerker!');
+      toast.success('Taak toegewezen aan beheerder!');
       if (onUpdate) onUpdate();
     } catch (error) {
       toast.error('Kon taak niet toewijzen');
