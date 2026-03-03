@@ -5829,6 +5829,9 @@ async def assign_note_as_task(project_id: str, note_id: str, assignment: dict, c
         "seen": False
     }
     
+    # Make a copy for the response (insert_one adds _id to the original dict)
+    task_response = {**task}
+    
     await db.worker_tasks.insert_one(task)
     
     # Update the note to mark it as a task
@@ -5837,7 +5840,7 @@ async def assign_note_as_task(project_id: str, note_id: str, assignment: dict, c
             project_notes[i]["is_task"] = True
             project_notes[i]["assigned_to"] = admin_id
             project_notes[i]["assigned_to_name"] = admin_name
-            project_notes[i]["task_id"] = task["id"]
+            project_notes[i]["task_id"] = task_response["id"]
             break
     
     await db.projects.update_one(
@@ -5845,7 +5848,7 @@ async def assign_note_as_task(project_id: str, note_id: str, assignment: dict, c
         {"$set": {"project_notes": project_notes}}
     )
     
-    return task
+    return task_response
 
 # Worker Task endpoints
 @api_router.get("/worker-tasks/my")
