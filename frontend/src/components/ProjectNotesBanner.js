@@ -33,6 +33,9 @@ export default function ProjectNotesBanner({ project, onUpdate, admins = [] }) {
   const [assigningNote, setAssigningNote] = useState(null);
   const [selectedAdmin, setSelectedAdmin] = useState('');
   
+  // Debug: log admins received
+  console.log('ProjectNotesBanner received admins:', admins?.length, admins);
+  
   useEffect(() => {
     if (project?.id) {
       fetchNotes();
