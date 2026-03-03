@@ -32,6 +32,7 @@ export default function ProjectDetailPage() {
   const [activeTab, setActiveTab] = useState('first-visit');
   const [approvedQuotes, setApprovedQuotes] = useState([]); // All approved quotes
   const [workers, setWorkers] = useState([]);
+  const [admins, setAdmins] = useState([]);
   
   // Legacy documents state
   const [legacyDocuments, setLegacyDocuments] = useState([]);
@@ -48,6 +49,7 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     fetchProjectData();
     fetchWorkers();
+    fetchAdmins();
   }, [projectId, location.key]); // Re-fetch when location changes (e.g., returning from quote page)
 
   const fetchWorkers = async () => {
@@ -56,6 +58,15 @@ export default function ProjectDetailPage() {
       setWorkers(response.data.filter(w => w.is_active !== false) || []);
     } catch (error) {
       console.error('Error fetching workers:', error);
+    }
+  };
+
+  const fetchAdmins = async () => {
+    try {
+      const response = await axios.get(`${API}/admins`, { headers: getAuthHeaders() });
+      setAdmins(response.data || []);
+    } catch (error) {
+      console.error('Error fetching admins:', error);
     }
   };
 
