@@ -25,22 +25,33 @@ const COMPLETION_MESSAGES = [
   "Sterk werk! 💯"
 ];
 
-export default function ProjectNotesBanner({ project, onUpdate, admins = [] }) {
+export default function ProjectNotesBanner({ project, onUpdate }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [projectNotes, setProjectNotes] = useState([]);
   const [newNoteText, setNewNoteText] = useState('');
   const [showAddNote, setShowAddNote] = useState(false);
   const [assigningNote, setAssigningNote] = useState(null);
   const [selectedAdmin, setSelectedAdmin] = useState('');
-  
-  // Debug: log admins received
-  console.log('ProjectNotesBanner received admins:', admins?.length, admins);
+  const [admins, setAdmins] = useState([]);
   
   useEffect(() => {
     if (project?.id) {
       fetchNotes();
+      fetchAdmins();
     }
   }, [project?.id]);
+  
+  const fetchAdmins = async () => {
+    try {
+      const response = await axios.get(`${API}/admins`, {
+        headers: getAuthHeaders()
+      });
+      console.log('Fetched admins for dropdown:', response.data);
+      setAdmins(response.data || []);
+    } catch (error) {
+      console.error('Error fetching admins:', error);
+    }
+  };
   
   const fetchNotes = async () => {
     try {
