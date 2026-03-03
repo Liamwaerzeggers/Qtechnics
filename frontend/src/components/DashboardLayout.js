@@ -46,8 +46,8 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
 
   return (
     <div className="min-h-screen" style={{backgroundColor: '#F8FAFC'}}>
-      {/* Worker Task Banner - shows pending tasks for workers at the top of every page */}
-      {user?.role === 'worker' && <WorkerTaskBanner user={user} />}
+      {/* Worker/Admin Task Banner - shows pending tasks at the top of every page */}
+      {(user?.role === 'worker' || user?.role === 'admin') && <WorkerTaskBanner user={user} />}
       
       {/* Celebration Modal - shows when there are new sales */}
       {user?.role === 'admin' && <CelebrationModal />}
