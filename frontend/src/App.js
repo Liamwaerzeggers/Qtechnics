@@ -57,7 +57,11 @@ axios.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('session_token');
-      console.warn('Session expired');
+      console.warn('Session expired - redirecting to login');
+      // Only redirect if not already on login page
+      if (window.location.pathname !== '/') {
+        window.location.href = '/';
+      }
     }
     return Promise.reject(error);
   }
