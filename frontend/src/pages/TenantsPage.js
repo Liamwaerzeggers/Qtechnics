@@ -119,7 +119,15 @@ Max Q Team`;
       setRealtorForm({ company_name: '', contact_name: '', email: '', phone: '', username: '', password: '' });
       fetchAll();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Kon makelaar niet aanmaken');
+      if (error.response?.status === 401) {
+        toast.error('Sessie verlopen. Log opnieuw in.');
+        // Clear tokens and redirect to login
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('session_token');
+        window.location.href = '/';
+      } else {
+        toast.error(error.response?.data?.detail || 'Kon makelaar niet aanmaken');
+      }
     }
   };
 
