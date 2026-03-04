@@ -34,6 +34,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
       { name: 'Werkmannen', path: '/workers', icon: UserCog, testId: 'nav-workers', adminOnly: true },
       { name: 'Beheerders', path: '/admins', icon: ShieldCheck, testId: 'nav-admins', adminOnly: true },
       { name: 'Tenants', path: '/tenants', icon: Building2, testId: 'nav-tenants', adminOnly: true },
+      { name: 'Panden Calculator', path: '/realtor', icon: Building2, testId: 'nav-realtor', adminOnly: true },
     ];
   };
 
