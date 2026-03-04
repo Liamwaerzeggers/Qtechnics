@@ -9757,21 +9757,25 @@ async def switch_wall_scenario(
 
 # --- Realtor/Investor Login ---
 
+class TenantLoginRequest(BaseModel):
+    username: str
+    password: str
+
 @api_router.post("/auth/tenant/login")
-async def tenant_login(username: str, password: str, response: Response):
+async def tenant_login(login_data: TenantLoginRequest, response: Response):
     """Login for realtors and investors"""
-    logger.info(f"Tenant login attempt for: {username}")
+    logger.info(f"Tenant login attempt for: {login_data.username}")
     
     # Find user
-    user = await db.users.find_one({"username": username, "role": {"$in": ["realtor", "investor", "subcontractor"]}})
+    user = await db.users.find_one({"username": login_data.username, "role": {"$in": ["realtor", "investor", "subcontractor"]}})
     
     if not user or not user.get("password_hash"):
         raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
     
-    if not verify_password(password, user["password_hash"]):
+    if not verify_password(login_data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
     
-    # Create session
+    # Create session token
     session_token = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(days=7)
     
@@ -9803,7 +9807,7 @@ async def tenant_login(username: str, password: str, response: Response):
         "created_at": user.get("created_at")
     }
     
-    return {"user": user_response, "session_token": session_token}
+    return {"success": True, "user": user_response, "token": session_token, "role": user.get("role")}
 
 # ============= MAINTENANCE ENDPOINTS =============
 
