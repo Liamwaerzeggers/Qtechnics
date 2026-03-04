@@ -9589,6 +9589,172 @@ async def toggle_calculation_item(
         "total_realistic": round(new_total, 2)
     }
 
+@api_router.put("/properties/{property_id}/calculation/switch-option")
+async def switch_calculation_option(
+    property_id: str,
+    room_id: str = Query(..., description="ID van de kamer"),
+    option_group: str = Query(..., description="Naam van de optie groep (bijv. vloer_afwerking_keuze)"),
+    selected_item_id: str = Query(..., description="ID van het item dat geselecteerd moet worden"),
+    current_user: User = Depends(get_current_user)
+):
+    """Switch between options within the same option_group (e.g., switch from tiles to parquet)"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    # Get calculation
+    calc = await db.renovation_calculations.find_one({"property_id": property_id})
+    if not calc:
+        raise HTTPException(status_code=404, detail="Berekening niet gevonden")
+    
+    room_calculations = calc.get("room_calculations", [])
+    option_switched = False
+    new_total = 0.0
+    
+    for room_calc in room_calculations:
+        if room_calc.get("room_id") != room_id:
+            # Recalculate subtotal for this room
+            room_subtotal = 0.0
+            for item_list_name in ["floor_items", "wall_items", "ceiling_items", "other_items"]:
+                for item in room_calc.get(item_list_name, []):
+                    if item.get("included", True):
+                        room_subtotal += item.get("total", 0)
+            room_calc["subtotal"] = round(room_subtotal, 2)
+            new_total += room_subtotal
+            continue
+        
+        # This is the target room - switch options
+        room_subtotal = 0.0
+        
+        for item_list_name in ["floor_items", "wall_items", "ceiling_items", "other_items"]:
+            for item in room_calc.get(item_list_name, []):
+                # Check if this item is in the target option_group
+                if item.get("option_group") == option_group:
+                    if item.get("id") == selected_item_id:
+                        # This is the newly selected item
+                        item["included"] = True
+                        item["is_selected"] = True
+                        option_switched = True
+                    else:
+                        # Deselect all other items in this group
+                        item["included"] = False
+                        item["is_selected"] = False
+                
+                # Add to subtotal if included
+                if item.get("included", True):
+                    room_subtotal += item.get("total", 0)
+        
+        room_calc["subtotal"] = round(room_subtotal, 2)
+        new_total += room_subtotal
+    
+    if not option_switched:
+        raise HTTPException(status_code=404, detail="Optie niet gevonden in deze optie groep")
+    
+    # Update calculation
+    await db.renovation_calculations.update_one(
+        {"property_id": property_id},
+        {"$set": {
+            "room_calculations": room_calculations,
+            "total_min": round(new_total * 0.85, 2),
+            "total_realistic": round(new_total, 2),
+            "total_max": round(new_total * 1.20, 2),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {
+        "message": "Optie gewisseld",
+        "total_realistic": round(new_total, 2)
+    }
+
+@api_router.put("/properties/{property_id}/calculation/switch-scenario")
+async def switch_wall_scenario(
+    property_id: str,
+    room_id: str = Query(..., description="ID van de kamer"),
+    scenario: str = Query(..., description="Scenario: 'nieuw_pleisterwerk', 'egaliseren', of 'gyproc'"),
+    current_user: User = Depends(get_current_user)
+):
+    """Switch wall scenario for a room (nieuw pleisterwerk, egaliseren, or gyproc)"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    valid_scenarios = {
+        "nieuw_pleisterwerk": ["muur_scenario_a"],
+        "egaliseren": ["muur_scenario_b"],
+        "gyproc": ["muur_scenario_c"]
+    }
+    
+    if scenario not in valid_scenarios:
+        raise HTTPException(status_code=400, detail=f"Ongeldig scenario. Kies uit: {list(valid_scenarios.keys())}")
+    
+    # Get calculation
+    calc = await db.renovation_calculations.find_one({"property_id": property_id})
+    if not calc:
+        raise HTTPException(status_code=404, detail="Berekening niet gevonden")
+    
+    room_calculations = calc.get("room_calculations", [])
+    scenario_switched = False
+    new_total = 0.0
+    
+    selected_categories = valid_scenarios[scenario]
+    all_scenario_categories = ["muur_scenario_a", "muur_scenario_b", "muur_scenario_c"]
+    
+    for room_calc in room_calculations:
+        room_subtotal = 0.0
+        
+        if room_calc.get("room_id") == room_id:
+            # Switch scenario for this room
+            room_calc["selected_wall_scenario"] = scenario
+            
+            for item in room_calc.get("wall_items", []):
+                item_category = item.get("category", "")
+                
+                if item_category in all_scenario_categories:
+                    if item_category in selected_categories:
+                        item["included"] = True
+                        item["is_selected"] = True
+                        scenario_switched = True
+                    else:
+                        item["included"] = False
+                        item["is_selected"] = False
+                
+                if item.get("included", True):
+                    room_subtotal += item.get("total", 0)
+            
+            # Also add floor, ceiling, other items
+            for item_list_name in ["floor_items", "ceiling_items", "other_items"]:
+                for item in room_calc.get(item_list_name, []):
+                    if item.get("included", True):
+                        room_subtotal += item.get("total", 0)
+        else:
+            # Just recalculate subtotal for other rooms
+            for item_list_name in ["floor_items", "wall_items", "ceiling_items", "other_items"]:
+                for item in room_calc.get(item_list_name, []):
+                    if item.get("included", True):
+                        room_subtotal += item.get("total", 0)
+        
+        room_calc["subtotal"] = round(room_subtotal, 2)
+        new_total += room_subtotal
+    
+    if not scenario_switched:
+        raise HTTPException(status_code=404, detail="Kamer of scenario niet gevonden")
+    
+    # Update calculation
+    await db.renovation_calculations.update_one(
+        {"property_id": property_id},
+        {"$set": {
+            "room_calculations": room_calculations,
+            "total_min": round(new_total * 0.85, 2),
+            "total_realistic": round(new_total, 2),
+            "total_max": round(new_total * 1.20, 2),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {
+        "message": f"Muur scenario gewisseld naar: {scenario}",
+        "total_realistic": round(new_total, 2)
+    }
+
 # --- Realtor/Investor Login ---
 
 @api_router.post("/auth/tenant/login")
