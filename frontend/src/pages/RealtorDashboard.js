@@ -767,21 +767,23 @@ export default function RealtorDashboard() {
   );
 }
 
-// Room Calculation Card Component
+// Room Calculation Card Component - Smart Scenario-Based
 function RoomCalculationCard({ roomCalc, propertyId, onUpdate }) {
   const [expanded, setExpanded] = useState(false);
   
+  // Calculate included total
   const allItems = [
-    ...roomCalc.floor_items.map(i => ({...i, category: 'Vloer'})),
-    ...roomCalc.wall_items.map(i => ({...i, category: 'Muur'})),
-    ...roomCalc.ceiling_items.map(i => ({...i, category: 'Plafond'})),
-    ...roomCalc.other_items.map(i => ({...i, category: 'Overig'}))
+    ...roomCalc.floor_items,
+    ...roomCalc.wall_items,
+    ...roomCalc.ceiling_items,
+    ...roomCalc.other_items
   ];
   
   const includedTotal = allItems
     .filter(i => i.included)
     .reduce((sum, i) => sum + i.total, 0);
 
+  // Toggle individual item
   const handleToggleItem = async (itemId, currentIncluded) => {
     try {
       await axios.put(
@@ -795,6 +797,49 @@ function RoomCalculationCard({ roomCalc, propertyId, onUpdate }) {
     }
   };
 
+  // Switch floor option (tegels, parket, vinyl, laminaat)
+  const handleSwitchFloorOption = async (itemId) => {
+    try {
+      await axios.put(
+        `${API}/properties/${propertyId}/calculation/switch-option?room_id=${roomCalc.room_id}&option_group=vloer_afwerking_keuze&selected_item_id=${itemId}`,
+        {},
+        { headers: getAuthHeaders() }
+      );
+      onUpdate();
+    } catch (error) {
+      toast.error('Kon vloeroptie niet wisselen');
+    }
+  };
+
+  // Switch wall scenario
+  const handleSwitchWallScenario = async (scenario) => {
+    try {
+      await axios.put(
+        `${API}/properties/${propertyId}/calculation/switch-scenario?room_id=${roomCalc.room_id}&scenario=${scenario}`,
+        {},
+        { headers: getAuthHeaders() }
+      );
+      onUpdate();
+    } catch (error) {
+      toast.error('Kon muur scenario niet wisselen');
+    }
+  };
+
+  // Group items by category for better display
+  const floorBaseItems = roomCalc.floor_items.filter(i => i.option_group === 'vloer_basis');
+  const floorOptions = roomCalc.floor_items.filter(i => i.option_group === 'vloer_afwerking_keuze');
+  const selectedFloorOption = floorOptions.find(i => i.included);
+  
+  const wallScenarioA = roomCalc.wall_items.filter(i => i.category === 'muur_scenario_a');
+  const wallScenarioB = roomCalc.wall_items.filter(i => i.category === 'muur_scenario_b');
+  const wallScenarioC = roomCalc.wall_items.filter(i => i.category === 'muur_scenario_c');
+  const wallPainting = roomCalc.wall_items.filter(i => i.category === 'muur_afwerking');
+  
+  // Determine current wall scenario
+  const currentWallScenario = wallScenarioA.some(i => i.included) ? 'nieuw_pleisterwerk' :
+                             wallScenarioB.some(i => i.included) ? 'egaliseren' :
+                             wallScenarioC.some(i => i.included) ? 'gyproc' : 'nieuw_pleisterwerk';
+
   return (
     <div className="border rounded-lg overflow-hidden">
       <button
@@ -804,39 +849,224 @@ function RoomCalculationCard({ roomCalc, propertyId, onUpdate }) {
         <div className="flex items-center gap-2">
           {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
           <span className="font-medium">{roomCalc.room_name}</span>
-          <span className="text-sm text-gray-500">({allItems.length} items)</span>
+          <span className="text-sm text-gray-500">
+            ({roomCalc.floor_area}m² vloer)
+          </span>
         </div>
-        <span className="font-semibold" style={{color: '#500000'}}>
+        <span className="font-semibold text-lg" style={{color: '#500000'}}>
           €{includedTotal.toLocaleString('nl-BE', {minimumFractionDigits: 2})}
         </span>
       </button>
       
       {expanded && (
-        <div className="p-3 space-y-2">
-          {allItems.map((item, idx) => (
-            <div 
-              key={idx}
-              className={`flex items-center justify-between p-2 rounded ${item.included ? 'bg-white' : 'bg-gray-100 opacity-60'}`}
-            >
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={item.included}
-                  onChange={() => handleToggleItem(item.id, item.included)}
-                  className="w-4 h-4"
-                />
-                <div>
-                  <p className={`text-sm ${!item.included && 'line-through'}`}>{item.title}</p>
-                  <p className="text-xs text-gray-500">
-                    {item.category} • {item.quantity} {item.unit} × €{item.unit_price}
-                  </p>
+        <div className="p-4 space-y-6">
+          
+          {/* ============ VLOER SECTIE ============ */}
+          <div className="border-l-4 border-blue-500 pl-3">
+            <h4 className="font-semibold text-blue-700 mb-3">🏠 Vloerwerken</h4>
+            
+            {/* Basis werken (altijd aan) */}
+            <div className="mb-3">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Voorbereiding</p>
+              {floorBaseItems.map((item) => (
+                <div key={item.id} className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={item.included}
+                      onChange={() => handleToggleItem(item.id, item.included)}
+                      className="w-4 h-4 accent-blue-500"
+                    />
+                    <span className={`text-sm ${!item.included && 'line-through text-gray-400'}`}>
+                      {item.title}
+                    </span>
+                  </div>
+                  <span className={`text-sm font-medium ${!item.included && 'line-through text-gray-400'}`}>
+                    €{item.total.toLocaleString('nl-BE', {minimumFractionDigits: 2})}
+                  </span>
                 </div>
-              </div>
-              <span className={`font-medium ${!item.included && 'line-through'}`}>
-                €{item.total.toLocaleString('nl-BE', {minimumFractionDigits: 2})}
-              </span>
+              ))}
             </div>
-          ))}
+            
+            {/* Vloer afwerking opties (radio buttons) */}
+            <div className="bg-blue-50 rounded-lg p-3">
+              <p className="text-xs text-blue-600 uppercase tracking-wide mb-2">
+                Kies vloer afwerking (wissel hier tussen opties)
+              </p>
+              <div className="space-y-2">
+                {floorOptions.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className={`flex items-center justify-between p-2 rounded cursor-pointer transition-all ${
+                      item.included ? 'bg-blue-100 border-2 border-blue-500' : 'bg-white border border-gray-200 hover:border-blue-300'
+                    }`}
+                    onClick={() => !item.included && handleSwitchFloorOption(item.id)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name={`floor-${roomCalc.room_id}`}
+                        checked={item.included}
+                        onChange={() => handleSwitchFloorOption(item.id)}
+                        className="w-4 h-4 accent-blue-500"
+                      />
+                      <span className={`text-sm ${item.included ? 'font-medium' : ''}`}>
+                        {item.title}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        ({item.quantity}m² × €{item.unit_price})
+                      </span>
+                    </div>
+                    <span className={`font-medium ${item.included ? 'text-blue-700' : 'text-gray-500'}`}>
+                      €{item.total.toLocaleString('nl-BE', {minimumFractionDigits: 2})}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          {/* ============ MUREN SECTIE ============ */}
+          <div className="border-l-4 border-green-500 pl-3">
+            <h4 className="font-semibold text-green-700 mb-3">🧱 Muurwerken</h4>
+            
+            {/* Scenario selector */}
+            <div className="bg-green-50 rounded-lg p-3 mb-3">
+              <p className="text-xs text-green-600 uppercase tracking-wide mb-2">
+                Kies muur scenario
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleSwitchWallScenario('nieuw_pleisterwerk')}
+                  className={`px-3 py-2 rounded text-sm transition-all ${
+                    currentWallScenario === 'nieuw_pleisterwerk' 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-white border border-green-300 text-green-700 hover:bg-green-100'
+                  }`}
+                >
+                  Nieuw pleisterwerk
+                </button>
+                <button
+                  onClick={() => handleSwitchWallScenario('egaliseren')}
+                  className={`px-3 py-2 rounded text-sm transition-all ${
+                    currentWallScenario === 'egaliseren' 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-white border border-green-300 text-green-700 hover:bg-green-100'
+                  }`}
+                >
+                  Egaliseren (bestaand behouden)
+                </button>
+                <button
+                  onClick={() => handleSwitchWallScenario('gyproc')}
+                  className={`px-3 py-2 rounded text-sm transition-all ${
+                    currentWallScenario === 'gyproc' 
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-white border border-green-300 text-green-700 hover:bg-green-100'
+                  }`}
+                >
+                  Gyproc afwerking
+                </button>
+              </div>
+            </div>
+            
+            {/* Active scenario items */}
+            <div className="space-y-1 mb-3">
+              {[...wallScenarioA, ...wallScenarioB, ...wallScenarioC].filter(i => i.included).map((item) => (
+                <div key={item.id} className="flex items-center justify-between py-1">
+                  <span className="text-sm">{item.title}</span>
+                  <span className="text-sm font-medium">
+                    €{item.total.toLocaleString('nl-BE', {minimumFractionDigits: 2})}
+                  </span>
+                </div>
+              ))}
+            </div>
+            
+            {/* Schilderwerk (duidelijk uitvinken) */}
+            {wallPainting.map((item) => (
+              <div key={item.id} className={`flex items-center justify-between p-2 rounded ${
+                item.included ? 'bg-yellow-50 border border-yellow-300' : 'bg-gray-100'
+              }`}>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={item.included}
+                    onChange={() => handleToggleItem(item.id, item.included)}
+                    className="w-5 h-5 accent-yellow-500"
+                  />
+                  <div>
+                    <span className={`text-sm ${!item.included && 'line-through text-gray-400'}`}>
+                      Schilderwerk muren
+                    </span>
+                    <span className="text-xs text-yellow-600 ml-2">
+                      (vaak zelf te doen - vink uit om te besparen)
+                    </span>
+                  </div>
+                </div>
+                <span className={`font-medium ${!item.included && 'text-gray-400'}`}>
+                  €{item.total.toLocaleString('nl-BE', {minimumFractionDigits: 2})}
+                </span>
+              </div>
+            ))}
+          </div>
+          
+          {/* ============ PLAFOND SECTIE ============ */}
+          <div className="border-l-4 border-purple-500 pl-3">
+            <h4 className="font-semibold text-purple-700 mb-3">⬆️ Plafondwerken</h4>
+            
+            {roomCalc.ceiling_items.map((item) => (
+              <div key={item.id} className={`flex items-center justify-between py-1 ${
+                item.category === 'plafond_afwerking' ? 'bg-yellow-50 p-2 rounded border border-yellow-300 my-2' : ''
+              }`}>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={item.included}
+                    onChange={() => handleToggleItem(item.id, item.included)}
+                    className="w-4 h-4 accent-purple-500"
+                  />
+                  <span className={`text-sm ${!item.included && 'line-through text-gray-400'}`}>
+                    {item.title}
+                    {item.category === 'plafond_afwerking' && (
+                      <span className="text-xs text-yellow-600 ml-2">
+                        (vaak zelf te doen)
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <span className={`text-sm font-medium ${!item.included && 'line-through text-gray-400'}`}>
+                  €{item.total.toLocaleString('nl-BE', {minimumFractionDigits: 2})}
+                </span>
+              </div>
+            ))}
+          </div>
+          
+          {/* ============ ELEKTRICITEIT SECTIE ============ */}
+          <div className="border-l-4 border-orange-500 pl-3">
+            <h4 className="font-semibold text-orange-700 mb-3">⚡ Elektriciteit</h4>
+            
+            {roomCalc.other_items.map((item) => (
+              <div key={item.id} className="flex items-center justify-between py-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={item.included}
+                    onChange={() => handleToggleItem(item.id, item.included)}
+                    className="w-4 h-4 accent-orange-500"
+                  />
+                  <span className={`text-sm ${!item.included && 'line-through text-gray-400'}`}>
+                    {item.title}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    ({item.quantity} {item.unit} × €{item.unit_price})
+                  </span>
+                </div>
+                <span className={`text-sm font-medium ${!item.included && 'line-through text-gray-400'}`}>
+                  €{item.total.toLocaleString('nl-BE', {minimumFractionDigits: 2})}
+                </span>
+              </div>
+            ))}
+          </div>
+          
         </div>
       )}
     </div>
