@@ -733,16 +733,26 @@ class CalculationItem(BaseModel):
     included: bool = True  # True = meegenomen in totaal
     is_subcontractor: bool = False
     subcontractor_id: Optional[str] = None
+    category: str = ""  # "vloer_optie", "muur_scenario", "plafond", "elektriciteit", etc.
+    is_selected: bool = True  # True = dit is de gekozen optie in een category
+    option_group: Optional[str] = None  # Group alternatieven samen (bijv. "vloer_afwerking")
 
 # Room Calculation - berekening per kamer
 class RoomCalculation(BaseModel):
     room_id: str
     room_name: str
+    room_type: str = "other"  # "living", "bedroom", "bathroom", "kitchen", "hallway", "other"
+    floor_area: float = 0.0
+    wall_area: float = 0.0
+    ceiling_area: float = 0.0
     floor_items: List[CalculationItem] = []
     wall_items: List[CalculationItem] = []
     ceiling_items: List[CalculationItem] = []
     other_items: List[CalculationItem] = []
     subtotal: float = 0.0
+    # Selected scenarios per category
+    selected_floor_option: str = "tegels"  # tegels, parket, vinyl, laminaat
+    selected_wall_scenario: str = "nieuw_pleisterwerk"  # nieuw_pleisterwerk, egaliseren, gyproc
 
 # Renovation Calculation - volledige renovatieberekening
 class RenovationCalculation(BaseModel):
