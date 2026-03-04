@@ -9878,7 +9878,7 @@ async def send_customer_notification(project_id: str, subject: str, content_desc
         portal_token = project.get("customer_access_token")
         portal_link = ""
         if portal_token:
-            portal_link = f"<p><a href='https://fixndash.preview.emergentagent.com/customer/{portal_token}' style='background-color: #1E40AF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;'>Bekijk uw project</a></p>"
+            portal_link = f"<p><a href='https://bouw-calculator.preview.emergentagent.com/customer/{portal_token}' style='background-color: #1E40AF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;'>Bekijk uw project</a></p>"
         
         # Build HTML email
         html_content = f"""
