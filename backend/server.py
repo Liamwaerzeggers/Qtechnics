@@ -9769,10 +9769,16 @@ async def tenant_login(login_data: TenantLoginRequest, response: Response):
     # Find user
     user = await db.users.find_one({"username": login_data.username, "role": {"$in": ["realtor", "investor", "subcontractor"]}})
     
-    if not user or not user.get("password_hash"):
+    if not user:
+        logger.warning(f"Tenant login failed: user not found for {login_data.username}")
+        raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
+    
+    if not user.get("password_hash"):
+        logger.warning(f"Tenant login failed: no password_hash for {login_data.username}")
         raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
     
     if not verify_password(login_data.password, user["password_hash"]):
+        logger.warning(f"Tenant login failed: wrong password for {login_data.username}")
         raise HTTPException(status_code=401, detail="Ongeldige inloggegevens")
     
     # Create session token
@@ -9807,6 +9813,7 @@ async def tenant_login(login_data: TenantLoginRequest, response: Response):
         "created_at": user.get("created_at")
     }
     
+    logger.info(f"Tenant login successful for: {login_data.username}")
     return {"success": True, "user": user_response, "token": session_token, "role": user.get("role")}
 
 # ============= MAINTENANCE ENDPOINTS =============
