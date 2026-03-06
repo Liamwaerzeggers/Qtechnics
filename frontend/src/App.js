@@ -763,6 +763,7 @@ function App() {
             <Route path="/configurator" element={<ProtectedRoute><RoomConfiguratorPrototype /></ProtectedRoute>} />
             <Route path="/realtor" element={<ProtectedRoute><RealtorDashboard /></ProtectedRoute>} />
             <Route path="/investor" element={<ProtectedRoute><RealtorDashboard /></ProtectedRoute>} />
+            <Route path="/material-request" element={<ProtectedRoute><MaterialRequestPage /></ProtectedRoute>} />
             {/* Customer Portal - No authentication, uses access token */}
             <Route path="/klant/:accessToken" element={<CustomerPortalPage />} />
           </Routes>
