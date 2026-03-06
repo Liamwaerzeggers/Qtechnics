@@ -9133,18 +9133,36 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
     if not rooms:
         raise HTTPException(status_code=400, detail="Voeg eerst kamers toe aan het pand")
     
+    # STANDAARD HOOGTE als er geen is opgegeven
+    STANDAARD_HOOGTE = 2.55
+    
     # Calculate per room using smart defaults
     room_calculations = []
     total = 0.0
     
     for room in rooms:
         room_type = room.get("room_type", "other")
+        
+        # Vloeroppervlakte berekenen
         floor_area = room.get("floor_area", 0) or (room.get("length", 0) * room.get("width", 0))
+        
+        # Plafondoppervlakte = vloeroppervlakte
         ceiling_area = room.get("ceiling_area", 0) or floor_area
+        
+        # Hoogte: gebruik opgegeven hoogte of standaard 2.55m
+        room_height = room.get("height", 0)
+        if not room_height or room_height <= 0:
+            room_height = STANDAARD_HOOGTE
+            height_source = "standaard"
+        else:
+            height_source = "opgegeven"
+        
+        # Muuroppervlakte berekenen
         wall_area = room.get("wall_area", 0)
         if not wall_area and room.get("length") and room.get("width"):
-            height = room.get("height", 2.7)
-            wall_area = 2 * (room.get("length", 0) + room.get("width", 0)) * height
+            # Omtrek × hoogte
+            perimeter = 2 * (room.get("length", 0) + room.get("width", 0))
+            wall_area = perimeter * room_height
         
         is_bathroom = room_type == "bathroom"
         
