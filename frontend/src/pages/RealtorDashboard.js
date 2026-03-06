@@ -64,7 +64,7 @@ export default function RealtorDashboard() {
     room_type: 'other',
     length: '',
     width: '',
-    height: '2.7'
+    height: ''  // Leeg = standaard 2.55m
   });
 
   useEffect(() => {
