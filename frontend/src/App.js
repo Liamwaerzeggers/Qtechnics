@@ -26,6 +26,7 @@ import RealtorDashboard from './pages/RealtorDashboard';
 import TenantsPage from './pages/TenantsPage';
 import WorkItemLabelsPage from './pages/WorkItemLabelsPage';
 import MaintenancePage from './pages/MaintenancePage';
+import MaterialRequestPage from './pages/MaterialRequestPage';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
 const API = `${BACKEND_URL}/api`;
