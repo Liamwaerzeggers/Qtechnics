@@ -21,6 +21,16 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
       ];
     }
     
+    // Worker specific navigation - simple menu
+    if (user?.role === 'worker') {
+      return [
+        { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, testId: 'nav-dashboard' },
+        { name: 'Projecten', path: '/projects', icon: FileSpreadsheet, testId: 'nav-projects' },
+        { name: 'Materiaal Aanvragen', path: '/material-request', icon: Package, testId: 'nav-material-request' },
+        { name: 'Kalender', path: '/calendar', icon: Calendar, testId: 'nav-calendar' },
+      ];
+    }
+    
     return [
       { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, testId: 'nav-dashboard' },
       { name: 'Projecten', path: '/projects', icon: FileSpreadsheet, testId: 'nav-projects' },
