@@ -519,6 +519,17 @@ export default function RealtorDashboard() {
                         className="h-9"
                       />
                     </div>
+                    <div>
+                      <Label className="text-xs">Hoogte (m)</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={newRoom.height}
+                        onChange={(e) => setNewRoom({...newRoom, height: e.target.value})}
+                        placeholder="2.55"
+                        className="h-9"
+                      />
+                    </div>
                     <Button
                       type="button"
                       variant="outline"
