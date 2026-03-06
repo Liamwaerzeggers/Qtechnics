@@ -745,6 +745,8 @@ class RoomCalculation(BaseModel):
     floor_area: float = 0.0
     wall_area: float = 0.0
     ceiling_area: float = 0.0
+    room_height: float = 2.55  # Hoogte van de kamer
+    height_source: str = "standaard"  # "standaard" of "opgegeven"
     floor_items: List[CalculationItem] = []
     wall_items: List[CalculationItem] = []
     ceiling_items: List[CalculationItem] = []
