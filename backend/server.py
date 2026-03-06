@@ -775,6 +775,46 @@ class RenovationCalculation(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# MaterialRequest - Werkman Materiaal Aanvraag
+class MaterialRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"MATREQ-{str(uuid.uuid4())[:8].upper()}")
+    
+    # Request details
+    title: str  # Naam van het materiaal
+    quantity: str  # Hoeveelheid (als string voor flexibiliteit: "5 zakken", "10m²", etc.)
+    needed_by: str  # Datum wanneer nodig op werf
+    photo_url: Optional[str] = None  # Foto van het materiaal
+    notes: Optional[str] = None  # Extra notities
+    
+    # Project info (optional)
+    project_id: Optional[str] = None
+    project_name: Optional[str] = None
+    
+    # Requester info
+    requested_by: str  # Worker user_id
+    requested_by_name: str  # Worker name
+    
+    # Status tracking
+    status: str = "pending"  # "pending" | "ordered" | "delivered"
+    is_ordered: bool = False
+    is_delivered: bool = False
+    ordered_at: Optional[datetime] = None
+    ordered_by: Optional[str] = None
+    delivered_at: Optional[datetime] = None
+    delivered_by: Optional[str] = None
+    
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MaterialRequestCreate(BaseModel):
+    title: str
+    quantity: str
+    needed_by: str
+    photo_url: Optional[str] = None
+    notes: Optional[str] = None
+    project_id: Optional[str] = None
+    project_name: Optional[str] = None
+
 # Subcontractor (Onderaannemer)
 class Subcontractor(BaseModel):
     model_config = ConfigDict(extra="ignore")
