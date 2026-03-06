@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Check, X, PartyPopper, ClipboardList } from 'lucide-react';
+import { Bell, Check, ChevronDown, ChevronUp, ClipboardList, PartyPopper, ExternalLink, Clock, User, Building } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
@@ -27,8 +27,7 @@ const COMPLETION_MESSAGES = [
 
 export default function WorkerTaskBanner({ user }) {
   const [tasks, setTasks] = useState([]);
-  const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -45,20 +44,20 @@ export default function WorkerTaskBanner({ user }) {
       const response = await axios.get(`${API}/worker-tasks/pending`, {
         headers: getAuthHeaders()
       });
-      setTasks(response.data || []);
+      
+      const newTasks = response.data || [];
+      
+      // Show toast for new tasks
+      if (tasks.length > 0 && newTasks.length > tasks.length) {
+        const diff = newTasks.length - tasks.length;
+        toast.info(`🔔 ${diff} nieuwe ta${diff > 1 ? 'ken' : 'ak'} toegewezen!`, {
+          duration: 5000
+        });
+      }
+      
+      setTasks(newTasks);
     } catch (error) {
       console.error('Error fetching worker tasks:', error);
-    }
-  };
-  
-  const markAsSeen = async (taskId) => {
-    try {
-      await axios.put(`${API}/worker-tasks/${taskId}/seen`, {}, {
-        headers: getAuthHeaders()
-      });
-      fetchTasks();
-    } catch (error) {
-      console.error('Error marking task as seen:', error);
     }
   };
   
@@ -93,112 +92,126 @@ export default function WorkerTaskBanner({ user }) {
     navigate(`/projects/${projectId}`);
   };
   
+  // Format date
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('nl-BE', { 
+      day: 'numeric', 
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+  
   // No tasks, don't show banner
   if (tasks.length === 0) {
     return null;
   }
   
-  const currentTask = tasks[currentTaskIndex] || tasks[0];
   const unseenTasks = tasks.filter(t => !t.seen);
   
-  if (isMinimized) {
-    return (
-      <div 
-        className="fixed top-4 right-4 z-50 bg-blue-600 text-white rounded-full p-3 cursor-pointer shadow-lg hover:bg-blue-700 transition-all animate-bounce"
-        onClick={() => setIsMinimized(false)}
+  return (
+    <div className="bg-blue-600 text-white">
+      {/* Header bar - always visible */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-blue-700 transition-colors"
       >
-        <div className="relative">
-          <ClipboardList className="w-6 h-6" />
-          {tasks.length > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-              {tasks.length}
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <ClipboardList size={20} />
+            {unseenTasks.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold animate-pulse">
+                !
+              </span>
+            )}
+          </div>
+          <span className="font-semibold">
+            📋 {tasks.length} openstaande ta{tasks.length > 1 ? 'ken' : 'ak'} uit notities
+          </span>
+          {unseenTasks.length > 0 && (
+            <span className="bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">
+              {unseenTasks.length} nieuw
             </span>
           )}
         </div>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 py-3">
-        <div className="flex items-center justify-between gap-4">
-          {/* Task indicator */}
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Bell className={`w-6 h-6 ${unseenTasks.length > 0 ? 'animate-pulse' : ''}`} />
-              {unseenTasks.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                  {unseenTasks.length}
-                </span>
-              )}
-            </div>
-            <div>
-              <p className="text-xs text-blue-200">Openstaande taak {currentTaskIndex + 1} van {tasks.length}</p>
-              <p className="font-semibold">{currentTask?.text}</p>
-            </div>
-          </div>
-          
-          {/* Project info */}
-          <div className="hidden md:block text-center">
-            <p className="text-xs text-blue-200">Project</p>
-            <button 
-              onClick={() => goToProject(currentTask?.project_id)}
-              className="font-medium hover:underline"
-            >
-              {currentTask?.project_name}
-            </button>
-          </div>
-          
-          {/* Assigned by */}
-          <div className="hidden lg:block text-right">
-            <p className="text-xs text-blue-200">Toegewezen door</p>
-            <p className="font-medium">{currentTask?.assigned_by_name}</p>
-          </div>
-          
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            {/* Navigation for multiple tasks */}
-            {tasks.length > 1 && (
-              <div className="flex items-center gap-1 mr-2">
-                <button
-                  onClick={() => setCurrentTaskIndex(Math.max(0, currentTaskIndex - 1))}
-                  disabled={currentTaskIndex === 0}
-                  className="p-1 rounded hover:bg-blue-500 disabled:opacity-50"
-                >
-                  ◀
-                </button>
-                <button
-                  onClick={() => setCurrentTaskIndex(Math.min(tasks.length - 1, currentTaskIndex + 1))}
-                  disabled={currentTaskIndex === tasks.length - 1}
-                  className="p-1 rounded hover:bg-blue-500 disabled:opacity-50"
-                >
-                  ▶
-                </button>
+        <div className="flex items-center gap-2">
+          <span className="text-sm opacity-80">Klik om te bekijken</span>
+          {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        </div>
+      </button>
+
+      {/* Expanded list */}
+      {expanded && (
+        <div className="bg-blue-50 text-gray-800 p-4 max-h-96 overflow-y-auto">
+          <div className="space-y-3">
+            {tasks.map((task) => (
+              <div 
+                key={task.id} 
+                className={`p-4 rounded-lg border-2 bg-white ${
+                  task.seen ? 'border-blue-200' : 'border-blue-400 shadow-md'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  {/* Left: Task Info */}
+                  <div className="flex-1">
+                    {/* Task text - the note content */}
+                    <div className="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-lg mb-3">
+                      <p className="text-gray-800 font-medium">{task.text}</p>
+                    </div>
+                    
+                    {/* Meta info */}
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                      {/* Project */}
+                      <button
+                        onClick={() => goToProject(task.project_id)}
+                        className="flex items-center gap-1 hover:text-blue-600 hover:underline"
+                      >
+                        <Building size={14} />
+                        <span>{task.project_name}</span>
+                        <ExternalLink size={12} />
+                      </button>
+                      
+                      {/* Assigned by */}
+                      <div className="flex items-center gap-1">
+                        <User size={14} />
+                        <span>Toegewezen door: <strong>{task.assigned_by_name}</strong></span>
+                      </div>
+                      
+                      {/* Date */}
+                      <div className="flex items-center gap-1">
+                        <Clock size={14} />
+                        <span>{formatDate(task.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Complete button */}
+                  <Button
+                    onClick={() => completeTask(task.id)}
+                    className="bg-green-500 hover:bg-green-600 text-white shrink-0"
+                    size="sm"
+                  >
+                    <Check size={16} className="mr-1" />
+                    Voltooid
+                  </Button>
+                </div>
+                
+                {/* Unseen indicator */}
+                {!task.seen && (
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    <span className="text-blue-600 text-xs font-medium flex items-center gap-1">
+                      <Bell size={12} />
+                      ✨ Nieuwe taak!
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
-            
-            {/* Complete button */}
-            <Button
-              onClick={() => completeTask(currentTask?.id)}
-              className="bg-green-500 hover:bg-green-600 text-white"
-              size="sm"
-            >
-              <Check className="w-4 h-4 mr-1" />
-              Voltooid
-            </Button>
-            
-            {/* Minimize button */}
-            <button
-              onClick={() => setIsMinimized(true)}
-              className="p-2 hover:bg-blue-500 rounded"
-              title="Minimaliseren"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            ))}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
