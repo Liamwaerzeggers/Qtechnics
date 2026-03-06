@@ -145,7 +145,7 @@ export default function RealtorDashboard() {
       ...newRoom,
       length: parseFloat(newRoom.length),
       width: parseFloat(newRoom.width),
-      height: parseFloat(newRoom.height) || 2.7,
+      height: newRoom.height ? parseFloat(newRoom.height) : 0,  // 0 = backend gebruikt standaard 2.55m
       id: `room-${Date.now()}`
     };
     
@@ -155,7 +155,7 @@ export default function RealtorDashboard() {
       room_type: 'other',
       length: '',
       width: '',
-      height: '2.7'
+      height: ''  // Leeg = standaard 2.55m
     });
   };
 
