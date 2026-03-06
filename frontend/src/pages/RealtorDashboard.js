@@ -849,8 +849,8 @@ function RoomCalculationCard({ roomCalc, propertyId, onUpdate }) {
         <div className="flex items-center gap-2">
           {expanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
           <span className="font-medium">{roomCalc.room_name}</span>
-          <span className="text-sm text-gray-500">
-            ({roomCalc.floor_area}m² vloer)
+          <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded">
+            {roomCalc.floor_area}m² vloer
           </span>
         </div>
         <span className="font-semibold text-lg" style={{color: '#500000'}}>
@@ -863,7 +863,12 @@ function RoomCalculationCard({ roomCalc, propertyId, onUpdate }) {
           
           {/* ============ VLOER SECTIE ============ */}
           <div className="border-l-4 border-blue-500 pl-3">
-            <h4 className="font-semibold text-blue-700 mb-3">🏠 Vloerwerken</h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-semibold text-blue-700">🏠 Vloerwerken</h4>
+              <span className="text-sm font-medium bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                {roomCalc.floor_area} m²
+              </span>
+            </div>
             
             {/* Basis werken (altijd aan) */}
             <div className="mb-3">
@@ -928,7 +933,18 @@ function RoomCalculationCard({ roomCalc, propertyId, onUpdate }) {
           
           {/* ============ MUREN SECTIE ============ */}
           <div className="border-l-4 border-green-500 pl-3">
-            <h4 className="font-semibold text-green-700 mb-3">🧱 Muurwerken</h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-semibold text-green-700">🧱 Muurwerken</h4>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium bg-green-100 text-green-700 px-2 py-1 rounded">
+                  {roomCalc.wall_area} m²
+                </span>
+                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                  hoogte: {roomCalc.room_height}m 
+                  {roomCalc.height_source === 'standaard' && ' (standaard)'}
+                </span>
+              </div>
+            </div>
             
             {/* Scenario selector */}
             <div className="bg-green-50 rounded-lg p-3 mb-3">
@@ -1011,7 +1027,12 @@ function RoomCalculationCard({ roomCalc, propertyId, onUpdate }) {
           
           {/* ============ PLAFOND SECTIE ============ */}
           <div className="border-l-4 border-purple-500 pl-3">
-            <h4 className="font-semibold text-purple-700 mb-3">⬆️ Plafondwerken</h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-semibold text-purple-700">⬆️ Plafondwerken</h4>
+              <span className="text-sm font-medium bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                {roomCalc.ceiling_area} m²
+              </span>
+            </div>
             
             {roomCalc.ceiling_items.map((item) => (
               <div key={item.id} className={`flex items-center justify-between py-1 ${
