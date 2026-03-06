@@ -9878,6 +9878,139 @@ async def tenant_login(login_data: TenantLoginRequest, response: Response):
     logger.info(f"Tenant login successful for: {login_data.username}")
     return {"success": True, "user": user_response, "token": session_token, "role": user.get("role")}
 
+# ============= MATERIAL REQUEST ENDPOINTS (Werkman Materiaal Aanvragen) =============
+
+@api_router.post("/material-requests")
+async def create_material_request(request: MaterialRequestCreate, current_user: User = Depends(get_current_user)):
+    """Create a new material request (workers only)"""
+    if current_user.role not in ["worker", "admin"]:
+        raise HTTPException(status_code=403, detail="Alleen werkmannen kunnen materialen aanvragen")
+    
+    # Create request
+    mat_request = MaterialRequest(
+        title=request.title,
+        quantity=request.quantity,
+        needed_by=request.needed_by,
+        photo_url=request.photo_url,
+        notes=request.notes,
+        project_id=request.project_id,
+        project_name=request.project_name,
+        requested_by=current_user.id,
+        requested_by_name=current_user.name or current_user.username,
+        status="pending",
+        is_ordered=False,
+        is_delivered=False
+    )
+    
+    # Save to database
+    doc = mat_request.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    if doc.get("ordered_at"):
+        doc["ordered_at"] = doc["ordered_at"].isoformat()
+    if doc.get("delivered_at"):
+        doc["delivered_at"] = doc["delivered_at"].isoformat()
+    
+    await db.material_requests.insert_one(doc)
+    
+    logger.info(f"Material request created by {current_user.name}: {request.title}")
+    
+    return {
+        "message": "Materiaal aanvraag verstuurd / Запит на матеріал надіслано",
+        "request_id": mat_request.id
+    }
+
+@api_router.get("/material-requests")
+async def get_material_requests(current_user: User = Depends(get_current_user)):
+    """Get all material requests (admins see all, workers see their own)"""
+    if current_user.role == "admin":
+        requests = await db.material_requests.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    else:
+        requests = await db.material_requests.find(
+            {"requested_by": current_user.id}, 
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(100)
+    
+    return requests
+
+@api_router.get("/material-requests/pending")
+async def get_pending_material_requests(current_user: User = Depends(get_current_user)):
+    """Get pending material requests for admin notification banner"""
+    if current_user.role != "admin":
+        return []
+    
+    # Get requests that are not fully delivered yet
+    requests = await db.material_requests.find(
+        {"is_delivered": False},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    return requests
+
+@api_router.put("/material-requests/{request_id}/status")
+async def update_material_request_status(
+    request_id: str,
+    is_ordered: Optional[bool] = None,
+    is_delivered: Optional[bool] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """Update material request status (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen beheerders kunnen status bijwerken")
+    
+    # Find request
+    request = await db.material_requests.find_one({"id": request_id})
+    if not request:
+        raise HTTPException(status_code=404, detail="Aanvraag niet gevonden")
+    
+    update_fields = {}
+    
+    if is_ordered is not None:
+        update_fields["is_ordered"] = is_ordered
+        if is_ordered:
+            update_fields["ordered_at"] = datetime.now(timezone.utc).isoformat()
+            update_fields["ordered_by"] = current_user.id
+        else:
+            update_fields["ordered_at"] = None
+            update_fields["ordered_by"] = None
+    
+    if is_delivered is not None:
+        update_fields["is_delivered"] = is_delivered
+        if is_delivered:
+            update_fields["delivered_at"] = datetime.now(timezone.utc).isoformat()
+            update_fields["delivered_by"] = current_user.id
+            update_fields["status"] = "delivered"
+        else:
+            update_fields["delivered_at"] = None
+            update_fields["delivered_by"] = None
+            update_fields["status"] = "ordered" if request.get("is_ordered") else "pending"
+    
+    # Determine status
+    if update_fields.get("is_delivered"):
+        update_fields["status"] = "delivered"
+    elif update_fields.get("is_ordered") or request.get("is_ordered"):
+        update_fields["status"] = "ordered"
+    else:
+        update_fields["status"] = "pending"
+    
+    await db.material_requests.update_one(
+        {"id": request_id},
+        {"$set": update_fields}
+    )
+    
+    return {"message": "Status bijgewerkt"}
+
+@api_router.delete("/material-requests/{request_id}")
+async def delete_material_request(request_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a material request (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen beheerders kunnen aanvragen verwijderen")
+    
+    result = await db.material_requests.delete_one({"id": request_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Aanvraag niet gevonden")
+    
+    return {"message": "Aanvraag verwijderd"}
+
 # ============= MAINTENANCE ENDPOINTS =============
 
 MAINTENANCE_TYPES = {
