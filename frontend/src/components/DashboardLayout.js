@@ -4,6 +4,7 @@ import { useAuth } from '../App';
 import { FileText, FileSpreadsheet, Calendar, Package, Users, LogOut, LayoutDashboard, Menu, X, TrendingUp, UserCog, ShieldCheck, PenTool, Building2, Tag, Wrench, ChevronDown } from 'lucide-react';
 import CelebrationModal from './CelebrationModal';
 import WorkerTaskBanner from './WorkerTaskBanner';
+import MaterialRequestBanner from './MaterialRequestBanner';
 
 export default function DashboardLayout({ children, showBackToDashboard = false }) {
   const { user, logout } = useAuth();
