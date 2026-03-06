@@ -64,6 +64,9 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
       {/* Worker/Admin Task Banner - shows pending tasks at the top of every page */}
       {(user?.role === 'worker' || user?.role === 'admin') && <WorkerTaskBanner user={user} />}
       
+      {/* Material Request Banner - shows pending material requests for admins */}
+      {user?.role === 'admin' && <MaterialRequestBanner user={user} />}
+      
       {/* Celebration Modal - shows when there are new sales */}
       {user?.role === 'admin' && <CelebrationModal />}
       
