@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Trash2, Trophy, Target, Flame, Star, Rocket, XCircle, RefreshCw, TrendingUp, AlertCircle } from 'lucide-react';
+import { Plus, Search, Trash2, Trophy, Target, Flame, Star, Rocket, XCircle, RefreshCw, TrendingUp, AlertCircle, MapPin } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 
@@ -76,7 +76,8 @@ export default function ProjectsPage() {
     if (searchQuery) {
       setFilteredProjects(projects.filter(project => 
         project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        project.status.toLowerCase().includes(searchQuery.toLowerCase())
+        project.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (project.lead_address && project.lead_address.toLowerCase().includes(searchQuery.toLowerCase()))
       ));
     } else {
       setFilteredProjects(projects);
@@ -437,6 +438,13 @@ export default function ProjectsPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h3 className="text-xl font-bold mb-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>{project.name}</h3>
+                    {/* Show address for workers */}
+                    {isWorker && project.lead_address && (
+                      <p className="text-sm mb-2 flex items-center gap-1" style={{color: '#64748B'}}>
+                        <MapPin size={14} className="flex-shrink-0" />
+                        {project.lead_address}
+                      </p>
+                    )}
                     <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
                       <div className="flex items-center gap-2">
                         <span 

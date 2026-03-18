@@ -350,6 +350,7 @@ class Project(BaseModel):
     
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
+    lead_address: Optional[str] = None  # Enriched: address from lead for worker view
 
 class ProjectCreate(BaseModel):
     lead_id: Optional[str] = None  # NEW: Optional
@@ -2641,6 +2642,13 @@ async def get_projects(current_user: User = Depends(get_current_user)):
     # Workers see only projects with visible_to_workers=True, all admins see ALL projects
     if current_user.role == "worker":
         projects = await db.projects.find({"visible_to_workers": True}, {"_id": 0}).to_list(1000)
+        # Enrich with lead address for workers
+        lead_ids = [p["lead_id"] for p in projects if p.get("lead_id")]
+        if lead_ids:
+            leads = await db.leads.find({"id": {"$in": lead_ids}}, {"_id": 0, "id": 1, "address": 1}).to_list(1000)
+            leads_map = {l["id"]: l.get("address") for l in leads}
+            for project in projects:
+                project["lead_address"] = leads_map.get(project.get("lead_id"), None)
     else:
         # All admins see all projects
         projects = await db.projects.find({}, {"_id": 0}).to_list(1000)
