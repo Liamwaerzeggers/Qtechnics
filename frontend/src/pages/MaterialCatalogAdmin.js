@@ -23,11 +23,13 @@ export default function MaterialCatalogAdmin() {
   const [showItemForm, setShowItemForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [itemForm, setItemForm] = useState({ title: '', description: '', sizes: '', category_id: '' });
+  const [itemForm, setItemForm] = useState({ title: '', title_ua: '', description: '', sizes: '', category_id: '' });
   const [newCatName, setNewCatName] = useState('');
+  const [newCatNameUa, setNewCatNameUa] = useState('');
   const [addingCat, setAddingCat] = useState(false);
   const [editingCat, setEditingCat] = useState(null);
   const [editCatName, setEditCatName] = useState('');
+  const [editCatNameUa, setEditCatNameUa] = useState('');
   const [uploadingId, setUploadingId] = useState(null);
   const [collapsedCats, setCollapsedCats] = useState({});
 
@@ -53,8 +55,9 @@ export default function MaterialCatalogAdmin() {
     if (!newCatName.trim()) return;
     setAddingCat(true);
     try {
-      await axios.post(`${API}/material-categories`, { name: newCatName.trim() }, { headers: getAuthHeaders() });
+      await axios.post(`${API}/material-categories`, { name: newCatName.trim(), name_ua: newCatNameUa.trim() || null }, { headers: getAuthHeaders() });
       setNewCatName('');
+      setNewCatNameUa('');
       toast.success('Categorie toegevoegd');
       fetchAll();
     } catch (err) {
@@ -67,7 +70,7 @@ export default function MaterialCatalogAdmin() {
   const saveEditCat = async (catId) => {
     if (!editCatName.trim()) return;
     try {
-      await axios.put(`${API}/material-categories/${catId}`, { name: editCatName.trim() }, { headers: getAuthHeaders() });
+      await axios.put(`${API}/material-categories/${catId}`, { name: editCatName.trim(), name_ua: editCatNameUa.trim() || null }, { headers: getAuthHeaders() });
       setEditingCat(null);
       toast.success('Categorie bijgewerkt');
       fetchAll();
@@ -89,7 +92,7 @@ export default function MaterialCatalogAdmin() {
 
   // Item CRUD
   const resetItemForm = () => {
-    setItemForm({ title: '', description: '', sizes: '', category_id: '' });
+    setItemForm({ title: '', title_ua: '', description: '', sizes: '', category_id: '' });
     setEditingItem(null);
     setShowItemForm(false);
   };
@@ -97,6 +100,7 @@ export default function MaterialCatalogAdmin() {
   const startEditItem = (item) => {
     setItemForm({
       title: item.title,
+      title_ua: item.title_ua || '',
       description: item.description || '',
       sizes: (item.sizes || []).join(', '),
       category_id: item.category_id || ''
@@ -117,6 +121,7 @@ export default function MaterialCatalogAdmin() {
     const sizes = itemForm.sizes ? itemForm.sizes.split(',').map(s => s.trim()).filter(Boolean) : [];
     const payload = {
       title: itemForm.title,
+      title_ua: itemForm.title_ua || null,
       description: itemForm.description || null,
       sizes,
       category_id: itemForm.category_id || null
@@ -215,15 +220,22 @@ export default function MaterialCatalogAdmin() {
         {/* Add Category */}
         <Card>
           <CardContent className="py-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <FolderOpen size={20} style={{ color: '#500000' }} />
               <span className="font-semibold text-sm" style={{ color: '#500000' }}>Nieuwe categorie:</span>
               <Input
                 data-testid="new-category-input"
                 value={newCatName}
                 onChange={(e) => setNewCatName(e.target.value)}
-                placeholder="Bijv. Gyproc, Schroeven, Tegels..."
-                className="max-w-xs"
+                placeholder="Naam (NL) bijv. Gyproc, Schroeven..."
+                className="max-w-[200px]"
+              />
+              <Input
+                data-testid="new-category-ua-input"
+                value={newCatNameUa}
+                onChange={(e) => setNewCatNameUa(e.target.value)}
+                placeholder="Naam (UA) bijv. Гіпрок..."
+                className="max-w-[200px]"
                 onKeyDown={(e) => e.key === 'Enter' && addCategory()}
               />
               <Button
@@ -251,12 +263,22 @@ export default function MaterialCatalogAdmin() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="font-semibold">Titel *</Label>
+                  <Label className="font-semibold">Titel (NL) *</Label>
                   <Input
                     data-testid="catalog-title-input"
                     value={itemForm.title}
                     onChange={(e) => setItemForm({ ...itemForm, title: e.target.value })}
                     placeholder="Bijv. Groene gyproc 260x120"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="font-semibold">Titel (UA)</Label>
+                  <Input
+                    data-testid="catalog-title-ua-input"
+                    value={itemForm.title_ua}
+                    onChange={(e) => setItemForm({ ...itemForm, title_ua: e.target.value })}
+                    placeholder="Bijv. Зелений гіпрок 260x120"
                     className="mt-1"
                   />
                 </div>
@@ -332,9 +354,16 @@ export default function MaterialCatalogAdmin() {
                       <Input
                         value={editCatName}
                         onChange={(e) => setEditCatName(e.target.value)}
-                        className="max-w-xs h-8 text-sm"
-                        onKeyDown={(e) => e.key === 'Enter' && saveEditCat(cat.id)}
+                        className="max-w-[180px] h-8 text-sm"
+                        placeholder="Naam (NL)"
                         autoFocus
+                      />
+                      <Input
+                        value={editCatNameUa}
+                        onChange={(e) => setEditCatNameUa(e.target.value)}
+                        className="max-w-[180px] h-8 text-sm"
+                        placeholder="Naam (UA)"
+                        onKeyDown={(e) => e.key === 'Enter' && saveEditCat(cat.id)}
                       />
                       <Button size="sm" variant="ghost" onClick={() => saveEditCat(cat.id)} className="h-8 px-2 text-green-600">
                         <Save size={14} />
@@ -348,6 +377,7 @@ export default function MaterialCatalogAdmin() {
                       <FolderOpen size={18} style={{ color: '#500000' }} />
                       <CardTitle className="text-base" style={{ color: '#500000' }}>
                         {cat.name}
+                        {cat.name_ua && <span className="text-gray-400 font-normal text-sm ml-1.5">/ {cat.name_ua}</span>}
                       </CardTitle>
                       <span className="text-xs text-gray-400 ml-1">({catItems.length})</span>
                       <div className="ml-auto flex items-center gap-1">
@@ -364,7 +394,7 @@ export default function MaterialCatalogAdmin() {
                           variant="ghost"
                           size="sm"
                           className="h-7 px-2"
-                          onClick={() => { setEditingCat(cat.id); setEditCatName(cat.name); }}
+                          onClick={() => { setEditingCat(cat.id); setEditCatName(cat.name); setEditCatNameUa(cat.name_ua || ''); }}
                         >
                           <Edit2 size={12} />
                         </Button>
@@ -488,6 +518,7 @@ function ItemCard({ item, onEdit, onDelete, onUploadImage, uploadingId }) {
       </div>
       <CardContent className="p-2">
         <h3 className="font-bold text-xs leading-tight" style={{ color: '#500000' }}>{item.title}</h3>
+        {item.title_ua && <p className="text-[10px] text-gray-400 leading-tight">{item.title_ua}</p>}
         {item.description && <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-1">{item.description}</p>}
         {item.sizes?.length > 0 && (
           <div className="flex flex-wrap gap-0.5 mt-1">

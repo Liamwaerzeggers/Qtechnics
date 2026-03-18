@@ -96,6 +96,7 @@ export default function MaterialRequestPage() {
       setCart([...cart, {
         catalog_item_id: item.id,
         title: item.title,
+        title_ua: item.title_ua || null,
         image_url: item.image_url,
         selected_size: size,
         quantity: 1,
@@ -316,7 +317,10 @@ export default function MaterialRequestPage() {
                         <div key={cat.id}>
                           <div className="flex items-center gap-2 mb-2">
                             <FolderOpen size={16} style={{ color: '#500000' }} />
-                            <h3 className="font-bold text-sm" style={{ color: '#500000' }}>{cat.name}</h3>
+                            <h3 className="font-bold text-sm" style={{ color: '#500000' }}>
+                              {cat.name}
+                              {isWorker && cat.name_ua && <span className="text-gray-400 font-normal ml-1">/ {cat.name_ua}</span>}
+                            </h3>
                             <span className="text-xs text-gray-400">({catItems.length})</span>
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -378,6 +382,7 @@ export default function MaterialRequestPage() {
                             )}
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-semibold truncate">{item.title}</p>
+                              {isWorker && item.title_ua && <p className="text-[10px] text-gray-400 truncate">{item.title_ua}</p>}
                               {item.sizes.length > 0 && (
                                 <select
                                   data-testid={`cart-size-${idx}`}
@@ -565,6 +570,7 @@ function CatalogCard({ item, isWorker, onAdd, inCart }) {
       {/* Details */}
       <CardContent className="p-3">
         <h3 className="font-bold text-sm leading-tight" style={{ color: '#500000' }}>{item.title}</h3>
+        {isWorker && item.title_ua && <p className="text-xs text-gray-400 leading-tight">{item.title_ua}</p>}
         {item.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description}</p>}
         
         {/* Size selector (shown when needed) */}

@@ -830,6 +830,7 @@ class MaterialCategory(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: f"MCTG-{str(uuid.uuid4())[:8].upper()}")
     name: str
+    name_ua: Optional[str] = None
     sort_order: int = 0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -838,6 +839,7 @@ class MaterialCatalogItem(BaseModel):
     id: str = Field(default_factory=lambda: f"MCAT-{str(uuid.uuid4())[:8].upper()}")
     category_id: Optional[str] = None
     title: str
+    title_ua: Optional[str] = None
     description: Optional[str] = None
     image_url: Optional[str] = None
     sizes: List[str] = []  # e.g. ["60x60", "30x60", "80x80"]
@@ -846,12 +848,14 @@ class MaterialCatalogItem(BaseModel):
 
 class MaterialCatalogItemCreate(BaseModel):
     title: str
+    title_ua: Optional[str] = None
     category_id: Optional[str] = None
     description: Optional[str] = None
     sizes: List[str] = []
 
 class MaterialCatalogItemUpdate(BaseModel):
     title: Optional[str] = None
+    title_ua: Optional[str] = None
     category_id: Optional[str] = None
     description: Optional[str] = None
     sizes: Optional[List[str]] = None
@@ -10826,24 +10830,37 @@ async def get_material_categories(current_user: User = Depends(get_current_user)
     return cats
 
 @api_router.post("/material-categories")
-async def create_material_category(name: str = Body(..., embed=True), current_user: User = Depends(get_current_user)):
+async def create_material_category(request: Request, current_user: User = Depends(get_current_user)):
     """Create a new material category (admin only)"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Alleen beheerders")
+    body = await request.json()
+    name = body.get("name", "")
+    name_ua = body.get("name_ua") or None
+    if not name:
+        raise HTTPException(status_code=400, detail="Naam is verplicht")
     max_order = await db.material_categories.find_one(sort=[("sort_order", -1)])
     next_order = (max_order.get("sort_order", 0) + 1) if max_order else 0
-    cat = MaterialCategory(name=name, sort_order=next_order)
+    cat = MaterialCategory(name=name, name_ua=name_ua, sort_order=next_order)
     await db.material_categories.insert_one(cat.model_dump())
     result = cat.model_dump()
     result.pop("_id", None)
     return result
 
 @api_router.put("/material-categories/{cat_id}")
-async def update_material_category(cat_id: str, name: str = Body(..., embed=True), current_user: User = Depends(get_current_user)):
+async def update_material_category(cat_id: str, request: Request, current_user: User = Depends(get_current_user)):
     """Update category name"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Alleen beheerders")
-    result = await db.material_categories.update_one({"id": cat_id}, {"$set": {"name": name}})
+    body = await request.json()
+    update_data = {}
+    if "name" in body:
+        update_data["name"] = body["name"]
+    if "name_ua" in body:
+        update_data["name_ua"] = body["name_ua"]
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Geen wijzigingen")
+    result = await db.material_categories.update_one({"id": cat_id}, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Categorie niet gevonden")
     return {"message": "Categorie bijgewerkt"}
@@ -10871,7 +10888,7 @@ async def create_catalog_item(item: MaterialCatalogItemCreate, current_user: Use
     """Create a new catalog item (admin only)"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Alleen beheerders")
-    doc = MaterialCatalogItem(title=item.title, category_id=item.category_id, description=item.description, sizes=item.sizes)
+    doc = MaterialCatalogItem(title=item.title, title_ua=item.title_ua, category_id=item.category_id, description=item.description, sizes=item.sizes)
     await db.material_catalog.insert_one(doc.model_dump())
     result = doc.model_dump()
     result.pop("_id", None)
