@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { 
   Building2, Plus, Trash2, Calculator, Eye, Share2, 
   MapPin, BedDouble, Bath, Ruler, Loader2, Home, 
-  ExternalLink, ChevronDown, ChevronRight, Edit, X, Link, Search
+  ExternalLink, ChevronDown, ChevronRight, Edit, X, Link, Search,
+  Upload, FileImage, Check, AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -40,6 +41,16 @@ export default function RealtorDashboard() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [calculationLoading, setCalculationLoading] = useState(false);
   const [scraping, setScraping] = useState(false);
+  
+  // Add room to existing property
+  const [showAddRoom, setShowAddRoom] = useState(false);
+  const [addRoomData, setAddRoomData] = useState({ name: '', room_type: 'other', length: '', width: '', height: '' });
+  const [addingRoom, setAddingRoom] = useState(false);
+  
+  // Floor plan upload
+  const [uploadingPlan, setUploadingPlan] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState(null);
+  const [savingSuggestions, setSavingSuggestions] = useState(false);
   
   // New property form
   const [formData, setFormData] = useState({
@@ -245,6 +256,8 @@ export default function RealtorDashboard() {
 
   const handleViewProperty = async (property) => {
     setSelectedProperty(property);
+    setShowAddRoom(false);
+    setAiSuggestions(null);
     
     // Fetch calculation if exists
     if (property.renovation_calculation_id) {
@@ -254,6 +267,128 @@ export default function RealtorDashboard() {
       } catch (error) {
         console.log('No calculation found');
       }
+    }
+  };
+
+  // Add room to existing property
+  const handleAddRoomToProperty = async () => {
+    if (!addRoomData.name || !addRoomData.length || !addRoomData.width) {
+      toast.error('Vul naam, lengte en breedte in');
+      return;
+    }
+    
+    setAddingRoom(true);
+    try {
+      await axios.post(
+        `${API}/properties/${selectedProperty.id}/rooms`,
+        {
+          name: addRoomData.name,
+          room_type: addRoomData.room_type,
+          length: parseFloat(addRoomData.length),
+          width: parseFloat(addRoomData.width),
+          height: addRoomData.height ? parseFloat(addRoomData.height) : 2.7
+        },
+        { headers: getAuthHeaders() }
+      );
+      toast.success('Kamer toegevoegd');
+      setAddRoomData({ name: '', room_type: 'other', length: '', width: '', height: '' });
+      
+      // Refresh property
+      const propResponse = await axios.get(`${API}/properties/${selectedProperty.id}`, { headers: getAuthHeaders() });
+      setSelectedProperty(propResponse.data);
+      fetchProperties();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Kon kamer niet toevoegen');
+    } finally {
+      setAddingRoom(false);
+    }
+  };
+
+  // Delete room from property
+  const handleDeleteRoom = async (roomId) => {
+    try {
+      await axios.delete(`${API}/properties/${selectedProperty.id}/rooms/${roomId}`, { headers: getAuthHeaders() });
+      toast.success('Kamer verwijderd');
+      const propResponse = await axios.get(`${API}/properties/${selectedProperty.id}`, { headers: getAuthHeaders() });
+      setSelectedProperty(propResponse.data);
+      fetchProperties();
+    } catch (error) {
+      toast.error('Kon kamer niet verwijderen');
+    }
+  };
+
+  // Upload and analyze floor plan
+  const handleFloorPlanUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setUploadingPlan(true);
+    setAiSuggestions(null);
+    
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+      
+      const response = await axios.post(
+        `${API}/properties/${selectedProperty.id}/analyze-floor-plan`,
+        formDataUpload,
+        { headers: { ...getAuthHeaders(), 'Content-Type': 'multipart/form-data' } }
+      );
+      
+      if (response.data.rooms && response.data.rooms.length > 0) {
+        // Show AI suggestions for review
+        setAiSuggestions({
+          rooms: response.data.rooms.map((r, i) => ({ ...r, id: `ai-${i}`, selected: true })),
+          notes: response.data.analysis_notes,
+          floor_plan_url: response.data.floor_plan_url
+        });
+        toast.success(response.data.message);
+      } else {
+        toast.warning(response.data.message || 'Kon geen kamers detecteren');
+        // Still update the property to show the floor plan
+        const propResponse = await axios.get(`${API}/properties/${selectedProperty.id}`, { headers: getAuthHeaders() });
+        setSelectedProperty(propResponse.data);
+      }
+    } catch (error) {
+      toast.error('Upload mislukt: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setUploadingPlan(false);
+      e.target.value = '';
+    }
+  };
+
+  // Save AI-suggested rooms
+  const handleSaveAiRooms = async () => {
+    const selectedRooms = aiSuggestions.rooms.filter(r => r.selected);
+    if (selectedRooms.length === 0) {
+      toast.error('Selecteer minstens 1 kamer');
+      return;
+    }
+    
+    setSavingSuggestions(true);
+    try {
+      await axios.post(
+        `${API}/properties/${selectedProperty.id}/rooms/bulk`,
+        selectedRooms.map(r => ({
+          name: r.name,
+          room_type: r.room_type || 'other',
+          length: parseFloat(r.length) || 0,
+          width: parseFloat(r.width) || 0,
+          height: parseFloat(r.height) || 2.7
+        })),
+        { headers: getAuthHeaders() }
+      );
+      toast.success(`${selectedRooms.length} kamers toegevoegd`);
+      setAiSuggestions(null);
+      
+      // Refresh
+      const propResponse = await axios.get(`${API}/properties/${selectedProperty.id}`, { headers: getAuthHeaders() });
+      setSelectedProperty(propResponse.data);
+      fetchProperties();
+    } catch (error) {
+      toast.error('Kon kamers niet opslaan');
+    } finally {
+      setSavingSuggestions(false);
     }
   };
 
@@ -683,21 +818,297 @@ export default function RealtorDashboard() {
                   </div>
                   
                   {/* Rooms */}
-                  {selectedProperty.rooms && selectedProperty.rooms.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold mb-2" style={{color: '#3a190b'}}>Kamers</h4>
-                      <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold" style={{color: '#3a190b'}}>
+                        Kamers ({selectedProperty.rooms?.length || 0})
+                      </h4>
+                      <div className="flex gap-2">
+                        <label className="cursor-pointer" data-testid="upload-floor-plan-btn">
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            className="hidden"
+                            onChange={handleFloorPlanUpload}
+                            disabled={uploadingPlan}
+                          />
+                          <span className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-md border transition-colors ${
+                            uploadingPlan ? 'opacity-50' : 'hover:bg-blue-50 border-blue-300 text-blue-700'
+                          }`}>
+                            {uploadingPlan ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <FileImage size={14} />
+                            )}
+                            {uploadingPlan ? 'Analyseren...' : 'Grondplan uploaden'}
+                          </span>
+                        </label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowAddRoom(!showAddRoom)}
+                          data-testid="add-room-btn"
+                        >
+                          <Plus size={14} className="mr-1" />
+                          Kamer
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Floor plan image */}
+                    {selectedProperty.floor_plan_url && (
+                      <div className="mb-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center gap-2 text-xs text-blue-600 mb-1">
+                          <FileImage size={12} />
+                          Grondplan opgeslagen
+                        </div>
+                        <img
+                          src={`${API.replace('/api', '')}${selectedProperty.floor_plan_url}`}
+                          alt="Grondplan"
+                          className="max-h-40 rounded object-contain"
+                          data-testid="floor-plan-image"
+                        />
+                      </div>
+                    )}
+
+                    {/* AI Suggestions from floor plan */}
+                    {aiSuggestions && (
+                      <div className="mb-4 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg border-2 border-indigo-200" data-testid="ai-suggestions">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="p-1 bg-indigo-100 rounded">
+                            <FileImage size={16} className="text-indigo-600" />
+                          </div>
+                          <div>
+                            <h5 className="font-semibold text-indigo-800 text-sm">AI Kamer Detectie</h5>
+                            <p className="text-xs text-indigo-600">{aiSuggestions.rooms.length} kamers gedetecteerd - bewerk en bevestig</p>
+                          </div>
+                        </div>
+                        
+                        {aiSuggestions.notes && (
+                          <p className="text-xs text-indigo-600 mb-3 bg-indigo-100 p-2 rounded">
+                            {aiSuggestions.notes}
+                          </p>
+                        )}
+                        
+                        <div className="space-y-2 mb-3">
+                          {aiSuggestions.rooms.map((room, idx) => (
+                            <div key={room.id} className={`flex items-center gap-2 p-2 rounded border ${
+                              room.selected ? 'bg-white border-indigo-300' : 'bg-gray-50 border-gray-200 opacity-60'
+                            }`} data-testid={`ai-room-${idx}`}>
+                              <input
+                                type="checkbox"
+                                checked={room.selected}
+                                onChange={(e) => {
+                                  const updated = [...aiSuggestions.rooms];
+                                  updated[idx] = { ...updated[idx], selected: e.target.checked };
+                                  setAiSuggestions({ ...aiSuggestions, rooms: updated });
+                                }}
+                                className="w-4 h-4 accent-indigo-500"
+                              />
+                              <input
+                                className="text-sm font-medium bg-transparent border-b border-transparent hover:border-indigo-300 focus:border-indigo-500 focus:outline-none w-28 px-1"
+                                value={room.name}
+                                onChange={(e) => {
+                                  const updated = [...aiSuggestions.rooms];
+                                  updated[idx] = { ...updated[idx], name: e.target.value };
+                                  setAiSuggestions({ ...aiSuggestions, rooms: updated });
+                                }}
+                              />
+                              <select
+                                className="text-xs border rounded px-1 py-0.5 bg-white"
+                                value={room.room_type}
+                                onChange={(e) => {
+                                  const updated = [...aiSuggestions.rooms];
+                                  updated[idx] = { ...updated[idx], room_type: e.target.value };
+                                  setAiSuggestions({ ...aiSuggestions, rooms: updated });
+                                }}
+                              >
+                                {ROOM_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                              </select>
+                              <div className="flex items-center gap-1 text-xs text-gray-500">
+                                <input
+                                  type="number"
+                                  className="w-14 border rounded px-1 py-0.5 text-center"
+                                  value={room.length}
+                                  step="0.1"
+                                  onChange={(e) => {
+                                    const updated = [...aiSuggestions.rooms];
+                                    updated[idx] = { ...updated[idx], length: e.target.value };
+                                    setAiSuggestions({ ...aiSuggestions, rooms: updated });
+                                  }}
+                                />
+                                <span>x</span>
+                                <input
+                                  type="number"
+                                  className="w-14 border rounded px-1 py-0.5 text-center"
+                                  value={room.width}
+                                  step="0.1"
+                                  onChange={(e) => {
+                                    const updated = [...aiSuggestions.rooms];
+                                    updated[idx] = { ...updated[idx], width: e.target.value };
+                                    setAiSuggestions({ ...aiSuggestions, rooms: updated });
+                                  }}
+                                />
+                                <span>m</span>
+                              </div>
+                              <span className="text-xs text-gray-400 ml-auto">
+                                {(parseFloat(room.length || 0) * parseFloat(room.width || 0)).toFixed(1)}m²
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={handleSaveAiRooms}
+                            disabled={savingSuggestions}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                            data-testid="save-ai-rooms-btn"
+                          >
+                            {savingSuggestions ? <Loader2 size={14} className="animate-spin mr-1" /> : <Check size={14} className="mr-1" />}
+                            {aiSuggestions.rooms.filter(r => r.selected).length} kamers toevoegen
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAiSuggestions(null)}
+                          >
+                            Annuleren
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Existing rooms list */}
+                    {selectedProperty.rooms && selectedProperty.rooms.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2 mb-3">
                         {selectedProperty.rooms.map((room, idx) => (
-                          <div key={idx} className="p-2 border rounded text-sm">
-                            <span className="font-medium">{room.name}</span>
-                            <span className="text-gray-500 ml-2">
-                              ({room.floor_area?.toFixed(1) || (room.length * room.width).toFixed(1)} m²)
-                            </span>
+                          <div key={room.id || idx} className="p-2 border rounded text-sm flex items-center justify-between group" data-testid={`room-${room.id || idx}`}>
+                            <div>
+                              <span className="font-medium">{room.name}</span>
+                              <span className="text-gray-500 ml-2">
+                                ({room.floor_area?.toFixed(1) || (room.length * room.width).toFixed(1)} m²)
+                              </span>
+                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteRoom(room.id); }}
+                              className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-opacity p-1"
+                              data-testid={`delete-room-${room.id || idx}`}
+                            >
+                              <X size={14} />
+                            </button>
                           </div>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    )}
+
+                    {/* Add Room Form (inline) */}
+                    {showAddRoom && (
+                      <div className="p-3 bg-gray-50 rounded-lg border border-dashed border-gray-300 mb-3" data-testid="add-room-form">
+                        <div className="grid grid-cols-6 gap-2 items-end">
+                          <div className="col-span-2">
+                            <label className="text-xs text-gray-500">Naam</label>
+                            <Input
+                              value={addRoomData.name}
+                              onChange={(e) => setAddRoomData({...addRoomData, name: e.target.value})}
+                              placeholder="Woonkamer"
+                              className="h-8 text-sm"
+                              data-testid="add-room-name"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500">Type</label>
+                            <select
+                              className="w-full h-8 text-sm border rounded px-2"
+                              value={addRoomData.room_type}
+                              onChange={(e) => setAddRoomData({...addRoomData, room_type: e.target.value})}
+                              data-testid="add-room-type"
+                            >
+                              {ROOM_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500">L (m)</label>
+                            <Input
+                              type="number"
+                              step="0.1"
+                              value={addRoomData.length}
+                              onChange={(e) => setAddRoomData({...addRoomData, length: e.target.value})}
+                              placeholder="5.0"
+                              className="h-8 text-sm"
+                              data-testid="add-room-length"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500">B (m)</label>
+                            <Input
+                              type="number"
+                              step="0.1"
+                              value={addRoomData.width}
+                              onChange={(e) => setAddRoomData({...addRoomData, width: e.target.value})}
+                              placeholder="4.0"
+                              className="h-8 text-sm"
+                              data-testid="add-room-width"
+                            />
+                          </div>
+                          <div className="flex gap-1">
+                            <div className="flex-1">
+                              <label className="text-xs text-gray-500">H (m)</label>
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={addRoomData.height}
+                                onChange={(e) => setAddRoomData({...addRoomData, height: e.target.value})}
+                                placeholder="2.7"
+                                className="h-8 text-sm"
+                                data-testid="add-room-height"
+                              />
+                            </div>
+                            <Button
+                              size="sm"
+                              className="h-8 mt-auto"
+                              onClick={handleAddRoomToProperty}
+                              disabled={addingRoom}
+                              style={{backgroundColor: '#500000'}}
+                              data-testid="submit-room-btn"
+                            >
+                              {addingRoom ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* No rooms message */}
+                    {(!selectedProperty.rooms || selectedProperty.rooms.length === 0) && !showAddRoom && !aiSuggestions && (
+                      <div className="text-center py-6 border rounded-lg bg-yellow-50">
+                        <Home size={36} className="mx-auto mb-3 text-yellow-500" />
+                        <p className="text-yellow-700 mb-1 text-sm">Geen kamers toegevoegd</p>
+                        <p className="text-xs text-yellow-600 mb-3">
+                          Upload een grondplan of voeg kamers handmatig toe
+                        </p>
+                        <div className="flex gap-2 justify-center">
+                          <label className="cursor-pointer">
+                            <input
+                              type="file"
+                              accept="image/*,.pdf"
+                              className="hidden"
+                              onChange={handleFloorPlanUpload}
+                            />
+                            <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                              <FileImage size={14} />
+                              Upload grondplan
+                            </span>
+                          </label>
+                          <Button variant="outline" size="sm" onClick={() => setShowAddRoom(true)}>
+                            <Plus size={14} className="mr-1" />
+                            Handmatig
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   
                   {/* Calculation Results */}
                   {selectedProperty.calculation && (
@@ -746,17 +1157,6 @@ export default function RealtorDashboard() {
                         <Calculator size={16} className="mr-2" />
                         Start Berekening
                       </Button>
-                    </div>
-                  )}
-                  
-                  {/* No rooms */}
-                  {(!selectedProperty.rooms || selectedProperty.rooms.length === 0) && (
-                    <div className="text-center py-8 border rounded-lg bg-yellow-50">
-                      <Home size={48} className="mx-auto mb-4 text-yellow-500" />
-                      <p className="text-yellow-700 mb-2">Geen kamers toegevoegd</p>
-                      <p className="text-sm text-yellow-600">
-                        Voeg eerst kamers toe om een renovatieberekening te kunnen maken
-                      </p>
                     </div>
                   )}
                 </CardContent>

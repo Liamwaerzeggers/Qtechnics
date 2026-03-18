@@ -679,6 +679,9 @@ class Property(BaseModel):
     # Foto's
     photos: List[str] = []
     
+    # Grondplan
+    floor_plan_url: Optional[str] = None
+    
     # Status
     status: str = "imported"  # "imported" | "analyzing" | "calculated" | "shared"
     
@@ -8522,7 +8525,174 @@ async def delete_property_room(property_id: str, room_id: str, current_user: Use
     
     return {"message": "Kamer verwijderd"}
 
-@api_router.post("/properties/{property_id}/share")
+@api_router.post("/properties/{property_id}/rooms/bulk")
+async def add_property_rooms_bulk(property_id: str, rooms: List[PropertyRoomCreate], current_user: User = Depends(get_current_user)):
+    """Add multiple rooms to a property at once (e.g. from floor plan analysis)"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    tenant_filter = get_tenant_filter(current_user, "property")
+    filter_query = {"id": property_id}
+    if tenant_filter:
+        filter_query = {"$and": [{"id": property_id}, tenant_filter]}
+    
+    prop = await db.properties.find_one(filter_query)
+    if not prop:
+        raise HTTPException(status_code=404, detail="Pand niet gevonden")
+    
+    new_rooms = []
+    for room in rooms:
+        room_obj = PropertyRoom(
+            name=room.name,
+            room_type=room.room_type,
+            length=room.length,
+            width=room.width,
+            height=room.height,
+            windows=room.windows,
+            doors=room.doors,
+            notes=room.notes
+        )
+        room_obj.floor_area = room_obj.length * room_obj.width
+        room_obj.ceiling_area = room_obj.length * room_obj.width
+        room_obj.wall_area = 2 * (room_obj.length + room_obj.width) * room_obj.height
+        new_rooms.append(room_obj.model_dump())
+    
+    await db.properties.update_one(
+        {"id": property_id},
+        {
+            "$push": {"rooms": {"$each": new_rooms}},
+            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+        }
+    )
+    
+    return {"message": f"{len(new_rooms)} kamers toegevoegd", "rooms_added": len(new_rooms)}
+
+@api_router.post("/properties/{property_id}/analyze-floor-plan")
+async def analyze_property_floor_plan(
+    property_id: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload and analyze a floor plan to extract room dimensions using GPT-4o Vision"""
+    if current_user.role not in ["admin", "realtor", "investor"]:
+        raise HTTPException(status_code=403, detail="Geen toegang")
+    
+    tenant_filter = get_tenant_filter(current_user, "property")
+    filter_query = {"id": property_id}
+    if tenant_filter:
+        filter_query = {"$and": [{"id": property_id}, tenant_filter]}
+    
+    prop = await db.properties.find_one(filter_query)
+    if not prop:
+        raise HTTPException(status_code=404, detail="Pand niet gevonden")
+    
+    # Save the floor plan file
+    content = await file.read()
+    
+    floor_plans_dir = ROOT_DIR / "uploads" / "floor_plans"
+    floor_plans_dir.mkdir(parents=True, exist_ok=True)
+    
+    ext = file.filename.split('.')[-1] if '.' in file.filename else 'png'
+    saved_filename = f"{property_id}_{uuid.uuid4().hex[:8]}.{ext}"
+    file_path = floor_plans_dir / saved_filename
+    
+    with open(file_path, 'wb') as f:
+        f.write(content)
+    
+    floor_plan_url = f"/api/uploads/floor_plans/{saved_filename}"
+    
+    # Save URL to property
+    await db.properties.update_one(
+        {"id": property_id},
+        {"$set": {"floor_plan_url": floor_plan_url, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    # Analyze with GPT-4o Vision
+    api_key = os.environ.get('EMERGENT_LLM_KEY')
+    if not api_key:
+        return {"success": True, "floor_plan_url": floor_plan_url, "rooms": [], "message": "Grondplan opgeslagen maar AI analyse niet beschikbaar (API key ontbreekt)"}
+    
+    try:
+        image_base64 = base64.b64encode(content).decode('utf-8')
+        
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"floorplan-prop-{property_id}-{uuid.uuid4()}",
+            system_message="""Je bent een expert in het analyseren van grondplannen, bouwtekeningen en laser meetrapporten.
+
+Je taak is om uit het plan/tekening ALLE kamers te identificeren met hun afmetingen.
+
+Geef je antwoord ALLEEN als een JSON object (geen andere tekst):
+{
+    "rooms": [
+        {
+            "name": "naam van de kamer (bijv. Woonkamer, Badkamer, Slaapkamer 1)",
+            "room_type": "living|bedroom|bathroom|kitchen|hallway|other",
+            "length": 0.0,
+            "width": 0.0,
+            "height": 2.7,
+            "notes": "opmerkingen"
+        }
+    ],
+    "total_area_m2": 0.0,
+    "analysis_notes": "algemene opmerkingen over het plan"
+}
+
+Regels:
+- Meet alles in METERS (niet cm)
+- Gebruik standaard 2.7m hoogte als niet vermeld
+- room_type moet exact zijn: living, bedroom, bathroom, kitchen, hallway, of other
+- Geef een Nederlandse naam voor elke kamer
+- Als afmetingen niet leesbaar zijn, schat dan op basis van verhoudingen en vermeld dit in notes
+- Bij lasermeetplannen: gebruik de exacte gemeten waarden"""
+        ).with_model("openai", "gpt-4o")
+        
+        user_message = UserMessage(
+            text="Analyseer dit grondplan/meetrapport en identificeer alle kamers met hun afmetingen. Geef het resultaat als JSON.",
+            file_contents=[ImageContent(image_base64=image_base64)]
+        )
+        
+        response = await chat.send_message(user_message)
+        response_text = response.strip()
+        
+        if '```json' in response_text:
+            json_str = response_text.split('```json')[1].split('```')[0].strip()
+        elif '```' in response_text:
+            json_str = response_text.split('```')[1].split('```')[0].strip()
+        elif response_text.startswith('{'):
+            json_str = response_text
+        else:
+            json_str = response_text
+        
+        result = json.loads(json_str)
+        
+        return {
+            "success": True,
+            "floor_plan_url": floor_plan_url,
+            "rooms": result.get("rooms", []),
+            "total_area_m2": result.get("total_area_m2", 0),
+            "analysis_notes": result.get("analysis_notes", ""),
+            "message": f"{len(result.get('rooms', []))} kamers gedetecteerd"
+        }
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"Floor plan JSON parse error: {e}")
+        return {
+            "success": True,
+            "floor_plan_url": floor_plan_url,
+            "rooms": [],
+            "message": "Grondplan opgeslagen maar kon kamers niet automatisch herkennen. Voeg ze handmatig toe."
+        }
+    except Exception as e:
+        logger.error(f"Floor plan analysis error for property: {e}")
+        return {
+            "success": True,
+            "floor_plan_url": floor_plan_url,
+            "rooms": [],
+            "message": f"Grondplan opgeslagen maar analyse mislukt: {str(e)}"
+        }
+
+
 async def share_property(property_id: str, user_id: str = Query(...), current_user: User = Depends(get_current_user)):
     """Share a property with another user (admin or owner only)"""
     if current_user.role not in ["admin", "realtor"]:
