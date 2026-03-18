@@ -8,7 +8,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Package, Send, Check, Clock, Truck, Loader2, Plus, Minus, ShoppingCart, Image as ImageIcon, MapPin, Search } from 'lucide-react';
+import { Package, Send, Check, Clock, Truck, Loader2, Plus, Minus, ShoppingCart, Image as ImageIcon, MapPin, Search, FolderOpen } from 'lucide-react';
 import { toast } from 'sonner';
 
 const getAuthHeaders = () => {
@@ -55,6 +55,7 @@ export default function MaterialRequestPage() {
   const { user } = useAuth();
   const isWorker = user?.role === 'worker';
   const [catalog, setCatalog] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [requests, setRequests] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,10 +69,12 @@ export default function MaterialRequestPage() {
   useEffect(() => {
     Promise.all([
       axios.get(`${API}/material-catalog`, { headers: getAuthHeaders() }).catch(() => ({ data: [] })),
+      axios.get(`${API}/material-categories`, { headers: getAuthHeaders() }).catch(() => ({ data: [] })),
       axios.get(`${API}/material-requests`, { headers: getAuthHeaders() }).catch(() => ({ data: [] })),
       axios.get(`${API}/projects`, { headers: getAuthHeaders() }).catch(() => ({ data: [] }))
-    ]).then(([catRes, reqRes, projRes]) => {
-      setCatalog(catRes.data || []);
+    ]).then(([catItemRes, catRes, reqRes, projRes]) => {
+      setCatalog(catItemRes.data || []);
+      setCategories(catRes.data || []);
       setRequests(reqRes.data || []);
       setProjects(projRes.data || []);
       setLoading(false);
@@ -266,27 +269,80 @@ export default function MaterialRequestPage() {
                 />
               </div>
 
-              {/* Catalog Grid */}
-              {filteredCatalog.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-12 text-gray-500">
-                    <Package size={48} className="mx-auto mb-3 opacity-50" />
-                    <p>{isWorker ? `${T.emptyCatalog.nl} / ${T.emptyCatalog.ua}` : T.emptyCatalog.nl}</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {filteredCatalog.map((item) => (
-                    <CatalogCard
-                      key={item.id}
-                      item={item}
-                      isWorker={isWorker}
-                      onAdd={addToCart}
-                      inCart={cart.some(c => c.catalog_item_id === item.id)}
-                    />
-                  ))}
-                </div>
-              )}
+              {/* Catalog Grid - Grouped by Category */}
+              {(() => {
+                const catMap = {};
+                categories.forEach(c => { catMap[c.id] = c; });
+                const grouped = {};
+                categories.forEach(c => { grouped[c.id] = []; });
+                const uncategorized = [];
+                filteredCatalog.forEach(item => {
+                  if (item.category_id && catMap[item.category_id]) {
+                    grouped[item.category_id].push(item);
+                  } else {
+                    uncategorized.push(item);
+                  }
+                });
+                const hasCategories = categories.length > 0;
+                const hasResults = filteredCatalog.length > 0;
+
+                if (!hasResults) {
+                  return (
+                    <Card>
+                      <CardContent className="text-center py-12 text-gray-500">
+                        <Package size={48} className="mx-auto mb-3 opacity-50" />
+                        <p>{isWorker ? `${T.emptyCatalog.nl} / ${T.emptyCatalog.ua}` : T.emptyCatalog.nl}</p>
+                      </CardContent>
+                    </Card>
+                  );
+                }
+
+                if (!hasCategories) {
+                  return (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {filteredCatalog.map((item) => (
+                        <CatalogCard key={item.id} item={item} isWorker={isWorker} onAdd={addToCart} inCart={cart.some(c => c.catalog_item_id === item.id)} />
+                      ))}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {categories.map(cat => {
+                      const catItems = grouped[cat.id] || [];
+                      if (catItems.length === 0) return null;
+                      return (
+                        <div key={cat.id}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <FolderOpen size={16} style={{ color: '#500000' }} />
+                            <h3 className="font-bold text-sm" style={{ color: '#500000' }}>{cat.name}</h3>
+                            <span className="text-xs text-gray-400">({catItems.length})</span>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {catItems.map((item) => (
+                              <CatalogCard key={item.id} item={item} isWorker={isWorker} onAdd={addToCart} inCart={cart.some(c => c.catalog_item_id === item.id)} />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {uncategorized.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Package size={16} className="text-gray-400" />
+                          <h3 className="font-bold text-sm text-gray-500">{isWorker ? 'Overige / Інше' : 'Overige'}</h3>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {uncategorized.map((item) => (
+                            <CatalogCard key={item.id} item={item} isWorker={isWorker} onAdd={addToCart} inCart={cart.some(c => c.catalog_item_id === item.id)} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Cart / Order Summary */}

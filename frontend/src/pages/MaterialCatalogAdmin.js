@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API } from '../App';
 import DashboardLayout from '../components/DashboardLayout';
@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import { Package, Plus, Trash2, Edit2, X, Camera, Save, Loader2, Image as ImageIcon, Ruler } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Package, Plus, Trash2, Edit2, X, Camera, Save, Loader2, Image as ImageIcon, Ruler, FolderOpen, ChevronDown, ChevronRight, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
 
 const getAuthHeaders = () => {
@@ -16,65 +17,120 @@ const getAuthHeaders = () => {
 };
 
 export default function MaterialCatalogAdmin() {
+  const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [showItemForm, setShowItemForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', sizes: '' });
-  const fileInputRef = useRef(null);
+  const [itemForm, setItemForm] = useState({ title: '', description: '', sizes: '', category_id: '' });
+  const [newCatName, setNewCatName] = useState('');
+  const [addingCat, setAddingCat] = useState(false);
+  const [editingCat, setEditingCat] = useState(null);
+  const [editCatName, setEditCatName] = useState('');
   const [uploadingId, setUploadingId] = useState(null);
+  const [collapsedCats, setCollapsedCats] = useState({});
 
-  useEffect(() => { fetchItems(); }, []);
+  useEffect(() => { fetchAll(); }, []);
 
-  const fetchItems = async () => {
+  const fetchAll = async () => {
     try {
-      const res = await axios.get(`${API}/material-catalog`, { headers: getAuthHeaders() });
-      setItems(res.data || []);
+      const [catRes, itemRes] = await Promise.all([
+        axios.get(`${API}/material-categories`, { headers: getAuthHeaders() }),
+        axios.get(`${API}/material-catalog`, { headers: getAuthHeaders() })
+      ]);
+      setCategories(catRes.data || []);
+      setItems(itemRes.data || []);
     } catch (err) {
-      toast.error('Kon catalogus niet laden');
+      toast.error('Kon gegevens niet laden');
     } finally {
       setLoading(false);
     }
   };
 
-  const resetForm = () => {
-    setForm({ title: '', description: '', sizes: '' });
-    setEditingItem(null);
-    setShowForm(false);
+  // Category CRUD
+  const addCategory = async () => {
+    if (!newCatName.trim()) return;
+    setAddingCat(true);
+    try {
+      await axios.post(`${API}/material-categories`, { name: newCatName.trim() }, { headers: getAuthHeaders() });
+      setNewCatName('');
+      toast.success('Categorie toegevoegd');
+      fetchAll();
+    } catch (err) {
+      toast.error('Kon categorie niet toevoegen');
+    } finally {
+      setAddingCat(false);
+    }
   };
 
-  const startEdit = (item) => {
-    setForm({
+  const saveEditCat = async (catId) => {
+    if (!editCatName.trim()) return;
+    try {
+      await axios.put(`${API}/material-categories/${catId}`, { name: editCatName.trim() }, { headers: getAuthHeaders() });
+      setEditingCat(null);
+      toast.success('Categorie bijgewerkt');
+      fetchAll();
+    } catch (err) {
+      toast.error('Kon niet bijwerken');
+    }
+  };
+
+  const deleteCat = async (catId) => {
+    if (!window.confirm('Categorie verwijderen? Items worden niet verwijderd, enkel ontkoppeld.')) return;
+    try {
+      await axios.delete(`${API}/material-categories/${catId}`, { headers: getAuthHeaders() });
+      toast.success('Categorie verwijderd');
+      fetchAll();
+    } catch (err) {
+      toast.error('Kon niet verwijderen');
+    }
+  };
+
+  // Item CRUD
+  const resetItemForm = () => {
+    setItemForm({ title: '', description: '', sizes: '', category_id: '' });
+    setEditingItem(null);
+    setShowItemForm(false);
+  };
+
+  const startEditItem = (item) => {
+    setItemForm({
       title: item.title,
       description: item.description || '',
-      sizes: (item.sizes || []).join(', ')
+      sizes: (item.sizes || []).join(', '),
+      category_id: item.category_id || ''
     });
     setEditingItem(item);
-    setShowForm(true);
+    setShowItemForm(true);
   };
 
-  const handleSave = async () => {
-    if (!form.title.trim()) {
-      toast.error('Titel is verplicht');
-      return;
-    }
+  const openNewItemForCategory = (catId) => {
+    resetItemForm();
+    setItemForm(prev => ({ ...prev, category_id: catId }));
+    setShowItemForm(true);
+  };
+
+  const handleSaveItem = async () => {
+    if (!itemForm.title.trim()) { toast.error('Titel is verplicht'); return; }
     setSaving(true);
-    const sizes = form.sizes ? form.sizes.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const sizes = itemForm.sizes ? itemForm.sizes.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const payload = {
+      title: itemForm.title,
+      description: itemForm.description || null,
+      sizes,
+      category_id: itemForm.category_id || null
+    };
     try {
       if (editingItem) {
-        await axios.put(`${API}/material-catalog/${editingItem.id}`, {
-          title: form.title, description: form.description || null, sizes
-        }, { headers: getAuthHeaders() });
+        await axios.put(`${API}/material-catalog/${editingItem.id}`, payload, { headers: getAuthHeaders() });
         toast.success('Item bijgewerkt');
       } else {
-        await axios.post(`${API}/material-catalog`, {
-          title: form.title, description: form.description || null, sizes
-        }, { headers: getAuthHeaders() });
+        await axios.post(`${API}/material-catalog`, payload, { headers: getAuthHeaders() });
         toast.success('Item toegevoegd');
       }
-      resetForm();
-      fetchItems();
+      resetItemForm();
+      fetchAll();
     } catch (err) {
       toast.error('Kon niet opslaan');
     } finally {
@@ -82,12 +138,12 @@ export default function MaterialCatalogAdmin() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Weet je zeker dat je dit item wilt verwijderen?')) return;
+  const handleDeleteItem = async (id) => {
+    if (!window.confirm('Item verwijderen?')) return;
     try {
       await axios.delete(`${API}/material-catalog/${id}`, { headers: getAuthHeaders() });
       toast.success('Item verwijderd');
-      fetchItems();
+      fetchAll();
     } catch (err) {
       toast.error('Kon niet verwijderen');
     }
@@ -104,13 +160,39 @@ export default function MaterialCatalogAdmin() {
         headers: { ...getAuthHeaders(), 'Content-Type': 'multipart/form-data' }
       });
       toast.success('Afbeelding geüpload');
-      fetchItems();
+      fetchAll();
     } catch (err) {
       toast.error('Upload mislukt');
     } finally {
       setUploadingId(null);
     }
   };
+
+  const toggleCollapse = (catId) => {
+    setCollapsedCats(prev => ({ ...prev, [catId]: !prev[catId] }));
+  };
+
+  // Group items by category
+  const catMap = {};
+  categories.forEach(c => { catMap[c.id] = c; });
+  const uncategorized = items.filter(i => !i.category_id || !catMap[i.category_id]);
+  const itemsByCategory = {};
+  categories.forEach(c => { itemsByCategory[c.id] = []; });
+  items.forEach(i => {
+    if (i.category_id && catMap[i.category_id]) {
+      itemsByCategory[i.category_id].push(i);
+    }
+  });
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center py-20">
+          <Loader2 className="animate-spin" size={32} style={{ color: '#500000' }} />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -123,27 +205,47 @@ export default function MaterialCatalogAdmin() {
             </div>
             <div>
               <h1 className="text-2xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif', color: '#500000' }}>
-                Materiaal Catalogus
+                Bestelcatalogus
               </h1>
-              <p className="text-sm text-gray-500">Beheer de materialenlijst waaruit werkmannen kunnen bestellen</p>
+              <p className="text-sm text-gray-500">Beheer categorieën en materialen waaruit werkmannen kunnen bestellen</p>
             </div>
           </div>
-          <Button
-            data-testid="add-catalog-item-btn"
-            onClick={() => { resetForm(); setShowForm(true); }}
-            style={{ backgroundColor: '#500000' }}
-          >
-            <Plus size={18} className="mr-2" />
-            Item Toevoegen
-          </Button>
         </div>
 
-        {/* Add/Edit Form */}
-        {showForm && (
-          <Card data-testid="catalog-form" className="border-2 border-dashed" style={{ borderColor: '#7a1f1f' }}>
+        {/* Add Category */}
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <FolderOpen size={20} style={{ color: '#500000' }} />
+              <span className="font-semibold text-sm" style={{ color: '#500000' }}>Nieuwe categorie:</span>
+              <Input
+                data-testid="new-category-input"
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                placeholder="Bijv. Gyproc, Schroeven, Tegels..."
+                className="max-w-xs"
+                onKeyDown={(e) => e.key === 'Enter' && addCategory()}
+              />
+              <Button
+                data-testid="add-category-btn"
+                onClick={addCategory}
+                disabled={addingCat || !newCatName.trim()}
+                size="sm"
+                style={{ backgroundColor: '#500000' }}
+              >
+                {addingCat ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                <span className="ml-1">Toevoegen</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Item Form (floating) */}
+        {showItemForm && (
+          <Card data-testid="catalog-item-form" className="border-2 border-dashed" style={{ borderColor: '#7a1f1f' }}>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg" style={{ color: '#500000' }}>
-                {editingItem ? 'Item Bewerken' : 'Nieuw Item Toevoegen'}
+                {editingItem ? 'Item Bewerken' : 'Nieuw Item'}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -152,11 +254,25 @@ export default function MaterialCatalogAdmin() {
                   <Label className="font-semibold">Titel *</Label>
                   <Input
                     data-testid="catalog-title-input"
-                    value={form.title}
-                    onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    placeholder="Bijv. Tegels, Cement, PVC Buis..."
+                    value={itemForm.title}
+                    onChange={(e) => setItemForm({ ...itemForm, title: e.target.value })}
+                    placeholder="Bijv. Groene gyproc 260x120"
                     className="mt-1"
                   />
+                </div>
+                <div>
+                  <Label className="font-semibold">Categorie</Label>
+                  <Select value={itemForm.category_id || 'none'} onValueChange={(v) => setItemForm({ ...itemForm, category_id: v === 'none' ? '' : v })}>
+                    <SelectTrigger data-testid="catalog-category-select" className="mt-1">
+                      <SelectValue placeholder="Kies categorie..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Geen categorie</SelectItem>
+                      {categories.map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label className="font-semibold flex items-center gap-1">
@@ -164,31 +280,29 @@ export default function MaterialCatalogAdmin() {
                   </Label>
                   <Input
                     data-testid="catalog-sizes-input"
-                    value={form.sizes}
-                    onChange={(e) => setForm({ ...form, sizes: e.target.value })}
-                    placeholder="Bijv. 60x60, 30x60, 80x80 (gescheiden door komma)"
+                    value={itemForm.sizes}
+                    onChange={(e) => setItemForm({ ...itemForm, sizes: e.target.value })}
+                    placeholder="Bijv. 50mm, 75mm, 100mm (komma gescheiden)"
                     className="mt-1"
                   />
-                  <p className="text-xs text-gray-400 mt-1">Gescheiden door komma's. Werkmannen kiezen hieruit.</p>
                 </div>
-                <div className="md:col-span-2">
+                <div>
                   <Label className="font-semibold">Beschrijving (optioneel)</Label>
-                  <Textarea
+                  <Input
                     data-testid="catalog-description-input"
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    placeholder="Optionele extra informatie over dit materiaal..."
+                    value={itemForm.description}
+                    onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
+                    placeholder="Extra informatie..."
                     className="mt-1"
-                    rows={2}
                   />
                 </div>
               </div>
               <div className="flex gap-2 mt-4">
-                <Button data-testid="catalog-save-btn" onClick={handleSave} disabled={saving} style={{ backgroundColor: '#500000' }}>
+                <Button data-testid="catalog-save-btn" onClick={handleSaveItem} disabled={saving} style={{ backgroundColor: '#500000' }}>
                   {saving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Save size={16} className="mr-2" />}
                   {editingItem ? 'Bijwerken' : 'Toevoegen'}
                 </Button>
-                <Button variant="outline" onClick={resetForm}>
+                <Button variant="outline" onClick={resetItemForm}>
                   <X size={16} className="mr-2" /> Annuleren
                 </Button>
               </div>
@@ -196,98 +310,201 @@ export default function MaterialCatalogAdmin() {
           </Card>
         )}
 
-        {/* Catalog Grid */}
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="animate-spin" size={32} style={{ color: '#500000' }} />
-          </div>
-        ) : items.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12 text-gray-500">
-              <Package size={48} className="mx-auto mb-3 opacity-50" />
-              <p className="text-lg font-medium">Nog geen items in de catalogus</p>
-              <p className="text-sm">Voeg materialen toe zodat werkmannen deze kunnen bestellen.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {items.map((item) => (
-              <Card
-                key={item.id}
-                data-testid={`catalog-item-${item.id}`}
-                className="overflow-hidden hover:shadow-lg transition-shadow"
-              >
-                {/* Image */}
-                <div className="relative aspect-square bg-gray-100 flex items-center justify-center group">
-                  {item.image_url ? (
-                    <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="flex flex-col items-center text-gray-300">
-                      <ImageIcon size={48} />
-                      <span className="text-xs mt-1">Geen afbeelding</span>
-                    </div>
-                  )}
-                  {/* Upload overlay */}
-                  <label
-                    className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center cursor-pointer transition-all opacity-0 group-hover:opacity-100"
+        {/* Categories with items */}
+        {categories.map(cat => {
+          const catItems = itemsByCategory[cat.id] || [];
+          const isCollapsed = collapsedCats[cat.id];
+
+          return (
+            <Card key={cat.id} data-testid={`category-${cat.id}`}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    data-testid={`toggle-cat-${cat.id}`}
+                    onClick={() => toggleCollapse(cat.id)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
                   >
-                    {uploadingId === item.id ? (
-                      <Loader2 size={28} className="text-white animate-spin" />
-                    ) : (
-                      <div className="bg-white/90 rounded-full p-2">
-                        <Camera size={20} style={{ color: '#500000' }} />
+                    {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
+                  </button>
+
+                  {editingCat === cat.id ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <Input
+                        value={editCatName}
+                        onChange={(e) => setEditCatName(e.target.value)}
+                        className="max-w-xs h-8 text-sm"
+                        onKeyDown={(e) => e.key === 'Enter' && saveEditCat(cat.id)}
+                        autoFocus
+                      />
+                      <Button size="sm" variant="ghost" onClick={() => saveEditCat(cat.id)} className="h-8 px-2 text-green-600">
+                        <Save size={14} />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingCat(null)} className="h-8 px-2">
+                        <X size={14} />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <FolderOpen size={18} style={{ color: '#500000' }} />
+                      <CardTitle className="text-base" style={{ color: '#500000' }}>
+                        {cat.name}
+                      </CardTitle>
+                      <span className="text-xs text-gray-400 ml-1">({catItems.length})</span>
+                      <div className="ml-auto flex items-center gap-1">
+                        <Button
+                          data-testid={`add-item-to-${cat.id}`}
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => openNewItemForCategory(cat.id)}
+                        >
+                          <Plus size={12} /> Item
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2"
+                          onClick={() => { setEditingCat(cat.id); setEditCatName(cat.name); }}
+                        >
+                          <Edit2 size={12} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-red-400 hover:text-red-600"
+                          onClick={() => deleteCat(cat.id)}
+                        >
+                          <Trash2 size={12} />
+                        </Button>
                       </div>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => handleImageUpload(e, item.id)}
-                    />
-                  </label>
-                  {!item.active && (
-                    <span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">Inactief</span>
+                    </>
                   )}
                 </div>
-                {/* Details */}
-                <CardContent className="p-3">
-                  <h3 className="font-bold text-sm" style={{ color: '#500000' }}>{item.title}</h3>
-                  {item.description && (
-                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description}</p>
-                  )}
-                  {item.sizes && item.sizes.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {item.sizes.map((s, i) => (
-                        <span key={i} className="text-xs bg-gray-100 px-2 py-0.5 rounded-full text-gray-600">{s}</span>
+              </CardHeader>
+
+              {!isCollapsed && (
+                <CardContent className="pt-0">
+                  {catItems.length === 0 ? (
+                    <div className="text-center py-6 text-gray-400 text-sm border-2 border-dashed rounded-lg">
+                      Nog geen items in deze categorie.
+                      <button
+                        onClick={() => openNewItemForCategory(cat.id)}
+                        className="ml-1 underline hover:text-gray-600"
+                      >
+                        Item toevoegen
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                      {catItems.map(item => (
+                        <ItemCard
+                          key={item.id}
+                          item={item}
+                          onEdit={startEditItem}
+                          onDelete={handleDeleteItem}
+                          onUploadImage={handleImageUpload}
+                          uploadingId={uploadingId}
+                        />
                       ))}
                     </div>
                   )}
-                  <div className="flex gap-1 mt-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      data-testid={`edit-catalog-${item.id}`}
-                      className="flex-1 text-xs"
-                      onClick={() => startEdit(item)}
-                    >
-                      <Edit2 size={12} className="mr-1" /> Bewerken
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      data-testid={`delete-catalog-${item.id}`}
-                      className="text-red-500 hover:text-red-700 text-xs"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <Trash2 size={12} />
-                    </Button>
-                  </div>
                 </CardContent>
-              </Card>
-            ))}
-          </div>
+              )}
+            </Card>
+          );
+        })}
+
+        {/* Uncategorized items */}
+        {uncategorized.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <Package size={18} className="text-gray-400" />
+                <CardTitle className="text-base text-gray-500">Zonder categorie</CardTitle>
+                <span className="text-xs text-gray-400">({uncategorized.length})</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto h-7 text-xs gap-1"
+                  onClick={() => { resetItemForm(); setShowItemForm(true); }}
+                >
+                  <Plus size={12} /> Item
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {uncategorized.map(item => (
+                  <ItemCard
+                    key={item.id}
+                    item={item}
+                    onEdit={startEditItem}
+                    onDelete={handleDeleteItem}
+                    onUploadImage={handleImageUpload}
+                    uploadingId={uploadingId}
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Empty state */}
+        {categories.length === 0 && items.length === 0 && (
+          <Card>
+            <CardContent className="text-center py-12 text-gray-500">
+              <FolderOpen size={48} className="mx-auto mb-3 opacity-50" />
+              <p className="text-lg font-medium">Begin met het aanmaken van categorieën</p>
+              <p className="text-sm mt-1">Maak categorieën aan (bijv. "Gyproc", "Schroeven") en voeg daar materialen aan toe.</p>
+            </CardContent>
+          </Card>
         )}
       </div>
     </DashboardLayout>
+  );
+}
+
+function ItemCard({ item, onEdit, onDelete, onUploadImage, uploadingId }) {
+  return (
+    <Card data-testid={`catalog-item-${item.id}`} className="overflow-hidden hover:shadow-md transition-shadow">
+      <div className="relative aspect-[4/3] bg-gray-100 flex items-center justify-center group">
+        {item.image_url ? (
+          <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
+        ) : (
+          <div className="flex flex-col items-center text-gray-300">
+            <ImageIcon size={32} />
+          </div>
+        )}
+        <label className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center cursor-pointer transition-all opacity-0 group-hover:opacity-100">
+          {uploadingId === item.id ? (
+            <Loader2 size={24} className="text-white animate-spin" />
+          ) : (
+            <div className="bg-white/90 rounded-full p-1.5">
+              <Camera size={16} style={{ color: '#500000' }} />
+            </div>
+          )}
+          <input type="file" accept="image/*" className="hidden" onChange={(e) => onUploadImage(e, item.id)} />
+        </label>
+      </div>
+      <CardContent className="p-2">
+        <h3 className="font-bold text-xs leading-tight" style={{ color: '#500000' }}>{item.title}</h3>
+        {item.description && <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-1">{item.description}</p>}
+        {item.sizes?.length > 0 && (
+          <div className="flex flex-wrap gap-0.5 mt-1">
+            {item.sizes.map((s, i) => (
+              <span key={i} className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">{s}</span>
+            ))}
+          </div>
+        )}
+        <div className="flex gap-1 mt-2">
+          <Button variant="outline" size="sm" className="flex-1 h-6 text-[10px]" onClick={() => onEdit(item)}>
+            <Edit2 size={10} className="mr-0.5" /> Bewerken
+          </Button>
+          <Button variant="outline" size="sm" className="h-6 px-1.5 text-red-500" onClick={() => onDelete(item.id)}>
+            <Trash2 size={10} />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

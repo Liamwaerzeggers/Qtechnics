@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, UploadFile, File, Response, Cookie, Header, Request, Query, Form
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, UploadFile, File, Response, Cookie, Header, Request, Query, Form, Body
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
@@ -826,9 +826,17 @@ class MaterialRequestCreate(BaseModel):
     project_name: Optional[str] = None
 
 # Material Catalog (Beheerder materialenlijst voor werkmannen)
+class MaterialCategory(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"MCTG-{str(uuid.uuid4())[:8].upper()}")
+    name: str
+    sort_order: int = 0
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class MaterialCatalogItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: f"MCAT-{str(uuid.uuid4())[:8].upper()}")
+    category_id: Optional[str] = None
     title: str
     description: Optional[str] = None
     image_url: Optional[str] = None
@@ -838,11 +846,13 @@ class MaterialCatalogItem(BaseModel):
 
 class MaterialCatalogItemCreate(BaseModel):
     title: str
+    category_id: Optional[str] = None
     description: Optional[str] = None
     sizes: List[str] = []
 
 class MaterialCatalogItemUpdate(BaseModel):
     title: Optional[str] = None
+    category_id: Optional[str] = None
     description: Optional[str] = None
     sizes: Optional[List[str]] = None
     active: Optional[bool] = None
@@ -10809,6 +10819,46 @@ async def delete_material_request(request_id: str, current_user: User = Depends(
 
 # ============= MATERIAL CATALOG ENDPOINTS (Beheerder Materialenlijst) =============
 
+@api_router.get("/material-categories")
+async def get_material_categories(current_user: User = Depends(get_current_user)):
+    """Get all material categories"""
+    cats = await db.material_categories.find({}, {"_id": 0}).sort("sort_order", 1).to_list(100)
+    return cats
+
+@api_router.post("/material-categories")
+async def create_material_category(name: str = Body(..., embed=True), current_user: User = Depends(get_current_user)):
+    """Create a new material category (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen beheerders")
+    max_order = await db.material_categories.find_one(sort=[("sort_order", -1)])
+    next_order = (max_order.get("sort_order", 0) + 1) if max_order else 0
+    cat = MaterialCategory(name=name, sort_order=next_order)
+    await db.material_categories.insert_one(cat.model_dump())
+    result = cat.model_dump()
+    result.pop("_id", None)
+    return result
+
+@api_router.put("/material-categories/{cat_id}")
+async def update_material_category(cat_id: str, name: str = Body(..., embed=True), current_user: User = Depends(get_current_user)):
+    """Update category name"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen beheerders")
+    result = await db.material_categories.update_one({"id": cat_id}, {"$set": {"name": name}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Categorie niet gevonden")
+    return {"message": "Categorie bijgewerkt"}
+
+@api_router.delete("/material-categories/{cat_id}")
+async def delete_material_category(cat_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a category and unlink its items"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen beheerders")
+    result = await db.material_categories.delete_one({"id": cat_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Categorie niet gevonden")
+    await db.material_catalog.update_many({"category_id": cat_id}, {"$set": {"category_id": None}})
+    return {"message": "Categorie verwijderd"}
+
 @api_router.get("/material-catalog")
 async def get_material_catalog(current_user: User = Depends(get_current_user)):
     """Get all active catalog items"""
@@ -10821,7 +10871,7 @@ async def create_catalog_item(item: MaterialCatalogItemCreate, current_user: Use
     """Create a new catalog item (admin only)"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Alleen beheerders")
-    doc = MaterialCatalogItem(title=item.title, description=item.description, sizes=item.sizes)
+    doc = MaterialCatalogItem(title=item.title, category_id=item.category_id, description=item.description, sizes=item.sizes)
     await db.material_catalog.insert_one(doc.model_dump())
     result = doc.model_dump()
     result.pop("_id", None)
