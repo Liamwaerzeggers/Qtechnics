@@ -29,6 +29,7 @@ export default function WorkerTaskBanner({ user }) {
   const [tasks, setTasks] = useState([]);
   const [expanded, setExpanded] = useState(false);
   const navigate = useNavigate();
+  const isWorker = user?.role === 'worker';
   
   useEffect(() => {
     if (user) {
@@ -128,16 +129,19 @@ export default function WorkerTaskBanner({ user }) {
             )}
           </div>
           <span className="font-semibold">
-            📋 {tasks.length} openstaande ta{tasks.length > 1 ? 'ken' : 'ak'} uit notities
+            {isWorker 
+              ? `📋 ${tasks.length} openstaande ta${tasks.length > 1 ? 'ken' : 'ak'} / ${tasks.length} відкритих завдань`
+              : `📋 ${tasks.length} openstaande ta${tasks.length > 1 ? 'ken' : 'ak'} uit notities`
+            }
           </span>
           {unseenTasks.length > 0 && (
             <span className="bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">
-              {unseenTasks.length} nieuw
+              {unseenTasks.length} {isWorker ? 'nieuw / нових' : 'nieuw'}
             </span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm opacity-80">Klik om te bekijken</span>
+          <span className="text-sm opacity-80">{isWorker ? 'Klik om te bekijken / Натисніть щоб переглянути' : 'Klik om te bekijken'}</span>
           {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
         </div>
       </button>
@@ -176,7 +180,7 @@ export default function WorkerTaskBanner({ user }) {
                       {/* Assigned by */}
                       <div className="flex items-center gap-1">
                         <User size={14} />
-                        <span>Toegewezen door: <strong>{task.assigned_by_name}</strong></span>
+                        <span>{isWorker ? 'Toegewezen door / Призначено' : 'Toegewezen door'}: <strong>{task.assigned_by_name}</strong></span>
                       </div>
                       
                       {/* Date */}
@@ -194,7 +198,7 @@ export default function WorkerTaskBanner({ user }) {
                     size="sm"
                   >
                     <Check size={16} className="mr-1" />
-                    Voltooid
+                    {isWorker ? 'Voltooid / Готово' : 'Voltooid'}
                   </Button>
                 </div>
                 
@@ -203,7 +207,7 @@ export default function WorkerTaskBanner({ user }) {
                   <div className="mt-2 pt-2 border-t border-gray-200">
                     <span className="text-blue-600 text-xs font-medium flex items-center gap-1">
                       <Bell size={12} />
-                      ✨ Nieuwe taak!
+                      {isWorker ? '✨ Nieuwe taak! / Нове завдання!' : '✨ Nieuwe taak!'}
                     </span>
                   </div>
                 )}

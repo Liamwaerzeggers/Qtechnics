@@ -21,13 +21,13 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
       ];
     }
     
-    // Worker specific navigation - simple menu
+    // Worker specific navigation - simple menu (NL / UA bilingual)
     if (user?.role === 'worker') {
       return [
-        { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, testId: 'nav-dashboard' },
-        { name: 'Projecten', path: '/projects', icon: FileSpreadsheet, testId: 'nav-projects' },
-        { name: 'Materiaal Aanvragen', path: '/material-request', icon: Package, testId: 'nav-material-request' },
-        { name: 'Kalender', path: '/calendar', icon: Calendar, testId: 'nav-calendar' },
+        { name: 'Dashboard / Панель', path: '/dashboard', icon: LayoutDashboard, testId: 'nav-dashboard' },
+        { name: 'Projecten / Проєкти', path: '/projects', icon: FileSpreadsheet, testId: 'nav-projects' },
+        { name: 'Materiaal / Матеріали', path: '/material-request', icon: Package, testId: 'nav-material-request' },
+        { name: 'Kalender / Календар', path: '/calendar', icon: Calendar, testId: 'nav-calendar' },
       ];
     }
     
@@ -206,7 +206,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
                 onClick={handleLogout}
                 className="p-2 rounded-lg hover:bg-gray-100 transition-all"
                 style={{color: '#64748B'}}
-                title="Uitloggen"
+                title={user?.role === 'worker' ? 'Uitloggen / Вийти' : 'Uitloggen'}
               >
                 <LogOut size={20} />
               </button>
@@ -316,7 +316,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
                   }}
                 >
                   <LayoutDashboard size={20} />
-                  <span className="font-semibold text-sm">← Terug</span>
+                  <span className="font-semibold text-sm">{user?.role === 'worker' ? '← Назад / Terug' : '← Terug'}</span>
                 </button>
               )}
               {sidebarItems.map((item) => {
@@ -334,7 +334,14 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
                     }}
                   >
                     <Icon size={20} />
-                    <span className="font-medium">{item.name}</span>
+                    {item.name.includes(' / ') ? (
+                      <span className="font-medium text-left leading-tight">
+                        <span className="block text-sm">{item.name.split(' / ')[0]}</span>
+                        <span className="block text-xs opacity-70">{item.name.split(' / ')[1]}</span>
+                      </span>
+                    ) : (
+                      <span className="font-medium">{item.name}</span>
+                    )}
                   </button>
                 );
               })}

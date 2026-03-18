@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../App';
 import DashboardLayout from '../components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -223,6 +224,8 @@ const getMonthsData = (date, viewMode) => {
 };
 
 export default function CalendarPage() {
+  const { user } = useAuth();
+  const isWorker = user?.role === 'worker';
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -869,13 +872,18 @@ export default function CalendarPage() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-2">
               <Calendar className="w-7 h-7 text-blue-600" />
-              Team Planning
+              {isWorker ? 'Team Planning / Планування команди' : 'Team Planning'}
             </h1>
-            <p className="text-gray-500 text-sm mt-1">Sleep werk naar teams en pas datums aan in de agenda</p>
+            <p className="text-gray-500 text-sm mt-1">
+              {isWorker 
+                ? 'Sleep werk naar teams en pas datums aan / Перетягніть роботу до команд та змініть дати'
+                : 'Sleep werk naar teams en pas datums aan in de agenda'
+              }
+            </p>
           </div>
           <Button onClick={() => setShowAddTask(true)} className="flex items-center gap-2">
             <Plus className="w-4 h-4" />
-            Taak toevoegen
+            {isWorker ? 'Taak toevoegen / Додати завдання' : 'Taak toevoegen'}
           </Button>
         </div>
 
@@ -885,7 +893,7 @@ export default function CalendarPage() {
             <CardHeader className="py-3">
               <CardTitle className="text-base flex items-center gap-2 text-red-700">
                 <Briefcase className="w-5 h-5" />
-                Nieuwe taak toevoegen
+                {isWorker ? 'Nieuwe taak toevoegen / Додати нове завдання' : 'Nieuwe taak toevoegen'}
               </CardTitle>
             </CardHeader>
             <CardContent className="py-3">
@@ -973,7 +981,7 @@ export default function CalendarPage() {
             <CardHeader className="py-3">
               <CardTitle className="text-base flex items-center gap-2 text-orange-700">
                 <Clock className="w-5 h-5" />
-                Niet toegewezen ({unassignedWork.length})
+                {isWorker ? `Niet toegewezen / Непризначені (${unassignedWork.length})` : `Niet toegewezen (${unassignedWork.length})`}
               </CardTitle>
             </CardHeader>
             <CardContent className="py-2">
@@ -1078,7 +1086,7 @@ export default function CalendarPage() {
                   {teamWork.length === 0 ? (
                     <div className="text-center py-6 text-gray-400 text-xs">
                       <Users className="w-6 h-6 mx-auto mb-1 opacity-50" />
-                      Sleep werk hierheen
+                      {isWorker ? 'Sleep werk hierheen / Перетягніть роботу сюди' : 'Sleep werk hierheen'}
                     </div>
                   ) : (
                     teamWork.map((item, idx) => (
@@ -1130,7 +1138,7 @@ export default function CalendarPage() {
                           onClick={() => goToDate(item.start_date)}
                           className="text-[10px] text-blue-500 hover:underline mt-1 ml-6"
                         >
-                          Toon in agenda ↓
+                          {isWorker ? 'Toon in agenda / Показати в календарі ↓' : 'Toon in agenda ↓'}
                         </button>
                       </div>
                     ))
@@ -1163,7 +1171,7 @@ export default function CalendarPage() {
                 className="text-gray-400 hover:text-gray-600 transition-colors flex flex-col items-center gap-1"
               >
                 <Plus className="w-8 h-8" />
-                <span className="text-xs font-medium">Team toevoegen</span>
+                <span className="text-xs font-medium">{isWorker ? 'Team toevoegen / Додати команду' : 'Team toevoegen'}</span>
               </button>
             )}
           </Card>
@@ -1175,7 +1183,7 @@ export default function CalendarPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-blue-600" />
-                Agenda
+                {isWorker ? 'Agenda / Календар' : 'Agenda'}
               </CardTitle>
               <div className="flex flex-wrap items-center gap-2">
                 {/* View Mode Selector */}
@@ -1206,7 +1214,7 @@ export default function CalendarPage() {
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
                   <Button variant="outline" size="sm" onClick={goToToday} className="text-xs px-2">
-                    Vandaag
+                    {isWorker ? 'Vandaag / Сьогодні' : 'Vandaag'}
                   </Button>
                   <Button variant="outline" size="sm" onClick={nextPeriod}>
                     <ChevronRight className="w-4 h-4" />
@@ -1263,7 +1271,9 @@ export default function CalendarPage() {
                       })}
                   </div>
                   {getWorkForView().filter(item => isDateInRange(viewDates[0], item.start_date, item.end_date)).length === 0 && (
-                    <p className="text-center text-gray-400 py-8">Geen werk gepland voor deze dag</p>
+                    <p className="text-center text-gray-400 py-8">
+                      {isWorker ? 'Geen werk gepland voor deze dag / Немає запланованої роботи на цей день' : 'Geen werk gepland voor deze dag'}
+                    </p>
                   )}
                 </div>
               </div>
@@ -1518,10 +1528,10 @@ export default function CalendarPage() {
         <Card className="bg-gray-50">
           <CardContent className="py-3">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-600">
-              <span className="font-medium">💡 Tips:</span>
-              <span>• Sleep werk naar een team om toe te wijzen</span>
-              <span>• Sleep blokken in de agenda om datums aan te passen</span>
-              <span>• Klik op een blok om naar het project te gaan</span>
+              <span className="font-medium">{isWorker ? '💡 Tips / Поради:' : '💡 Tips:'}</span>
+              <span>• {isWorker ? 'Sleep werk naar een team / Перетягніть роботу до команди' : 'Sleep werk naar een team om toe te wijzen'}</span>
+              <span>• {isWorker ? 'Sleep blokken om datums te wijzigen / Перетягніть блоки для зміни дат' : 'Sleep blokken in de agenda om datums aan te passen'}</span>
+              <span>• {isWorker ? 'Klik op een blok voor het project / Натисніть на блок для проєкту' : 'Klik op een blok om naar het project te gaan'}</span>
             </div>
           </CardContent>
         </Card>

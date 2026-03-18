@@ -19,6 +19,7 @@ const getAuthHeaders = () => {
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isWorker = user?.role === 'worker';
   const [stats, setStats] = useState(null);
   const [materialReminders, setMaterialReminders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -88,56 +89,73 @@ export default function Dashboard() {
       <div data-testid="dashboard-page" className="space-y-8">
         <div>
           <h1 className="text-4xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
-            Dashboard
+            Dashboard {isWorker && '/ Панель'}
           </h1>
-          <p className="text-lg mt-2" style={{color: '#64748B'}}>Welkom terug, {user?.name}!</p>
+          <p className="text-lg mt-2" style={{color: '#64748B'}}>
+            {isWorker 
+              ? `Welkom terug / Ласкаво просимо, ${user?.name}!`
+              : `Welkom terug, ${user?.name}!`
+            }
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card data-testid="stats-leads-card" className="cursor-pointer hover:shadow-lg transition-all" onClick={() => navigate('/leads')}>
-            <CardHeader>
-              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Leads</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold" style={{color: '#7a1f1f'}}>{stats?.total_leads || 0}</div>
-              <p className="text-sm mt-2" style={{color: '#64748B'}}>Totaal aantal leads</p>
-            </CardContent>
-          </Card>
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${isWorker ? '' : 'lg:grid-cols-4'} gap-6`}>
+          {!isWorker && (
+            <Card data-testid="stats-leads-card" className="cursor-pointer hover:shadow-lg transition-all" onClick={() => navigate('/leads')}>
+              <CardHeader>
+                <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Leads</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-4xl font-bold" style={{color: '#7a1f1f'}}>{stats?.total_leads || 0}</div>
+                <p className="text-sm mt-2" style={{color: '#64748B'}}>Totaal aantal leads</p>
+              </CardContent>
+            </Card>
+          )}
 
-          <Card data-testid="stats-quotes-card" className="cursor-pointer hover:shadow-lg transition-all" onClick={() => navigate('/quotes')}>
-            <CardHeader>
-              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Offertes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold" style={{color: '#7a1f1f'}}>{stats?.total_quotes || 0}</div>
-              <p className="text-sm mt-2" style={{color: '#64748B'}}>Totaal aantal offertes</p>
-            </CardContent>
-          </Card>
+          {!isWorker && (
+            <Card data-testid="stats-quotes-card" className="cursor-pointer hover:shadow-lg transition-all" onClick={() => navigate('/quotes')}>
+              <CardHeader>
+                <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Offertes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-4xl font-bold" style={{color: '#7a1f1f'}}>{stats?.total_quotes || 0}</div>
+                <p className="text-sm mt-2" style={{color: '#64748B'}}>Totaal aantal offertes</p>
+              </CardContent>
+            </Card>
+          )}
 
           <Card data-testid="stats-projects-card" className="cursor-pointer hover:shadow-lg transition-all" onClick={() => navigate('/projects')}>
             <CardHeader>
-              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Projecten</CardTitle>
+              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
+                {isWorker ? 'Projecten / Проєкти' : 'Projecten'}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-4xl font-bold" style={{color: '#7a1f1f'}}>{stats?.total_projects || 0}</div>
-              <p className="text-sm mt-2" style={{color: '#64748B'}}>Actieve projecten</p>
+              <p className="text-sm mt-2" style={{color: '#64748B'}}>
+                {isWorker ? 'Actieve projecten / Активні проєкти' : 'Actieve projecten'}
+              </p>
             </CardContent>
           </Card>
 
-          <Card data-testid="stats-materials-card" className="cursor-pointer hover:shadow-lg transition-all" onClick={() => navigate('/materials')}>
+          <Card data-testid="stats-materials-card" className="cursor-pointer hover:shadow-lg transition-all" onClick={() => navigate('/material-request')}>
             <CardHeader>
-              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Materialen</CardTitle>
+              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
+                {isWorker ? 'Materialen / Матеріали' : 'Materialen'}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-4xl font-bold" style={{color: '#7a1f1f'}}>{stats?.total_materials || 0}</div>
-              <p className="text-sm mt-2" style={{color: '#64748B'}}>In catalogus</p>
+              <p className="text-sm mt-2" style={{color: '#64748B'}}>
+                {isWorker ? 'In catalogus / У каталозі' : 'In catalogus'}
+              </p>
             </CardContent>
           </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Material Order Reminders - Based on order_reminder_date */}
-          {materialReminders.length > 0 && (
+          {!isWorker && materialReminders.length > 0 && (
             <Card className="lg:col-span-2 border-2" style={{borderColor: '#EF4444', backgroundColor: '#FEF2F2'}}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#991B1B'}}>
@@ -218,7 +236,7 @@ export default function Dashboard() {
           )}
 
           {/* Material Reminders - One month before start */}
-          {stats?.material_reminders && stats.material_reminders.length > 0 && (
+          {!isWorker && stats?.material_reminders && stats.material_reminders.length > 0 && (
             <Card className="lg:col-span-2 border-2" style={{borderColor: '#F59E0B', backgroundColor: '#FFFBEB'}}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#92400E'}}>
@@ -301,57 +319,61 @@ export default function Dashboard() {
             </Card>
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Recente Leads</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {stats?.recent_leads && stats.recent_leads.length > 0 ? (
-                <div className="space-y-3">
-                  {stats.recent_leads.map((lead) => (
-                    <div
-                      key={lead.id}
-                      data-testid={`recent-lead-${lead.id}`}
-                      className="p-3 rounded-lg cursor-pointer hover:shadow-md transition-all"
-                      style={{backgroundColor: '#F8FAFC'}}
-                      onClick={() => navigate(`/leads/${lead.id}`)}
-                    >
-                      <div className="font-semibold" style={{color: '#1E293B'}}>{lead.name}</div>
-                      <div className="text-sm" style={{color: '#64748B'}}>{lead.email}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p style={{color: '#94A3B8'}}>Nog geen leads</p>
-              )}
-            </CardContent>
-          </Card>
+          {!isWorker && (
+            <Card>
+              <CardHeader>
+                <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Recente Leads</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {stats?.recent_leads && stats.recent_leads.length > 0 ? (
+                  <div className="space-y-3">
+                    {stats.recent_leads.map((lead) => (
+                      <div
+                        key={lead.id}
+                        data-testid={`recent-lead-${lead.id}`}
+                        className="p-3 rounded-lg cursor-pointer hover:shadow-md transition-all"
+                        style={{backgroundColor: '#F8FAFC'}}
+                        onClick={() => navigate(`/leads/${lead.id}`)}
+                      >
+                        <div className="font-semibold" style={{color: '#1E293B'}}>{lead.name}</div>
+                        <div className="text-sm" style={{color: '#64748B'}}>{lead.email}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{color: '#94A3B8'}}>Nog geen leads</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Recente Offertes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {stats?.recent_quotes && stats.recent_quotes.length > 0 ? (
-                <div className="space-y-3">
-                  {stats.recent_quotes.map((quote) => (
-                    <div
-                      key={quote.id}
-                      data-testid={`recent-quote-${quote.id}`}
-                      className="p-3 rounded-lg cursor-pointer hover:shadow-md transition-all"
-                      style={{backgroundColor: '#F8FAFC'}}
-                      onClick={() => navigate(`/quotes/${quote.id}`)}
-                    >
-                      <div className="font-semibold" style={{color: '#1E293B'}}>{quote.quote_number}</div>
-                      <div className="text-sm" style={{color: '#64748B'}}>Status: {quote.status}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p style={{color: '#94A3B8'}}>Nog geen offertes</p>
-              )}
-            </CardContent>
-          </Card>
+          {!isWorker && (
+            <Card>
+              <CardHeader>
+                <CardTitle style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>Recente Offertes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {stats?.recent_quotes && stats.recent_quotes.length > 0 ? (
+                  <div className="space-y-3">
+                    {stats.recent_quotes.map((quote) => (
+                      <div
+                        key={quote.id}
+                        data-testid={`recent-quote-${quote.id}`}
+                        className="p-3 rounded-lg cursor-pointer hover:shadow-md transition-all"
+                        style={{backgroundColor: '#F8FAFC'}}
+                        onClick={() => navigate(`/quotes/${quote.id}`)}
+                      >
+                        <div className="font-semibold" style={{color: '#1E293B'}}>{quote.quote_number}</div>
+                        <div className="text-sm" style={{color: '#64748B'}}>Status: {quote.status}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{color: '#94A3B8'}}>Nog geen offertes</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </DashboardLayout>

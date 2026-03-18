@@ -397,7 +397,7 @@ export default function ProjectWorkSlipPage() {
             className="flex items-center"
           >
             <ArrowLeft size={20} className="mr-2" />
-            Terug
+            {currentUser?.role === 'worker' ? 'Terug / Назад' : 'Terug'}
           </Button>
         </div>
 
@@ -405,7 +405,7 @@ export default function ProjectWorkSlipPage() {
           <div className="flex items-center space-x-3 mb-2">
             <FileText size={24} style={{ color: '#500000' }} />
             <h1 className="text-2xl font-bold" style={{ color: '#3a190b' }}>
-              Werkbon Registratie
+              Werkbon Registratie / Реєстрація робочого звіту
             </h1>
           </div>
           <p className="text-sm" style={{ color: '#64748B' }}>
@@ -542,7 +542,10 @@ export default function ProjectWorkSlipPage() {
           )}
           
           <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>
-            💡 Tip: Gebruik decimalen voor halve uren (8.5 = 8 uur en 30 minuten)
+            💡 {currentUser?.role === 'worker' 
+              ? 'Tip: Gebruik decimalen voor halve uren (8.5 = 8 uur en 30 minuten) / Використовуйте десяткові дроби для половини годин'
+              : 'Tip: Gebruik decimalen voor halve uren (8.5 = 8 uur en 30 minuten)'
+            }
           </p>
         </div>
 
@@ -745,7 +748,10 @@ export default function ProjectWorkSlipPage() {
                 className="w-full"
               />
               <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>
-                💡 Tip: Gebruik de vertaalknop of typ handmatig in beide talen
+                💡 {currentUser?.role === 'worker'
+                  ? 'Tip: Gebruik de vertaalknop of typ handmatig in beide talen / Використовуйте кнопку перекладу або введіть вручну обома мовами'
+                  : 'Tip: Gebruik de vertaalknop of typ handmatig in beide talen'
+                }
               </p>
             </div>
           </div>
