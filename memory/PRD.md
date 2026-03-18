@@ -8,7 +8,7 @@
 - **Accent kleur**: #7a1f1f (lichter bordeaux)
 
 ## Originele Probleemstelling
-Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
+Full-stack bouwprojectbeheerapplicatie voor Max Q met functies voor:
 - Lead management
 - Offerte generatie (PDF/Excel)
 - Project planning en tracking
@@ -29,142 +29,72 @@ Full-stack bouwprojectbeheerapplicatie voor Q-Technics met functies voor:
 | Makelaar | `realtor` | Eigen panden, renovatiecalculaties |
 | Investeerder | `investor` | Eigen/gedeelde panden, rendement |
 
-### Geïmplementeerd (Fase 1)
-- [x] **Datamodel** - Property, Room, RenovationCalculation, Subcontractor, RealtorProfile, InvestorProfile
-- [x] **Rollen & Authenticatie** - Tenant login via `/api/auth/tenant/login`
-- [x] **Makelaar Dashboard** - Panden beheren, kamers toevoegen, renovatieberekening
-- [x] **Renovatiecalculator** - Automatische berekening op basis van kamerdimensies en werkposten met labels
-- [x] **Tenant Beheer** - Admin kan makelaars, investeerders en onderaannemers aanmaken/beheren
-- [x] **Mailto Welkomst-email** - Bij aanmaken van makelaar/investeerder wordt Outlook geopend met credentials
-- [x] **Property Scraping** - Werkt met Immoweb, Zimmo, Immoscoop EN elke makelaar website
-- [x] **Werkposten Labels Pagina** - Admin kan labels (vloer/muur/plafond/etc) toewijzen aan werkposten
+### Geïmplementeerd (Fase 1) - Volledig
+- [x] Datamodel - Property, Room, RenovationCalculation, Subcontractor, RealtorProfile, InvestorProfile
+- [x] Rollen & Authenticatie - Tenant login via `/api/auth/tenant/login` (JSON body)
+- [x] Makelaar Dashboard - Panden beheren, kamers toevoegen, renovatieberekening
+- [x] **Renovatiecalculator met Live Prijzen** - Scenario-based berekening gekoppeld aan work_items DB collectie
+- [x] Tenant Beheer - Admin kan makelaars, investeerders en onderaannemers aanmaken/beheren
+- [x] Mailto Welkomst-email
+- [x] Property Scraping - Werkt met Immoweb, Zimmo, Immoscoop EN elke makelaar website
+- [x] Werkposten Labels Pagina - Admin kan labels toewijzen aan werkposten
+- [x] Materiaal Aanvraag Systeem - Tweetalig (NL/UA) formulier voor werkmannen
+- [x] Notificatie Banners - Uitklapbare MaterialRequestBanner en WorkerTaskBanner
+
+### Renovatiecalculator - Functionaliteiten
+- **Vloerwerken**: Voorbereiding (afbraak + egaliseren) + afwerking keuze (tegels/parket/laminaat/vinyl) via radio buttons
+- **Muurwerken**: 3 scenario's (nieuw pleisterwerk / egaliseren / gyproc) + schilderwerk optioneel
+- **Plafondwerken**: Afbraak + gyproc + schilderwerk optioneel
+- **Elektriciteit**: Spots, schakelaars, stopcontacten (automatisch berekend per m²)
+- **Sanitair**: Alleen voor badkamer/keuken (uit DB)
+- **Overig**: Items met label "overig" als optionele extras
+- **Extra opties**: Collapsible secties per categorie voor aanvullende werkposten uit DB
+- **Live Prijzen**: Alle prijzen komen uit `work_items` collectie, met labels voor categorisatie
+- **m² weergave**: Elke sectie toont oppervlakte
+- **Kamerhoogte**: Invoerbaar, standaard 2.55m, gebruikt voor muur berekening
 
 ### Nog te implementeren (Fase 2+)
-- [ ] **Onderaannemers prijzen** - Integreren in renovatiecalculaties
-- [ ] **Investeerder dashboard** - ROI berekeningen, winstinzicht
-- [ ] **Pand delen** - Makelaar kan pand delen met investeerder
+- [ ] Onderaannemers prijzen - Integreren in renovatiecalculaties
+- [ ] Investeerder dashboard - ROI berekeningen, winstinzicht
+- [ ] Pand delen - Makelaar kan pand delen met investeerder
 
 ## Architectuur
 - **Frontend**: React + Tailwind CSS + Shadcn/UI
 - **Backend**: FastAPI + Motor (async MongoDB)
 - **Database**: MongoDB
 
-## Laatste Updates (Februari 2025)
-
-### Authenticatie Systeem - Volledig Herschreven
-- **Nieuw auth systeem** (`/api/auth2/`) met simpele token-based auth
-- Token opslag in `localStorage` onder beide keys (`auth_token` en `session_token`) voor compatibiliteit
-- Hardcoded admin "Liam" werkt met `Liammail123` of `Liammail123.`
-- Alle API calls gebruiken nu `Authorization: Bearer` headers ipv cookies
-
-### Kalender Verbeteringen
-- **Teams hernoemen** - Klik op potlood icoon bij team naam
-- **Taken afvinken** - Ronde checkbox naast elke taak in team tiles en kalender
-- **Voltooide taken** - Verdwijnen uit team tiles, blijven zichtbaar in kalender (grijs/doorgestreept)
-- **Aanmoedigende berichten** bij voltooien van taak met confetti animatie
-
-### Project Notities Systeem (Nieuw!)
-- **Algemene notities sectie** per project (`project_notes` array in Project model)
-- **ProjectNotesBanner component** - Zichtbaar bovenaan elke project pagina, ongeacht actieve tab
-- **Bullet point weergave** - Eerste bezoek notities + algemene notities in één overzicht
-- **Notitie als taak toewijzen** - Admin kan notitie omzetten naar taak voor medewerker
-- **Worker taak systeem** - `worker_tasks` collection in database
-
-### Worker Task Banner (Nieuw!)
-- **Globale notificatie banner** voor werkmannen
-- **Popup bovenaan elk scherm** met openstaande taken
-- **Navigatie** tussen meerdere taken
-- **Direct voltooien** met confetti animatie en aanmoedigende boodschap
-- **Minimaliseren** naar klein icoon in rechterhoek
-
 ## API Endpoints
 
-### Project Notities
-- `GET /api/projects/{id}/notes` - Alle notities ophalen
-- `POST /api/projects/{id}/notes` - Nieuwe notitie toevoegen
-- `PUT /api/projects/{id}/notes/{note_id}` - Notitie bewerken
-- `DELETE /api/projects/{id}/notes/{note_id}` - Notitie verwijderen
-- `POST /api/projects/{id}/notes/{note_id}/assign` - Notitie toewijzen aan medewerker
+### Renovatie Calculator
+- `POST /api/properties/{id}/calculate` - Berekening genereren met live DB prijzen
+- `GET /api/properties/{id}/calculation` - Berekening ophalen
+- `PUT /api/properties/{id}/calculation/items/{itemId}?included=true/false` - Item aan/uit
+- `PUT /api/properties/{id}/calculation/switch-option` - Vloer optie wisselen
+- `PUT /api/properties/{id}/calculation/switch-scenario` - Muur scenario wisselen
 
-### Worker Tasks
-- `GET /api/worker-tasks/my` - Mijn taken ophalen
-- `GET /api/worker-tasks/pending` - Openstaande taken
-- `PUT /api/worker-tasks/{id}/seen` - Taak als gezien markeren
-- `PUT /api/worker-tasks/{id}/complete` - Taak voltooien
-- `GET /api/admin/worker-tasks` - Admin: alle taken
+### Auth
+- `POST /api/auth2/login` - Admin login (JSON body)
+- `POST /api/auth/tenant/login` - Makelaar/Investeerder login (JSON body)
+- `POST /api/auth/worker/login` - Werkman login
 
-## Database Schema Wijzigingen
-
-### Project Model
-```javascript
-{
-  // ... bestaande velden
-  project_notes: [{
-    id: string,
-    text: string,
-    created_at: string,
-    created_by: string,
-    created_by_name: string,
-    is_task: boolean,
-    assigned_to: string | null,
-    assigned_to_name: string | null,
-    task_id: string | null,
-    task_completed: boolean,
-    task_completed_at: string | null
-  }]
-}
-```
-
-### Worker Tasks Collection
-```javascript
-{
-  id: string,           // "TASK-XXXXXXXX"
-  project_id: string,
-  project_name: string,
-  note_id: string,
-  text: string,
-  assigned_to: string,  // Worker ID
-  assigned_to_name: string,
-  assigned_by: string,  // Admin ID
-  assigned_by_name: string,
-  created_at: string,
-  completed: boolean,
-  completed_at: string | null,
-  seen: boolean
-}
-```
-
-### QuickTask Model Update
-```javascript
-{
-  // ... bestaande velden
-  completed: boolean,
-  completed_at: string | null
-}
-```
-
-## Bestanden Gewijzigd/Toegevoegd
-- `/app/backend/server.py` - Project notes en worker tasks endpoints
-- `/app/backend/auth_simple.py` - Nieuw simpel auth systeem
-- `/app/frontend/src/components/ProjectNotesBanner.js` - Nieuw
-- `/app/frontend/src/components/WorkerTaskBanner.js` - Nieuw
-- `/app/frontend/src/components/DashboardLayout.js` - WorkerTaskBanner toegevoegd
-- `/app/frontend/src/pages/ProjectDetailPage.js` - ProjectNotesBanner toegevoegd
-- `/app/frontend/src/pages/CalendarPage.js` - Team rename en taak afvinken
-- `/app/frontend/src/pages/Dashboard.js` - Auth headers fix
-- `/app/frontend/src/pages/ProjectsPage.js` - Auth headers fix
-- Alle andere pages - `withCredentials: true` vervangen door `headers: getAuthHeaders()`
+### Materiaal Aanvragen
+- `POST /api/material-requests` - Nieuwe aanvraag
+- `GET /api/material-requests` - Alle aanvragen ophalen
+- `PUT /api/material-requests/{id}` - Status bijwerken
 
 ## Inloggegevens
-- **Admin**: `liam` / `Liammail123` (of `Liammail123.`)
-- **Test account (preview)**: `test` / `test123`
+- **Admin**: `liam` / `Liammail123`
+- **Makelaar**: `testmakelaar` / `Test123456`
+- **Werkman**: `testwerkman` / `Werk123456`
 
 ## Bekende Issues
-- `server.py` is 9000+ regels - moet gerefactored worden naar routers/services/models
+- `server.py` is 10.700+ regels - moet gerefactored worden naar routers/services/models
 - Foto upload limiet van 5 - moet onderzocht worden
 
 ## Volgende Prioriteiten
-1. Server.py refactoring - opsplitsen in modules
-2. Realtor MVP features afmaken
-3. Onderaannemers Module (Fase 2)
-4. Investeerders Module (Fase 3)
+1. Foto upload limiet van 5 fixen
+2. Server.py refactoring - opsplitsen in modules
+3. Realtor MVP features afmaken (Room Configurator)
+4. Onderaannemers Module (Fase 2)
+5. Investeerders Module (Fase 3)
+6. Commerciële logica (Abonnementen)
