@@ -866,6 +866,7 @@ class MaterialOrderCreate(BaseModel):
     project_id: str
     project_name: str
     notes: Optional[str] = None
+    delivery_date: Optional[str] = None
 
 # Subcontractor (Onderaannemer)
 class Subcontractor(BaseModel):
@@ -10947,12 +10948,13 @@ async def create_material_order(order: MaterialOrderCreate, current_user: User =
         raise HTTPException(status_code=400, detail="Geen items geselecteerd")
     # Create individual material_requests for each item in the order
     created = []
+    delivery_text = order.delivery_date if order.delivery_date else "Zo snel mogelijk"
     for item in order.items:
         size_text = f" ({item.get('selected_size', '')})" if item.get('selected_size') else ""
         doc = MaterialRequest(
             title=f"{item['title']}{size_text}",
             quantity=str(item.get('quantity', 1)),
-            needed_by="Zo snel mogelijk",
+            needed_by=delivery_text,
             photo_url=item.get('image_url'),
             notes=order.notes,
             project_id=order.project_id,
@@ -11430,7 +11432,7 @@ async def send_customer_notification(project_id: str, subject: str, content_desc
         portal_token = project.get("customer_access_token")
         portal_link = ""
         if portal_token:
-            portal_link = f"<p><a href='https://renovation-calc-5.preview.emergentagent.com/customer/{portal_token}' style='background-color: #1E40AF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;'>Bekijk uw project</a></p>"
+            portal_link = f"<p><a href='{os.environ.get('APP_URL', 'https://renovation-calc-5.preview.emergentagent.com')}/customer/{portal_token}' style='background-color: #1E40AF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;'>Bekijk uw project</a></p>"
         
         # Build HTML email
         html_content = f"""

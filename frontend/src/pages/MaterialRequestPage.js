@@ -8,7 +8,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Package, Send, Check, Clock, Truck, Loader2, Plus, Minus, ShoppingCart, Image as ImageIcon, MapPin, Search, FolderOpen, ChevronDown, ChevronRight } from 'lucide-react';
+import { Package, Send, Check, Clock, Truck, Loader2, Plus, Minus, ShoppingCart, Image as ImageIcon, MapPin, Search, FolderOpen, ChevronDown, ChevronRight, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 
 const getAuthHeaders = () => {
@@ -44,7 +44,9 @@ const T = {
   searchPlaceholder: { nl: "Zoek materialen...", ua: "Пошук матеріалів..." },
   emptyCatalog: { nl: "Geen materialen beschikbaar", ua: "Немає доступних матеріалів" },
   remove: { nl: "Verwijderen", ua: "Видалити" },
-  deliverTo: { nl: "Leveren op", ua: "Доставити на" }
+  deliverTo: { nl: "Leveren op", ua: "Доставити на" },
+  deliveryDate: { nl: "Gewenste leverdatum", ua: "Бажана дата доставки" },
+  asap: { nl: "Zo snel mogelijk", ua: "Якнайшвидше" }
 };
 
 export default function MaterialRequestPage() {
@@ -59,6 +61,7 @@ export default function MaterialRequestPage() {
   const [cart, setCart] = useState([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [notes, setNotes] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('catalog');
   const [collapsedCats, setCollapsedCats] = useState({});
@@ -147,11 +150,13 @@ export default function MaterialRequestPage() {
         })),
         project_id: selectedProject,
         project_name: project?.name || '',
-        notes: notes || null
+        notes: notes || null,
+        delivery_date: deliveryDate || null
       }, { headers: getAuthHeaders() });
       toast.success(isWorker ? `✅ ${T.success.nl} / ${T.success.ua}` : `✅ ${T.success.nl}`);
       setCart([]);
       setNotes('');
+      setDeliveryDate('');
       // Refresh requests
       const reqRes = await axios.get(`${API}/material-requests`, { headers: getAuthHeaders() });
       setRequests(reqRes.data || []);
@@ -457,6 +462,34 @@ export default function MaterialRequestPage() {
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+
+                      {/* Delivery date */}
+                      <div>
+                        <Label className="text-xs font-semibold flex items-center gap-1">
+                          <CalendarDays size={12} />
+                          <span>{T.deliveryDate.nl}</span>
+                          {isWorker && <span className="text-[10px] text-gray-400 font-normal">/ {T.deliveryDate.ua}</span>}
+                        </Label>
+                        <div className="flex gap-2 mt-1">
+                          <input
+                            data-testid="delivery-date-input"
+                            type="date"
+                            value={deliveryDate}
+                            min={new Date().toISOString().split('T')[0]}
+                            onChange={(e) => setDeliveryDate(e.target.value)}
+                            className="flex-1 text-sm border rounded-md px-2 py-1.5 bg-white"
+                          />
+                          <Button
+                            variant={!deliveryDate ? 'default' : 'outline'}
+                            size="sm"
+                            className="text-[10px] sm:text-xs shrink-0 h-8"
+                            style={!deliveryDate ? { backgroundColor: '#500000' } : {}}
+                            onClick={() => setDeliveryDate('')}
+                          >
+                            {isWorker ? `${T.asap.nl}` : T.asap.nl}
+                          </Button>
+                        </div>
                       </div>
 
                       {/* Notes */}
