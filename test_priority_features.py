@@ -11,7 +11,7 @@ import tempfile
 import os
 
 class PriorityTester:
-    def __init__(self, base_url="https://bouw-calculator.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://realtor-estimates.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.session_token = None
         self.tests_run = 0

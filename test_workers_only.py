@@ -8,7 +8,7 @@ import subprocess
 import os
 
 class WorkersAPITester:
-    def __init__(self, base_url="https://bouw-calculator.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://realtor-estimates.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.session_token = None
         self.user_id = None
