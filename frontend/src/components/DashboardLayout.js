@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../App';
-import { FileText, FileSpreadsheet, Calendar, Package, Users, LogOut, LayoutDashboard, Menu, X, TrendingUp, UserCog, ShieldCheck, PenTool, Building2, Tag, Wrench, ChevronDown } from 'lucide-react';
+import { FileText, FileSpreadsheet, Calendar, Package, Users, LogOut, LayoutDashboard, Menu, X, TrendingUp, UserCog, ShieldCheck, PenTool, Building2, Tag, Wrench, ChevronDown, ShoppingCart } from 'lucide-react';
 import CelebrationModal from './CelebrationModal';
 import WorkerTaskBanner from './WorkerTaskBanner';
 import MaterialRequestBanner from './MaterialRequestBanner';
@@ -38,6 +38,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
       { name: 'Financiën', path: '/finances', icon: TrendingUp, testId: 'nav-finances' },
       { name: 'Kalender', path: '/calendar', icon: Calendar, testId: 'nav-calendar' },
       { name: 'Materialen', path: '/materials', icon: Package, testId: 'nav-materials' },
+      { name: 'Bestelcatalogus', path: '/material-catalog', icon: ShoppingCart, testId: 'nav-material-catalog' },
       { name: 'Werk Labels', path: '/work-labels', icon: Tag, testId: 'nav-work-labels' },
     ];
   };

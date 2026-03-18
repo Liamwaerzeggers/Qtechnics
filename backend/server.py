@@ -825,6 +825,34 @@ class MaterialRequestCreate(BaseModel):
     project_id: Optional[str] = None
     project_name: Optional[str] = None
 
+# Material Catalog (Beheerder materialenlijst voor werkmannen)
+class MaterialCatalogItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"MCAT-{str(uuid.uuid4())[:8].upper()}")
+    title: str
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    sizes: List[str] = []  # e.g. ["60x60", "30x60", "80x80"]
+    active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MaterialCatalogItemCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    sizes: List[str] = []
+
+class MaterialCatalogItemUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    sizes: Optional[List[str]] = None
+    active: Optional[bool] = None
+
+class MaterialOrderCreate(BaseModel):
+    items: List[dict]  # [{catalog_item_id, title, selected_size, quantity, image_url}]
+    project_id: str
+    project_name: str
+    notes: Optional[str] = None
+
 # Subcontractor (Onderaannemer)
 class Subcontractor(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -5699,6 +5727,16 @@ async def serve_material_image(filename: str):
     content_type = content_types.get(suffix, "image/jpeg")
     
     return FileResponse(file_path, media_type=content_type)
+
+@api_router.get("/static/catalog/{filename}")
+async def serve_catalog_image(filename: str):
+    """Serve material catalog images"""
+    file_path = ROOT_DIR / "uploads" / "catalog" / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    suffix = file_path.suffix.lower()
+    content_types = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".gif": "image/gif", ".webp": "image/webp"}
+    return FileResponse(file_path, media_type=content_types.get(suffix, "image/jpeg"))
 
 # Alternative route for uploads (some files use /uploads instead of /static)
 @api_router.get("/uploads/{file_type}/{project_id}/{filename}")
@@ -10768,6 +10806,96 @@ async def delete_material_request(request_id: str, current_user: User = Depends(
         raise HTTPException(status_code=404, detail="Aanvraag niet gevonden")
     
     return {"message": "Aanvraag verwijderd"}
+
+# ============= MATERIAL CATALOG ENDPOINTS (Beheerder Materialenlijst) =============
+
+@api_router.get("/material-catalog")
+async def get_material_catalog(current_user: User = Depends(get_current_user)):
+    """Get all active catalog items"""
+    query = {"active": True} if current_user.role == "worker" else {}
+    items = await db.material_catalog.find(query, {"_id": 0}).sort("title", 1).to_list(500)
+    return items
+
+@api_router.post("/material-catalog")
+async def create_catalog_item(item: MaterialCatalogItemCreate, current_user: User = Depends(get_current_user)):
+    """Create a new catalog item (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen beheerders")
+    doc = MaterialCatalogItem(title=item.title, description=item.description, sizes=item.sizes)
+    await db.material_catalog.insert_one(doc.model_dump())
+    result = doc.model_dump()
+    result.pop("_id", None)
+    return result
+
+@api_router.put("/material-catalog/{item_id}")
+async def update_catalog_item(item_id: str, update: MaterialCatalogItemUpdate, current_user: User = Depends(get_current_user)):
+    """Update a catalog item (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen beheerders")
+    update_data = {k: v for k, v in update.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Geen wijzigingen")
+    result = await db.material_catalog.update_one({"id": item_id}, {"$set": update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Item niet gevonden")
+    updated = await db.material_catalog.find_one({"id": item_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/material-catalog/{item_id}")
+async def delete_catalog_item(item_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a catalog item (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen beheerders")
+    result = await db.material_catalog.delete_one({"id": item_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Item niet gevonden")
+    return {"message": "Item verwijderd"}
+
+@api_router.post("/material-catalog/{item_id}/upload-image")
+async def upload_catalog_image(item_id: str, file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    """Upload an image for a catalog item"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen beheerders")
+    item = await db.material_catalog.find_one({"id": item_id})
+    if not item:
+        raise HTTPException(status_code=404, detail="Item niet gevonden")
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Alleen afbeeldingen toegestaan")
+    catalog_dir = ROOT_DIR / "uploads" / "catalog"
+    catalog_dir.mkdir(parents=True, exist_ok=True)
+    unique_filename = f"{item_id}_{uuid.uuid4().hex[:8]}_{file.filename}"
+    file_path = catalog_dir / unique_filename
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    image_url = f"/api/static/catalog/{unique_filename}"
+    await db.material_catalog.update_one({"id": item_id}, {"$set": {"image_url": image_url}})
+    return {"image_url": image_url}
+
+@api_router.post("/material-orders")
+async def create_material_order(order: MaterialOrderCreate, current_user: User = Depends(get_current_user)):
+    """Create material order from catalog (worker submits order)"""
+    if current_user.role not in ["worker", "admin"]:
+        raise HTTPException(status_code=403, detail="Alleen werkmannen")
+    if not order.items:
+        raise HTTPException(status_code=400, detail="Geen items geselecteerd")
+    # Create individual material_requests for each item in the order
+    created = []
+    for item in order.items:
+        size_text = f" ({item.get('selected_size', '')})" if item.get('selected_size') else ""
+        doc = MaterialRequest(
+            title=f"{item['title']}{size_text}",
+            quantity=str(item.get('quantity', 1)),
+            needed_by="Zo snel mogelijk",
+            photo_url=item.get('image_url'),
+            notes=order.notes,
+            project_id=order.project_id,
+            project_name=order.project_name,
+            requested_by=current_user.id,
+            requested_by_name=current_user.name or current_user.username
+        )
+        await db.material_requests.insert_one(doc.model_dump())
+        created.append(doc.id)
+    return {"message": f"{len(created)} materialen besteld", "ids": created}
 
 # ============= MAINTENANCE ENDPOINTS =============
 

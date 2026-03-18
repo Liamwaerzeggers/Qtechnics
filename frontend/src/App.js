@@ -12,6 +12,7 @@ import LeadDetailPage from './pages/LeadDetailPage';
 import QuotesPage from './pages/QuotesPage';
 import QuoteDetailPage from './pages/QuoteDetailPage';
 import MaterialsPage from './pages/MaterialsPage';
+import MaterialCatalogAdmin from './pages/MaterialCatalogAdmin';
 import ProjectsPage from './pages/ProjectsPage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import ProjectWorkSlipPage from './pages/ProjectWorkSlipPage';
@@ -750,6 +751,7 @@ function App() {
             <Route path="/quotes" element={<ProtectedRoute><QuotesPage /></ProtectedRoute>} />
             <Route path="/quotes/:quoteId" element={<ProtectedRoute><QuoteDetailPage /></ProtectedRoute>} />
             <Route path="/materials" element={<ProtectedRoute><MaterialsPage /></ProtectedRoute>} />
+            <Route path="/material-catalog" element={<ProtectedRoute><MaterialCatalogAdmin /></ProtectedRoute>} />
             <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
             <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectDetailPage /></ProtectedRoute>} />
             <Route path="/projects/:projectId/work-slips" element={<ProtectedRoute><ProjectWorkSlipPage /></ProtectedRoute>} />

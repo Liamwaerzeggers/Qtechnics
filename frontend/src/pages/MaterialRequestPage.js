@@ -8,255 +8,155 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Package, Camera, Send, Check, Clock, Truck, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Package, Send, Check, Clock, Truck, Loader2, Plus, Minus, ShoppingCart, Image as ImageIcon, MapPin, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Helper to get auth headers
 const getAuthHeaders = () => {
   const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-// Bilingual translations (Dutch / Ukrainian)
+// Bilingual helper
 const T = {
-  pageTitle: {
-    nl: "Materiaal Aanvragen",
-    ua: "Запит на матеріали"
-  },
-  pageSubtitle: {
-    nl: "Vraag hier materialen aan die je nodig hebt op de werf",
-    ua: "Запросіть тут матеріали, які вам потрібні на будівництві"
-  },
-  newRequest: {
-    nl: "Nieuwe Aanvraag",
-    ua: "Новий Запит"
-  },
-  materialName: {
-    nl: "Naam materiaal",
-    ua: "Назва матеріалу"
-  },
-  materialNamePlaceholder: {
-    nl: "Bijv. Cement, Tegels, Verf...",
-    ua: "Наприклад: Цемент, Плитка, Фарба..."
-  },
-  quantity: {
-    nl: "Hoeveelheid",
-    ua: "Кількість"
-  },
-  quantityPlaceholder: {
-    nl: "Bijv. 5 zakken, 10m², 2 emmers...",
-    ua: "Наприклад: 5 мішків, 10м², 2 відра..."
-  },
-  neededBy: {
-    nl: "Nodig tegen",
-    ua: "Потрібно до"
-  },
-  neededByPlaceholder: {
-    nl: "Bijv. Maandag, 15 maart, Zo snel mogelijk...",
-    ua: "Наприклад: Понеділок, 15 березня, Якнайшвидше..."
-  },
-  photo: {
-    nl: "Foto (optioneel)",
-    ua: "Фото (необов'язково)"
-  },
-  addPhoto: {
-    nl: "Foto toevoegen",
-    ua: "Додати фото"
-  },
-  notes: {
-    nl: "Extra notities",
-    ua: "Додаткові примітки"
-  },
-  notesPlaceholder: {
-    nl: "Optioneel: extra informatie...",
-    ua: "Необов'язково: додаткова інформація..."
-  },
-  project: {
-    nl: "Project (optioneel)",
-    ua: "Проект (необов'язково)"
-  },
-  selectProject: {
-    nl: "Selecteer project...",
-    ua: "Виберіть проект..."
-  },
-  noProject: {
-    nl: "Geen project",
-    ua: "Без проекту"
-  },
-  send: {
-    nl: "Versturen",
-    ua: "Надіслати"
-  },
-  sending: {
-    nl: "Versturen...",
-    ua: "Надсилання..."
-  },
-  myRequests: {
-    nl: "Mijn Aanvragen",
-    ua: "Мої Запити"
-  },
+  pageTitle: { nl: "Materiaal Bestellen", ua: "Замовити матеріали" },
+  pageSubtitle: { nl: "Kies materialen uit de catalogus en bestel ze voor je werf", ua: "Оберіть матеріали з каталогу та замовте їх для вашого будівництва" },
+  catalog: { nl: "Catalogus", ua: "Каталог" },
+  myOrders: { nl: "Mijn Bestellingen", ua: "Мої Замовлення" },
+  selectProject: { nl: "Kies werf / project", ua: "Оберіть будмайданчик / проект" },
+  quantity: { nl: "Aantal", ua: "Кількість" },
+  size: { nl: "Afmeting", ua: "Розмір" },
+  chooseSize: { nl: "Kies afmeting", ua: "Оберіть розмір" },
+  addToCart: { nl: "Toevoegen", ua: "Додати" },
+  cart: { nl: "Bestelling", ua: "Замовлення" },
+  emptyCart: { nl: "Nog geen materialen gekozen", ua: "Матеріали ще не обрані" },
+  notes: { nl: "Extra notities (optioneel)", ua: "Додаткові примітки (необов'язково)" },
+  send: { nl: "Bestelling Versturen", ua: "Надіслати замовлення" },
+  sending: { nl: "Versturen...", ua: "Надсилання..." },
+  success: { nl: "Bestelling verstuurd!", ua: "Замовлення надіслано!" },
+  error: { nl: "Kon niet versturen", ua: "Не вдалося надіслати" },
+  noProject: { nl: "Kies eerst een werf", ua: "Спочатку оберіть будмайданчик" },
   status: {
     pending: { nl: "Wacht op bestelling", ua: "Очікує замовлення" },
     ordered: { nl: "Besteld", ua: "Замовлено" },
     delivered: { nl: "Geleverd", ua: "Доставлено" }
   },
-  noRequests: {
-    nl: "Je hebt nog geen materialen aangevraagd",
-    ua: "Ви ще не запитували матеріали"
-  },
-  successMessage: {
-    nl: "Materiaal aanvraag verstuurd!",
-    ua: "Запит на матеріал надіслано!"
-  },
-  errorMessage: {
-    nl: "Kon aanvraag niet versturen",
-    ua: "Не вдалося надіслати запит"
-  },
-  fillAllFields: {
-    nl: "Vul alle verplichte velden in",
-    ua: "Заповніть усі обов'язкові поля"
-  }
+  noOrders: { nl: "Je hebt nog geen bestellingen", ua: "У вас ще немає замовлень" },
+  searchPlaceholder: { nl: "Zoek materialen...", ua: "Пошук матеріалів..." },
+  emptyCatalog: { nl: "Geen materialen beschikbaar", ua: "Немає доступних матеріалів" },
+  remove: { nl: "Verwijderen", ua: "Видалити" },
+  deliverTo: { nl: "Leveren op", ua: "Доставити на" }
 };
 
-// Bilingual label component
-function BiLabel({ field }) {
-  return (
-    <Label className="flex flex-col">
-      <span className="font-semibold">{T[field].nl}</span>
-      <span className="text-gray-500 text-xs font-normal">{T[field].ua}</span>
-    </Label>
-  );
+function Bi({ field }) {
+  return <><span>{T[field].nl}</span><span className="text-gray-400 text-xs ml-1">/ {T[field].ua}</span></>;
 }
 
 export default function MaterialRequestPage() {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const isWorker = user?.role === 'worker';
+  const [catalog, setCatalog] = useState([]);
   const [requests, setRequests] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [photoPreview, setPhotoPreview] = useState(null);
-  
-  const [formData, setFormData] = useState({
-    title: '',
-    quantity: '',
-    needed_by: '',
-    photo_url: '',
-    notes: '',
-    project_id: '',
-    project_name: ''
-  });
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [cart, setCart] = useState([]);
+  const [selectedProject, setSelectedProject] = useState('');
+  const [notes, setNotes] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('catalog');
 
   useEffect(() => {
-    fetchRequests();
-    fetchProjects();
+    Promise.all([
+      axios.get(`${API}/material-catalog`, { headers: getAuthHeaders() }).catch(() => ({ data: [] })),
+      axios.get(`${API}/material-requests`, { headers: getAuthHeaders() }).catch(() => ({ data: [] })),
+      axios.get(`${API}/projects`, { headers: getAuthHeaders() }).catch(() => ({ data: [] }))
+    ]).then(([catRes, reqRes, projRes]) => {
+      setCatalog(catRes.data || []);
+      setRequests(reqRes.data || []);
+      setProjects(projRes.data || []);
+      setLoading(false);
+    });
   }, []);
 
-  const fetchRequests = async () => {
-    try {
-      const response = await axios.get(`${API}/material-requests`, {
-        headers: getAuthHeaders()
-      });
-      setRequests(response.data || []);
-    } catch (error) {
-      console.error('Error fetching requests:', error);
-    }
-  };
+  const filteredCatalog = catalog.filter(item =>
+    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (item.description || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const fetchProjects = async () => {
-    try {
-      const response = await axios.get(`${API}/projects`, {
-        headers: getAuthHeaders()
-      });
-      setProjects(response.data || []);
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-    }
-  };
-
-  const handlePhotoChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Show preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPhotoPreview(reader.result);
-    };
-    reader.readAsDataURL(file);
-
-    // Upload photo
-    try {
-      const formDataUpload = new FormData();
-      formDataUpload.append('file', file);
-      
-      const response = await axios.post(`${API}/upload-photo`, formDataUpload, {
-        headers: {
-          ...getAuthHeaders(),
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
-      setFormData(prev => ({ ...prev, photo_url: response.data.url }));
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-      // Keep preview even if upload fails, user can still submit without photo
-    }
-  };
-
-  const handleProjectChange = (projectId) => {
-    if (projectId === 'none') {
-      setFormData(prev => ({ ...prev, project_id: '', project_name: '' }));
+  const addToCart = (item, size = null) => {
+    const existingIdx = cart.findIndex(c => c.catalog_item_id === item.id && c.selected_size === size);
+    if (existingIdx >= 0) {
+      const updated = [...cart];
+      updated[existingIdx].quantity += 1;
+      setCart(updated);
     } else {
-      const project = projects.find(p => p.id === projectId);
-      setFormData(prev => ({ 
-        ...prev, 
-        project_id: projectId, 
-        project_name: project?.client_name || project?.address || ''
-      }));
+      setCart([...cart, {
+        catalog_item_id: item.id,
+        title: item.title,
+        image_url: item.image_url,
+        selected_size: size,
+        quantity: 1,
+        sizes: item.sizes || []
+      }]);
     }
+    toast.success(`${isWorker ? '✅ Toegevoegd / Додано' : '✅ Toegevoegd'}`);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.title || !formData.quantity || !formData.needed_by) {
-      toast.error(`${T.fillAllFields.nl} / ${T.fillAllFields.ua}`);
+  const updateCartQty = (idx, delta) => {
+    const updated = [...cart];
+    updated[idx].quantity = Math.max(1, updated[idx].quantity + delta);
+    setCart(updated);
+  };
+
+  const updateCartSize = (idx, size) => {
+    const updated = [...cart];
+    updated[idx].selected_size = size;
+    setCart(updated);
+  };
+
+  const removeFromCart = (idx) => {
+    setCart(cart.filter((_, i) => i !== idx));
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedProject) {
+      toast.error(isWorker ? `${T.noProject.nl} / ${T.noProject.ua}` : T.noProject.nl);
       return;
     }
-
+    if (cart.length === 0) {
+      toast.error(isWorker ? `${T.emptyCart.nl} / ${T.emptyCart.ua}` : T.emptyCart.nl);
+      return;
+    }
+    // Check items with sizes have a size selected
+    const missingSizes = cart.filter(c => c.sizes.length > 0 && !c.selected_size);
+    if (missingSizes.length > 0) {
+      toast.error(isWorker ? 'Kies een afmeting voor alle items / Оберіть розмір для всіх товарів' : 'Kies een afmeting voor alle items');
+      return;
+    }
     setSubmitting(true);
+    const project = projects.find(p => p.id === selectedProject);
     try {
-      await axios.post(`${API}/material-requests`, {
-        title: formData.title,
-        quantity: formData.quantity,
-        needed_by: formData.needed_by,
-        photo_url: formData.photo_url || null,
-        notes: formData.notes || null,
-        project_id: formData.project_id || null,
-        project_name: formData.project_name || null
-      }, {
-        headers: getAuthHeaders()
-      });
-      
-      toast.success(`✅ ${T.successMessage.nl} / ${T.successMessage.ua}`);
-      
-      // Reset form
-      setFormData({
-        title: '',
-        quantity: '',
-        needed_by: '',
-        photo_url: '',
-        notes: '',
-        project_id: '',
-        project_name: ''
-      });
-      setPhotoPreview(null);
-      
+      await axios.post(`${API}/material-orders`, {
+        items: cart.map(c => ({
+          catalog_item_id: c.catalog_item_id,
+          title: c.title,
+          selected_size: c.selected_size,
+          quantity: c.quantity,
+          image_url: c.image_url
+        })),
+        project_id: selectedProject,
+        project_name: project?.name || '',
+        notes: notes || null
+      }, { headers: getAuthHeaders() });
+      toast.success(isWorker ? `✅ ${T.success.nl} / ${T.success.ua}` : `✅ ${T.success.nl}`);
+      setCart([]);
+      setNotes('');
       // Refresh requests
-      fetchRequests();
-    } catch (error) {
-      console.error('Error submitting request:', error);
-      toast.error(`${T.errorMessage.nl} / ${T.errorMessage.ua}`);
+      const reqRes = await axios.get(`${API}/material-requests`, { headers: getAuthHeaders() });
+      setRequests(reqRes.data || []);
+      setActiveTab('orders');
+    } catch (err) {
+      toast.error(isWorker ? `${T.error.nl} / ${T.error.ua}` : T.error.nl);
     } finally {
       setSubmitting(false);
     }
@@ -267,7 +167,7 @@ export default function MaterialRequestPage() {
       return (
         <span className="flex items-center gap-1 text-green-600 bg-green-100 px-2 py-1 rounded-full text-xs font-medium">
           <Truck size={14} />
-          {T.status.delivered.nl} / {T.status.delivered.ua}
+          {isWorker ? `${T.status.delivered.nl} / ${T.status.delivered.ua}` : T.status.delivered.nl}
         </span>
       );
     }
@@ -275,230 +175,290 @@ export default function MaterialRequestPage() {
       return (
         <span className="flex items-center gap-1 text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full text-xs font-medium">
           <Check size={14} />
-          {T.status.ordered.nl} / {T.status.ordered.ua}
+          {isWorker ? `${T.status.ordered.nl} / ${T.status.ordered.ua}` : T.status.ordered.nl}
         </span>
       );
     }
     return (
       <span className="flex items-center gap-1 text-orange-600 bg-orange-100 px-2 py-1 rounded-full text-xs font-medium">
         <Clock size={14} />
-        {T.status.pending.nl} / {T.status.pending.ua}
+        {isWorker ? `${T.status.pending.nl} / ${T.status.pending.ua}` : T.status.pending.nl}
       </span>
     );
   };
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center py-20">
+          <Loader2 className="animate-spin" size={32} style={{ color: '#500000' }} />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Header */}
         <div className="flex items-center space-x-3">
-          <div className="p-3 rounded-xl" style={{backgroundColor: '#f5e6e6'}}>
-            <Package size={28} style={{color: '#500000'}} />
+          <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5e6e6' }}>
+            <Package size={28} style={{ color: '#500000' }} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold" style={{fontFamily: 'Space Grotesk, sans-serif', color: '#500000'}}>
+            <h1 className="text-2xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif', color: '#500000' }}>
               {T.pageTitle.nl}
             </h1>
-            <p className="text-sm text-gray-500">{T.pageTitle.ua}</p>
-            <p className="text-sm text-gray-600 mt-1">
+            {isWorker && <p className="text-sm text-gray-500">{T.pageTitle.ua}</p>}
+            <p className="text-sm text-gray-600 mt-0.5">
               {T.pageSubtitle.nl}
-              <br />
-              <span className="text-gray-500">{T.pageSubtitle.ua}</span>
+              {isWorker && <><br /><span className="text-gray-400">{T.pageSubtitle.ua}</span></>}
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* New Request Form */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex flex-col">
-                <span>{T.newRequest.nl}</span>
-                <span className="text-gray-500 text-sm font-normal">{T.newRequest.ua}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Material Name */}
-                <div>
-                  <BiLabel field="materialName" />
-                  <Input
-                    value={formData.title}
-                    onChange={(e) => setFormData({...formData, title: e.target.value})}
-                    placeholder={`${T.materialNamePlaceholder.nl} / ${T.materialNamePlaceholder.ua}`}
-                    className="mt-1"
-                    required
-                  />
-                </div>
+        {/* Tabs */}
+        <div className="flex gap-2">
+          <Button
+            data-testid="tab-catalog"
+            variant={activeTab === 'catalog' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('catalog')}
+            style={activeTab === 'catalog' ? { backgroundColor: '#500000' } : {}}
+            className="gap-2"
+          >
+            <Package size={16} />
+            {isWorker ? <Bi field="catalog" /> : T.catalog.nl}
+          </Button>
+          <Button
+            data-testid="tab-orders"
+            variant={activeTab === 'orders' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('orders')}
+            style={activeTab === 'orders' ? { backgroundColor: '#500000' } : {}}
+            className="gap-2"
+          >
+            <Clock size={16} />
+            {isWorker ? <Bi field="myOrders" /> : T.myOrders.nl}
+            {requests.length > 0 && (
+              <span className="bg-white/20 text-xs px-1.5 rounded-full">{requests.length}</span>
+            )}
+          </Button>
+          {cart.length > 0 && (
+            <div className="ml-auto flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-1">
+              <ShoppingCart size={16} style={{ color: '#500000' }} />
+              <span className="font-bold text-sm" style={{ color: '#500000' }}>{cart.reduce((s, c) => s + c.quantity, 0)}</span>
+            </div>
+          )}
+        </div>
 
-                {/* Quantity */}
-                <div>
-                  <BiLabel field="quantity" />
-                  <Input
-                    value={formData.quantity}
-                    onChange={(e) => setFormData({...formData, quantity: e.target.value})}
-                    placeholder={`${T.quantityPlaceholder.nl} / ${T.quantityPlaceholder.ua}`}
-                    className="mt-1"
-                    required
-                  />
-                </div>
+        {activeTab === 'catalog' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {/* Catalog Browse */}
+            <div className="lg:col-span-2 space-y-4">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Input
+                  data-testid="catalog-search"
+                  className="pl-10"
+                  placeholder={isWorker ? `${T.searchPlaceholder.nl} / ${T.searchPlaceholder.ua}` : T.searchPlaceholder.nl}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
 
-                {/* Needed By */}
-                <div>
-                  <BiLabel field="neededBy" />
-                  <Input
-                    value={formData.needed_by}
-                    onChange={(e) => setFormData({...formData, needed_by: e.target.value})}
-                    placeholder={`${T.neededByPlaceholder.nl} / ${T.neededByPlaceholder.ua}`}
-                    className="mt-1"
-                    required
-                  />
+              {/* Catalog Grid */}
+              {filteredCatalog.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-12 text-gray-500">
+                    <Package size={48} className="mx-auto mb-3 opacity-50" />
+                    <p>{isWorker ? `${T.emptyCatalog.nl} / ${T.emptyCatalog.ua}` : T.emptyCatalog.nl}</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {filteredCatalog.map((item) => (
+                    <CatalogCard
+                      key={item.id}
+                      item={item}
+                      isWorker={isWorker}
+                      onAdd={addToCart}
+                      inCart={cart.some(c => c.catalog_item_id === item.id)}
+                    />
+                  ))}
                 </div>
+              )}
+            </div>
 
-                {/* Photo Upload */}
-                <div>
-                  <BiLabel field="photo" />
-                  <div className="mt-1 flex items-center gap-3">
-                    <label className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg cursor-pointer transition-colors">
-                      <Camera size={20} className="text-gray-600" />
-                      <span className="text-sm">
-                        {T.addPhoto.nl} / {T.addPhoto.ua}
+            {/* Cart / Order Summary */}
+            <div className="space-y-4">
+              <Card className="sticky top-4" style={{ borderColor: '#7a1f1f', borderWidth: cart.length > 0 ? 2 : 1 }}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2" style={{ color: '#500000' }}>
+                    <ShoppingCart size={18} />
+                    {isWorker ? <Bi field="cart" /> : T.cart.nl}
+                    {cart.length > 0 && (
+                      <span className="ml-auto bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                        {cart.reduce((s, c) => s + c.quantity, 0)}
                       </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handlePhotoChange}
-                        className="hidden"
-                      />
-                    </label>
-                    {photoPreview && (
-                      <div className="relative">
-                        <img 
-                          src={photoPreview} 
-                          alt="Preview" 
-                          className="w-16 h-16 object-cover rounded-lg border"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPhotoPreview(null);
-                            setFormData(prev => ({ ...prev, photo_url: '' }));
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
                     )}
-                  </div>
-                </div>
-
-                {/* Project Selection */}
-                <div>
-                  <BiLabel field="project" />
-                  <Select value={formData.project_id || 'none'} onValueChange={handleProjectChange}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder={`${T.selectProject.nl} / ${T.selectProject.ua}`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">
-                        {T.noProject.nl} / {T.noProject.ua}
-                      </SelectItem>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.client_name || project.address}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Notes */}
-                <div>
-                  <BiLabel field="notes" />
-                  <Textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                    placeholder={`${T.notesPlaceholder.nl} / ${T.notesPlaceholder.ua}`}
-                    className="mt-1"
-                    rows={2}
-                  />
-                </div>
-
-                {/* Submit Button */}
-                <Button 
-                  type="submit" 
-                  disabled={submitting}
-                  className="w-full text-lg py-6"
-                  style={{backgroundColor: '#500000'}}
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="mr-2 animate-spin" size={20} />
-                      {T.sending.nl} / {T.sending.ua}
-                    </>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {cart.length === 0 ? (
+                    <p className="text-center text-gray-400 text-sm py-4">
+                      {isWorker ? `${T.emptyCart.nl} / ${T.emptyCart.ua}` : T.emptyCart.nl}
+                    </p>
                   ) : (
                     <>
-                      <Send className="mr-2" size={20} />
-                      {T.send.nl} / {T.send.ua}
+                      <div className="space-y-2 max-h-[280px] overflow-y-auto">
+                        {cart.map((item, idx) => (
+                          <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                            {item.image_url ? (
+                              <img src={item.image_url} alt="" className="w-10 h-10 object-cover rounded" />
+                            ) : (
+                              <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
+                                <ImageIcon size={16} className="text-gray-400" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold truncate">{item.title}</p>
+                              {item.sizes.length > 0 && (
+                                <select
+                                  data-testid={`cart-size-${idx}`}
+                                  className="text-xs border rounded px-1 py-0.5 mt-0.5 w-full"
+                                  value={item.selected_size || ''}
+                                  onChange={(e) => updateCartSize(idx, e.target.value)}
+                                >
+                                  <option value="">{isWorker ? `${T.chooseSize.nl}...` : 'Kies afmeting...'}</option>
+                                  {item.sizes.map((s, i) => (
+                                    <option key={i} value={s}>{s}</option>
+                                  ))}
+                                </select>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                data-testid={`cart-minus-${idx}`}
+                                onClick={() => updateCartQty(idx, -1)}
+                                className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+                              >
+                                <Minus size={12} />
+                              </button>
+                              <span className="text-sm font-bold w-6 text-center">{item.quantity}</span>
+                              <button
+                                data-testid={`cart-plus-${idx}`}
+                                onClick={() => updateCartQty(idx, 1)}
+                                className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+                              >
+                                <Plus size={12} />
+                              </button>
+                            </div>
+                            <button
+                              data-testid={`cart-remove-${idx}`}
+                              onClick={() => removeFromCart(idx)}
+                              className="text-red-400 hover:text-red-600 p-1"
+                            >
+                              <span className="text-xs">✕</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Project selection */}
+                      <div>
+                        <Label className="text-xs font-semibold flex items-center gap-1">
+                          <MapPin size={12} />
+                          {isWorker ? <Bi field="deliverTo" /> : T.deliverTo.nl}
+                        </Label>
+                        <Select value={selectedProject} onValueChange={setSelectedProject}>
+                          <SelectTrigger data-testid="order-project-select" className="mt-1">
+                            <SelectValue placeholder={isWorker ? `${T.selectProject.nl} / ${T.selectProject.ua}` : T.selectProject.nl} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {projects.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name} {p.lead_address ? `- ${p.lead_address}` : ''}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Notes */}
+                      <Textarea
+                        data-testid="order-notes"
+                        placeholder={isWorker ? `${T.notes.nl} / ${T.notes.ua}` : T.notes.nl}
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        rows={2}
+                        className="text-sm"
+                      />
+
+                      {/* Submit */}
+                      <Button
+                        data-testid="submit-order-btn"
+                        onClick={handleSubmit}
+                        disabled={submitting}
+                        className="w-full"
+                        style={{ backgroundColor: '#500000' }}
+                      >
+                        {submitting ? (
+                          <><Loader2 size={16} className="mr-2 animate-spin" /> {isWorker ? `${T.sending.nl} / ${T.sending.ua}` : T.sending.nl}</>
+                        ) : (
+                          <><Send size={16} className="mr-2" /> {isWorker ? `${T.send.nl} / ${T.send.ua}` : T.send.nl}</>
+                        )}
+                      </Button>
                     </>
                   )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* My Requests */}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        ) : (
+          /* Orders Tab */
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex flex-col">
-                <span>{T.myRequests.nl}</span>
-                <span className="text-gray-500 text-sm font-normal">{T.myRequests.ua}</span>
+                <span>{T.myOrders.nl}</span>
+                {isWorker && <span className="text-gray-500 text-sm font-normal">{T.myOrders.ua}</span>}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {requests.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Package size={48} className="mx-auto mb-3 opacity-50" />
-                  <p>{T.noRequests.nl}</p>
-                  <p className="text-sm">{T.noRequests.ua}</p>
+                  <p>{isWorker ? `${T.noOrders.nl} / ${T.noOrders.ua}` : T.noOrders.nl}</p>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                  {requests.map((request) => (
-                    <div 
-                      key={request.id}
+                <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                  {requests.map((req) => (
+                    <div
+                      key={req.id}
+                      data-testid={`order-${req.id}`}
                       className={`p-3 rounded-lg border-2 ${
-                        request.is_delivered ? 'bg-green-50 border-green-200' :
-                        request.is_ordered ? 'bg-yellow-50 border-yellow-200' :
+                        req.is_delivered ? 'bg-green-50 border-green-200' :
+                        req.is_ordered ? 'bg-yellow-50 border-yellow-200' :
                         'bg-orange-50 border-orange-200'
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        {request.photo_url ? (
-                          <img 
-                            src={request.photo_url}
-                            alt={request.title}
-                            className="w-12 h-12 object-cover rounded"
-                          />
+                        {req.photo_url ? (
+                          <img src={req.photo_url} alt={req.title} className="w-12 h-12 object-cover rounded" />
                         ) : (
                           <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
                             <Package size={20} className="text-gray-400" />
                           </div>
                         )}
                         <div className="flex-1">
-                          <h4 className="font-semibold">{request.title}</h4>
-                          <p className="text-sm text-gray-600">
-                            {request.quantity} • {request.needed_by}
-                          </p>
-                          {request.project_name && (
-                            <p className="text-xs text-gray-500">
-                              📍 {request.project_name}
+                          <h4 className="font-semibold text-sm">{req.title}</h4>
+                          <p className="text-xs text-gray-600">{isWorker ? `${T.quantity.nl} / ${T.quantity.ua}` : T.quantity.nl}: {req.quantity}</p>
+                          {req.project_name && (
+                            <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                              <MapPin size={10} /> {req.project_name}
                             </p>
                           )}
                         </div>
-                        {getStatusBadge(request)}
+                        {getStatusBadge(req)}
                       </div>
                     </div>
                   ))}
@@ -506,8 +466,95 @@ export default function MaterialRequestPage() {
               )}
             </CardContent>
           </Card>
-        </div>
+        )}
       </div>
     </DashboardLayout>
+  );
+}
+
+function CatalogCard({ item, isWorker, onAdd, inCart }) {
+  const hasSizes = item.sizes && item.sizes.length > 0;
+  const [selectedSize, setSelectedSize] = useState(hasSizes ? '' : null);
+  const [showSizes, setShowSizes] = useState(false);
+
+  const handleAdd = () => {
+    if (hasSizes && !selectedSize) {
+      setShowSizes(true);
+      return;
+    }
+    onAdd(item, selectedSize);
+  };
+
+  return (
+    <Card
+      data-testid={`catalog-card-${item.id}`}
+      className={`overflow-hidden hover:shadow-lg transition-all cursor-pointer group ${inCart ? 'ring-2' : ''}`}
+      style={inCart ? { ringColor: '#500000' } : {}}
+    >
+      {/* Image */}
+      <div className="aspect-square bg-gray-100 relative overflow-hidden">
+        {item.image_url ? (
+          <img src={item.image_url} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center text-gray-300">
+            <ImageIcon size={36} />
+          </div>
+        )}
+        {inCart && (
+          <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
+            <Check size={14} />
+          </div>
+        )}
+      </div>
+      {/* Details */}
+      <CardContent className="p-3">
+        <h3 className="font-bold text-sm leading-tight" style={{ color: '#500000' }}>{item.title}</h3>
+        {item.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description}</p>}
+        
+        {/* Size selector (shown when needed) */}
+        {hasSizes && showSizes && (
+          <div className="mt-2">
+            <p className="text-xs font-semibold text-gray-600 mb-1">
+              {isWorker ? `${T.chooseSize.nl} / ${T.chooseSize.ua}` : T.chooseSize.nl}:
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {item.sizes.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={(e) => { e.stopPropagation(); setSelectedSize(s); }}
+                  className={`text-xs px-2 py-1 rounded-full border transition-colors ${
+                    selectedSize === s
+                      ? 'bg-red-50 border-red-300 text-red-700 font-medium'
+                      : 'bg-gray-50 border-gray-200 hover:border-gray-400'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {hasSizes && !showSizes && item.sizes.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {item.sizes.slice(0, 3).map((s, i) => (
+              <span key={i} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">{s}</span>
+            ))}
+            {item.sizes.length > 3 && <span className="text-xs text-gray-400">+{item.sizes.length - 3}</span>}
+          </div>
+        )}
+
+        <Button
+          data-testid={`add-to-cart-${item.id}`}
+          onClick={(e) => { e.stopPropagation(); handleAdd(); }}
+          size="sm"
+          className="w-full mt-2 text-xs"
+          style={{ backgroundColor: '#500000' }}
+        >
+          <Plus size={14} className="mr-1" />
+          {isWorker ? `${T.addToCart.nl} / ${T.addToCart.ua}` : T.addToCart.nl}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
