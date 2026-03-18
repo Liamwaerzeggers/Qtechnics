@@ -56,7 +56,7 @@ export default function ProjectWorkSlipsTab({ project, onUpdate }) {
     setEditData({
       hours_worked: slip.hours_worked || 0,
       number_of_workers: slip.number_of_workers || 1,
-      hourly_rate: slip.hourly_rate || 30
+      hourly_rate: slip.hourly_rate || 34
     });
   };
 
@@ -271,12 +271,12 @@ export default function ProjectWorkSlipsTab({ project, onUpdate }) {
                             step="0.5"
                             min="0"
                             value={editData.hourly_rate}
-                            onChange={(e) => setEditData({...editData, hourly_rate: parseFloat(e.target.value) || 30})}
+                            onChange={(e) => setEditData({...editData, hourly_rate: parseFloat(e.target.value) || 34})}
                             className="w-20"
                           />
                         ) : (
                           <span className="text-sm font-medium" style={{color: '#500000'}}>
-                            €{(slip.hourly_rate || 30).toFixed(2)}
+                            €{(slip.hourly_rate || 34).toFixed(2)}
                           </span>
                         )}
                       </td>

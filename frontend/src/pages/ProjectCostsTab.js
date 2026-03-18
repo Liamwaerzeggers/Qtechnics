@@ -151,7 +151,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
         {},
         { headers: getAuthHeaders() }
       );
-      toast.success(`Arbeidskosten berekend! ${response.data.work_slips_count} werkbonnen verwerkt. Totaal: ${response.data.total_hours.toFixed(1)} uur × €30 = €${response.data.total_labor_cost.toFixed(2)}`);
+      toast.success(`Arbeidskosten berekend! ${response.data.work_slips_count} werkbonnen verwerkt. Totaal: ${response.data.total_hours.toFixed(1)} uur × €34 = €${response.data.total_labor_cost.toFixed(2)}`);
       onUpdate();
       // Reload cost data
       setCostData({
@@ -496,7 +496,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                         ⏱️ Arbeidskosten uit Werkbonnen
                       </div>
                       <div className="text-xs" style={{color: '#15803d'}}>
-                        Automatisch berekend: {project.labor_hours?.toFixed(1) || '0'} man-uren × €30/uur
+                        Automatisch berekend: {project.labor_hours?.toFixed(1) || '0'} man-uren × €34/uur
                       </div>
                     </div>
                     <div className="text-2xl font-bold" style={{color: '#166534'}}>

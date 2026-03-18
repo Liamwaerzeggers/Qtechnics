@@ -446,7 +446,7 @@ class DailyReport(BaseModel):
     # Hours worked and labor tracking
     hours_worked: Optional[float] = None
     number_of_workers: int = 1  # Number of workers on this day
-    hourly_rate: float = 30.0  # €30 per hour default
+    hourly_rate: float = 34.0  # €34 per hour default
     labor_cost: Optional[float] = None  # Calculated: hours_worked * number_of_workers * hourly_rate
     
     # Materials tracking (NO PRICES)
@@ -476,7 +476,7 @@ class DailyReportCreate(BaseModel):
     date: Optional[datetime] = None
     hours_worked: Optional[float] = None
     number_of_workers: int = 1
-    hourly_rate: float = 30.0
+    hourly_rate: float = 34.0
     materials_used: Optional[List[MaterialUsed]] = []
     extra_materials: Optional[List[ExtraMaterial]] = []
     work_description_nl: Optional[str] = None
@@ -4116,7 +4116,7 @@ async def calculate_project_labor_costs(project_id: str, current_user: User = De
     for slip in work_slips:
         hours = slip.get("hours_worked", 0) or 0
         workers = slip.get("number_of_workers", 1) or 1
-        rate = slip.get("hourly_rate", 30.0) or 30.0
+        rate = slip.get("hourly_rate", 34.0) or 34.0
         
         slip_hours = hours * workers
         slip_cost = hours * workers * rate
@@ -4127,7 +4127,7 @@ async def calculate_project_labor_costs(project_id: str, current_user: User = De
     # Update project with calculated costs
     update_data = {
         "labor_hours": total_hours,
-        "labor_cost_per_hour": 30.0,  # Fixed rate
+        "labor_cost_per_hour": 34.0,  # Fixed rate
     }
     
     # Calculate total costs
@@ -4177,7 +4177,7 @@ async def create_work_slip(project_id: str, report: DailyReportCreate, current_u
     # Calculate labor cost: hours_worked * number_of_workers * hourly_rate
     hours_worked = report_data.get("hours_worked") or 0
     number_of_workers = report_data.get("number_of_workers") or 1
-    hourly_rate = report_data.get("hourly_rate") or 30.0
+    hourly_rate = report_data.get("hourly_rate") or 34.0
     labor_cost = hours_worked * number_of_workers * hourly_rate
     report_data["labor_cost"] = labor_cost
     
@@ -4267,7 +4267,7 @@ async def update_work_slip(project_id: str, slip_id: str, report_update: DailyRe
     # Recalculate labor cost if hours or workers changed
     hours_worked = update_data.get("hours_worked", existing.get("hours_worked", 0)) or 0
     number_of_workers = update_data.get("number_of_workers", existing.get("number_of_workers", 1)) or 1
-    hourly_rate = update_data.get("hourly_rate", existing.get("hourly_rate", 30.0)) or 30.0
+    hourly_rate = update_data.get("hourly_rate", existing.get("hourly_rate", 34.0)) or 34.0
     update_data["labor_cost"] = hours_worked * number_of_workers * hourly_rate
     
     await db.work_slips.update_one(

@@ -91,6 +91,9 @@ Full-stack bouwprojectbeheerapplicatie voor Max Q met functies voor:
 - `server.py` is 10.700+ regels - moet gerefactored worden naar routers/services/models
 - Foto upload limiet van 5 - moet onderzocht worden
 
+## Configuratie
+- **Uurtarief werkbonnen**: €34/uur (aangepast van €30, maart 2025)
+
 ## Volgende Prioriteiten
 1. Foto upload limiet van 5 fixen
 2. Server.py refactoring - opsplitsen in modules

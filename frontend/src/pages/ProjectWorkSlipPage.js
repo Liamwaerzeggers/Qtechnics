@@ -126,7 +126,7 @@ export default function ProjectWorkSlipPage() {
   const [formData, setFormData] = useState({
     hours_worked: '',
     number_of_workers: 1,
-    hourly_rate: 30,
+    hourly_rate: 34,
     materials_used: [],
     extra_materials: [],
     work_description_nl: '',
@@ -300,7 +300,7 @@ export default function ProjectWorkSlipPage() {
         project_id: projectId,
         hours_worked: parseFloat(formData.hours_worked) || 0,
         number_of_workers: parseInt(formData.number_of_workers) || 1,
-        hourly_rate: parseFloat(formData.hourly_rate) || 30,
+        hourly_rate: parseFloat(formData.hourly_rate) || 34,
         materials_used: formData.materials_used,
         extra_materials: formData.extra_materials,
         work_description_nl: formData.work_description_nl,
@@ -337,7 +337,7 @@ export default function ProjectWorkSlipPage() {
       setFormData({
         hours_worked: '',
         number_of_workers: 1,
-        hourly_rate: 30,
+        hourly_rate: 34,
         materials_used: [],
         extra_materials: [],
         work_description_nl: '',
