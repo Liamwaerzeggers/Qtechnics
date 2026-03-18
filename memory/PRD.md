@@ -34,6 +34,11 @@ Full-stack bouwprojectbeheerapplicatie voor Max Q met functies voor:
 - [x] Rollen & Authenticatie - Tenant login via `/api/auth/tenant/login` (JSON body)
 - [x] Makelaar Dashboard - Panden beheren, kamers toevoegen, renovatieberekening
 - [x] **Renovatiecalculator met Live Prijzen** - Scenario-based berekening gekoppeld aan work_items DB collectie
+- [x] **Renovatiecalculator op Projectniveau** - Zelfde systeem als bij panden, gekoppeld aan offerte generatie
+- [x] **Offerte uit Berekening** - Automatisch offerte aanmaken met alle geselecteerde calculator items
+- [x] **Auto-save Werkposten** - Handmatig toegevoegde items worden opgeslagen in DB voor hergebruik
+- [x] Kamers toevoegen aan bestaand pand/project (handmatig + grondplan AI)
+- [x] Grondplan Upload met AI Analyse (GPT-4o Vision)
 - [x] Tenant Beheer - Admin kan makelaars, investeerders en onderaannemers aanmaken/beheren
 - [x] Mailto Welkomst-email
 - [x] Property Scraping - Werkt met Immoweb, Zimmo, Immoscoop EN elke makelaar website
@@ -86,6 +91,27 @@ Full-stack bouwprojectbeheerapplicatie voor Max Q met functies voor:
 - **Admin**: `liam` / `Liammail123`
 - **Makelaar**: `testmakelaar` / `Test123456`
 - **Werkman**: `testwerkman` / `Werk123456`
+
+### Project Offerte Workflow
+1. Upload grondplan OF voeg kamers handmatig toe
+2. Bereken renovatie (calculator met live DB prijzen)
+3. Pas opties aan (vloer afwerking, muur scenario, extras)
+4. Genereer offerte uit berekening
+5. Voeg handmatig extra posten toe (worden auto-saved in DB)
+6. Koppel materialen uit catalogus
+
+### API Endpoints - Project Calculator
+- `POST /api/projects/{id}/project-rooms` - Kamer toevoegen
+- `DELETE /api/projects/{id}/project-rooms/{room_id}` - Kamer verwijderen
+- `POST /api/projects/{id}/project-rooms/bulk` - Bulk kamers toevoegen
+- `POST /api/projects/{id}/analyze-floor-plan` - Upload + AI analyse
+- `POST /api/projects/{id}/calculate-renovation` - Berekening starten
+- `GET /api/projects/{id}/renovation-calculation` - Berekening ophalen
+- `PUT /api/projects/{id}/renovation-calculation/items/{id}` - Item togglen
+- `PUT /api/projects/{id}/renovation-calculation/switch-option` - Vloer optie
+- `PUT /api/projects/{id}/renovation-calculation/switch-scenario` - Muur scenario
+- `POST /api/projects/{id}/generate-quote-from-calculation` - Offerte genereren
+- `POST /api/work-items/auto-save` - Werkpost auto-save
 
 ## Bekende Issues
 - `server.py` is 10.700+ regels - moet gerefactored worden naar routers/services/models
