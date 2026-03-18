@@ -307,10 +307,15 @@ class Project(BaseModel):
     
     # NIEUWE SECTIE: Metingen & Werk Items (voor offerte generatie)
     measurements: List[dict] = []  # [{work_item_id, title, quantity, unit, price, vat_rate}]
-    room_measurements: List[dict] = []  # [{id, room_name, surface_type, length, width, height, area, work_items}]
+    room_measurements: List[dict] = []  # LEGACY - replaced by rooms
     
-    # NIEUWE SECTIE: Grondplan Analyses (AI)
-    floor_plan_analyses: List[dict] = []  # [{id, image_url, analysis_result, surfaces_with_work, created_at}]
+    # NIEUWE SECTIE: Kamers & Renovatiecalculator
+    rooms: List[dict] = []  # Same format as Property rooms [{id, name, room_type, length, width, height, floor_area, wall_area, ceiling_area}]
+    floor_plan_url: Optional[str] = None
+    renovation_calculation_id: Optional[str] = None
+    
+    # LEGACY: Grondplan Analyses (AI) - replaced by new system
+    floor_plan_analyses: List[dict] = []
     
     # NIEUWE SECTIE: 3D Ontwerpen
     design_3d_files: List[dict] = []  # [{filename, url, upload_date}]
@@ -763,7 +768,8 @@ class RoomCalculation(BaseModel):
 class RenovationCalculation(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: f"CALC-{str(uuid.uuid4())[:8].upper()}")
-    property_id: str
+    property_id: Optional[str] = None  # For properties
+    project_id: Optional[str] = None   # For projects
     calculated_by: str  # user_id
     
     room_calculations: List[RoomCalculation] = []
@@ -7587,132 +7593,513 @@ async def get_quick_tasks(current_user: User = Depends(get_current_user)):
     tasks = await db.quick_tasks.find({"user_id": current_user.id}, {"_id": 0}).to_list(1000)
     return tasks
 
-# ============= FLOOR PLAN ANALYSIS ENDPOINT =============
+# ============= PROJECT ROOMS & RENOVATION CALCULATOR =============
 
-@api_router.post("/projects/{project_id}/analyze-floor-plan")
-async def analyze_floor_plan(
-    project_id: str,
-    file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
-):
-    """Analyze a floor plan image using AI to extract measurements and calculate surface areas"""
+@api_router.post("/projects/{project_id}/project-rooms")
+async def add_project_room(project_id: str, room: PropertyRoomCreate, current_user: User = Depends(get_current_user)):
+    """Add a room to a project"""
     if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admins can analyze floor plans")
+        raise HTTPException(status_code=403, detail="Only admins can modify projects")
     
-    # Verify project exists
     project = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not project:
         raise HTTPException(status_code=404, detail="Project niet gevonden")
     
-    # Read and encode the image
-    try:
-        content = await file.read()
-        image_base64 = base64.b64encode(content).decode('utf-8')
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Kon afbeelding niet lezen: {str(e)}")
+    room_obj = PropertyRoom(
+        name=room.name, room_type=room.room_type,
+        length=room.length, width=room.width, height=room.height,
+        windows=room.windows, doors=room.doors, notes=room.notes
+    )
+    room_obj.floor_area = room_obj.length * room_obj.width
+    room_obj.ceiling_area = room_obj.length * room_obj.width
+    room_obj.wall_area = 2 * (room_obj.length + room_obj.width) * room_obj.height
     
-    # Get API key
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$push": {"rooms": room_obj.model_dump()}}
+    )
+    return {"message": "Kamer toegevoegd", "room_id": room_obj.id}
+
+@api_router.delete("/projects/{project_id}/project-rooms/{room_id}")
+async def delete_project_room(project_id: str, room_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a room from a project"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can modify projects")
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$pull": {"rooms": {"id": room_id}}}
+    )
+    return {"message": "Kamer verwijderd"}
+
+@api_router.post("/projects/{project_id}/project-rooms/bulk")
+async def add_project_rooms_bulk(project_id: str, rooms: List[PropertyRoomCreate], current_user: User = Depends(get_current_user)):
+    """Add multiple rooms to a project at once"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can modify projects")
+    
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    new_rooms = []
+    for room in rooms:
+        room_obj = PropertyRoom(
+            name=room.name, room_type=room.room_type,
+            length=room.length, width=room.width, height=room.height,
+            windows=room.windows, doors=room.doors, notes=room.notes
+        )
+        room_obj.floor_area = room_obj.length * room_obj.width
+        room_obj.ceiling_area = room_obj.length * room_obj.width
+        room_obj.wall_area = 2 * (room_obj.length + room_obj.width) * room_obj.height
+        new_rooms.append(room_obj.model_dump())
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$push": {"rooms": {"$each": new_rooms}}}
+    )
+    return {"message": f"{len(new_rooms)} kamers toegevoegd", "rooms_added": len(new_rooms)}
+
+@api_router.post("/projects/{project_id}/analyze-floor-plan")
+async def analyze_project_floor_plan(
+    project_id: str,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload and analyze a floor plan for a project to extract room dimensions"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can analyze floor plans")
+    
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    content = await file.read()
+    
+    floor_plans_dir = ROOT_DIR / "uploads" / "floor_plans"
+    floor_plans_dir.mkdir(parents=True, exist_ok=True)
+    
+    ext = file.filename.split('.')[-1] if '.' in file.filename else 'png'
+    saved_filename = f"{project_id}_{uuid.uuid4().hex[:8]}.{ext}"
+    file_path = floor_plans_dir / saved_filename
+    
+    with open(file_path, 'wb') as f:
+        f.write(content)
+    
+    floor_plan_url = f"/api/uploads/floor_plans/{saved_filename}"
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"floor_plan_url": floor_plan_url}}
+    )
+    
     api_key = os.environ.get('EMERGENT_LLM_KEY')
     if not api_key:
-        raise HTTPException(status_code=500, detail="AI configuratie ontbreekt")
+        return {"success": True, "floor_plan_url": floor_plan_url, "rooms": [], "message": "Grondplan opgeslagen maar AI analyse niet beschikbaar"}
     
-    # Create AI chat for analysis
     try:
+        image_base64 = base64.b64encode(content).decode('utf-8')
+        
         chat = LlmChat(
             api_key=api_key,
-            session_id=f"floor-plan-{project_id}-{uuid.uuid4()}",
-            system_message="""Je bent een expert in het analyseren van grondplannen en bouwtekeningen.
-            
-Je taak is om uit een grondplan/tekening de afmetingen te extraheren en oppervlaktes te berekenen.
+            session_id=f"floorplan-proj-{project_id}-{uuid.uuid4()}",
+            system_message="""Je bent een expert in het analyseren van grondplannen, bouwtekeningen en laser meetrapporten.
 
-BELANGRIJK: Analyseer de tekening zorgvuldig en geef ALLEEN de informatie die je kunt aflezen uit de tekening.
+Je taak is om uit het plan/tekening ALLE kamers te identificeren met hun afmetingen.
 
-Geef je antwoord ALLEEN als een JSON object in dit exacte formaat (geen andere tekst):
+Geef je antwoord ALLEEN als een JSON object (geen andere tekst):
 {
-    "success": true,
-    "room_name": "naam van de ruimte indien zichtbaar",
-    "total_floor_area_m2": 0.0,
-    "total_wall_area_m2": 0.0,
-    "ceiling_height_m": 0.0,
-    "surfaces": [
+    "rooms": [
         {
-            "id": "unieke_id",
-            "type": "vloer|muur|plafond",
-            "title": "beschrijving van dit oppervlak",
-            "length_m": 0.0,
-            "width_m": 0.0,
-            "height_m": 0.0,
-            "area_m2": 0.0,
-            "deductions_m2": 0.0,
-            "net_area_m2": 0.0,
-            "notes": "opmerkingen zoals openingen, aftrek etc"
+            "name": "naam van de kamer (bijv. Woonkamer, Badkamer, Slaapkamer 1)",
+            "room_type": "living|bedroom|bathroom|kitchen|hallway|other",
+            "length": 0.0,
+            "width": 0.0,
+            "height": 2.7,
+            "notes": "opmerkingen"
         }
     ],
-    "detected_dimensions": [
-        {"description": "wat je hebt gemeten", "value": "de waarde"}
-    ],
-    "analysis_notes": "algemene opmerkingen over de tekening"
+    "total_area_m2": 0.0,
+    "analysis_notes": "algemene opmerkingen over het plan"
 }
 
-Houd rekening met:
-- Scheidingsmuren en openingen
-- Ramen en deuren (aftrek van muuroppervlak)
-- Verschillende vloerniveaus indien aanwezig
-- Onregelmatige vormen
-
-Als je bepaalde afmetingen niet kunt aflezen, geef dan 0 en vermeld dit in de notes."""
+Regels:
+- Meet alles in METERS (niet cm)
+- Gebruik standaard 2.7m hoogte als niet vermeld
+- room_type moet exact zijn: living, bedroom, bathroom, kitchen, hallway, of other
+- Geef een Nederlandse naam voor elke kamer
+- Als afmetingen niet leesbaar zijn, schat dan op basis van verhoudingen en vermeld dit in notes
+- Bij lasermeetplannen: gebruik de exacte gemeten waarden"""
         ).with_model("openai", "gpt-4o")
         
-        # Create message with image using ImageContent (specifically for images)
-        image_content = ImageContent(image_base64=image_base64)
         user_message = UserMessage(
-            text="""Analyseer dit grondplan/tekening. 
-            
-Identificeer alle afmetingen die je kunt lezen en bereken:
-1. Vloeroppervlak (totaal en per zone indien van toepassing)
-2. Muuroppervlak (rekening houdend met openingen/deuren/ramen)
-3. Plafondoppervlak
-
-Geef het resultaat als JSON object zoals gespecificeerd.""",
-            file_contents=[image_content]
+            text="Analyseer dit grondplan/meetrapport en identificeer alle kamers met hun afmetingen. Geef het resultaat als JSON.",
+            file_contents=[ImageContent(image_base64=image_base64)]
         )
         
-        # Send message and get response
         response = await chat.send_message(user_message)
-        
-        # Parse JSON from response
-        # Try to extract JSON from the response
         response_text = response.strip()
         
-        # Find JSON in response
-        if response_text.startswith('{'):
-            json_str = response_text
-        elif '```json' in response_text:
+        if '```json' in response_text:
             json_str = response_text.split('```json')[1].split('```')[0].strip()
         elif '```' in response_text:
             json_str = response_text.split('```')[1].split('```')[0].strip()
+        elif response_text.startswith('{'):
+            json_str = response_text
         else:
             json_str = response_text
-            
+        
         result = json.loads(json_str)
         
-        # Add IDs if not present
-        for i, surface in enumerate(result.get('surfaces', [])):
-            if 'id' not in surface:
-                surface['id'] = f"surface_{i}_{uuid.uuid4().hex[:8]}"
-        
-        return result
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON parse error: {e}, response: {response_text[:500]}")
         return {
-            "success": False,
-            "error": "Kon analyse resultaat niet verwerken",
-            "raw_response": response_text[:1000]
+            "success": True,
+            "floor_plan_url": floor_plan_url,
+            "rooms": result.get("rooms", []),
+            "total_area_m2": result.get("total_area_m2", 0),
+            "analysis_notes": result.get("analysis_notes", ""),
+            "message": f"{len(result.get('rooms', []))} kamers gedetecteerd"
         }
+    except json.JSONDecodeError:
+        return {"success": True, "floor_plan_url": floor_plan_url, "rooms": [], "message": "Grondplan opgeslagen maar kon kamers niet automatisch herkennen"}
     except Exception as e:
-        logger.error(f"Floor plan analysis error: {e}")
-        raise HTTPException(status_code=500, detail=f"Analyse mislukt: {str(e)}")
+        logger.error(f"Floor plan analysis error for project: {e}")
+        return {"success": True, "floor_plan_url": floor_plan_url, "rooms": [], "message": f"Grondplan opgeslagen maar analyse mislukt: {str(e)}"}
+
+@api_router.post("/projects/{project_id}/calculate-renovation")
+async def calculate_project_renovation(project_id: str, current_user: User = Depends(get_current_user)):
+    """Run renovation calculator for a project using its rooms and live DB prices"""
+    logger.info(f"calculate-renovation called for project {project_id} by user {current_user.id} role={current_user.role}")
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can calculate")
+    
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    rooms = project.get("rooms", [])
+    if not rooms:
+        raise HTTPException(status_code=400, detail="Geen kamers gevonden. Voeg eerst kamers toe.")
+    
+    # Use shared calculation logic
+    calculation, calc_doc, room_calculations, all_work_items = await _perform_renovation_calculation(rooms)
+    
+    calc_doc["project_id"] = project_id
+    
+    # Remove old calculation if exists
+    old_calc_id = project.get("renovation_calculation_id")
+    if old_calc_id:
+        await db.renovation_calculations.delete_one({"id": old_calc_id})
+    
+    await db.renovation_calculations.insert_one(calc_doc)
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"renovation_calculation_id": calculation.id, "status": "offerte in opmaak"}}
+    )
+    
+    return {
+        "calculation_id": calculation.id,
+        "total_min": calculation.total_min,
+        "total_recommended": calculation.total_realistic,
+        "rooms_calculated": len(calculation.room_calculations)
+    }
+
+@api_router.get("/projects/{project_id}/renovation-calculation")
+async def get_project_renovation_calculation(project_id: str, current_user: User = Depends(get_current_user)):
+    """Get renovation calculation for a project"""
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    calc_id = project.get("renovation_calculation_id")
+    if not calc_id:
+        raise HTTPException(status_code=404, detail="Geen berekening gevonden")
+    
+    calc = await db.renovation_calculations.find_one({"id": calc_id}, {"_id": 0})
+    if not calc:
+        raise HTTPException(status_code=404, detail="Berekening niet gevonden")
+    
+    return calc
+
+@api_router.put("/projects/{project_id}/renovation-calculation/items/{item_id}")
+async def toggle_project_calc_item(project_id: str, item_id: str, included: bool = True, current_user: User = Depends(get_current_user)):
+    """Toggle a calculation item included/excluded for a project"""
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    calc_id = project.get("renovation_calculation_id")
+    if not calc_id:
+        raise HTTPException(status_code=404, detail="Geen berekening gevonden")
+    
+    calc = await db.renovation_calculations.find_one({"id": calc_id}, {"_id": 0})
+    if not calc:
+        raise HTTPException(status_code=404, detail="Berekening niet gevonden")
+    
+    # Find and update the item in any room's items
+    for rc in calc.get("room_calculations", []):
+        for cat in ["floor_items", "wall_items", "ceiling_items", "other_items"]:
+            for item in rc.get(cat, []):
+                if item.get("id") == item_id:
+                    item["included"] = included
+    
+    # Recalculate totals
+    total = 0
+    for rc in calc.get("room_calculations", []):
+        subtotal = 0
+        for cat in ["floor_items", "wall_items", "ceiling_items", "other_items"]:
+            for item in rc.get(cat, []):
+                if item.get("included"):
+                    subtotal += item.get("total", 0)
+        rc["subtotal"] = round(subtotal, 2)
+        total += subtotal
+    
+    calc["total_min"] = round(total, 2)
+    calc["total_recommended"] = round(total * 1.1, 2)
+    
+    await db.renovation_calculations.update_one(
+        {"id": calc_id},
+        {"$set": {"room_calculations": calc["room_calculations"], "total_min": calc["total_min"], "total_recommended": calc["total_recommended"]}}
+    )
+    
+    return {"success": True, "total_min": calc["total_min"]}
+
+@api_router.put("/projects/{project_id}/renovation-calculation/switch-option")
+async def switch_project_calc_option(project_id: str, room_id: str, option_group: str, selected_item_id: str, current_user: User = Depends(get_current_user)):
+    """Switch option for a project calculation (e.g., floor finish choice)"""
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    calc_id = project.get("renovation_calculation_id")
+    calc = await db.renovation_calculations.find_one({"id": calc_id}, {"_id": 0})
+    if not calc:
+        raise HTTPException(status_code=404, detail="Berekening niet gevonden")
+    
+    for rc in calc.get("room_calculations", []):
+        if rc.get("room_id") == room_id:
+            for cat in ["floor_items", "wall_items", "ceiling_items", "other_items"]:
+                for item in rc.get(cat, []):
+                    if item.get("option_group") == option_group:
+                        item["included"] = (item.get("id") == selected_item_id)
+                        item["is_selected"] = (item.get("id") == selected_item_id)
+    
+    # Recalculate
+    total = 0
+    for rc in calc.get("room_calculations", []):
+        subtotal = sum(item.get("total", 0) for cat in ["floor_items", "wall_items", "ceiling_items", "other_items"] for item in rc.get(cat, []) if item.get("included"))
+        rc["subtotal"] = round(subtotal, 2)
+        total += subtotal
+    calc["total_min"] = round(total, 2)
+    calc["total_recommended"] = round(total * 1.1, 2)
+    
+    await db.renovation_calculations.update_one(
+        {"id": calc_id},
+        {"$set": {"room_calculations": calc["room_calculations"], "total_min": calc["total_min"], "total_recommended": calc["total_recommended"]}}
+    )
+    
+    updated = await db.renovation_calculations.find_one({"id": calc_id}, {"_id": 0})
+    return updated
+
+@api_router.put("/projects/{project_id}/renovation-calculation/switch-scenario")
+async def switch_project_wall_scenario(project_id: str, room_id: str, scenario: str, current_user: User = Depends(get_current_user)):
+    """Switch wall scenario for a project calculation"""
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    calc_id = project.get("renovation_calculation_id")
+    calc = await db.renovation_calculations.find_one({"id": calc_id}, {"_id": 0})
+    if not calc:
+        raise HTTPException(status_code=404, detail="Berekening niet gevonden")
+    
+    scenario_map = {
+        "nieuw_pleisterwerk": "muur_scenario_a",
+        "egaliseren": "muur_scenario_b",
+        "gyproc": "muur_scenario_c"
+    }
+    active_cat = scenario_map.get(scenario, "muur_scenario_a")
+    
+    for rc in calc.get("room_calculations", []):
+        if rc.get("room_id") == room_id:
+            for item in rc.get("wall_items", []):
+                cat = item.get("category", "")
+                if cat.startswith("muur_scenario_"):
+                    item["included"] = (cat == active_cat)
+                    item["is_selected"] = (cat == active_cat)
+            rc["selected_wall_scenario"] = scenario
+    
+    total = 0
+    for rc in calc.get("room_calculations", []):
+        subtotal = sum(item.get("total", 0) for cat in ["floor_items", "wall_items", "ceiling_items", "other_items"] for item in rc.get(cat, []) if item.get("included"))
+        rc["subtotal"] = round(subtotal, 2)
+        total += subtotal
+    calc["total_min"] = round(total, 2)
+    calc["total_recommended"] = round(total * 1.1, 2)
+    
+    await db.renovation_calculations.update_one(
+        {"id": calc_id},
+        {"$set": {"room_calculations": calc["room_calculations"], "total_min": calc["total_min"], "total_recommended": calc["total_recommended"]}}
+    )
+    
+    updated = await db.renovation_calculations.find_one({"id": calc_id}, {"_id": 0})
+    return updated
+
+@api_router.post("/projects/{project_id}/generate-quote-from-calculation")
+async def generate_quote_from_calculation(project_id: str, current_user: User = Depends(get_current_user)):
+    """Generate a quote with line items from the renovation calculation"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can create quotes")
+    
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    calc_id = project.get("renovation_calculation_id")
+    if not calc_id:
+        raise HTTPException(status_code=400, detail="Geen berekening gevonden. Maak eerst een berekening.")
+    
+    calc = await db.renovation_calculations.find_one({"id": calc_id}, {"_id": 0})
+    if not calc:
+        raise HTTPException(status_code=404, detail="Berekening niet gevonden")
+    
+    # Ensure lead exists
+    lead_id = project.get("lead_id")
+    if not lead_id:
+        lead_obj = {
+            "id": f"LEAD-{str(uuid.uuid4())[:8].upper()}",
+            "name": project.get("name", "Onbekende klant"),
+            "email": "geen-email@example.com",
+            "phone": "0000000000",
+            "address": "",
+            "project_type": "Renovatie",
+            "description": f"Automatisch aangemaakt voor project: {project.get('name', project_id)}",
+            "status": "offerte",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "user_id": current_user.id
+        }
+        await db.leads.insert_one(lead_obj)
+        lead_id = lead_obj["id"]
+        await db.projects.update_one({"id": project_id}, {"$set": {"lead_id": lead_id}})
+    
+    # Create quote
+    quote_id = f"OFF-{datetime.now(timezone.utc).year}-{str(uuid.uuid4())[:6].upper()}"
+    quote_doc = {
+        "id": quote_id,
+        "lead_id": lead_id,
+        "quote_number": quote_id,
+        "date": datetime.now(timezone.utc).isoformat(),
+        "status": "concept",
+        "line_items": [],
+        "subtotal_labor": 0,
+        "subtotal_material": 0,
+        "total_excl_vat": 0,
+        "vat_breakdown": {},
+        "total_vat": 0,
+        "total_incl_vat": 0,
+        "total_price": 0,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "user_id": current_user.id
+    }
+    await db.quotes.insert_one(quote_doc)
+    
+    # Create line items from all included calculation items
+    line_items = []
+    total_excl = 0
+    
+    for rc in calc.get("room_calculations", []):
+        room_name = rc.get("room_name", "")
+        for cat_key in ["floor_items", "wall_items", "ceiling_items", "other_items"]:
+            for item in rc.get(cat_key, []):
+                if not item.get("included"):
+                    continue
+                
+                li_id = str(uuid.uuid4())
+                quantity = item.get("quantity", 1)
+                unit_price = item.get("unit_price", 0)
+                subtotal = round(quantity * unit_price, 2)
+                vat_rate = 21.0
+                vat_amount = round(subtotal * vat_rate / 100, 2)
+                
+                line_item = {
+                    "id": li_id,
+                    "quote_id": quote_id,
+                    "description": f"{room_name}: {item.get('title', '?')} ({item.get('quantity', 0)} {item.get('unit', 'stuk')})",
+                    "quantity": quantity,
+                    "unit_price": unit_price,
+                    "item_type": "arbeid",
+                    "vat_rate": vat_rate,
+                    "total_excl_vat": subtotal,
+                    "vat_amount": vat_amount,
+                    "total_incl_vat": round(subtotal + vat_amount, 2),
+                    "total": subtotal,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                line_items.append(line_item)
+                total_excl += subtotal
+    
+    if line_items:
+        await db.line_items.insert_many(line_items)
+    
+    # Update quote totals
+    total_vat = round(total_excl * 0.21, 2)
+    await db.quotes.update_one(
+        {"id": quote_id},
+        {"$set": {
+            "subtotal_labor": round(total_excl, 2),
+            "total_excl_vat": round(total_excl, 2),
+            "total_vat": total_vat,
+            "total_incl_vat": round(total_excl + total_vat, 2),
+            "total_price": round(total_excl + total_vat, 2)
+        }}
+    )
+    
+    return {
+        "quote_id": quote_id,
+        "line_items_count": len(line_items),
+        "total_excl_vat": round(total_excl, 2),
+        "total_incl_vat": round(total_excl + total_vat, 2),
+        "message": f"Offerte aangemaakt met {len(line_items)} regelposten"
+    }
+
+@api_router.post("/work-items/auto-save")
+async def auto_save_work_item(data: dict, current_user: User = Depends(get_current_user)):
+    """Auto-save a manually entered line item as a new work item for future reuse"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can save work items")
+    
+    title = data.get("title", "").strip()
+    price = data.get("price", 0)
+    unit = data.get("unit", "stuk")
+    component_label = data.get("component_label", None)
+    
+    if not title:
+        raise HTTPException(status_code=400, detail="Titel is verplicht")
+    
+    # Check if item already exists (case-insensitive)
+    existing = await db.work_items.find_one(
+        {"title": {"$regex": f"^{title}$", "$options": "i"}},
+        {"_id": 0}
+    )
+    
+    if existing:
+        return {"message": "Item bestaat al", "work_item_id": existing.get("id"), "is_new": False}
+    
+    work_item = {
+        "id": str(uuid.uuid4()),
+        "title": title,
+        "price": float(price),
+        "unit": unit,
+        "component_label": component_label,
+        "room_types": ["all"],
+        "auto_saved": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user.id
+    }
+    
+    await db.work_items.insert_one(work_item)
+    
+    return {"message": "Nieuw werk item opgeslagen", "work_item_id": work_item["id"], "is_new": True}
 
 @api_router.post("/quick-tasks")
 async def create_quick_task(task: QuickTaskCreate, current_user: User = Depends(get_current_user)):
@@ -9328,6 +9715,38 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
     if not rooms:
         raise HTTPException(status_code=400, detail="Voeg eerst kamers toe aan het pand")
     
+    # Use shared calculation logic
+    calculation, calc_doc, room_calculations, all_work_items = await _perform_renovation_calculation(rooms)
+    
+    # Remove old calculation if exists
+    await db.renovation_calculations.delete_many({"property_id": property_id})
+    
+    calc_doc["property_id"] = property_id
+    await db.renovation_calculations.insert_one(calc_doc)
+    
+    await db.properties.update_one(
+        {"id": property_id},
+        {"$set": {
+            "status": "calculated",
+            "renovation_calculation_id": calculation.id,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    logger.info(f"Calculated renovation for property {property_id}: €{calculation.total_min:.2f} (using {len(all_work_items)} work items)")
+    
+    return {
+        "calculation_id": calculation.id,
+        "total_min": calculation.total_min,
+        "total_realistic": calculation.total_realistic,
+        "total_max": calculation.total_max,
+        "estimated_duration_weeks": calculation.estimated_duration_weeks,
+        "rooms_calculated": len(room_calculations),
+        "work_items_used": len(all_work_items)
+    }
+
+async def _perform_renovation_calculation(rooms):
+    """Shared renovation calculation logic for both properties and projects"""
     # ============= FETCH ALL WORK ITEMS FROM DATABASE =============
     all_work_items = await db.work_items.find({}, {"_id": 0}).to_list(500)
     
@@ -9878,8 +10297,7 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
     
     # Create calculation object
     calculation = RenovationCalculation(
-        property_id=property_id,
-        calculated_by=current_user.id,
+        calculated_by="system",
         room_calculations=room_calculations,
         total_min=round(total * 0.85, 2),
         total_realistic=round(total, 2),
@@ -9902,33 +10320,9 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
         for rc in room_calculations
     ]
     
-    # Remove old calculation if exists
-    await db.renovation_calculations.delete_many({"property_id": property_id})
+    logger.info(f"Renovation calculation done: €{total:.2f} (using {len(all_work_items)} work items)")
     
-    # Insert new calculation
-    await db.renovation_calculations.insert_one(calc_doc)
-    
-    # Update property status
-    await db.properties.update_one(
-        {"id": property_id},
-        {"$set": {
-            "status": "calculated",
-            "renovation_calculation_id": calculation.id,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }}
-    )
-    
-    logger.info(f"Calculated renovation for property {property_id}: €{total:.2f} (using {len(all_work_items)} work items)")
-    
-    return {
-        "calculation_id": calculation.id,
-        "total_min": calculation.total_min,
-        "total_realistic": calculation.total_realistic,
-        "total_max": calculation.total_max,
-        "estimated_duration_weeks": calculation.estimated_duration_weeks,
-        "rooms_calculated": len(room_calculations),
-        "work_items_used": len(all_work_items)
-    }
+    return calculation, calc_doc, room_calculations, all_work_items
 
 @api_router.get("/properties/{property_id}/calculation")
 async def get_renovation_calculation(property_id: str, current_user: User = Depends(get_current_user)):
