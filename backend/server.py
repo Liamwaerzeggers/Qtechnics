@@ -9124,40 +9124,23 @@ async def update_work_item_label(
 
 # --- Renovation Calculator ---
 
-# ============= STANDAARD PRIJZEN PER WERKPOST =============
-# Deze prijzen worden gebruikt als er geen werkpost in de database staat
-STANDAARD_PRIJZEN = {
-    # VLOER - werk + materiaal prijzen
-    "vloer_egaliseren": {"title": "Vloer egaliseren", "price": 18, "unit": "m²"},
-    "vloer_afbraak": {"title": "Afbraak bestaande vloer", "price": 27, "unit": "m²"},
-    "tegels_standaard": {"title": "Tegelen: standaard", "price": 95, "unit": "m²"},  # werk + materiaal
-    "tegels_badkamer": {"title": "Tegelen: badkamer", "price": 115, "unit": "m²"},  # hoger tarief badkamer
-    "tegels_groot_formaat": {"title": "Tegelen: groot formaat/visgraat", "price": 142, "unit": "m²"},
-    "parket": {"title": "Parket leggen", "price": 85, "unit": "m²"},
-    "vinyl": {"title": "Vinyl leggen", "price": 45, "unit": "m²"},
-    "laminaat": {"title": "Laminaat leggen", "price": 38, "unit": "m²"},
-    
-    # MUUR - werk + materiaal prijzen
-    "muur_afbraak_pleisterwerk": {"title": "Pleisterwerk verwijderen", "price": 15, "unit": "m²"},
-    "muur_nieuw_pleisterwerk": {"title": "Nieuw pleisterwerk", "price": 35, "unit": "m²"},
-    "muur_egaliseren": {"title": "Muur egaliseren (bestaand pleister)", "price": 22, "unit": "m²"},
-    "muur_gyproc": {"title": "Gyproc afwerking", "price": 45, "unit": "m²"},
-    "muur_schilderen": {"title": "Schilderwerk muren", "price": 18, "unit": "m²"},
-    
-    # PLAFOND - werk + materiaal prijzen
-    "plafond_afbraak": {"title": "Bestaand plafond verwijderen", "price": 12, "unit": "m²"},
-    "plafond_nieuw_gyproc": {"title": "Nieuw gyproc plafond", "price": 55, "unit": "m²"},
-    "plafond_schilderen": {"title": "Schilderwerk plafond", "price": 16, "unit": "m²"},
-    
-    # ELEKTRICITEIT - stuk prijzen
-    "spot": {"title": "Inbouwspot plaatsen", "price": 75, "unit": "stuk"},
-    "schakelaar": {"title": "Schakelaar plaatsen", "price": 65, "unit": "stuk"},
-    "stopcontact": {"title": "Stopcontact plaatsen", "price": 55, "unit": "stuk"},
-}
+# Helper function to find work item price by title pattern
+def find_work_item_price(work_items, title_pattern, default_price, default_unit="m²"):
+    """Find a work item by title pattern (case-insensitive partial match)"""
+    pattern_lower = title_pattern.lower()
+    for item in work_items:
+        if pattern_lower in item.get("title", "").lower():
+            return {
+                "id": item.get("id"),
+                "title": item.get("title"),
+                "price": item.get("price", default_price),
+                "unit": item.get("unit", default_unit)
+            }
+    return {"id": None, "title": title_pattern, "price": default_price, "unit": default_unit}
 
 @api_router.post("/properties/{property_id}/calculate")
 async def calculate_renovation(property_id: str, current_user: User = Depends(get_current_user)):
-    """Generate smart renovation calculation for a property using scenario-based approach"""
+    """Generate smart renovation calculation using real work item prices from database"""
     if current_user.role not in ["admin", "realtor", "investor"]:
         raise HTTPException(status_code=403, detail="Geen toegang")
     
@@ -9175,23 +9158,66 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
     if not rooms:
         raise HTTPException(status_code=400, detail="Voeg eerst kamers toe aan het pand")
     
-    # STANDAARD HOOGTE als er geen is opgegeven
+    # ============= FETCH ALL WORK ITEMS FROM DATABASE =============
+    all_work_items = await db.work_items.find({}, {"_id": 0}).to_list(500)
+    
+    # Group work items by component_label
+    work_items_by_label = {
+        "vloer": [],
+        "muur": [],
+        "plafond": [],
+        "elektriciteit": [],
+        "sanitair": [],
+        "verwarming": [],
+        "isolatie": [],
+        "overig": []
+    }
+    
+    for item in all_work_items:
+        label = item.get("component_label", "overig") or "overig"
+        if label in work_items_by_label:
+            work_items_by_label[label].append(item)
+        else:
+            work_items_by_label["overig"].append(item)
+    
+    logger.info(f"Loaded work items: vloer={len(work_items_by_label['vloer'])}, muur={len(work_items_by_label['muur'])}, plafond={len(work_items_by_label['plafond'])}, overig={len(work_items_by_label['overig'])}")
+    
+    # ============= DEFAULT PRICES (fallback if not in database) =============
+    DEFAULT_PRICES = {
+        "afbraak_vloer": 27,
+        "egaliseren": 35,
+        "tegels_standaard": 95,
+        "tegels_badkamer": 115,
+        "parket": 65,
+        "laminaat": 35,
+        "vinyl": 68,
+        "pleisterij": 60,
+        "gyproc_wit": 65,
+        "gyproc_groen": 75,
+        "afbraak_wand": 25,
+        "schilderen": 32,
+        "plafond_gyproc": 150,
+        "afbraak_plafond": 25,
+        "spot_wit": 80,
+        "spot_zwart": 92,
+        "schakelaar_wit": 50,
+        "stopcontact_wit": 50,
+    }
+    
+    # STANDAARD HOOGTE
     STANDAARD_HOOGTE = 2.55
     
-    # Calculate per room using smart defaults
+    # Calculate per room
     room_calculations = []
     total = 0.0
     
     for room in rooms:
         room_type = room.get("room_type", "other")
         
-        # Vloeroppervlakte berekenen
+        # Calculate areas
         floor_area = room.get("floor_area", 0) or (room.get("length", 0) * room.get("width", 0))
-        
-        # Plafondoppervlakte = vloeroppervlakte
         ceiling_area = room.get("ceiling_area", 0) or floor_area
         
-        # Hoogte: gebruik opgegeven hoogte of standaard 2.55m
         room_height = room.get("height", 0)
         if not room_height or room_height <= 0:
             room_height = STANDAARD_HOOGTE
@@ -9199,14 +9225,13 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
         else:
             height_source = "opgegeven"
         
-        # Muuroppervlakte berekenen
         wall_area = room.get("wall_area", 0)
         if not wall_area and room.get("length") and room.get("width"):
-            # Omtrek × hoogte
             perimeter = 2 * (room.get("length", 0) + room.get("width", 0))
             wall_area = perimeter * room_height
         
         is_bathroom = room_type == "bathroom"
+        is_kitchen = room_type == "kitchen"
         
         room_calc = RoomCalculation(
             room_id=room.get("id", str(uuid.uuid4())),
@@ -9229,17 +9254,18 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
         room_subtotal = 0.0
         
         # ==================== VLOER ====================
-        # Standaard: egaliseren + tegels (SELECTED)
-        # Alternatieven: parket, vinyl, laminaat (NOT SELECTED - switchable)
+        # Get prices from database
+        vloer_items = work_items_by_label.get("vloer", [])
         
-        # 1. Afbraak bestaande vloer - altijd included
-        afbraak_price = STANDAARD_PRIJZEN["vloer_afbraak"]["price"]
-        afbraak_total = floor_area * afbraak_price
+        # 1. Afbraak bestaande vloer
+        afbraak_info = find_work_item_price(all_work_items, "afbraak vloer", DEFAULT_PRICES["afbraak_vloer"])
+        afbraak_total = floor_area * afbraak_info["price"]
         room_calc.floor_items.append(CalculationItem(
-            title="Afbraak bestaande vloer",
+            work_item_id=afbraak_info["id"],
+            title=afbraak_info["title"],
             quantity=round(floor_area, 2),
             unit="m²",
-            unit_price=afbraak_price,
+            unit_price=afbraak_info["price"],
             total=round(afbraak_total, 2),
             included=True,
             category="vloer_voorbereiding",
@@ -9248,14 +9274,15 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
         ))
         room_subtotal += afbraak_total
         
-        # 2. Egaliseren - altijd included
-        egaliseer_price = STANDAARD_PRIJZEN["vloer_egaliseren"]["price"]
-        egaliseer_total = floor_area * egaliseer_price
+        # 2. Egaliseren
+        egaliseer_info = find_work_item_price(all_work_items, "egaliseren", DEFAULT_PRICES["egaliseren"])
+        egaliseer_total = floor_area * egaliseer_info["price"]
         room_calc.floor_items.append(CalculationItem(
-            title="Vloer egaliseren",
+            work_item_id=egaliseer_info["id"],
+            title=egaliseer_info["title"],
             quantity=round(floor_area, 2),
             unit="m²",
-            unit_price=egaliseer_price,
+            unit_price=egaliseer_info["price"],
             total=round(egaliseer_total, 2),
             included=True,
             category="vloer_voorbereiding",
@@ -9264,61 +9291,52 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
         ))
         room_subtotal += egaliseer_total
         
-        # 3. VLOER AFWERKING OPTIES (slechts 1 selected)
-        # Optie A: Tegels (STANDAARD GESELECTEERD)
-        tegel_prijs = STANDAARD_PRIJZEN["tegels_badkamer"]["price"] if is_bathroom else STANDAARD_PRIJZEN["tegels_standaard"]["price"]
-        tegel_total = floor_area * tegel_prijs
+        # 3. VLOER AFWERKING OPTIES
+        # Optie A: Tegels (standaard geselecteerd)
+        if is_bathroom:
+            tegel_info = find_work_item_price(all_work_items, "tegelen badkamer", DEFAULT_PRICES["tegels_badkamer"])
+        else:
+            tegel_info = find_work_item_price(all_work_items, "tegelen: standaard", DEFAULT_PRICES["tegels_standaard"])
+        tegel_total = floor_area * tegel_info["price"]
         room_calc.floor_items.append(CalculationItem(
-            title=f"Tegels {'badkamer' if is_bathroom else 'standaard'} (werk + materiaal)",
+            work_item_id=tegel_info["id"],
+            title=tegel_info["title"],
             quantity=round(floor_area, 2),
             unit="m²",
-            unit_price=tegel_prijs,
+            unit_price=tegel_info["price"],
             total=round(tegel_total, 2),
-            included=True,  # STANDAARD GESELECTEERD
+            included=True,
             category="vloer_afwerking",
             is_selected=True,
             option_group="vloer_afwerking_keuze"
         ))
         room_subtotal += tegel_total
         
-        # Optie B: Parket (ALTERNATIEF - niet geselecteerd)
-        parket_prijs = STANDAARD_PRIJZEN["parket"]["price"]
-        parket_total = floor_area * parket_prijs
+        # Optie B: Parket
+        parket_info = find_work_item_price(vloer_items, "parket", DEFAULT_PRICES["parket"])
+        parket_total = floor_area * parket_info["price"]
         room_calc.floor_items.append(CalculationItem(
-            title="Parket (werk + materiaal)",
+            work_item_id=parket_info["id"],
+            title=parket_info["title"],
             quantity=round(floor_area, 2),
             unit="m²",
-            unit_price=parket_prijs,
+            unit_price=parket_info["price"],
             total=round(parket_total, 2),
-            included=False,  # NIET GESELECTEERD
-            category="vloer_afwerking",
-            is_selected=False,
-            option_group="vloer_afwerking_keuze"
-        ))
-        
-        # Optie C: Vinyl (ALTERNATIEF - niet geselecteerd)
-        vinyl_prijs = STANDAARD_PRIJZEN["vinyl"]["price"]
-        vinyl_total = floor_area * vinyl_prijs
-        room_calc.floor_items.append(CalculationItem(
-            title="Vinyl (werk + materiaal)",
-            quantity=round(floor_area, 2),
-            unit="m²",
-            unit_price=vinyl_prijs,
-            total=round(vinyl_total, 2),
             included=False,
             category="vloer_afwerking",
             is_selected=False,
             option_group="vloer_afwerking_keuze"
         ))
         
-        # Optie D: Laminaat (ALTERNATIEF - niet geselecteerd)
-        laminaat_prijs = STANDAARD_PRIJZEN["laminaat"]["price"]
-        laminaat_total = floor_area * laminaat_prijs
+        # Optie C: Laminaat
+        laminaat_info = find_work_item_price(vloer_items, "laminaat", DEFAULT_PRICES["laminaat"])
+        laminaat_total = floor_area * laminaat_info["price"]
         room_calc.floor_items.append(CalculationItem(
-            title="Laminaat (werk + materiaal)",
+            work_item_id=laminaat_info["id"],
+            title=laminaat_info["title"],
             quantity=round(floor_area, 2),
             unit="m²",
-            unit_price=laminaat_prijs,
+            unit_price=laminaat_info["price"],
             total=round(laminaat_total, 2),
             included=False,
             category="vloer_afwerking",
@@ -9326,101 +9344,173 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
             option_group="vloer_afwerking_keuze"
         ))
         
+        # Optie D: Vinyl
+        vinyl_info = find_work_item_price(vloer_items, "vinyl", DEFAULT_PRICES["vinyl"])
+        vinyl_total = floor_area * vinyl_info["price"]
+        room_calc.floor_items.append(CalculationItem(
+            work_item_id=vinyl_info["id"],
+            title=vinyl_info["title"],
+            quantity=round(floor_area, 2),
+            unit="m²",
+            unit_price=vinyl_info["price"],
+            total=round(vinyl_total, 2),
+            included=False,
+            category="vloer_afwerking",
+            is_selected=False,
+            option_group="vloer_afwerking_keuze"
+        ))
+        
+        # VLOER EXTRAS (items with label "overig" that apply to floor)
+        for item in work_items_by_label.get("overig", []):
+            room_types = item.get("room_types", ["all"])
+            if "all" in room_types or room_type in room_types:
+                if item.get("unit") == "m²":
+                    item_total = floor_area * item.get("price", 0)
+                    quantity = floor_area
+                else:
+                    item_total = item.get("price", 0)
+                    quantity = 1
+                room_calc.floor_items.append(CalculationItem(
+                    work_item_id=item.get("id"),
+                    title=f"➕ {item.get('title', '?')}",
+                    quantity=round(quantity, 2),
+                    unit=item.get("unit", "stuk"),
+                    unit_price=item.get("price", 0),
+                    total=round(item_total, 2),
+                    included=False,  # Extra - niet standaard geselecteerd
+                    category="vloer_extra",
+                    is_selected=False,
+                    option_group="vloer_extras"
+                ))
+        
         # ==================== MUREN ====================
-        # Scenario's (kies 1):
-        # A: Pleisterwerk verwijderen + Nieuw pleisterwerk (STANDAARD)
-        # B: Muur egaliseren (bestaand pleister te redden)
-        # C: Gyproc afwerking
-        # + Schilderen (standaard aan, makkelijk uit te vinken)
+        muur_items = work_items_by_label.get("muur", [])
         
-        # SCENARIO A: Nieuw pleisterwerk (STANDAARD)
-        afbraak_pleister_prijs = STANDAARD_PRIJZEN["muur_afbraak_pleisterwerk"]["price"]
-        afbraak_pleister_total = wall_area * afbraak_pleister_prijs
+        # SCENARIO A: Nieuw pleisterwerk
+        afbraak_wand_info = find_work_item_price(all_work_items, "afbraak wandtegel", DEFAULT_PRICES["afbraak_wand"])
+        afbraak_wand_total = wall_area * afbraak_wand_info["price"]
         room_calc.wall_items.append(CalculationItem(
-            title="Pleisterwerk verwijderen",
+            work_item_id=afbraak_wand_info["id"],
+            title=afbraak_wand_info["title"],
             quantity=round(wall_area, 2),
             unit="m²",
-            unit_price=afbraak_pleister_prijs,
-            total=round(afbraak_pleister_total, 2),
-            included=True,  # STANDAARD SCENARIO
+            unit_price=afbraak_wand_info["price"],
+            total=round(afbraak_wand_total, 2),
+            included=True,
             category="muur_scenario_a",
             is_selected=True,
             option_group="muur_ondergrond"
         ))
-        room_subtotal += afbraak_pleister_total
+        room_subtotal += afbraak_wand_total
         
-        nieuw_pleister_prijs = STANDAARD_PRIJZEN["muur_nieuw_pleisterwerk"]["price"]
-        nieuw_pleister_total = wall_area * nieuw_pleister_prijs
+        pleisterij_info = find_work_item_price(muur_items, "pleisterij", DEFAULT_PRICES["pleisterij"])
+        pleisterij_total = wall_area * pleisterij_info["price"]
         room_calc.wall_items.append(CalculationItem(
-            title="Nieuw pleisterwerk",
+            work_item_id=pleisterij_info["id"],
+            title=pleisterij_info["title"],
             quantity=round(wall_area, 2),
             unit="m²",
-            unit_price=nieuw_pleister_prijs,
-            total=round(nieuw_pleister_total, 2),
-            included=True,  # STANDAARD SCENARIO
+            unit_price=pleisterij_info["price"],
+            total=round(pleisterij_total, 2),
+            included=True,
             category="muur_scenario_a",
             is_selected=True,
             option_group="muur_ondergrond"
         ))
-        room_subtotal += nieuw_pleister_total
+        room_subtotal += pleisterij_total
         
-        # SCENARIO B: Muur egaliseren (ALTERNATIEF)
-        egaliseer_muur_prijs = STANDAARD_PRIJZEN["muur_egaliseren"]["price"]
-        egaliseer_muur_total = wall_area * egaliseer_muur_prijs
+        # SCENARIO B: Gyproc wit (egaliseren alternatief)
+        gyproc_wit_info = find_work_item_price(muur_items, "gyproc wit", DEFAULT_PRICES["gyproc_wit"])
+        gyproc_wit_total = wall_area * gyproc_wit_info["price"]
         room_calc.wall_items.append(CalculationItem(
-            title="Muur egaliseren (bestaand pleister behouden)",
+            work_item_id=gyproc_wit_info["id"],
+            title=gyproc_wit_info["title"],
             quantity=round(wall_area, 2),
             unit="m²",
-            unit_price=egaliseer_muur_prijs,
-            total=round(egaliseer_muur_total, 2),
-            included=False,  # ALTERNATIEF
+            unit_price=gyproc_wit_info["price"],
+            total=round(gyproc_wit_total, 2),
+            included=False,
             category="muur_scenario_b",
             is_selected=False,
             option_group="muur_ondergrond"
         ))
         
-        # SCENARIO C: Gyproc afwerking (ALTERNATIEF)
-        gyproc_prijs = STANDAARD_PRIJZEN["muur_gyproc"]["price"]
-        gyproc_total = wall_area * gyproc_prijs
+        # SCENARIO C: Gyproc groen (badkamer)
+        gyproc_groen_info = find_work_item_price(muur_items, "gyproc groen", DEFAULT_PRICES["gyproc_groen"])
+        gyproc_groen_total = wall_area * gyproc_groen_info["price"]
         room_calc.wall_items.append(CalculationItem(
-            title="Gyproc afwerking",
+            work_item_id=gyproc_groen_info["id"],
+            title=gyproc_groen_info["title"],
             quantity=round(wall_area, 2),
             unit="m²",
-            unit_price=gyproc_prijs,
-            total=round(gyproc_total, 2),
-            included=False,  # ALTERNATIEF
+            unit_price=gyproc_groen_info["price"],
+            total=round(gyproc_groen_total, 2),
+            included=False,
             category="muur_scenario_c",
             is_selected=False,
             option_group="muur_ondergrond"
         ))
         
-        # SCHILDERWERK MUREN - standaard AAN, makkelijk uit te vinken
-        schilder_muur_prijs = STANDAARD_PRIJZEN["muur_schilderen"]["price"]
-        schilder_muur_total = wall_area * schilder_muur_prijs
+        # Schilderwerk muren
+        schilder_info = find_work_item_price(all_work_items, "schilderen", DEFAULT_PRICES["schilderen"])
+        schilder_total = wall_area * schilder_info["price"]
         room_calc.wall_items.append(CalculationItem(
-            title="⬜ Schilderwerk muren (optioneel - vaak zelf te doen)",
+            work_item_id=schilder_info["id"],
+            title=f"⬜ {schilder_info['title']} (optioneel)",
             quantity=round(wall_area, 2),
             unit="m²",
-            unit_price=schilder_muur_prijs,
-            total=round(schilder_muur_total, 2),
-            included=True,  # Standaard aan
+            unit_price=schilder_info["price"],
+            total=round(schilder_total, 2),
+            included=True,
             category="muur_afwerking",
             is_selected=True,
             option_group="schilderwerk"
         ))
-        room_subtotal += schilder_muur_total
+        room_subtotal += schilder_total
+        
+        # MUUR EXTRAS - alle muur items die niet standaard zijn gebruikt
+        for item in muur_items:
+            title_lower = item.get("title", "").lower()
+            # Skip items we already added
+            if any(x in title_lower for x in ["pleisterij", "voorzetwand gyproc wit", "scheidingswand gyproc groen"]):
+                continue
+            room_types = item.get("room_types", ["all"])
+            if "all" in room_types or room_type in room_types:
+                if item.get("unit") == "m²":
+                    item_total = wall_area * item.get("price", 0)
+                    quantity = wall_area
+                elif item.get("unit") == "lm":
+                    perimeter = 2 * (room.get("length", 0) + room.get("width", 0))
+                    item_total = perimeter * item.get("price", 0)
+                    quantity = perimeter
+                else:
+                    item_total = item.get("price", 0)
+                    quantity = 1
+                room_calc.wall_items.append(CalculationItem(
+                    work_item_id=item.get("id"),
+                    title=f"➕ {item.get('title', '?')}",
+                    quantity=round(quantity, 2),
+                    unit=item.get("unit", "stuk"),
+                    unit_price=item.get("price", 0),
+                    total=round(item_total, 2),
+                    included=False,
+                    category="muur_extra",
+                    is_selected=False,
+                    option_group="muur_extras"
+                ))
         
         # ==================== PLAFOND ====================
-        # Standaard: nieuw gyproc plafond + schilderen (beide uit te vinken)
+        plafond_items = work_items_by_label.get("plafond", [])
         
-        # Afbraak bestaand plafond
-        afbraak_plafond_prijs = STANDAARD_PRIJZEN["plafond_afbraak"]["price"]
-        afbraak_plafond_total = ceiling_area * afbraak_plafond_prijs
+        # Afbraak plafond
+        afbraak_plafond_info = find_work_item_price(all_work_items, "afbraak plafond", DEFAULT_PRICES["afbraak_plafond"])
+        afbraak_plafond_total = ceiling_area * afbraak_plafond_info["price"]
         room_calc.ceiling_items.append(CalculationItem(
-            title="Bestaand plafond verwijderen",
+            work_item_id=afbraak_plafond_info["id"],
+            title=afbraak_plafond_info["title"],
             quantity=round(ceiling_area, 2),
             unit="m²",
-            unit_price=afbraak_plafond_prijs,
+            unit_price=afbraak_plafond_info["price"],
             total=round(afbraak_plafond_total, 2),
             included=True,
             category="plafond_basis",
@@ -9429,51 +9519,78 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
         ))
         room_subtotal += afbraak_plafond_total
         
-        # Nieuw gyproc plafond
-        nieuw_plafond_prijs = STANDAARD_PRIJZEN["plafond_nieuw_gyproc"]["price"]
-        nieuw_plafond_total = ceiling_area * nieuw_plafond_prijs
+        # Nieuw plafond gyproc
+        plafond_gyproc_info = find_work_item_price(plafond_items, "gyproc", DEFAULT_PRICES["plafond_gyproc"])
+        plafond_gyproc_total = ceiling_area * plafond_gyproc_info["price"]
         room_calc.ceiling_items.append(CalculationItem(
-            title="Nieuw gyproc plafond",
+            work_item_id=plafond_gyproc_info["id"],
+            title=plafond_gyproc_info["title"],
             quantity=round(ceiling_area, 2),
             unit="m²",
-            unit_price=nieuw_plafond_prijs,
-            total=round(nieuw_plafond_total, 2),
+            unit_price=plafond_gyproc_info["price"],
+            total=round(plafond_gyproc_total, 2),
             included=True,
             category="plafond_basis",
             is_selected=True,
             option_group="plafond_constructie"
         ))
-        room_subtotal += nieuw_plafond_total
+        room_subtotal += plafond_gyproc_total
         
         # Schilderwerk plafond
-        schilder_plafond_prijs = STANDAARD_PRIJZEN["plafond_schilderen"]["price"]
-        schilder_plafond_total = ceiling_area * schilder_plafond_prijs
+        schilder_plafond_total = ceiling_area * schilder_info["price"]
         room_calc.ceiling_items.append(CalculationItem(
-            title="⬜ Schilderwerk plafond (optioneel)",
+            work_item_id=schilder_info["id"],
+            title=f"⬜ {schilder_info['title']} plafond (optioneel)",
             quantity=round(ceiling_area, 2),
             unit="m²",
-            unit_price=schilder_plafond_prijs,
+            unit_price=schilder_info["price"],
             total=round(schilder_plafond_total, 2),
-            included=True,  # Standaard aan
+            included=True,
             category="plafond_afwerking",
             is_selected=True,
             option_group="schilderwerk"
         ))
         room_subtotal += schilder_plafond_total
         
-        # ==================== ELEKTRICITEIT ====================
-        # Per 5m² = 1 spot
-        # Per 10m² = 1 schakelaar + 1 stopcontact
+        # PLAFOND EXTRAS
+        for item in plafond_items:
+            title_lower = item.get("title", "").lower()
+            if "gyproc" in title_lower:
+                continue  # Already added
+            room_types = item.get("room_types", ["all"])
+            if "all" in room_types or room_type in room_types:
+                if item.get("unit") == "m²":
+                    item_total = ceiling_area * item.get("price", 0)
+                    quantity = ceiling_area
+                else:
+                    item_total = item.get("price", 0)
+                    quantity = 1
+                room_calc.ceiling_items.append(CalculationItem(
+                    work_item_id=item.get("id"),
+                    title=f"➕ {item.get('title', '?')}",
+                    quantity=round(quantity, 2),
+                    unit=item.get("unit", "stuk"),
+                    unit_price=item.get("price", 0),
+                    total=round(item_total, 2),
+                    included=False,
+                    category="plafond_extra",
+                    is_selected=False,
+                    option_group="plafond_extras"
+                ))
         
-        # Spots
+        # ==================== ELEKTRICITEIT ====================
+        elektriciteit_items = work_items_by_label.get("elektriciteit", [])
+        
+        # Spots (1 per 5m²)
         aantal_spots = max(1, int(floor_area / 5))
-        spot_prijs = STANDAARD_PRIJZEN["spot"]["price"]
-        spot_total = aantal_spots * spot_prijs
+        spot_info = find_work_item_price(elektriciteit_items, "spot wit", DEFAULT_PRICES["spot_wit"])
+        spot_total = aantal_spots * spot_info["price"]
         room_calc.other_items.append(CalculationItem(
-            title=f"Inbouwspots (1 per 5m²)",
+            work_item_id=spot_info["id"],
+            title=f"{spot_info['title']} (1 per 5m²)",
             quantity=aantal_spots,
             unit="stuk",
-            unit_price=spot_prijs,
+            unit_price=spot_info["price"],
             total=round(spot_total, 2),
             included=True,
             category="elektriciteit",
@@ -9482,15 +9599,16 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
         ))
         room_subtotal += spot_total
         
-        # Schakelaars
+        # Schakelaars (1 per 10m²)
         aantal_schakelaars = max(1, int(floor_area / 10))
-        schakelaar_prijs = STANDAARD_PRIJZEN["schakelaar"]["price"]
-        schakelaar_total = aantal_schakelaars * schakelaar_prijs
+        schakelaar_info = find_work_item_price(elektriciteit_items, "schakelaar wit", DEFAULT_PRICES["schakelaar_wit"])
+        schakelaar_total = aantal_schakelaars * schakelaar_info["price"]
         room_calc.other_items.append(CalculationItem(
-            title=f"Schakelaars (1 per 10m²)",
+            work_item_id=schakelaar_info["id"],
+            title=f"{schakelaar_info['title']} (1 per 10m²)",
             quantity=aantal_schakelaars,
             unit="stuk",
-            unit_price=schakelaar_prijs,
+            unit_price=schakelaar_info["price"],
             total=round(schakelaar_total, 2),
             included=True,
             category="elektriciteit",
@@ -9499,15 +9617,16 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
         ))
         room_subtotal += schakelaar_total
         
-        # Stopcontacten
+        # Stopcontacten (1 per 10m²)
         aantal_stopcontacten = max(1, int(floor_area / 10))
-        stopcontact_prijs = STANDAARD_PRIJZEN["stopcontact"]["price"]
-        stopcontact_total = aantal_stopcontacten * stopcontact_prijs
+        stopcontact_info = find_work_item_price(elektriciteit_items, "stopcontact wit", DEFAULT_PRICES["stopcontact_wit"])
+        stopcontact_total = aantal_stopcontacten * stopcontact_info["price"]
         room_calc.other_items.append(CalculationItem(
-            title=f"Stopcontacten (1 per 10m²)",
+            work_item_id=stopcontact_info["id"],
+            title=f"{stopcontact_info['title']} (1 per 10m²)",
             quantity=aantal_stopcontacten,
             unit="stuk",
-            unit_price=stopcontact_prijs,
+            unit_price=stopcontact_info["price"],
             total=round(stopcontact_total, 2),
             included=True,
             category="elektriciteit",
@@ -9515,6 +9634,43 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
             option_group="stopcontacten"
         ))
         room_subtotal += stopcontact_total
+        
+        # ELEKTRICITEIT EXTRAS
+        for item in elektriciteit_items:
+            title_lower = item.get("title", "").lower()
+            if any(x in title_lower for x in ["spot wit", "schakelaar wit", "stopcontact wit"]):
+                continue
+            room_calc.other_items.append(CalculationItem(
+                work_item_id=item.get("id"),
+                title=f"➕ {item.get('title', '?')}",
+                quantity=1,
+                unit=item.get("unit", "stuk"),
+                unit_price=item.get("price", 0),
+                total=round(item.get("price", 0), 2),
+                included=False,
+                category="elektriciteit_extra",
+                is_selected=False,
+                option_group="elektriciteit_extras"
+            ))
+        
+        # ==================== SANITAIR (alleen voor badkamer/keuken) ====================
+        if is_bathroom or is_kitchen:
+            sanitair_items = work_items_by_label.get("sanitair", [])
+            for item in sanitair_items:
+                room_types = item.get("room_types", ["all"])
+                if "all" in room_types or room_type in room_types:
+                    room_calc.other_items.append(CalculationItem(
+                        work_item_id=item.get("id"),
+                        title=f"➕ {item.get('title', '?')}",
+                        quantity=1,
+                        unit=item.get("unit", "stuk"),
+                        unit_price=item.get("price", 0),
+                        total=round(item.get("price", 0), 2),
+                        included=False,
+                        category="sanitair_extra",
+                        is_selected=False,
+                        option_group="sanitair_extras"
+                    ))
         
         room_calc.subtotal = round(room_subtotal, 2)
         total += room_subtotal
@@ -9525,9 +9681,9 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
         property_id=property_id,
         calculated_by=current_user.id,
         room_calculations=room_calculations,
-        total_min=round(total * 0.85, 2),  # 15% onder
+        total_min=round(total * 0.85, 2),
         total_realistic=round(total, 2),
-        total_max=round(total * 1.20, 2),  # 20% boven
+        total_max=round(total * 1.20, 2),
         estimated_duration_weeks=max(2, int(total / 10000)),
         estimated_epc_improvement=""
     )
@@ -9535,7 +9691,6 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
     calc_doc = calculation.model_dump()
     calc_doc["created_at"] = calc_doc["created_at"].isoformat()
     calc_doc["updated_at"] = calc_doc["updated_at"].isoformat()
-    # Convert room calculations
     calc_doc["room_calculations"] = [
         {
             **rc.model_dump(),
@@ -9553,7 +9708,7 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
     # Insert new calculation
     await db.renovation_calculations.insert_one(calc_doc)
     
-    # Update property status and link
+    # Update property status
     await db.properties.update_one(
         {"id": property_id},
         {"$set": {
@@ -9563,7 +9718,7 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
         }}
     )
     
-    logger.info(f"Smart calculation for property {property_id}: €{total:.2f}")
+    logger.info(f"Calculated renovation for property {property_id}: €{total:.2f} (using {len(all_work_items)} work items)")
     
     return {
         "calculation_id": calculation.id,
@@ -9571,7 +9726,8 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
         "total_realistic": calculation.total_realistic,
         "total_max": calculation.total_max,
         "estimated_duration_weeks": calculation.estimated_duration_weeks,
-        "rooms_calculated": len(room_calculations)
+        "rooms_calculated": len(room_calculations),
+        "work_items_used": len(all_work_items)
     }
 
 @api_router.get("/properties/{property_id}/calculation")
