@@ -319,12 +319,13 @@ function LandingPage() {
     
     try {
       const response = await axios.post(
-        `${API}/auth/tenant/login?username=${encodeURIComponent(loginUsername)}&password=${encodeURIComponent(loginPassword)}`,
-        {}
+        `${API}/auth/tenant/login`,
+        { username: loginUsername, password: loginPassword }
       );
       
-      if (response.data.session_token) {
-        localStorage.setItem('auth_token', response.data.session_token);
+      if (response.data.token) {
+        localStorage.setItem('auth_token', response.data.token);
+        localStorage.setItem('session_token', response.data.token);
       }
       
       setUser(response.data.user);

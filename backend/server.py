@@ -9174,13 +9174,15 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
     }
     
     for item in all_work_items:
-        label = item.get("component_label", "overig") or "overig"
+        label = item.get("component_label")
+        if not label:
+            continue  # Skip items without a label - they are not categorized yet
         if label in work_items_by_label:
             work_items_by_label[label].append(item)
         else:
             work_items_by_label["overig"].append(item)
     
-    logger.info(f"Loaded work items: vloer={len(work_items_by_label['vloer'])}, muur={len(work_items_by_label['muur'])}, plafond={len(work_items_by_label['plafond'])}, overig={len(work_items_by_label['overig'])}")
+    logger.info(f"Loaded work items by label: vloer={len(work_items_by_label['vloer'])}, muur={len(work_items_by_label['muur'])}, plafond={len(work_items_by_label['plafond'])}, elektriciteit={len(work_items_by_label['elektriciteit'])}, sanitair={len(work_items_by_label['sanitair'])}, overig={len(work_items_by_label['overig'])}")
     
     # ============= DEFAULT PRICES (fallback if not in database) =============
     DEFAULT_PRICES = {
@@ -9360,8 +9362,12 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
             option_group="vloer_afwerking_keuze"
         ))
         
-        # VLOER EXTRAS (items with label "overig" that apply to floor)
-        for item in work_items_by_label.get("overig", []):
+        # VLOER EXTRAS - remaining vloer items not already used as options
+        used_vloer_titles = {"parket", "laminaat", "vinyl"}  # Already added as options
+        for item in vloer_items:
+            title_lower = item.get("title", "").lower()
+            if any(x in title_lower for x in used_vloer_titles):
+                continue
             room_types = item.get("room_types", ["all"])
             if "all" in room_types or room_type in room_types:
                 if item.get("unit") == "m²":
@@ -9372,12 +9378,12 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
                     quantity = 1
                 room_calc.floor_items.append(CalculationItem(
                     work_item_id=item.get("id"),
-                    title=f"➕ {item.get('title', '?')}",
+                    title=f"Extra: {item.get('title', '?')}",
                     quantity=round(quantity, 2),
                     unit=item.get("unit", "stuk"),
                     unit_price=item.get("price", 0),
                     total=round(item_total, 2),
-                    included=False,  # Extra - niet standaard geselecteerd
+                    included=False,
                     category="vloer_extra",
                     is_selected=False,
                     option_group="vloer_extras"
@@ -9488,7 +9494,7 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
                     quantity = 1
                 room_calc.wall_items.append(CalculationItem(
                     work_item_id=item.get("id"),
-                    title=f"➕ {item.get('title', '?')}",
+                    title=f"Extra: {item.get('title', '?')}",
                     quantity=round(quantity, 2),
                     unit=item.get("unit", "stuk"),
                     unit_price=item.get("price", 0),
@@ -9567,7 +9573,7 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
                     quantity = 1
                 room_calc.ceiling_items.append(CalculationItem(
                     work_item_id=item.get("id"),
-                    title=f"➕ {item.get('title', '?')}",
+                    title=f"Extra: {item.get('title', '?')}",
                     quantity=round(quantity, 2),
                     unit=item.get("unit", "stuk"),
                     unit_price=item.get("price", 0),
@@ -9642,7 +9648,7 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
                 continue
             room_calc.other_items.append(CalculationItem(
                 work_item_id=item.get("id"),
-                title=f"➕ {item.get('title', '?')}",
+                title=f"Extra: {item.get('title', '?')}",
                 quantity=1,
                 unit=item.get("unit", "stuk"),
                 unit_price=item.get("price", 0),
@@ -9661,7 +9667,7 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
                 if "all" in room_types or room_type in room_types:
                     room_calc.other_items.append(CalculationItem(
                         work_item_id=item.get("id"),
-                        title=f"➕ {item.get('title', '?')}",
+                        title=f"Extra: {item.get('title', '?')}",
                         quantity=1,
                         unit=item.get("unit", "stuk"),
                         unit_price=item.get("price", 0),
@@ -9671,6 +9677,30 @@ async def calculate_renovation(property_id: str, current_user: User = Depends(ge
                         is_selected=False,
                         option_group="sanitair_extras"
                     ))
+        
+        # ==================== OVERIG / ALGEMEEN ====================
+        overig_items = work_items_by_label.get("overig", [])
+        for item in overig_items:
+            room_types = item.get("room_types", ["all"])
+            if "all" in room_types or room_type in room_types:
+                if item.get("unit") == "m²":
+                    item_total = floor_area * item.get("price", 0)
+                    quantity = floor_area
+                else:
+                    item_total = item.get("price", 0)
+                    quantity = 1
+                room_calc.other_items.append(CalculationItem(
+                    work_item_id=item.get("id"),
+                    title=f"Extra: {item.get('title', '?')}",
+                    quantity=round(quantity, 2),
+                    unit=item.get("unit", "stuk"),
+                    unit_price=item.get("price", 0),
+                    total=round(item_total, 2),
+                    included=False,
+                    category="overig_extra",
+                    is_selected=False,
+                    option_group="overig_extras"
+                ))
         
         room_calc.subtotal = round(room_subtotal, 2)
         total += room_subtotal
@@ -10023,7 +10053,7 @@ async def tenant_login(login_data: TenantLoginRequest, response: Response):
     )
     
     user_response = {
-        "id": user["_id"],
+        "id": str(user["_id"]),
         "username": user.get("username"),
         "email": user.get("email"),
         "name": user.get("name"),
