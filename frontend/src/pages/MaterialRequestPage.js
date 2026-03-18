@@ -8,7 +8,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Package, Send, Check, Clock, Truck, Loader2, Plus, Minus, ShoppingCart, Image as ImageIcon, MapPin, Search, FolderOpen } from 'lucide-react';
+import { Package, Send, Check, Clock, Truck, Loader2, Plus, Minus, ShoppingCart, Image as ImageIcon, MapPin, Search, FolderOpen, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 const getAuthHeaders = () => {
@@ -47,10 +47,6 @@ const T = {
   deliverTo: { nl: "Leveren op", ua: "Доставити на" }
 };
 
-function Bi({ field }) {
-  return <><span>{T[field].nl}</span><span className="text-gray-400 text-xs ml-1">/ {T[field].ua}</span></>;
-}
-
 export default function MaterialRequestPage() {
   const { user } = useAuth();
   const isWorker = user?.role === 'worker';
@@ -65,6 +61,7 @@ export default function MaterialRequestPage() {
   const [notes, setNotes] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('catalog');
+  const [collapsedCats, setCollapsedCats] = useState({});
 
   useEffect(() => {
     Promise.all([
@@ -203,53 +200,55 @@ export default function MaterialRequestPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-5">
-        {/* Header */}
-        <div className="flex items-center space-x-3">
-          <div className="p-3 rounded-xl" style={{ backgroundColor: '#f5e6e6' }}>
-            <Package size={28} style={{ color: '#500000' }} />
+      <div className="space-y-3 sm:space-y-5">
+        {/* Header - compact on mobile */}
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="p-2 sm:p-3 rounded-xl shrink-0" style={{ backgroundColor: '#f5e6e6' }}>
+            <Package size={22} style={{ color: '#500000' }} className="sm:w-7 sm:h-7" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif', color: '#500000' }}>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold leading-tight" style={{ fontFamily: 'Space Grotesk, sans-serif', color: '#500000' }}>
               {T.pageTitle.nl}
+              {isWorker && <span className="text-sm sm:text-base font-normal text-gray-400 ml-1">/ {T.pageTitle.ua}</span>}
             </h1>
-            {isWorker && <p className="text-sm text-gray-500">{T.pageTitle.ua}</p>}
-            <p className="text-sm text-gray-600 mt-0.5">
+            <p className="text-xs sm:text-sm text-gray-600 mt-0.5 hidden sm:block">
               {T.pageSubtitle.nl}
-              {isWorker && <><br /><span className="text-gray-400">{T.pageSubtitle.ua}</span></>}
+              {isWorker && <span className="text-gray-400 ml-1">/ {T.pageSubtitle.ua}</span>}
             </p>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2">
+        {/* Tabs - wrap on mobile */}
+        <div className="flex flex-wrap gap-2 items-center">
           <Button
             data-testid="tab-catalog"
             variant={activeTab === 'catalog' ? 'default' : 'outline'}
             onClick={() => setActiveTab('catalog')}
             style={activeTab === 'catalog' ? { backgroundColor: '#500000' } : {}}
-            className="gap-2"
+            className="gap-1.5 text-xs sm:text-sm px-3 sm:px-4"
+            size="sm"
           >
-            <Package size={16} />
-            {isWorker ? <Bi field="catalog" /> : T.catalog.nl}
+            <Package size={14} />
+            {isWorker ? <><span>{T.catalog.nl}</span><span className="text-[10px] opacity-70">/ {T.catalog.ua}</span></> : T.catalog.nl}
           </Button>
           <Button
             data-testid="tab-orders"
             variant={activeTab === 'orders' ? 'default' : 'outline'}
             onClick={() => setActiveTab('orders')}
             style={activeTab === 'orders' ? { backgroundColor: '#500000' } : {}}
-            className="gap-2"
+            className="gap-1.5 text-xs sm:text-sm px-3 sm:px-4"
+            size="sm"
           >
-            <Clock size={16} />
-            {isWorker ? <Bi field="myOrders" /> : T.myOrders.nl}
+            <Clock size={14} />
+            {isWorker ? <><span>{T.myOrders.nl}</span><span className="text-[10px] opacity-70">/ {T.myOrders.ua}</span></> : T.myOrders.nl}
             {requests.length > 0 && (
               <span className="bg-white/20 text-xs px-1.5 rounded-full">{requests.length}</span>
             )}
           </Button>
           {cart.length > 0 && (
-            <div className="ml-auto flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-1">
-              <ShoppingCart size={16} style={{ color: '#500000' }} />
-              <span className="font-bold text-sm" style={{ color: '#500000' }}>{cart.reduce((s, c) => s + c.quantity, 0)}</span>
+            <div className="ml-auto flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-lg px-2 py-1">
+              <ShoppingCart size={14} style={{ color: '#500000' }} />
+              <span className="font-bold text-xs sm:text-sm" style={{ color: '#500000' }}>{cart.reduce((s, c) => s + c.quantity, 0)}</span>
             </div>
           )}
         </div>
@@ -309,39 +308,52 @@ export default function MaterialRequestPage() {
                 }
 
                 return (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {categories.map(cat => {
                       const catItems = grouped[cat.id] || [];
                       if (catItems.length === 0) return null;
+                      const isCollapsed = collapsedCats[cat.id];
                       return (
                         <div key={cat.id}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <FolderOpen size={16} style={{ color: '#500000' }} />
+                          <button
+                            onClick={() => setCollapsedCats(prev => ({ ...prev, [cat.id]: !prev[cat.id] }))}
+                            className="flex items-center gap-1.5 sm:gap-2 mb-2 w-full text-left group"
+                          >
+                            {isCollapsed ? <ChevronRight size={16} className="text-gray-400 shrink-0" /> : <ChevronDown size={16} className="text-gray-400 shrink-0" />}
+                            <FolderOpen size={15} style={{ color: '#500000' }} className="shrink-0" />
                             <h3 className="font-bold text-sm" style={{ color: '#500000' }}>
                               {cat.name}
-                              {isWorker && cat.name_ua && <span className="text-gray-400 font-normal ml-1">/ {cat.name_ua}</span>}
+                              {isWorker && cat.name_ua && <span className="text-gray-400 font-normal ml-1 text-xs">/ {cat.name_ua}</span>}
                             </h3>
                             <span className="text-xs text-gray-400">({catItems.length})</span>
-                          </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {catItems.map((item) => (
-                              <CatalogCard key={item.id} item={item} isWorker={isWorker} onAdd={addToCart} inCart={cart.some(c => c.catalog_item_id === item.id)} />
-                            ))}
-                          </div>
+                          </button>
+                          {!isCollapsed && (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                              {catItems.map((item) => (
+                                <CatalogCard key={item.id} item={item} isWorker={isWorker} onAdd={addToCart} inCart={cart.some(c => c.catalog_item_id === item.id)} />
+                              ))}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
                     {uncategorized.length > 0 && (
                       <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Package size={16} className="text-gray-400" />
+                        <button
+                          onClick={() => setCollapsedCats(prev => ({ ...prev, '__uncategorized': !prev['__uncategorized'] }))}
+                          className="flex items-center gap-1.5 sm:gap-2 mb-2 w-full text-left"
+                        >
+                          {collapsedCats['__uncategorized'] ? <ChevronRight size={16} className="text-gray-400 shrink-0" /> : <ChevronDown size={16} className="text-gray-400 shrink-0" />}
+                          <Package size={15} className="text-gray-400 shrink-0" />
                           <h3 className="font-bold text-sm text-gray-500">{isWorker ? 'Overige / Інше' : 'Overige'}</h3>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                          {uncategorized.map((item) => (
-                            <CatalogCard key={item.id} item={item} isWorker={isWorker} onAdd={addToCart} inCart={cart.some(c => c.catalog_item_id === item.id)} />
-                          ))}
-                        </div>
+                        </button>
+                        {!collapsedCats['__uncategorized'] && (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                            {uncategorized.map((item) => (
+                              <CatalogCard key={item.id} item={item} isWorker={isWorker} onAdd={addToCart} inCart={cart.some(c => c.catalog_item_id === item.id)} />
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -352,10 +364,11 @@ export default function MaterialRequestPage() {
             {/* Cart / Order Summary */}
             <div className="space-y-4">
               <Card className="sticky top-4" style={{ borderColor: '#7a1f1f', borderWidth: cart.length > 0 ? 2 : 1 }}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2" style={{ color: '#500000' }}>
-                    <ShoppingCart size={18} />
-                    {isWorker ? <Bi field="cart" /> : T.cart.nl}
+                <CardHeader className="pb-2 px-3 sm:px-6">
+                  <CardTitle className="text-sm sm:text-base flex items-center gap-2" style={{ color: '#500000' }}>
+                    <ShoppingCart size={16} />
+                    <span>{T.cart.nl}</span>
+                    {isWorker && <span className="text-xs text-gray-400 font-normal">/ {T.cart.ua}</span>}
                     {cart.length > 0 && (
                       <span className="ml-auto bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">
                         {cart.reduce((s, c) => s + c.quantity, 0)}
@@ -429,7 +442,8 @@ export default function MaterialRequestPage() {
                       <div>
                         <Label className="text-xs font-semibold flex items-center gap-1">
                           <MapPin size={12} />
-                          {isWorker ? <Bi field="deliverTo" /> : T.deliverTo.nl}
+                          <span>{T.deliverTo.nl}</span>
+                          {isWorker && <span className="text-[10px] text-gray-400 font-normal">/ {T.deliverTo.ua}</span>}
                         </Label>
                         <Select value={selectedProject} onValueChange={setSelectedProject}>
                           <SelectTrigger data-testid="order-project-select" className="mt-1">
@@ -553,7 +567,7 @@ function CatalogCard({ item, isWorker, onAdd, inCart }) {
       style={inCart ? { ringColor: '#500000' } : {}}
     >
       {/* Image */}
-      <div className="aspect-square bg-gray-100 relative overflow-hidden">
+      <div className="aspect-[4/3] sm:aspect-square bg-gray-100 relative overflow-hidden">
         {item.image_url ? (
           <img src={item.image_url} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
         ) : (
@@ -568,10 +582,10 @@ function CatalogCard({ item, isWorker, onAdd, inCart }) {
         )}
       </div>
       {/* Details */}
-      <CardContent className="p-3">
-        <h3 className="font-bold text-sm leading-tight" style={{ color: '#500000' }}>{item.title}</h3>
-        {isWorker && item.title_ua && <p className="text-xs text-gray-400 leading-tight">{item.title_ua}</p>}
-        {item.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description}</p>}
+      <CardContent className="p-2 sm:p-3">
+        <h3 className="font-bold text-xs sm:text-sm leading-tight" style={{ color: '#500000' }}>{item.title}</h3>
+        {isWorker && item.title_ua && <p className="text-[10px] sm:text-xs text-gray-400 leading-tight">{item.title_ua}</p>}
+        {item.description && <p className="text-[10px] sm:text-xs text-gray-500 mt-1 line-clamp-1 sm:line-clamp-2">{item.description}</p>}
         
         {/* Size selector (shown when needed) */}
         {hasSizes && showSizes && (
@@ -610,11 +624,11 @@ function CatalogCard({ item, isWorker, onAdd, inCart }) {
           data-testid={`add-to-cart-${item.id}`}
           onClick={(e) => { e.stopPropagation(); handleAdd(); }}
           size="sm"
-          className="w-full mt-2 text-xs"
+          className="w-full mt-2 text-[10px] sm:text-xs h-7 sm:h-8"
           style={{ backgroundColor: '#500000' }}
         >
-          <Plus size={14} className="mr-1" />
-          {isWorker ? `${T.addToCart.nl} / ${T.addToCart.ua}` : T.addToCart.nl}
+          <Plus size={12} className="mr-0.5 sm:mr-1" />
+          {isWorker ? <><span>{T.addToCart.nl}</span><span className="hidden sm:inline ml-0.5">/ {T.addToCart.ua}</span></> : T.addToCart.nl}
         </Button>
       </CardContent>
     </Card>
