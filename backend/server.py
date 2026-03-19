@@ -4024,13 +4024,12 @@ async def get_calendar_events(current_user: User = Depends(get_current_user)):
 async def upload_invoice(
     project_id: str,
     file: UploadFile = File(...),
+    total_incl_vat: float = Query(default=0),
+    total_excl_vat: float = Query(default=0),
+    description: str = Query(default=""),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Upload and parse a purchase invoice PDF for a project.
-    Automatically extracts total amounts and adds to project costs.
-    """
-    # Verify project exists (admins can access any project)
+    """Upload a purchase invoice for a project with manual cost entry. Stored in MongoDB."""
     if current_user.role == "admin":
         project = await db.projects.find_one({"id": project_id})
     else:
@@ -4038,103 +4037,82 @@ async def upload_invoice(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # Validate file type
-    if not file.filename.lower().endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    file_bytes = await file.read()
+    if len(file_bytes) > 15 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Bestand te groot (max 15MB)")
     
-    # Save file temporarily
-    temp_file = None
-    try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
-            temp_file = tmp.name
-            content = await file.read()
-            tmp.write(content)
-        
-        # Parse invoice
-        parser = InvoiceParser()
-        amounts = parser.parse_invoice(temp_file)
-        
-        # Store invoice data
-        invoice_data = {
-            "filename": file.filename,
-            "total_excl_vat": float(amounts['total_excl_vat']),
-            "total_incl_vat": float(amounts['total_incl_vat']),
-            "vat_amount": float(amounts['vat_amount']),
-            "upload_date": datetime.now(timezone.utc).isoformat(),
-            "uploaded_by": current_user.id
-        }
-        
-        # Add to project's invoice list
-        await db.projects.update_one(
-            {"id": project_id},
-            {"$push": {"invoice_uploads": invoice_data}}
-        )
-        
-        # Update project costs (both excl and incl VAT)
-        invoice_excl_vat = float(amounts['total_excl_vat'])
-        invoice_incl_vat = float(amounts['total_incl_vat'])
-        
-        # Get current costs
-        current_material_costs = project.get("material_costs", 0)
-        current_material_costs_incl_vat = project.get("material_costs_incl_vat", 0)
-        current_labor_costs = project.get("labor_hours", 0) * project.get("labor_cost_per_hour", 0)
-        current_other_costs = project.get("other_costs", 0)
-        
-        # Calculate new costs
-        new_material_costs = current_material_costs + invoice_excl_vat
-        new_material_costs_incl_vat = current_material_costs_incl_vat + invoice_incl_vat
-        new_total_costs = current_labor_costs + new_material_costs + current_other_costs
-        new_total_costs_incl_vat = current_labor_costs + new_material_costs_incl_vat + current_other_costs
-        
-        await db.projects.update_one(
-            {"id": project_id},
-            {"$set": {
-                "material_costs": new_material_costs,
-                "material_costs_incl_vat": new_material_costs_incl_vat,
-                "total_costs": new_total_costs,
-                "total_costs_incl_vat": new_total_costs_incl_vat
-            }}
-        )
-        
-        # Recalculate profit
-        quote = await db.quotes.find_one({"id": project["quote_id"]})
-        if quote:
-            revenue = quote.get("total_incl_vat", quote.get("total_price", 0))
-            profit = revenue - new_total_costs_incl_vat
-            margin = (profit / revenue * 100) if revenue > 0 else 0
-            
-            await db.projects.update_one(
-                {"id": project_id},
-                {"$set": {
-                    "profit": profit,
-                    "profit_margin": margin
-                }}
-            )
-        
-        logger.info(f"Invoice uploaded for project {project_id}: {file.filename}")
-        
-        return {
-            "success": True,
-            "invoice": invoice_data,
-            "extracted_amounts": {
-                "total_excl_vat": float(amounts['total_excl_vat']),
-                "total_incl_vat": float(amounts['total_incl_vat']),
-                "vat_amount": float(amounts['vat_amount'])
-            },
-            "project_updated": True
-        }
-        
-    except Exception as e:
-        logger.error(f"Error processing invoice: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to process invoice: {str(e)}"
-        )
+    # Store file in MongoDB (survives redeployments)
+    file_id = f"INV-{uuid.uuid4().hex[:12].upper()}"
+    await db.stored_files.insert_one({
+        "id": file_id,
+        "filename": file.filename,
+        "content_type": file.content_type or "application/pdf",
+        "data": base64.b64encode(file_bytes).decode("utf-8"),
+        "context": "purchase_invoice",
+        "context_id": project_id,
+        "created_by": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
     
-    finally:
-        # Clean up temp file
-        if temp_file and os.path.exists(temp_file):
-            os.unlink(temp_file)
+    # Auto-calculate missing VAT amounts
+    if total_incl_vat > 0 and total_excl_vat <= 0:
+        total_excl_vat = round(total_incl_vat / 1.21, 2)
+    elif total_excl_vat > 0 and total_incl_vat <= 0:
+        total_incl_vat = round(total_excl_vat * 1.21, 2)
+    vat_amount = round(total_incl_vat - total_excl_vat, 2)
+    
+    invoice_data = {
+        "id": file_id,
+        "filename": file.filename,
+        "file_url": f"/api/files/{file_id}",
+        "description": description,
+        "total_excl_vat": total_excl_vat,
+        "total_incl_vat": total_incl_vat,
+        "vat_amount": vat_amount,
+        "upload_date": datetime.now(timezone.utc).isoformat(),
+        "uploaded_by": current_user.id
+    }
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$push": {"invoice_uploads": invoice_data}}
+    )
+    
+    # Recalculate total costs from ALL sources
+    await recalculate_project_costs(project_id)
+    
+    return {"success": True, "invoice": invoice_data}
+
+async def recalculate_project_costs(project_id: str):
+    """Recalculate total_costs from all sources: manual costs + invoice uploads"""
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        return
+    
+    # Sum all invoice uploads
+    invoice_total = sum(inv.get("total_incl_vat", 0) or 0 for inv in project.get("invoice_uploads", []))
+    
+    # Manual costs
+    manual_material = project.get("material_costs", 0) or 0
+    labor_hours = project.get("labor_hours", 0) or 0
+    labor_rate = project.get("labor_cost_per_hour", 0) or 0
+    labor_costs = labor_hours * labor_rate
+    other_costs = project.get("other_costs", 0) or 0
+    
+    new_total_costs = manual_material + labor_costs + other_costs + invoice_total
+    
+    # Get sales from recalculate_project_sales data
+    sales_price = project.get("sales_price", 0) or 0
+    profit = sales_price - new_total_costs
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {
+            "total_costs": new_total_costs,
+            "invoice_total_costs": invoice_total,
+            "profit": profit
+        }}
+    )
 
 @api_router.get("/projects/{project_id}/invoices")
 async def get_project_invoices(
@@ -4172,55 +4150,28 @@ async def delete_project_invoice(
     
     # Get the invoice to delete
     invoice_to_delete = invoices[invoice_index]
-    invoice_excl_vat = invoice_to_delete.get("total_excl_vat", 0)
-    invoice_incl_vat = invoice_to_delete.get("total_incl_vat", 0)
+    
+    # Delete stored file from MongoDB if it has an id
+    if invoice_to_delete.get("id"):
+        await db.stored_files.delete_one({"id": invoice_to_delete["id"]})
     
     # Remove invoice from list
     invoices.pop(invoice_index)
     
-    # Recalculate costs (subtract the invoice amounts)
-    current_material_costs = project.get("material_costs", 0)
-    current_material_costs_incl_vat = project.get("material_costs_incl_vat", 0)
-    current_labor_costs = project.get("labor_hours", 0) * project.get("labor_cost_per_hour", 0)
-    current_other_costs = project.get("other_costs", 0)
-    
-    new_material_costs = max(0, current_material_costs - invoice_excl_vat)
-    new_material_costs_incl_vat = max(0, current_material_costs_incl_vat - invoice_incl_vat)
-    new_total_costs = current_labor_costs + new_material_costs + current_other_costs
-    new_total_costs_incl_vat = current_labor_costs + new_material_costs_incl_vat + current_other_costs
-    
-    # Update project
+    # Update project with removed invoice
     await db.projects.update_one(
         {"id": project_id},
-        {"$set": {
-            "invoice_uploads": invoices,
-            "material_costs": new_material_costs,
-            "material_costs_incl_vat": new_material_costs_incl_vat,
-            "total_costs": new_total_costs,
-            "total_costs_incl_vat": new_total_costs_incl_vat
-        }}
+        {"$set": {"invoice_uploads": invoices}}
     )
     
-    # Recalculate profit
-    quote = await db.quotes.find_one({"id": project["quote_id"]})
-    if quote:
-        revenue = quote.get("total_incl_vat", quote.get("total_price", 0))
-        profit = revenue - new_total_costs_incl_vat
-        margin = (profit / revenue * 100) if revenue > 0 else 0
-        
-        await db.projects.update_one(
-            {"id": project_id},
-            {"$set": {
-                "profit": profit,
-                "profit_margin": margin
-            }}
-        )
+    # Recalculate all costs
+    await recalculate_project_costs(project_id)
     
     logger.info(f"Invoice {invoice_index} deleted from project {project_id}")
     
     return {
         "success": True,
-        "message": "Invoice deleted and costs adjusted",
+        "message": "Factuur verwijderd en kosten aangepast",
         "deleted_invoice": invoice_to_delete
     }
 

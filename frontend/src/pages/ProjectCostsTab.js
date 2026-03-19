@@ -25,7 +25,10 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], legacyDo
   });
   const [invoices, setInvoices] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const [sendingPeppol, setSendingPeppol] = useState(null); // Track which invoice is being sent
+  const [sendingPeppol, setSendingPeppol] = useState(null);
+  const [invoiceAmount, setInvoiceAmount] = useState('');
+  const [invoiceDesc, setInvoiceDesc] = useState('');
+  const [invoiceFile, setInvoiceFile] = useState(null);
   
   // Manual invoice entries state
   const [manualEntries, setManualEntries] = useState([]);
@@ -45,6 +48,12 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], legacyDo
   const totalSalePrice = quotesTotal + legacyTotal;
   const allApprovedCount = approvedQuotes.length + legacyOffertes.length;
   const hasApprovedQuotes = allApprovedCount > 0;
+  
+  // Calculate total costs from all sources
+  const invoiceUploadCosts = (project.invoice_uploads || []).reduce((sum, inv) => sum + (inv.total_incl_vat || 0), 0);
+  const laborCosts = (project.labor_hours || 0) * (project.labor_cost_per_hour || 0);
+  const totalCosts = (project.material_costs || 0) + laborCosts + (project.other_costs || 0) + invoiceUploadCosts;
+  const profit = totalSalePrice - totalCosts;
 
   useEffect(() => {
     setCostData({
@@ -286,30 +295,36 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], legacyDo
   };
 
   const handleInvoiceUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file || file.type !== 'application/pdf') {
-      toast.error('Alleen PDF bestanden toegestaan');
+    e?.preventDefault();
+    if (!invoiceFile) {
+      toast.error('Selecteer een bestand');
       return;
     }
-
+    const amount = parseFloat(invoiceAmount) || 0;
+    if (amount <= 0) {
+      toast.error('Vul een bedrag in (incl. BTW)');
+      return;
+    }
     setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
+      const formData = new FormData();
+      formData.append('file', invoiceFile);
+      const params = new URLSearchParams({
+        total_incl_vat: amount.toString(),
+        description: invoiceDesc || invoiceFile.name
+      });
       await axios.post(
-        `${API}/projects/${project.id}/invoices/upload`,
+        `${API}/projects/${project.id}/invoices/upload?${params}`,
         formData,
-        { 
-          headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
-        }
+        { headers: { ...getAuthHeaders(), 'Content-Type': 'multipart/form-data' } }
       );
-      toast.success('Factuur geüpload! 📄');
-      onUpdate();
-      e.target.value = '';
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Kon factuur niet uploaden');
+      toast.success('Factuur geüpload en kosten bijgewerkt');
+      setInvoiceFile(null);
+      setInvoiceAmount('');
+      setInvoiceDesc('');
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      toast.error('Upload mislukt: ' + (err.response?.data?.detail || 'Fout'));
     } finally {
       setUploading(false);
     }
@@ -352,10 +367,8 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], legacyDo
     }
   };
 
-  // Calculate financials - sum ALL approved quotes
-  const totalCosts = project.total_costs || 0;
-  const salePrice = totalSalePrice; // Sum of all approved quotes
-  const profit = salePrice - totalCosts;
+  // Calculate financials from calculated totalCosts and totalSalePrice
+  const salePrice = totalSalePrice;
   const profitMargin = salePrice > 0 ? (profit / salePrice) * 100 : 0;
 
   return (
@@ -525,12 +538,18 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], legacyDo
                   <div className="text-sm font-semibold" style={{color: '#64748B'}}>Overige Kosten</div>
                   <div style={{color: '#1E293B'}}>€{project.other_costs?.toFixed(2) || '0.00'}</div>
                 </div>
+                {invoiceUploadCosts > 0 && (
+                  <div>
+                    <div className="text-sm font-semibold" style={{color: '#64748B'}}>Aankoop Facturen</div>
+                    <div style={{color: '#1E293B'}}>€{invoiceUploadCosts.toFixed(2)}</div>
+                  </div>
+                )}
               </div>
               
               <div className="border-t pt-4 mt-4 space-y-3">
                 <div className="flex justify-between text-lg">
                   <span className="font-semibold" style={{color: '#64748B'}}>Totale Kosten:</span>
-                  <span className="font-bold" style={{color: '#EF4444'}}>€{project.total_costs?.toFixed(2) || '0.00'}</span>
+                  <span className="font-bold" style={{color: '#EF4444'}}>€{totalCosts.toFixed(2)}</span>
                 </div>
                 
                 {/* Approved Quotes List */}
@@ -593,10 +612,6 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], legacyDo
                 )}
                 
                 {(() => {
-                  const totalCosts = project.total_costs || 0;
-                  const profit = totalSalePrice - totalCosts;
-                  const profitMargin = totalSalePrice > 0 ? (profit / totalSalePrice) * 100 : 0;
-                  
                   return (
                     <>
                       <div className="flex justify-between text-2xl border-t pt-3">
@@ -997,29 +1012,58 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], legacyDo
         <CardContent>
           <div className="space-y-4">
             {/* Upload Section */}
-            <div className="border-2 border-dashed rounded-lg p-6 text-center" style={{borderColor: '#E5E7EB'}}>
-              <input
-                type="file"
-                accept=".pdf"
-                id="invoice-upload"
-                className="hidden"
-                onChange={handleInvoiceUpload}
-                disabled={uploading}
-              />
-              <label htmlFor="invoice-upload" className="cursor-pointer">
-                {uploading ? (
-                  <Loader2 className="animate-spin mx-auto mb-4" size={48} style={{color: '#94A3B8'}} />
-                ) : (
-                  <Upload size={48} className="mx-auto mb-4" style={{color: '#94A3B8'}} />
-                )}
-                <p className="text-sm font-semibold mb-1" style={{color: '#1E293B'}}>
-                  {uploading ? 'Uploaden...' : 'Upload Inkoop Factuur (PDF)'}
+              <div className="space-y-3 p-4 border-2 border-dashed rounded-lg" style={{borderColor: '#94A3B8'}}>
+                <p className="text-sm font-semibold" style={{color: '#1E293B'}}>
+                  Upload Aankoop Factuur
                 </p>
-                <p className="text-xs" style={{color: '#94A3B8'}}>
-                  Materialen en kosten worden automatisch uitgelezen
-                </p>
-              </label>
-            </div>
+                <div>
+                  <Label className="text-xs">Bestand (PDF/afbeelding)</Label>
+                  <input
+                    data-testid="invoice-file-input"
+                    type="file"
+                    accept=".pdf,image/*"
+                    className="mt-1 w-full text-sm border rounded-md px-2 py-1.5 bg-white"
+                    onChange={(e) => setInvoiceFile(e.target.files[0] || null)}
+                    disabled={uploading}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Bedrag incl. BTW (€) *</Label>
+                    <Input
+                      data-testid="invoice-amount-input"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={invoiceAmount}
+                      onChange={(e) => setInvoiceAmount(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Omschrijving</Label>
+                    <Input
+                      data-testid="invoice-desc-input"
+                      placeholder="bv. Brico isolatie"
+                      value={invoiceDesc}
+                      onChange={(e) => setInvoiceDesc(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <Button
+                  data-testid="invoice-upload-btn"
+                  onClick={handleInvoiceUpload}
+                  disabled={uploading || !invoiceFile || !invoiceAmount}
+                  className="w-full"
+                  style={{backgroundColor: '#500000'}}
+                >
+                  {uploading ? (
+                    <><Loader2 size={16} className="mr-2 animate-spin" /> Uploaden...</>
+                  ) : (
+                    <><Upload size={16} className="mr-2" /> Factuur Uploaden</>
+                  )}
+                </Button>
+              </div>
 
             {/* Uploaded Invoices */}
             {project.invoice_uploads && project.invoice_uploads.length > 0 && (
@@ -1031,17 +1075,18 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], legacyDo
                   {project.invoice_uploads.map((invoice, idx) => (
                     <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex-1">
-                        <div className="font-semibold" style={{color: '#1E293B'}}>
-                          {invoice.filename}
+                        <div className="font-semibold flex items-center gap-2" style={{color: '#1E293B'}}>
+                          {invoice.file_url ? (
+                            <a href={invoice.file_url} target="_blank" rel="noopener noreferrer" className="underline hover:opacity-70">{invoice.description || invoice.filename}</a>
+                          ) : (
+                            <span>{invoice.description || invoice.filename}</span>
+                          )}
                         </div>
-                        <div className="text-sm" style={{color: '#64748B'}}>
-                          Bedrag excl. BTW: €{invoice.total_excl_vat?.toFixed(2) || '0.00'}
-                        </div>
-                        <div className="text-sm" style={{color: '#64748B'}}>
-                          Bedrag incl. BTW: €{invoice.total_incl_vat?.toFixed(2) || '0.00'}
+                        <div className="text-sm font-semibold" style={{color: '#EF4444'}}>
+                          €{invoice.total_incl_vat?.toFixed(2) || '0.00'} incl. BTW
                         </div>
                         <div className="text-xs" style={{color: '#94A3B8'}}>
-                          Geüpload: {new Date(invoice.upload_date).toLocaleDateString('nl-NL')}
+                          {invoice.filename} — {new Date(invoice.upload_date).toLocaleDateString('nl-NL')}
                         </div>
                       </div>
                       <button

@@ -9,20 +9,23 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Materiaal catalogus & bestelsysteem (inline invoer, handmatige items)
 - PWA met push notificaties voor admin
 - MongoDB bestandsopslag (overleeft redeployments)
-- Robuuste financiële herberekening (`recalculate_project_sales`)
+- Robuuste financiële herberekening vanuit brondata
 
-## Recent Opgeloste Bugs (maart 2026)
-### 1. Dubbele Verkoopprijs
-- Frontend berekent nu ALTIJD vanuit brondata (quotes + legacy docs), vertrouwt niet meer op `project.sales_price`
-- Backend recalculate functie als extra veiligheid
+## Recent Opgeloste Issues (maart 2026)
+### Financieel Tab - Brondata Berekening
+- Frontend berekent ALTIJD vanuit brondata (quotes + legacy docs + invoice uploads)
+- Vertrouwt niet meer op project.sales_price of project.total_costs
 
-### 2. "Kon factuur niet aanmaken: Project not found"
-- Oorzaak: `user_id` filter in project queries — projecten hebben niet altijd `user_id`
-- Fix: Admins krijgen nu toegang tot alle projecten in ALLE endpoints
-- Gefixte endpoints: create_invoice, upload_invoice, get_invoices, delete_invoice, update_invoice, export_invoice_pdf, get_quote_materials
+### Aankoop Factuur Upload - Handmatig Bedrag
+- PDF upload + handmatig bedrag invoer (incl. BTW) + omschrijving
+- Geen OCR/scanning meer — betrouwbare handmatige invoer
+- Factuurkosten worden automatisch bij Totale Kosten geteld
+- Facturen opgeslagen in MongoDB (overleeft redeployments)
+- Delete herberekent kosten automatisch
 
-### 3. Aankoop Factuur Upload
-- Zelfde `user_id` filter probleem als issue 2 — nu gefixeerd
+### Gefaseerde Facturatie & Admin Toegang
+- Alle invoice endpoints gefixeerd: admin krijgt toegang zonder user_id filter
+- Deelfacturen werken nu ook met legacy offertes als basis
 
 ## Bekende Issues
 - P1: Taaktoewijzing fout (user verificatie pending)
