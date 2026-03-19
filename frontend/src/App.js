@@ -205,6 +205,23 @@ function LandingPage() {
   const [loginPassword, setLoginPassword] = React.useState('');
   const [loggingIn, setLoggingIn] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
+  const [installPrompt, setInstallPrompt] = React.useState(null);
+  const [isInstalled, setIsInstalled] = React.useState(false);
+
+  // PWA install prompt
+  useEffect(() => {
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      setIsInstalled(true);
+    }
+    const handler = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', () => setIsInstalled(true));
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
   
   // Setup form state
   const [setupData, setSetupData] = React.useState({
@@ -447,6 +464,41 @@ function LandingPage() {
             </div>
           ) : !showWorkerLogin && !showAdminLogin && !showTenantLogin ? (
             <div className="space-y-4">
+              {/* PWA Install Button */}
+              {!isInstalled && (
+                <div className="max-w-md mx-auto mb-2">
+                  {installPrompt ? (
+                    <button
+                      data-testid="install-app-btn"
+                      onClick={async () => {
+                        installPrompt.prompt();
+                        const result = await installPrompt.userChoice;
+                        if (result.outcome === 'accepted') setIsInstalled(true);
+                        setInstallPrompt(null);
+                      }}
+                      className="w-full px-6 py-3 rounded-full text-sm font-semibold text-white transition-all hover:scale-105 flex items-center justify-center gap-2"
+                      style={{ backgroundColor: '#0ea5e9' }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      Installeer MaxQ App op je telefoon
+                    </button>
+                  ) : (
+                    <div data-testid="install-app-hint" className="bg-sky-50 border border-sky-200 rounded-xl px-4 py-3 text-xs text-sky-700">
+                      <p className="font-semibold mb-0.5 text-sm flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Installeer als app
+                      </p>
+                      <p>
+                        <strong>iPhone/iPad:</strong> Tik op <span className="inline-flex items-center bg-white border rounded px-1 mx-0.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                        </span> Deel → <strong>"Zet op beginscherm"</strong>
+                      </p>
+                      <p className="mt-0.5"><strong>Android:</strong> Menu (⋮) → <strong>"App installeren"</strong></p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <button
                 data-testid="login-button"
                 onClick={() => window.location.href = AUTH_URL}
