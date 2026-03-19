@@ -506,7 +506,7 @@ class Invoice(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     invoice_number: str  # FACT-2025-001
     project_id: str
-    quote_id: str
+    quote_id: Optional[str] = None
     milestone: str  # "10_approval", "40_before_start", "40_completion", "10_satisfaction"
     milestone_percentage: int  # 10, 40, 40, 10
     
@@ -524,8 +524,8 @@ class Invoice(BaseModel):
     # Payment info
     payment_status: str = "unpaid"  # unpaid, paid, overdue
     payment_term_days: int = 7
-    payment_reference: Optional[str] = None  # OGM structured reference (+++123/4567/89012+++)
-    due_date: datetime
+    payment_reference: Optional[str] = None  # OGM structured reference
+    due_date: Optional[datetime] = None
     paid_date: Optional[datetime] = None
     
     # Peppol/Billit integration
@@ -4114,12 +4114,12 @@ async def recalculate_project_costs(project_id: str):
         }}
     )
 
-@api_router.get("/projects/{project_id}/invoices")
-async def get_project_invoices(
+@api_router.get("/projects/{project_id}/purchase-invoices")
+async def get_project_purchase_invoices(
     project_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Get all uploaded invoices for a project."""
+    """Get all uploaded purchase invoices for a project."""
     if current_user.role == "admin":
         project = await db.projects.find_one({"id": project_id})
     else:
@@ -4681,7 +4681,7 @@ async def create_invoice(
     
     return invoice
 
-@api_router.get("/projects/{project_id}/customer-invoices", response_model=List[Invoice])
+@api_router.get("/projects/{project_id}/customer-invoices")
 async def get_project_customer_invoices(
     project_id: str,
     current_user: User = Depends(get_current_user)
@@ -4872,7 +4872,7 @@ async def get_all_manual_invoice_entries(
     
     return entries
 
-@api_router.put("/invoices/{invoice_id}", response_model=Invoice)
+@api_router.put("/invoices/{invoice_id}")
 async def update_invoice(
     invoice_id: str,
     invoice_update: InvoiceUpdate,
