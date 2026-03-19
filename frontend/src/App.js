@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from
 import axios from 'axios';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
+import { registerServiceWorker, subscribeToPush, requestNotificationPermission } from './pushHelper';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -82,7 +83,19 @@ function AuthProvider({ children }) {
 
   useEffect(() => {
     checkAuth();
+    registerServiceWorker();
   }, []);
+
+  // Auto-subscribe admin to push notifications
+  useEffect(() => {
+    if (user && user.role === 'admin') {
+      requestNotificationPermission().then((perm) => {
+        if (perm === 'granted') {
+          subscribeToPush();
+        }
+      });
+    }
+  }, [user]);
 
   const checkAuth = async () => {
     try {

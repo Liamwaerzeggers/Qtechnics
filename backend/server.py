@@ -1465,6 +1465,14 @@ async def create_lead(lead: LeadCreate, current_user: User = Depends(get_current
     
     await db.projects.insert_one(project_doc)
     
+    # Push notification to admin
+    await send_admin_push(
+        "Nieuwe Lead",
+        f"{lead_obj.name} - {lead_obj.address or 'Geen adres'}",
+        f"/leads/{lead_obj.id}",
+        "new-lead"
+    )
+    
     return lead_obj
 
 @api_router.get("/leads", response_model=List[Lead])
@@ -1637,6 +1645,15 @@ async def update_quote(quote_id: str, quote_update: QuoteUpdate, current_user: U
             }
             await db.celebrations.insert_one(celebration)
             logger.info(f"Quote {quote_id} marked as sold, project {project['id']} status set to 'in uitvoering'")
+            
+            # Push notification for new sale
+            amount = existing_quote.get("total_incl_vat", 0)
+            await send_admin_push(
+                "Nieuwe Sale!",
+                f"{project.get('name', 'Project')} - \u20ac{amount:,.2f}",
+                f"/projects/{project['id']}",
+                "new-sale"
+            )
         
         # If status changed to "goedgekeurd", update project financials
         if update_data.get("status") == "goedgekeurd" and project:
@@ -1984,6 +2001,77 @@ async def recalculate_quote_totals(quote_id: str):
             "total_price": total_incl_vat  # For backwards compatibility
         }}
     )
+
+# ============= PUSH NOTIFICATIONS =============
+from pywebpush import webpush, WebPushException
+
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
+VAPID_PRIVATE_KEY_B64 = os.environ.get('VAPID_PRIVATE_KEY_B64', '')
+VAPID_CLAIM_EMAIL = os.environ.get('VAPID_CLAIM_EMAIL', 'mailto:liam.waerzeggers@qtechnics.be')
+
+# Convert base64 DER to PEM for pywebpush
+_vapid_private_pem = None
+if VAPID_PRIVATE_KEY_B64:
+    try:
+        from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption, load_der_private_key
+        _der_bytes = base64.urlsafe_b64decode(VAPID_PRIVATE_KEY_B64 + '==')
+        _priv_key = load_der_private_key(_der_bytes, password=None)
+        _vapid_private_pem = _priv_key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()).decode()
+    except Exception as e:
+        logging.getLogger("server").warning(f"VAPID key load failed: {e}")
+
+async def send_admin_push(title: str, body: str, url: str = "/dashboard", tag: str = "maxq"):
+    """Send push notification to all admin subscriptions"""
+    if not _vapid_private_pem:
+        return
+    subs = await db.push_subscriptions.find({"role": "admin"}, {"_id": 0}).to_list(100)
+    if not subs:
+        return
+    payload = json.dumps({"title": title, "body": body, "url": url, "tag": tag})
+    for sub_doc in subs:
+        try:
+            webpush(
+                subscription_info=sub_doc["subscription"],
+                data=payload,
+                vapid_private_key=_vapid_private_pem,
+                vapid_claims={"sub": VAPID_CLAIM_EMAIL}
+            )
+        except WebPushException as e:
+            if e.response and e.response.status_code in (404, 410):
+                await db.push_subscriptions.delete_one({"user_id": sub_doc.get("user_id"), "endpoint": sub_doc.get("endpoint")})
+            logger.warning(f"Push failed: {e}")
+        except Exception as e:
+            logger.warning(f"Push error: {e}")
+
+@api_router.post("/push/subscribe")
+async def push_subscribe(request: Request, current_user: User = Depends(get_current_user)):
+    """Register a push subscription for the current user"""
+    sub_data = await request.json()
+    await db.push_subscriptions.update_one(
+        {"user_id": current_user.id, "endpoint": sub_data.get("endpoint")},
+        {"$set": {
+            "user_id": current_user.id,
+            "role": current_user.role,
+            "subscription": sub_data,
+            "endpoint": sub_data.get("endpoint"),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    return {"status": "ok"}
+
+@api_router.get("/push/vapid-key")
+async def get_vapid_key():
+    """Return public VAPID key for frontend"""
+    return {"public_key": VAPID_PUBLIC_KEY}
+
+@api_router.post("/push/test")
+async def test_push(current_user: User = Depends(get_current_user)):
+    """Test push notification (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403)
+    await send_admin_push("MaxQ Test", "Push notificaties werken!", "/dashboard", "test")
+    return {"status": "sent"}
 
 # ============= MATERIAL ROUTES =============
 
@@ -5853,6 +5941,16 @@ async def add_project_note(project_id: str, note: dict, current_user: User = Dep
     await db.projects.update_one(
         {"id": project_id},
         {"$push": {"project_notes": new_note}}
+    )
+    
+    # Push notification to admin (for notes created by others or self-reminder)
+    project_name = project.get("name", "Project")
+    note_preview = (note.get("text", "")[:80] + "...") if len(note.get("text", "")) > 80 else note.get("text", "")
+    await send_admin_push(
+        f"Nieuwe notitie - {project_name}",
+        note_preview,
+        f"/projects/{project_id}",
+        "project-note"
     )
     
     return new_note
@@ -11008,6 +11106,15 @@ async def create_material_order(order: MaterialOrderCreate, current_user: User =
         )
         await db.material_requests.insert_one(doc.model_dump())
         created.append(doc.id)
+    # Push notification to admin
+    worker_name = current_user.name or current_user.username or "Werkman"
+    project_name = order.project_name or "Onbekend project"
+    await send_admin_push(
+        f"Nieuwe bestelling van {worker_name}",
+        f"{len(created)} materialen besteld voor {project_name}",
+        "/material-catalog",
+        "material-order"
+    )
     return {"message": f"{len(created)} materialen besteld", "ids": created}
 
 # ============= MAINTENANCE ENDPOINTS =============
