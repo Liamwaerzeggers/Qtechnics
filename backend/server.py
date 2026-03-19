@@ -5743,9 +5743,18 @@ async def serve_material_image(filename: str):
     
     return FileResponse(file_path, media_type=content_type)
 
+@api_router.get("/files/{file_id}")
+async def serve_stored_file(file_id: str):
+    """Serve files stored in MongoDB (survives redeployments)"""
+    doc = await db.stored_files.find_one({"id": file_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="File not found")
+    file_data = base64.b64decode(doc["data"])
+    return Response(content=file_data, media_type=doc.get("content_type", "image/jpeg"))
+
 @api_router.get("/static/catalog/{filename}")
 async def serve_catalog_image(filename: str):
-    """Serve material catalog images"""
+    """Serve material catalog images (legacy filesystem fallback)"""
     file_path = ROOT_DIR / "uploads" / "catalog" / filename
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="File not found")
@@ -10921,7 +10930,7 @@ async def delete_catalog_item(item_id: str, current_user: User = Depends(get_cur
 
 @api_router.post("/material-catalog/{item_id}/upload-image")
 async def upload_catalog_image(item_id: str, file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
-    """Upload an image for a catalog item"""
+    """Upload an image for a catalog item - stored in MongoDB"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Alleen beheerders")
     item = await db.material_catalog.find_one({"id": item_id})
@@ -10929,30 +10938,45 @@ async def upload_catalog_image(item_id: str, file: UploadFile = File(...), curre
         raise HTTPException(status_code=404, detail="Item niet gevonden")
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Alleen afbeeldingen toegestaan")
-    catalog_dir = ROOT_DIR / "uploads" / "catalog"
-    catalog_dir.mkdir(parents=True, exist_ok=True)
-    unique_filename = f"{item_id}_{uuid.uuid4().hex[:8]}_{file.filename}"
-    file_path = catalog_dir / unique_filename
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    image_url = f"/api/static/catalog/{unique_filename}"
+    file_bytes = await file.read()
+    if len(file_bytes) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Bestand te groot (max 10MB)")
+    file_id = f"IMG-{uuid.uuid4().hex[:12].upper()}"
+    await db.stored_files.insert_one({
+        "id": file_id,
+        "filename": file.filename,
+        "content_type": file.content_type,
+        "data": base64.b64encode(file_bytes).decode("utf-8"),
+        "context": "catalog",
+        "context_id": item_id,
+        "created_by": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    image_url = f"/api/files/{file_id}"
     await db.material_catalog.update_one({"id": item_id}, {"$set": {"image_url": image_url}})
     return {"image_url": image_url}
 
 @api_router.post("/material-orders/upload-photo")
 async def upload_manual_material_photo(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
-    """Upload a photo for a manual material entry (worker)"""
+    """Upload a photo for a manual material entry - stored in MongoDB"""
     if current_user.role not in ["worker", "admin"]:
         raise HTTPException(status_code=403, detail="Alleen werkmannen")
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Alleen afbeeldingen toegestaan")
-    catalog_dir = ROOT_DIR / "uploads" / "catalog"
-    catalog_dir.mkdir(parents=True, exist_ok=True)
-    unique_filename = f"manual_{uuid.uuid4().hex[:8]}_{file.filename}"
-    file_path = catalog_dir / unique_filename
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    image_url = f"/api/static/catalog/{unique_filename}"
+    file_bytes = await file.read()
+    if len(file_bytes) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Bestand te groot (max 10MB)")
+    file_id = f"IMG-{uuid.uuid4().hex[:12].upper()}"
+    await db.stored_files.insert_one({
+        "id": file_id,
+        "filename": file.filename,
+        "content_type": file.content_type,
+        "data": base64.b64encode(file_bytes).decode("utf-8"),
+        "context": "manual_material",
+        "created_by": current_user.id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    image_url = f"/api/files/{file_id}"
     return {"image_url": image_url}
 
 @api_router.post("/material-orders")

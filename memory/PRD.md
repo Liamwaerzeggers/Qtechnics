@@ -30,11 +30,18 @@ Bouw een alles-in-één constructie management platform (MaxQ) met:
 - Admin catalogusbeheer met categorieën (NL/UA namen)
 - Worker materiaal bestelling met:
   - Catalogus browse (ingeklapte categorieën)
-  - **Inline invoer op tegels**: Aantal (+/-), m², lopende meter direct op cataloguskaart
-  - **Custom afmeting**: "Anders..." optie in afmeting dropdown
-  - **Handmatige invoer**: Sectie "Niet in catalogus?" voor items buiten catalogus (beschrijving, aantal, m², lm, foto upload)
+  - Inline invoer op tegels: Aantal (+/-), m², lopende meter direct op cataloguskaart
+  - Custom afmeting: "Anders..." optie in afmeting dropdown
+  - Handmatige invoer: Sectie "Niet in catalogus?" voor items buiten catalogus
   - Winkelwagen met project selectie, leveringsdatum
-- Backend verwerking met [Handmatig] prefix voor custom items
+- **Afbeelding opslag in MongoDB** (via `stored_files` collection) — overleeft redeployments
+
+### Bestandsopslag
+- **MongoDB-gebaseerde file storage** voor catalogus afbeeldingen
+  - Upload endpoints slaan base64 data op in `stored_files` collection
+  - Serving via `GET /api/files/{file_id}`
+  - Legacy filesystem fallback via `GET /api/static/catalog/{filename}`
+  - Max 10MB per bestand
 
 ### Overige Modules
 - Onderhoudsdossiers
@@ -47,6 +54,7 @@ Frontend: React + TailwindCSS + Shadcn/UI
 Backend: FastAPI + MongoDB (Motor)
 Auth: Google OAuth + wachtwoord
 Integraties: Billit, OpenAI, Resend
+File Storage: MongoDB stored_files collection (base64)
 ```
 
 ## Bekende Issues
@@ -57,7 +65,9 @@ Integraties: Billit, OpenAI, Resend
 
 ## Backlog (Toekomstige Taken)
 - P1: server.py refactoring naar route modules
+- P1: Bestaande productie afbeeldingen opnieuw uploaden via admin panel
 - P2: Phase 2 - Onderaannemers Module
 - P2: Phase 3 - Investeerders Module
 - P3: Commerciële logica (abonnementen & betalingen)
 - P3: Data migratie oude foto's
+- P3: Overweeg MongoDB-opslag voor alle uploads (floor plans, werkbonnen, etc.)
