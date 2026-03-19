@@ -77,6 +77,11 @@ export default function MaterialRequestPage() {
       setCategories(catRes.data || []);
       setRequests(reqRes.data || []);
       setProjects(projRes.data || []);
+      // Default all categories collapsed
+      const collapsed = {};
+      (catRes.data || []).forEach(c => { collapsed[c.id] = true; });
+      collapsed['__uncategorized'] = true;
+      setCollapsedCats(collapsed);
       setLoading(false);
     });
   }, []);
