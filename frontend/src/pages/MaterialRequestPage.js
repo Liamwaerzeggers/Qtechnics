@@ -25,7 +25,7 @@ const T = {
   selectProject: { nl: "Kies werf / project", ua: "Оберіть будмайданчик / проект" },
   quantity: { nl: "Aantal", ua: "Кількість" },
   size: { nl: "Afmeting", ua: "Розмір" },
-  chooseSize: { nl: "Kies afmeting", ua: "Оберіть розмір" },
+  chooseSize: { nl: "Afmeting", ua: "Розмір" },
   addToCart: { nl: "Toevoegen", ua: "Додати" },
   cart: { nl: "Bestelling", ua: "Замовлення" },
   emptyCart: { nl: "Nog geen materialen gekozen", ua: "Матеріали ще не обрані" },
@@ -654,7 +654,7 @@ function CatalogCard({ item, isWorker, onAdd, inCart }) {
             className="w-full mt-2 h-10 sm:h-9 text-sm border-2 rounded-lg px-2 bg-white appearance-auto"
             style={{ borderColor: selectedSize ? '#500000' : '#d1d5db' }}
           >
-            <option value="">{isWorker ? `${T.chooseSize.nl} / ${T.chooseSize.ua}` : `-- ${T.chooseSize.nl} --`}</option>
+            <option value="">{isWorker ? `Afmeting / Розмір` : `Afmeting`}</option>
             {item.sizes.map((s, i) => (
               <option key={i} value={s}>{s}</option>
             ))}
