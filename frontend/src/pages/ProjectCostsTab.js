@@ -38,14 +38,13 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], legacyDo
   });
   const [submittingManual, setSubmittingManual] = useState(false);
 
-  // Calculate total sale price - use project.sales_price which includes approved quotes AND legacy documents
-  // Fall back to calculating from approved quotes + legacy docs if sales_price not set
+  // ALWAYS calculate from actual data sources (not project.sales_price which can be stale)
   const quotesTotal = approvedQuotes.reduce((sum, q) => sum + (q.total_incl_vat || 0), 0);
   const legacyOffertes = legacyDocuments.filter(d => d.document_type === 'offerte' && (d.total_price || 0) > 0);
   const legacyTotal = legacyOffertes.reduce((sum, d) => sum + (d.total_price || 0), 0);
-  const totalSalePrice = project.sales_price || (quotesTotal + legacyTotal);
+  const totalSalePrice = quotesTotal + legacyTotal;
   const allApprovedCount = approvedQuotes.length + legacyOffertes.length;
-  const hasApprovedQuotes = allApprovedCount > 0 || (project.sales_price && project.sales_price > 0);
+  const hasApprovedQuotes = allApprovedCount > 0;
 
   useEffect(() => {
     setCostData({

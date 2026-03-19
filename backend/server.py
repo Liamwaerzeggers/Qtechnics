@@ -4030,8 +4030,11 @@ async def upload_invoice(
     Upload and parse a purchase invoice PDF for a project.
     Automatically extracts total amounts and adds to project costs.
     """
-    # Verify project exists
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    # Verify project exists (admins can access any project)
+    if current_user.role == "admin":
+        project = await db.projects.find_one({"id": project_id})
+    else:
+        project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
@@ -4139,7 +4142,10 @@ async def get_project_invoices(
     current_user: User = Depends(get_current_user)
 ):
     """Get all uploaded invoices for a project."""
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if current_user.role == "admin":
+        project = await db.projects.find_one({"id": project_id})
+    else:
+        project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
@@ -4153,7 +4159,10 @@ async def delete_project_invoice(
     current_user: User = Depends(get_current_user)
 ):
     """Delete an invoice and revert the cost changes."""
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    if current_user.role == "admin":
+        project = await db.projects.find_one({"id": project_id})
+    else:
+        project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
@@ -4221,7 +4230,10 @@ async def delete_project_invoice(
 async def get_project_quote_materials(project_id: str, current_user: User = Depends(get_current_user)):
     """Get materials from project's quote ONLY (NO PRICES - for werkbon)"""
     # Verify project exists
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
+    if current_user.role == "admin":
+        project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    else:
+        project = await db.projects.find_one({"id": project_id, "user_id": current_user.id}, {"_id": 0})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
@@ -4232,7 +4244,7 @@ async def get_project_quote_materials(project_id: str, current_user: User = Depe
     if not quote_id:
         return materials
     
-    quote = await db.quotes.find_one({"id": quote_id, "user_id": current_user.id}, {"_id": 0})
+    quote = await db.quotes.find_one({"id": quote_id}, {"_id": 0})
     if not quote:
         return materials
     
@@ -4601,30 +4613,50 @@ async def create_invoice(
     
     logger.info(f"Creating invoice for project {project_id}, milestone: {invoice_data.milestone}, percentage: {invoice_data.milestone_percentage}")
     
-    # Verify project exists
-    project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
+    # Verify project exists (admins can access any project)
+    if current_user.role == "admin":
+        project = await db.projects.find_one({"id": project_id})
+    else:
+        project = await db.projects.find_one({"id": project_id, "user_id": current_user.id})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
     # Get ALL approved quotes for this project's lead
     lead_id = project.get("lead_id")
-    if not lead_id:
-        raise HTTPException(status_code=400, detail="Project has no lead_id")
+    approved_quotes = []
+    if lead_id:
+        approved_quotes = await db.quotes.find({
+            "lead_id": lead_id,
+            "status": "goedgekeurd"
+        }, {"_id": 0}).to_list(1000)
     
-    approved_quotes = await db.quotes.find({
-        "lead_id": lead_id,
-        "status": "goedgekeurd"
-    }, {"_id": 0}).to_list(1000)
+    # Also check legacy documents of type 'offerte' for this project
+    legacy_offertes = await db.legacy_documents.find({
+        "project_id": project_id,
+        "document_type": "offerte"
+    }, {"_id": 0}).to_list(100)
     
-    if not approved_quotes:
+    if not approved_quotes and not legacy_offertes:
         raise HTTPException(status_code=404, detail="Geen goedgekeurde offertes gevonden")
     
-    # Sum up all approved quotes
+    # Sum up totals from both quotes and legacy documents
     total_subtotal_labor = sum(q.get("subtotal_labor", 0) for q in approved_quotes)
     total_subtotal_material = sum(q.get("subtotal_material", 0) for q in approved_quotes)
     total_excl_vat_all = sum(q.get("total_excl_vat", 0) for q in approved_quotes)
     total_vat_all = sum(q.get("total_vat", 0) for q in approved_quotes)
     total_incl_vat_all = sum(q.get("total_incl_vat", 0) for q in approved_quotes)
+    
+    # Add legacy offerte amounts (these only have total_price = incl VAT equivalent)
+    for ld in legacy_offertes:
+        lp = ld.get("total_price", 0) or 0
+        if lp > 0:
+            # Estimate excl/vat from total (assume 21% VAT if not specified)
+            est_excl = lp / 1.21
+            est_vat = lp - est_excl
+            total_excl_vat_all += est_excl
+            total_vat_all += est_vat
+            total_incl_vat_all += lp
+            total_subtotal_material += est_excl  # Default to material
     
     # Combine VAT breakdowns from all quotes
     combined_vat_breakdown = {}
@@ -4900,8 +4932,11 @@ async def update_invoice(
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
     
-    # Verify user owns the project
-    project = await db.projects.find_one({"id": invoice["project_id"], "user_id": current_user.id})
+    # Verify user has access to the project
+    if current_user.role == "admin":
+        project = await db.projects.find_one({"id": invoice["project_id"]})
+    else:
+        project = await db.projects.find_one({"id": invoice["project_id"], "user_id": current_user.id})
     if not project:
         raise HTTPException(status_code=403, detail="Not authorized")
     
@@ -4935,7 +4970,10 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
         raise HTTPException(status_code=404, detail="Invoice not found")
     
     # Verify user owns the project
-    project = await db.projects.find_one({"id": invoice["project_id"], "user_id": current_user.id})
+    if current_user.role == "admin":
+        project = await db.projects.find_one({"id": invoice["project_id"]})
+    else:
+        project = await db.projects.find_one({"id": invoice["project_id"], "user_id": current_user.id})
     if not project:
         raise HTTPException(status_code=403, detail="Not authorized")
     
