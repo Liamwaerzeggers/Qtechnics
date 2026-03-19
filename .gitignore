@@ -59,3 +59,4 @@ frontend/node_modules/.cache/
 chainlit.md
 .chainlit
 .ipynb_checkpoints/
+frontend/node_modules/.cache/default-development/2.pack

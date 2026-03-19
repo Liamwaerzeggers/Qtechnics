@@ -100,6 +100,7 @@ export default function MaterialRequestPage() {
         image_url: item.image_url,
         selected_size: size,
         quantity: 1,
+        m2: '',
         sizes: item.sizes || []
       }]);
     }
@@ -146,6 +147,7 @@ export default function MaterialRequestPage() {
           title: c.title,
           selected_size: c.selected_size,
           quantity: c.quantity,
+          m2: c.m2 || null,
           image_url: c.image_url
         })),
         project_id: selectedProject,
@@ -390,55 +392,77 @@ export default function MaterialRequestPage() {
                     <>
                       <div className="space-y-2 max-h-[280px] overflow-y-auto">
                         {cart.map((item, idx) => (
-                          <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                            {item.image_url ? (
-                              <img src={item.image_url} alt="" className="w-10 h-10 object-cover rounded" />
-                            ) : (
-                              <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
-                                <ImageIcon size={16} className="text-gray-400" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold truncate">{item.title}</p>
-                              {isWorker && item.title_ua && <p className="text-[10px] text-gray-400 truncate">{item.title_ua}</p>}
-                              {item.sizes.length > 0 && (
-                                <select
-                                  data-testid={`cart-size-${idx}`}
-                                  className="text-xs border rounded px-1 py-0.5 mt-0.5 w-full"
-                                  value={item.selected_size || ''}
-                                  onChange={(e) => updateCartSize(idx, e.target.value)}
-                                >
-                                  <option value="">{isWorker ? `${T.chooseSize.nl}...` : 'Kies afmeting...'}</option>
-                                  {item.sizes.map((s, i) => (
-                                    <option key={i} value={s}>{s}</option>
-                                  ))}
-                                </select>
+                          <div key={idx} className="p-2 bg-gray-50 rounded-lg space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              {item.image_url ? (
+                                <img src={item.image_url} alt="" className="w-10 h-10 object-cover rounded shrink-0" />
+                              ) : (
+                                <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center shrink-0">
+                                  <ImageIcon size={16} className="text-gray-400" />
+                                </div>
                               )}
-                            </div>
-                            <div className="flex items-center gap-1">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold truncate">{item.title}</p>
+                                {isWorker && item.title_ua && <p className="text-[10px] text-gray-400 truncate">{item.title_ua}</p>}
+                                {item.sizes.length > 0 && (
+                                  <select
+                                    data-testid={`cart-size-${idx}`}
+                                    className="text-xs border rounded px-1 py-0.5 mt-0.5 w-full"
+                                    value={item.selected_size || ''}
+                                    onChange={(e) => updateCartSize(idx, e.target.value)}
+                                  >
+                                    <option value="">{isWorker ? `${T.chooseSize.nl}...` : 'Kies afmeting...'}</option>
+                                    {item.sizes.map((s, i) => (
+                                      <option key={i} value={s}>{s}</option>
+                                    ))}
+                                  </select>
+                                )}
+                              </div>
                               <button
-                                data-testid={`cart-minus-${idx}`}
-                                onClick={() => updateCartQty(idx, -1)}
-                                className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+                                data-testid={`cart-remove-${idx}`}
+                                onClick={() => removeFromCart(idx)}
+                                className="text-red-400 hover:text-red-600 p-1 shrink-0"
                               >
-                                <Minus size={12} />
-                              </button>
-                              <span className="text-sm font-bold w-6 text-center">{item.quantity}</span>
-                              <button
-                                data-testid={`cart-plus-${idx}`}
-                                onClick={() => updateCartQty(idx, 1)}
-                                className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300"
-                              >
-                                <Plus size={12} />
+                                <span className="text-xs">✕</span>
                               </button>
                             </div>
-                            <button
-                              data-testid={`cart-remove-${idx}`}
-                              onClick={() => removeFromCart(idx)}
-                              className="text-red-400 hover:text-red-600 p-1"
-                            >
-                              <span className="text-xs">✕</span>
-                            </button>
+                            <div className="flex items-center gap-2 pl-12">
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-gray-500 w-10">{isWorker ? 'Aantal:' : 'Aantal:'}</span>
+                                <button
+                                  data-testid={`cart-minus-${idx}`}
+                                  onClick={() => updateCartQty(idx, -1)}
+                                  className="w-5 h-5 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+                                >
+                                  <Minus size={10} />
+                                </button>
+                                <span className="text-xs font-bold w-5 text-center">{item.quantity}</span>
+                                <button
+                                  data-testid={`cart-plus-${idx}`}
+                                  onClick={() => updateCartQty(idx, 1)}
+                                  className="w-5 h-5 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+                                >
+                                  <Plus size={10} />
+                                </button>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-gray-500">m²:</span>
+                                <input
+                                  data-testid={`cart-m2-${idx}`}
+                                  type="number"
+                                  min="0"
+                                  step="0.5"
+                                  placeholder="—"
+                                  value={item.m2}
+                                  onChange={(e) => {
+                                    const updated = [...cart];
+                                    updated[idx].m2 = e.target.value;
+                                    setCart(updated);
+                                  }}
+                                  className="w-14 h-5 text-xs border rounded px-1 text-center"
+                                />
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>

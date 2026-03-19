@@ -10951,8 +10951,9 @@ async def create_material_order(order: MaterialOrderCreate, current_user: User =
     delivery_text = order.delivery_date if order.delivery_date else "Zo snel mogelijk"
     for item in order.items:
         size_text = f" ({item.get('selected_size', '')})" if item.get('selected_size') else ""
+        m2_text = f" - {item.get('m2')}m²" if item.get('m2') else ""
         doc = MaterialRequest(
-            title=f"{item['title']}{size_text}",
+            title=f"{item['title']}{size_text}{m2_text}",
             quantity=str(item.get('quantity', 1)),
             needed_by=delivery_text,
             photo_url=item.get('image_url'),
