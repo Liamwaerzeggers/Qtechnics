@@ -1657,25 +1657,7 @@ async def update_quote(quote_id: str, quote_update: QuoteUpdate, current_user: U
         
         # If status changed to "goedgekeurd", update project financials
         if update_data.get("status") == "goedgekeurd" and project:
-            # Calculate total sales from all approved quotes for this lead
-            approved_quotes = await db.quotes.find({
-                "lead_id": lead_id,
-                "status": "goedgekeurd"
-            }, {"_id": 0, "total_incl_vat": 1}).to_list(100)
-            
-            total_sales = sum(q.get("total_incl_vat", 0) for q in approved_quotes)
-            total_costs = project.get("total_costs", 0)
-            profit = total_sales - total_costs
-            
-            # Update project with new sales total
-            await db.projects.update_one(
-                {"id": project["id"]},
-                {"$set": {
-                    "sales_price": total_sales,
-                    "profit": profit
-                }}
-            )
-            logger.info(f"Updated project {project['id']} financials: sales={total_sales}, profit={profit}")
+            await recalculate_project_sales(project["id"])
     
     if isinstance(existing_quote["date"], str):
         existing_quote["date"] = datetime.fromisoformat(existing_quote["date"])
@@ -3109,6 +3091,39 @@ async def get_project_invoices(project_id: str, current_user: User = Depends(get
 UPLOADS_DIR = ROOT_DIR / "uploads" / "legacy_documents"
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
+async def recalculate_project_sales(project_id: str):
+    """Recalculate project sales_price from actual data sources (quotes + legacy docs)"""
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        return
+    lead_id = project.get("lead_id")
+    
+    total_sales = 0.0
+    
+    # 1. Sum all sold/approved quotes
+    if lead_id:
+        sold_quotes = await db.quotes.find({
+            "lead_id": lead_id,
+            "$or": [{"is_sold": True}, {"status": "goedgekeurd"}]
+        }, {"_id": 0, "total_incl_vat": 1}).to_list(100)
+        total_sales += sum(q.get("total_incl_vat", 0) for q in sold_quotes)
+    
+    # 2. Sum all legacy documents of type 'offerte' (regardless of is_sold)
+    legacy_offertes = await db.legacy_documents.find({
+        "project_id": project_id,
+        "document_type": "offerte"
+    }, {"_id": 0, "total_price": 1}).to_list(100)
+    total_sales += sum(d.get("total_price", 0) or 0 for d in legacy_offertes)
+    
+    total_costs = project.get("total_costs", 0) or 0
+    profit = total_sales - total_costs
+    
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"sales_price": total_sales, "profit": profit}}
+    )
+    logger.info(f"Recalculated project {project_id} financials: sales={total_sales}, profit={profit}")
+
 @api_router.post("/projects/{project_id}/legacy-documents")
 async def upload_legacy_document(
     project_id: str,
@@ -3165,24 +3180,27 @@ async def upload_legacy_document(
     # Store in database
     await db.legacy_documents.insert_one(doc_record)
     
-    # Update project sales_price if this is an approved quote with total_price
+    # Recalculate project financials from actual data
     if document_type == "offerte" and total_price and total_price > 0:
-        current_sales = project.get("sales_price", 0) or 0
-        new_sales = current_sales + total_price
-        total_costs = project.get("total_costs", 0) or 0
-        new_profit = new_sales - total_costs
-        
-        await db.projects.update_one(
-            {"id": project_id},
-            {"$set": {"sales_price": new_sales, "profit": new_profit}}
-        )
-        logger.info(f"Updated project {project_id} sales_price with legacy document: +{total_price}")
+        await recalculate_project_sales(project_id)
     
     return {
         "success": True,
         "message": "Document succesvol geüpload",
         "document": {**doc_record, "_id": None}
     }
+
+@api_router.post("/projects/{project_id}/recalculate-financials")
+async def recalculate_financials_endpoint(project_id: str, current_user: User = Depends(get_current_user)):
+    """Recalculate project financials from actual data (admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins")
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    await recalculate_project_sales(project_id)
+    updated = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    return {"sales_price": updated.get("sales_price", 0), "profit": updated.get("profit", 0)}
 
 @api_router.get("/projects/{project_id}/legacy-documents")
 async def get_project_legacy_documents(project_id: str, current_user: User = Depends(get_current_user)):
@@ -3237,6 +3255,9 @@ async def delete_legacy_document(document_id: str, current_user: User = Depends(
     if not doc:
         raise HTTPException(status_code=404, detail="Document niet gevonden")
     
+    project_id = doc.get("project_id")
+    is_offerte = doc.get("document_type") == "offerte"
+    
     # Delete file
     file_path = UPLOADS_DIR / doc["filename"]
     if file_path.exists():
@@ -3244,6 +3265,10 @@ async def delete_legacy_document(document_id: str, current_user: User = Depends(
     
     # Delete record
     await db.legacy_documents.delete_one({"id": document_id})
+    
+    # Recalculate project financials after deletion
+    if is_offerte and project_id:
+        await recalculate_project_sales(project_id)
     
     return {"success": True, "message": "Document verwijderd"}
 
@@ -3273,23 +3298,6 @@ async def update_legacy_document(
     if updates:
         project = await db.projects.find_one({"id": doc["project_id"]})
         
-        # Check if total_price changed and update project sales_price accordingly
-        if "total_price" in updates and doc.get("document_type") == "offerte":
-            old_price = doc.get("total_price", 0) or 0
-            new_price = updates["total_price"] or 0
-            price_diff = new_price - old_price
-            
-            if price_diff != 0 and project:
-                current_sales = project.get("sales_price", 0) or 0
-                new_sales = current_sales + price_diff
-                total_costs = project.get("total_costs", 0) or 0
-                new_profit = new_sales - total_costs
-                
-                await db.projects.update_one(
-                    {"id": doc["project_id"]},
-                    {"$set": {"sales_price": new_sales, "profit": new_profit}}
-                )
-        
         # If legacy document is marked as sold, update project status and create celebration
         if updates.get("is_sold") == True and not was_sold and project:
             # Update project status to "in uitvoering"
@@ -3305,15 +3313,19 @@ async def update_legacy_document(
                 "project_name": project.get("name", "Onbekend project"),
                 "legacy_doc_id": document_id,
                 "document_name": doc.get("original_filename", ""),
-                "amount": doc.get("total_price", 0) or updates.get("total_price", 0),
+                "amount": updates.get("total_price", doc.get("total_price", 0)) or 0,
                 "sold_at": datetime.now(timezone.utc).isoformat(),
                 "sold_by": current_user.id,
-                "seen_by": []  # Track which users have seen this celebration
+                "seen_by": []
             }
             await db.celebrations.insert_one(celebration)
             logger.info(f"Legacy doc {document_id} marked as sold, project {project['id']} status set to 'in uitvoering'")
         
         await db.legacy_documents.update_one({"id": document_id}, {"$set": updates})
+        
+        # Recalculate project financials if price or sold status changed
+        if doc.get("document_type") == "offerte" and ("total_price" in updates or "is_sold" in updates):
+            await recalculate_project_sales(doc["project_id"])
         
         # Send notification if visibility is being set to true for the first time
         if updates.get("visible_to_customer") and not was_visible:

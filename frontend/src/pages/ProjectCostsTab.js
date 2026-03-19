@@ -15,7 +15,7 @@ const getAuthHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate }) {
+export default function ProjectCostsTab({ project, approvedQuotes = [], legacyDocuments = [], onUpdate }) {
   const [editingCosts, setEditingCosts] = useState(false);
   const [costData, setCostData] = useState({
     labor_cost_per_hour: 0,
@@ -39,10 +39,13 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
   const [submittingManual, setSubmittingManual] = useState(false);
 
   // Calculate total sale price - use project.sales_price which includes approved quotes AND legacy documents
-  // Fall back to calculating from approved quotes if sales_price not set
+  // Fall back to calculating from approved quotes + legacy docs if sales_price not set
   const quotesTotal = approvedQuotes.reduce((sum, q) => sum + (q.total_incl_vat || 0), 0);
-  const totalSalePrice = project.sales_price || quotesTotal;
-  const hasApprovedQuotes = approvedQuotes.length > 0 || (project.sales_price && project.sales_price > 0);
+  const legacyOffertes = legacyDocuments.filter(d => d.document_type === 'offerte' && (d.total_price || 0) > 0);
+  const legacyTotal = legacyOffertes.reduce((sum, d) => sum + (d.total_price || 0), 0);
+  const totalSalePrice = project.sales_price || (quotesTotal + legacyTotal);
+  const allApprovedCount = approvedQuotes.length + legacyOffertes.length;
+  const hasApprovedQuotes = allApprovedCount > 0 || (project.sales_price && project.sales_price > 0);
 
   useEffect(() => {
     setCostData({
@@ -535,7 +538,7 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                 {hasApprovedQuotes && (
                   <div className="p-4 bg-red-50 rounded-lg border border-red-200">
                     <div className="text-sm font-semibold mb-3" style={{color: '#500000'}}>
-                      📄 Goedgekeurde Offertes ({approvedQuotes.length})
+                      Goedgekeurde Offertes ({allApprovedCount})
                     </div>
                     <div className="space-y-2">
                       {approvedQuotes.map((q) => (
@@ -551,8 +554,20 @@ export default function ProjectCostsTab({ project, approvedQuotes = [], onUpdate
                           </span>
                         </div>
                       ))}
+                      {legacyOffertes.map((d) => (
+                        <div key={d.id} className="flex justify-between items-center py-2 border-b border-blue-100 last:border-0">
+                          <div>
+                            <span className="font-medium" style={{color: '#1E293B'}}>{d.original_filename || d.filename}</span>
+                            {d.is_sold && <span className="text-xs ml-2 text-green-600 font-semibold">VERKOCHT</span>}
+                            {d.description && <span className="text-xs ml-2" style={{color: '#64748B'}}>{d.description}</span>}
+                          </div>
+                          <span className="font-bold" style={{color: '#7a1f1f'}}>
+                            €{(d.total_price || 0).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                    {approvedQuotes.length > 1 && (
+                    {allApprovedCount > 1 && (
                       <div className="flex justify-between items-center pt-3 mt-2 border-t border-red-200">
                         <span className="font-semibold" style={{color: '#500000'}}>Totaal alle offertes:</span>
                         <span className="font-bold text-lg" style={{color: '#500000'}}>

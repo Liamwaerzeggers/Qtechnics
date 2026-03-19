@@ -85,6 +85,16 @@ export default function ProjectDetailPage() {
       } catch (e) {
         console.log('No legacy documents or endpoint not available');
       }
+      
+      // Auto-recalculate financials to ensure consistency
+      try {
+        await axios.post(`${API}/projects/${projectId}/recalculate-financials`, {}, { headers: getAuthHeaders() });
+        // Re-fetch project with corrected financials
+        const refreshed = await axios.get(`${API}/projects/${projectId}`, { headers: getAuthHeaders() });
+        setProject(refreshed.data);
+      } catch (e) {
+        // Non-critical, ignore
+      }
     } catch (error) {
       console.error('Failed to fetch project:', error);
       toast.error('Kon project niet laden');
@@ -777,7 +787,8 @@ export default function ProjectDetailPage() {
           {activeTab === 'costs' && (
             <ProjectCostsTab 
               project={project} 
-              approvedQuotes={approvedQuotes} 
+              approvedQuotes={approvedQuotes}
+              legacyDocuments={legacyDocuments}
               onUpdate={fetchProjectData} 
             />
           )}
