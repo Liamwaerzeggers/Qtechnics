@@ -511,7 +511,7 @@ export default function MaterialRequestPage() {
                             style={!deliveryDate ? { backgroundColor: '#500000' } : {}}
                             onClick={() => setDeliveryDate('')}
                           >
-                            {isWorker ? `${T.asap.nl}` : T.asap.nl}
+                            {isWorker ? `${T.asap.nl} / ${T.asap.ua}` : T.asap.nl}
                           </Button>
                         </div>
                       </div>
@@ -606,27 +606,28 @@ export default function MaterialRequestPage() {
 
 function CatalogCard({ item, isWorker, onAdd, inCart }) {
   const hasSizes = item.sizes && item.sizes.length > 0;
-  const [selectedSize, setSelectedSize] = useState(hasSizes ? '' : null);
-  const [showSizes, setShowSizes] = useState(false);
+  const [selectedSize, setSelectedSize] = useState('');
 
   const handleAdd = () => {
     if (hasSizes && !selectedSize) {
-      setShowSizes(true);
-      return;
+      return; // Button is disabled, shouldn't reach here
     }
-    onAdd(item, selectedSize);
+    onAdd(item, selectedSize || null);
+    setSelectedSize('');
   };
+
+  const canAdd = !hasSizes || selectedSize;
 
   return (
     <Card
       data-testid={`catalog-card-${item.id}`}
-      className={`overflow-hidden hover:shadow-lg transition-all cursor-pointer group ${inCart ? 'ring-2' : ''}`}
+      className={`overflow-hidden hover:shadow-lg transition-all ${inCart ? 'ring-2' : ''}`}
       style={inCart ? { ringColor: '#500000' } : {}}
     >
       {/* Image */}
       <div className="aspect-[4/3] sm:aspect-square bg-gray-100 relative overflow-hidden">
         {item.image_url ? (
-          <img src={item.image_url} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+          <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-gray-300">
             <ImageIcon size={36} />
@@ -643,49 +644,33 @@ function CatalogCard({ item, isWorker, onAdd, inCart }) {
         <h3 className="font-bold text-xs sm:text-sm leading-tight" style={{ color: '#500000' }}>{item.title}</h3>
         {isWorker && item.title_ua && <p className="text-[10px] sm:text-xs text-gray-400 leading-tight">{item.title_ua}</p>}
         {item.description && <p className="text-[10px] sm:text-xs text-gray-500 mt-1 line-clamp-1 sm:line-clamp-2">{item.description}</p>}
-        
-        {/* Size selector (shown when needed) */}
-        {hasSizes && showSizes && (
-          <div className="mt-2">
-            <p className="text-xs font-semibold text-gray-600 mb-1">
-              {isWorker ? `${T.chooseSize.nl} / ${T.chooseSize.ua}` : T.chooseSize.nl}:
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {item.sizes.map((s, i) => (
-                <button
-                  key={i}
-                  onClick={(e) => { e.stopPropagation(); setSelectedSize(s); }}
-                  className={`text-xs px-2 py-1 rounded-full border transition-colors ${
-                    selectedSize === s
-                      ? 'bg-red-50 border-red-300 text-red-700 font-medium'
-                      : 'bg-gray-50 border-gray-200 hover:border-gray-400'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {hasSizes && !showSizes && item.sizes.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {item.sizes.slice(0, 3).map((s, i) => (
-              <span key={i} className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">{s}</span>
+        {/* Size dropdown - always visible, large touch target */}
+        {hasSizes && (
+          <select
+            data-testid={`size-select-${item.id}`}
+            value={selectedSize}
+            onChange={(e) => setSelectedSize(e.target.value)}
+            className="w-full mt-2 h-10 sm:h-9 text-sm border-2 rounded-lg px-2 bg-white appearance-auto"
+            style={{ borderColor: selectedSize ? '#500000' : '#d1d5db' }}
+          >
+            <option value="">{isWorker ? `${T.chooseSize.nl} / ${T.chooseSize.ua}` : `-- ${T.chooseSize.nl} --`}</option>
+            {item.sizes.map((s, i) => (
+              <option key={i} value={s}>{s}</option>
             ))}
-            {item.sizes.length > 3 && <span className="text-xs text-gray-400">+{item.sizes.length - 3}</span>}
-          </div>
+          </select>
         )}
 
         <Button
           data-testid={`add-to-cart-${item.id}`}
-          onClick={(e) => { e.stopPropagation(); handleAdd(); }}
+          onClick={handleAdd}
+          disabled={!canAdd}
           size="sm"
-          className="w-full mt-2 text-[10px] sm:text-xs h-7 sm:h-8"
-          style={{ backgroundColor: '#500000' }}
+          className="w-full mt-2 text-xs sm:text-sm h-10 sm:h-9"
+          style={canAdd ? { backgroundColor: '#500000' } : {}}
         >
-          <Plus size={12} className="mr-0.5 sm:mr-1" />
-          {isWorker ? <><span>{T.addToCart.nl}</span><span className="hidden sm:inline ml-0.5">/ {T.addToCart.ua}</span></> : T.addToCart.nl}
+          <Plus size={14} className="mr-1" />
+          {isWorker ? `${T.addToCart.nl} / ${T.addToCart.ua}` : T.addToCart.nl}
         </Button>
       </CardContent>
     </Card>
