@@ -61,11 +61,11 @@ const Header = () => {
           {/* Right Side */}
           <div className="hidden md:flex items-center space-x-4">
             <a
-              href="tel:+32494808021"
+              href="tel:+32488152028"
               className="flex items-center text-sm text-[#3a190b] hover:text-[#500000] transition-colors"
             >
               <Phone className="h-4 w-4 mr-2" />
-              +32 494 80 80 21
+              +32 488 15 20 28
             </a>
             <Link to="/start" onClick={() => window.scrollTo(0, 0)}>
               <Button className="bg-[#3a190b] hover:bg-[#500000] text-white px-4 py-2 text-sm">
@@ -100,11 +100,11 @@ const Header = () => {
             ))}
             <div className="pt-4 border-t border-gray-100">
               <a
-                href="tel:+32494808021"
+                href="tel:+32488152028"
                 className="flex items-center text-[#3a190b] mb-4"
               >
                 <Phone className="h-4 w-4 mr-2" />
-                +32 494 80 80 21
+                +32 488 15 20 28
               </a>
               <Link to="/start" onClick={handleNavClick}>
                 <Button className="w-full bg-[#3a190b] hover:bg-[#500000] text-white">
