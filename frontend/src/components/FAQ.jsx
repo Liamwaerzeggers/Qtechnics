@@ -24,7 +24,7 @@ const faqs = [
   },
   {
     question: "Hoe vraag ik een offerte aan?",
-    answer: "U kunt eenvoudig een gratis plaatsbezoek aanvragen via onze website. Vul het formulier in op de 'Start' pagina, of bel ons direct op +32 494 80 80 21. We nemen binnen 24 uur contact met u op om een afspraak in te plannen."
+    answer: "U kunt eenvoudig een gratis plaatsbezoek aanvragen via onze website. Vul het formulier in op de 'Start' pagina, of bel ons direct op +32 488 15 20 28. We nemen binnen 24 uur contact met u op om een afspraak in te plannen."
   }
 ];
 

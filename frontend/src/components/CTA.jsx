@@ -33,11 +33,11 @@ const CTA = () => {
           </div>
           
           <a
-            href="tel:+32494808021"
+            href="tel:+32488152028"
             className="inline-flex items-center text-[#3a190b] hover:text-[#500000] font-medium transition-colors"
           >
             <Phone className="h-5 w-5 mr-2" />
-            +32 494 80 80 21
+            +32 488 15 20 28
           </a>
         </div>
       </div>
