@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API, useAuth } from '../App';
 import DashboardLayout from '../components/DashboardLayout';
@@ -8,7 +8,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Package, Send, Check, Clock, Truck, Loader2, Plus, Minus, ShoppingCart, Image as ImageIcon, MapPin, Search, FolderOpen, ChevronDown, ChevronRight, CalendarDays } from 'lucide-react';
+import { Package, Send, Check, Clock, Truck, Loader2, Plus, Minus, ShoppingCart, Image as ImageIcon, MapPin, Search, FolderOpen, ChevronDown, ChevronRight, CalendarDays, PenLine, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const getAuthHeaders = () => {
@@ -26,6 +26,7 @@ const T = {
   quantity: { nl: "Aantal", ua: "Кількість" },
   size: { nl: "Afmeting", ua: "Розмір" },
   chooseSize: { nl: "Afmeting", ua: "Розмір" },
+  customSize: { nl: "Anders...", ua: "Інше..." },
   addToCart: { nl: "Toevoegen", ua: "Додати" },
   cart: { nl: "Bestelling", ua: "Замовлення" },
   emptyCart: { nl: "Nog geen materialen gekozen", ua: "Матеріали ще не обрані" },
@@ -46,7 +47,14 @@ const T = {
   remove: { nl: "Verwijderen", ua: "Видалити" },
   deliverTo: { nl: "Leveren op", ua: "Доставити на" },
   deliveryDate: { nl: "Gewenste leverdatum", ua: "Бажана дата доставки" },
-  asap: { nl: "Zo snel mogelijk", ua: "Якнайшвидше" }
+  asap: { nl: "Zo snel mogelijk", ua: "Якнайшвидше" },
+  manualTitle: { nl: "Niet in catalogus?", ua: "Немає в каталозі?" },
+  manualSubtitle: { nl: "Voeg hier handmatig een item toe", ua: "Додайте елемент вручну" },
+  manualDesc: { nl: "Beschrijving materiaal", ua: "Опис матеріалу" },
+  manualPhoto: { nl: "Foto (optioneel)", ua: "Фото (необов'язково)" },
+  lm: { nl: "Lopende meter", ua: "Погонний метр" },
+  manualAdded: { nl: "Handmatig item toegevoegd", ua: "Елемент додано вручну" },
+  manual: { nl: "Handmatig", ua: "Вручну" },
 };
 
 export default function MaterialRequestPage() {
@@ -65,6 +73,16 @@ export default function MaterialRequestPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('catalog');
   const [collapsedCats, setCollapsedCats] = useState({});
+
+  // Manual entry state
+  const [manualDesc, setManualDesc] = useState('');
+  const [manualQty, setManualQty] = useState(1);
+  const [manualM2, setManualM2] = useState('');
+  const [manualLm, setManualLm] = useState('');
+  const [manualPhoto, setManualPhoto] = useState(null);
+  const [manualPhotoPreview, setManualPhotoPreview] = useState(null);
+  const [manualUploading, setManualUploading] = useState(false);
+  const manualFileRef = useRef(null);
 
   useEffect(() => {
     Promise.all([
@@ -91,11 +109,13 @@ export default function MaterialRequestPage() {
     (item.description || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const addToCart = (item, size = null) => {
+  const addToCart = (item, size = null, inlineQty = 1, inlineM2 = '', inlineLm = '') => {
     const existingIdx = cart.findIndex(c => c.catalog_item_id === item.id && c.selected_size === size);
     if (existingIdx >= 0) {
       const updated = [...cart];
-      updated[existingIdx].quantity += 1;
+      updated[existingIdx].quantity += inlineQty;
+      if (inlineM2) updated[existingIdx].m2 = inlineM2;
+      if (inlineLm) updated[existingIdx].lm = inlineLm;
       setCart(updated);
     } else {
       setCart([...cart, {
@@ -104,12 +124,65 @@ export default function MaterialRequestPage() {
         title_ua: item.title_ua || null,
         image_url: item.image_url,
         selected_size: size,
-        quantity: 1,
-        m2: '',
-        sizes: item.sizes || []
+        quantity: inlineQty,
+        m2: inlineM2,
+        lm: inlineLm,
+        sizes: item.sizes || [],
+        is_manual: false
       }]);
     }
-    toast.success(`${isWorker ? '✅ Toegevoegd / Додано' : '✅ Toegevoegd'}`);
+    toast.success(isWorker ? 'Toegevoegd / Додано' : 'Toegevoegd');
+  };
+
+  const addManualToCart = async () => {
+    if (!manualDesc.trim()) {
+      toast.error(isWorker ? 'Vul een beschrijving in / Введіть опис' : 'Vul een beschrijving in');
+      return;
+    }
+    let photoUrl = null;
+    if (manualPhoto) {
+      setManualUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', manualPhoto);
+        const res = await axios.post(`${API}/material-orders/upload-photo`, formData, {
+          headers: { ...getAuthHeaders(), 'Content-Type': 'multipart/form-data' }
+        });
+        photoUrl = res.data.image_url;
+      } catch {
+        toast.error(isWorker ? 'Foto upload mislukt / Помилка завантаження фото' : 'Foto upload mislukt');
+      } finally {
+        setManualUploading(false);
+      }
+    }
+    setCart([...cart, {
+      catalog_item_id: null,
+      title: manualDesc.trim(),
+      title_ua: null,
+      image_url: photoUrl,
+      selected_size: null,
+      quantity: manualQty,
+      m2: manualM2,
+      lm: manualLm,
+      sizes: [],
+      is_manual: true
+    }]);
+    // Reset form
+    setManualDesc('');
+    setManualQty(1);
+    setManualM2('');
+    setManualLm('');
+    setManualPhoto(null);
+    setManualPhotoPreview(null);
+    toast.success(isWorker ? `${T.manualAdded.nl} / ${T.manualAdded.ua}` : T.manualAdded.nl);
+  };
+
+  const handleManualPhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setManualPhoto(file);
+      setManualPhotoPreview(URL.createObjectURL(file));
+    }
   };
 
   const updateCartQty = (idx, delta) => {
@@ -137,8 +210,8 @@ export default function MaterialRequestPage() {
       toast.error(isWorker ? `${T.emptyCart.nl} / ${T.emptyCart.ua}` : T.emptyCart.nl);
       return;
     }
-    // Check items with sizes have a size selected
-    const missingSizes = cart.filter(c => c.sizes.length > 0 && !c.selected_size);
+    // Check catalog items with sizes have a size selected
+    const missingSizes = cart.filter(c => !c.is_manual && c.sizes.length > 0 && !c.selected_size);
     if (missingSizes.length > 0) {
       toast.error(isWorker ? 'Kies een afmeting voor alle items / Оберіть розмір для всіх товарів' : 'Kies een afmeting voor alle items');
       return;
@@ -153,14 +226,16 @@ export default function MaterialRequestPage() {
           selected_size: c.selected_size,
           quantity: c.quantity,
           m2: c.m2 || null,
-          image_url: c.image_url
+          lm: c.lm || null,
+          image_url: c.image_url,
+          is_manual: c.is_manual || false
         })),
         project_id: selectedProject,
         project_name: project?.name || '',
         notes: notes || null,
         delivery_date: deliveryDate || null
       }, { headers: getAuthHeaders() });
-      toast.success(isWorker ? `✅ ${T.success.nl} / ${T.success.ua}` : `✅ ${T.success.nl}`);
+      toast.success(isWorker ? `${T.success.nl} / ${T.success.ua}` : T.success.nl);
       setCart([]);
       setNotes('');
       setDeliveryDate('');
@@ -168,7 +243,7 @@ export default function MaterialRequestPage() {
       const reqRes = await axios.get(`${API}/material-requests`, { headers: getAuthHeaders() });
       setRequests(reqRes.data || []);
       setActiveTab('orders');
-    } catch (err) {
+    } catch {
       toast.error(isWorker ? `${T.error.nl} / ${T.error.ua}` : T.error.nl);
     } finally {
       setSubmitting(false);
@@ -213,7 +288,7 @@ export default function MaterialRequestPage() {
   return (
     <DashboardLayout>
       <div className="space-y-3 sm:space-y-5">
-        {/* Header - compact on mobile */}
+        {/* Header */}
         <div className="flex items-center space-x-2 sm:space-x-3">
           <div className="p-2 sm:p-3 rounded-xl shrink-0" style={{ backgroundColor: '#f5e6e6' }}>
             <Package size={22} style={{ color: '#500000' }} className="sm:w-7 sm:h-7" />
@@ -230,7 +305,7 @@ export default function MaterialRequestPage() {
           </div>
         </div>
 
-        {/* Tabs - wrap on mobile */}
+        {/* Tabs */}
         <div className="flex flex-wrap gap-2 items-center">
           <Button
             data-testid="tab-catalog"
@@ -371,6 +446,26 @@ export default function MaterialRequestPage() {
                   </div>
                 );
               })()}
+
+              {/* Manual Entry Section */}
+              <ManualEntrySection
+                isWorker={isWorker}
+                manualDesc={manualDesc}
+                setManualDesc={setManualDesc}
+                manualQty={manualQty}
+                setManualQty={setManualQty}
+                manualM2={manualM2}
+                setManualM2={setManualM2}
+                manualLm={manualLm}
+                setManualLm={setManualLm}
+                manualPhotoPreview={manualPhotoPreview}
+                setManualPhoto={setManualPhoto}
+                setManualPhotoPreview={setManualPhotoPreview}
+                manualFileRef={manualFileRef}
+                handleManualPhotoChange={handleManualPhotoChange}
+                addManualToCart={addManualToCart}
+                manualUploading={manualUploading}
+              />
             </div>
 
             {/* Cart / Order Summary */}
@@ -407,19 +502,34 @@ export default function MaterialRequestPage() {
                                 </div>
                               )}
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs font-semibold truncate">{item.title}</p>
+                                <div className="flex items-center gap-1">
+                                  <p className="text-xs font-semibold truncate">{item.title}</p>
+                                  {item.is_manual && (
+                                    <span className="shrink-0 text-[9px] bg-amber-100 text-amber-700 px-1 rounded font-medium">
+                                      {isWorker ? T.manual.nl : T.manual.nl}
+                                    </span>
+                                  )}
+                                </div>
                                 {isWorker && item.title_ua && <p className="text-[10px] text-gray-400 truncate">{item.title_ua}</p>}
-                                {item.sizes.length > 0 && (
+                                {!item.is_manual && item.sizes.length > 0 && (
                                   <select
                                     data-testid={`cart-size-${idx}`}
                                     className="text-xs border rounded px-1 py-0.5 mt-0.5 w-full"
                                     value={item.selected_size || ''}
-                                    onChange={(e) => updateCartSize(idx, e.target.value)}
+                                    onChange={(e) => {
+                                      if (e.target.value === '__custom__') {
+                                        const custom = prompt(isWorker ? 'Vul afmeting in / Введіть розмір:' : 'Vul afmeting in:');
+                                        if (custom) updateCartSize(idx, custom);
+                                      } else {
+                                        updateCartSize(idx, e.target.value);
+                                      }
+                                    }}
                                   >
                                     <option value="">{isWorker ? `${T.chooseSize.nl}...` : 'Kies afmeting...'}</option>
                                     {item.sizes.map((s, i) => (
                                       <option key={i} value={s}>{s}</option>
                                     ))}
+                                    <option value="__custom__">{isWorker ? `${T.customSize.nl} / ${T.customSize.ua}` : T.customSize.nl}</option>
                                   </select>
                                 )}
                               </div>
@@ -428,10 +538,10 @@ export default function MaterialRequestPage() {
                                 onClick={() => removeFromCart(idx)}
                                 className="text-red-400 hover:text-red-600 p-1 shrink-0"
                               >
-                                <span className="text-xs">✕</span>
+                                <span className="text-xs">&#x2715;</span>
                               </button>
                             </div>
-                            <div className="flex items-center gap-2 pl-12">
+                            <div className="flex flex-wrap items-center gap-2 pl-12">
                               <div className="flex items-center gap-1">
                                 <span className="text-[10px] text-gray-500 w-10">{isWorker ? 'Aantal:' : 'Aantal:'}</span>
                                 <button
@@ -451,17 +561,34 @@ export default function MaterialRequestPage() {
                                 </button>
                               </div>
                               <div className="flex items-center gap-1">
-                                <span className="text-[10px] text-gray-500">m²:</span>
+                                <span className="text-[10px] text-gray-500">m&#178;:</span>
                                 <input
                                   data-testid={`cart-m2-${idx}`}
                                   type="number"
                                   min="0"
                                   step="0.5"
-                                  placeholder="—"
+                                  placeholder="--"
                                   value={item.m2}
                                   onChange={(e) => {
                                     const updated = [...cart];
                                     updated[idx].m2 = e.target.value;
+                                    setCart(updated);
+                                  }}
+                                  className="w-14 h-5 text-xs border rounded px-1 text-center"
+                                />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-gray-500">lm:</span>
+                                <input
+                                  data-testid={`cart-lm-${idx}`}
+                                  type="number"
+                                  min="0"
+                                  step="0.5"
+                                  placeholder="--"
+                                  value={item.lm || ''}
+                                  onChange={(e) => {
+                                    const updated = [...cart];
+                                    updated[idx].lm = e.target.value;
                                     setCart(updated);
                                   }}
                                   className="w-14 h-5 text-xs border rounded px-1 text-center"
@@ -609,19 +736,186 @@ export default function MaterialRequestPage() {
   );
 }
 
+/* ========== Manual Entry Section ========== */
+function ManualEntrySection({ isWorker, manualDesc, setManualDesc, manualQty, setManualQty, manualM2, setManualM2, manualLm, setManualLm, manualPhotoPreview, setManualPhoto, setManualPhotoPreview, manualFileRef, handleManualPhotoChange, addManualToCart, manualUploading }) {
+  return (
+    <Card data-testid="manual-entry-section" className="border-dashed border-2" style={{ borderColor: '#b45309' }}>
+      <CardHeader className="pb-2 px-3 sm:px-5">
+        <CardTitle className="text-sm sm:text-base flex items-center gap-2" style={{ color: '#b45309' }}>
+          <PenLine size={16} />
+          <span>{T.manualTitle.nl}</span>
+          {isWorker && <span className="text-xs text-gray-400 font-normal">/ {T.manualTitle.ua}</span>}
+        </CardTitle>
+        <p className="text-xs text-gray-500 mt-0.5">
+          {T.manualSubtitle.nl}
+          {isWorker && <span className="text-gray-400 ml-1">/ {T.manualSubtitle.ua}</span>}
+        </p>
+      </CardHeader>
+      <CardContent className="px-3 sm:px-5 pb-4 space-y-3">
+        {/* Description */}
+        <div>
+          <Label className="text-xs font-semibold">
+            {T.manualDesc.nl}
+            {isWorker && <span className="text-gray-400 font-normal ml-1">/ {T.manualDesc.ua}</span>}
+          </Label>
+          <Input
+            data-testid="manual-desc-input"
+            value={manualDesc}
+            onChange={(e) => setManualDesc(e.target.value)}
+            placeholder={isWorker ? "bv. Speciale lijm voor vloer / напр. Спеціальний клей для підлоги" : "bv. Speciale lijm voor vloer"}
+            className="mt-1"
+          />
+        </div>
+
+        {/* Qty + m2 + lm row */}
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <Label className="text-xs font-semibold">
+              {T.quantity.nl}
+              {isWorker && <span className="text-gray-400 font-normal ml-1">/ {T.quantity.ua}</span>}
+            </Label>
+            <div className="flex items-center gap-1 mt-1">
+              <button
+                data-testid="manual-qty-minus"
+                onClick={() => setManualQty(Math.max(1, manualQty - 1))}
+                className="w-8 h-8 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+              >
+                <Minus size={12} />
+              </button>
+              <span className="text-sm font-bold w-8 text-center">{manualQty}</span>
+              <button
+                data-testid="manual-qty-plus"
+                onClick={() => setManualQty(manualQty + 1)}
+                className="w-8 h-8 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+              >
+                <Plus size={12} />
+              </button>
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs font-semibold">m&#178;</Label>
+            <Input
+              data-testid="manual-m2-input"
+              type="number"
+              min="0"
+              step="0.5"
+              placeholder="--"
+              value={manualM2}
+              onChange={(e) => setManualM2(e.target.value)}
+              className="mt-1 h-8"
+            />
+          </div>
+          <div>
+            <Label className="text-xs font-semibold">
+              lm
+              {isWorker && <span className="text-gray-400 font-normal ml-1">/ пм</span>}
+            </Label>
+            <Input
+              data-testid="manual-lm-input"
+              type="number"
+              min="0"
+              step="0.5"
+              placeholder="--"
+              value={manualLm}
+              onChange={(e) => setManualLm(e.target.value)}
+              className="mt-1 h-8"
+            />
+          </div>
+        </div>
+
+        {/* Photo upload */}
+        <div>
+          <Label className="text-xs font-semibold">
+            {T.manualPhoto.nl}
+            {isWorker && <span className="text-gray-400 font-normal ml-1">/ {T.manualPhoto.ua}</span>}
+          </Label>
+          <div className="flex items-center gap-2 mt-1">
+            <input
+              ref={manualFileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleManualPhotoChange}
+            />
+            <Button
+              data-testid="manual-photo-btn"
+              variant="outline"
+              size="sm"
+              className="text-xs h-8 gap-1"
+              onClick={() => manualFileRef.current?.click()}
+            >
+              <Upload size={12} />
+              {isWorker ? 'Foto / Фото' : 'Foto'}
+            </Button>
+            {manualPhotoPreview && (
+              <div className="relative">
+                <img src={manualPhotoPreview} alt="preview" className="w-10 h-10 object-cover rounded border" />
+                <button
+                  className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center"
+                  onClick={() => { setManualPhoto(null); setManualPhotoPreview(null); }}
+                >
+                  <X size={8} />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Add button */}
+        <Button
+          data-testid="manual-add-btn"
+          onClick={addManualToCart}
+          disabled={!manualDesc.trim() || manualUploading}
+          className="w-full h-10 text-sm gap-1.5"
+          style={{ backgroundColor: '#b45309' }}
+        >
+          {manualUploading ? (
+            <><Loader2 size={14} className="animate-spin" /> {isWorker ? 'Uploaden... / Завантаження...' : 'Uploaden...'}</>
+          ) : (
+            <><Plus size={14} /> {isWorker ? `${T.addToCart.nl} / ${T.addToCart.ua}` : T.addToCart.nl}</>
+          )}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ========== Catalog Card ========== */
 function CatalogCard({ item, isWorker, onAdd, inCart }) {
   const hasSizes = item.sizes && item.sizes.length > 0;
   const [selectedSize, setSelectedSize] = useState('');
+  const [customSize, setCustomSize] = useState('');
+  const [showCustomSize, setShowCustomSize] = useState(false);
+  const [inlineQty, setInlineQty] = useState(1);
+  const [inlineM2, setInlineM2] = useState('');
+  const [inlineLm, setInlineLm] = useState('');
 
-  const handleAdd = () => {
-    if (hasSizes && !selectedSize) {
-      return; // Button is disabled, shouldn't reach here
+  const handleSizeChange = (e) => {
+    const val = e.target.value;
+    if (val === '__custom__') {
+      setShowCustomSize(true);
+      setSelectedSize('');
+    } else {
+      setShowCustomSize(false);
+      setCustomSize('');
+      setSelectedSize(val);
     }
-    onAdd(item, selectedSize || null);
-    setSelectedSize('');
   };
 
-  const canAdd = !hasSizes || selectedSize;
+  const effectiveSize = showCustomSize ? customSize : selectedSize;
+  const canAdd = !hasSizes || effectiveSize;
+
+  const handleAdd = () => {
+    if (hasSizes && !effectiveSize) return;
+    onAdd(item, effectiveSize || null, inlineQty, inlineM2, inlineLm);
+    // Reset
+    setSelectedSize('');
+    setCustomSize('');
+    setShowCustomSize(false);
+    setInlineQty(1);
+    setInlineM2('');
+    setInlineLm('');
+  };
 
   return (
     <Card
@@ -645,33 +939,97 @@ function CatalogCard({ item, isWorker, onAdd, inCart }) {
         )}
       </div>
       {/* Details */}
-      <CardContent className="p-2 sm:p-3">
+      <CardContent className="p-2 sm:p-3 space-y-1.5">
         <h3 className="font-bold text-xs sm:text-sm leading-tight" style={{ color: '#500000' }}>{item.title}</h3>
         {isWorker && item.title_ua && <p className="text-[10px] sm:text-xs text-gray-400 leading-tight">{item.title_ua}</p>}
-        {item.description && <p className="text-[10px] sm:text-xs text-gray-500 mt-1 line-clamp-1 sm:line-clamp-2">{item.description}</p>}
+        {item.description && <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-1 sm:line-clamp-2">{item.description}</p>}
 
-        {/* Size dropdown - always visible, large touch target */}
+        {/* Size dropdown with custom option */}
         {hasSizes && (
-          <select
-            data-testid={`size-select-${item.id}`}
-            value={selectedSize}
-            onChange={(e) => setSelectedSize(e.target.value)}
-            className="w-full mt-2 h-10 sm:h-9 text-sm border-2 rounded-lg px-2 bg-white appearance-auto"
-            style={{ borderColor: selectedSize ? '#500000' : '#d1d5db' }}
-          >
-            <option value="">{isWorker ? `Afmeting / Розмір` : `Afmeting`}</option>
-            {item.sizes.map((s, i) => (
-              <option key={i} value={s}>{s}</option>
-            ))}
-          </select>
+          <>
+            <select
+              data-testid={`size-select-${item.id}`}
+              value={showCustomSize ? '__custom__' : selectedSize}
+              onChange={handleSizeChange}
+              className="w-full h-10 sm:h-9 text-sm border-2 rounded-lg px-2 bg-white appearance-auto"
+              style={{ borderColor: effectiveSize ? '#500000' : '#d1d5db' }}
+            >
+              <option value="">{isWorker ? 'Afmeting / Розмір' : 'Afmeting'}</option>
+              {item.sizes.map((s, i) => (
+                <option key={i} value={s}>{s}</option>
+              ))}
+              <option value="__custom__">{isWorker ? `${T.customSize.nl} / ${T.customSize.ua}` : T.customSize.nl}</option>
+            </select>
+            {showCustomSize && (
+              <input
+                data-testid={`custom-size-input-${item.id}`}
+                type="text"
+                value={customSize}
+                onChange={(e) => setCustomSize(e.target.value)}
+                placeholder={isWorker ? "bv. 45x90 / напр. 45x90" : "bv. 45x90"}
+                className="w-full h-9 text-sm border-2 rounded-lg px-2 bg-white"
+                style={{ borderColor: customSize ? '#500000' : '#f59e0b' }}
+              />
+            )}
+          </>
         )}
+
+        {/* Inline quantity / m2 / lm inputs */}
+        <div className="grid grid-cols-3 gap-1.5">
+          <div>
+            <span className="text-[10px] text-gray-500 block">{isWorker ? 'Aantal' : 'Aantal'}</span>
+            <div className="flex items-center justify-center gap-0.5 mt-0.5">
+              <button
+                data-testid={`inline-qty-minus-${item.id}`}
+                onClick={() => setInlineQty(Math.max(1, inlineQty - 1))}
+                className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300 text-xs"
+              >
+                <Minus size={10} />
+              </button>
+              <span className="text-xs font-bold w-5 text-center">{inlineQty}</span>
+              <button
+                data-testid={`inline-qty-plus-${item.id}`}
+                onClick={() => setInlineQty(inlineQty + 1)}
+                className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300 text-xs"
+              >
+                <Plus size={10} />
+              </button>
+            </div>
+          </div>
+          <div>
+            <span className="text-[10px] text-gray-500 block">m&#178;</span>
+            <input
+              data-testid={`inline-m2-${item.id}`}
+              type="number"
+              min="0"
+              step="0.5"
+              placeholder="--"
+              value={inlineM2}
+              onChange={(e) => setInlineM2(e.target.value)}
+              className="w-full h-6 text-[11px] border rounded px-1 text-center mt-0.5"
+            />
+          </div>
+          <div>
+            <span className="text-[10px] text-gray-500 block">lm</span>
+            <input
+              data-testid={`inline-lm-${item.id}`}
+              type="number"
+              min="0"
+              step="0.5"
+              placeholder="--"
+              value={inlineLm}
+              onChange={(e) => setInlineLm(e.target.value)}
+              className="w-full h-6 text-[11px] border rounded px-1 text-center mt-0.5"
+            />
+          </div>
+        </div>
 
         <Button
           data-testid={`add-to-cart-${item.id}`}
           onClick={handleAdd}
           disabled={!canAdd}
           size="sm"
-          className="w-full mt-2 text-xs sm:text-sm h-10 sm:h-9"
+          className="w-full text-xs sm:text-sm h-10 sm:h-9"
           style={canAdd ? { backgroundColor: '#500000' } : {}}
         >
           <Plus size={14} className="mr-1" />

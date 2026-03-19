@@ -10939,6 +10939,22 @@ async def upload_catalog_image(item_id: str, file: UploadFile = File(...), curre
     await db.material_catalog.update_one({"id": item_id}, {"$set": {"image_url": image_url}})
     return {"image_url": image_url}
 
+@api_router.post("/material-orders/upload-photo")
+async def upload_manual_material_photo(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    """Upload a photo for a manual material entry (worker)"""
+    if current_user.role not in ["worker", "admin"]:
+        raise HTTPException(status_code=403, detail="Alleen werkmannen")
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Alleen afbeeldingen toegestaan")
+    catalog_dir = ROOT_DIR / "uploads" / "catalog"
+    catalog_dir.mkdir(parents=True, exist_ok=True)
+    unique_filename = f"manual_{uuid.uuid4().hex[:8]}_{file.filename}"
+    file_path = catalog_dir / unique_filename
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    image_url = f"/api/static/catalog/{unique_filename}"
+    return {"image_url": image_url}
+
 @api_router.post("/material-orders")
 async def create_material_order(order: MaterialOrderCreate, current_user: User = Depends(get_current_user)):
     """Create material order from catalog (worker submits order)"""
@@ -10952,8 +10968,11 @@ async def create_material_order(order: MaterialOrderCreate, current_user: User =
     for item in order.items:
         size_text = f" ({item.get('selected_size', '')})" if item.get('selected_size') else ""
         m2_text = f" - {item.get('m2')}m²" if item.get('m2') else ""
+        lm_text = f" - {item.get('lm')}lm" if item.get('lm') else ""
+        is_manual = item.get('is_manual', False)
+        title_prefix = "[Handmatig] " if is_manual else ""
         doc = MaterialRequest(
-            title=f"{item['title']}{size_text}{m2_text}",
+            title=f"{title_prefix}{item['title']}{size_text}{m2_text}{lm_text}",
             quantity=str(item.get('quantity', 1)),
             needed_by=delivery_text,
             photo_url=item.get('image_url'),
@@ -11433,7 +11452,7 @@ async def send_customer_notification(project_id: str, subject: str, content_desc
         portal_token = project.get("customer_access_token")
         portal_link = ""
         if portal_token:
-            portal_link = f"<p><a href='{os.environ.get('APP_URL', 'https://renovation-calc-5.preview.emergentagent.com')}/customer/{portal_token}' style='background-color: #1E40AF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;'>Bekijk uw project</a></p>"
+            portal_link = f"<p><a href='{os.environ.get('APP_URL', 'https://worker-catalog-1.preview.emergentagent.com')}/customer/{portal_token}' style='background-color: #1E40AF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;'>Bekijk uw project</a></p>"
         
         # Build HTML email
         html_content = f"""

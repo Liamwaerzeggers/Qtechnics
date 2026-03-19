@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 class LegacyDocumentsTest:
-    def __init__(self, base_url="https://renovation-calc-5.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://worker-catalog-1.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.session_token = None
         

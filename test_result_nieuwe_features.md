@@ -3,7 +3,7 @@
 ## Testing Summary
 Date: 2025-01-27
 Tester: Backend Testing Agent
-Environment: Production (https://renovation-calc-5.preview.emergentagent.com)
+Environment: Production (https://worker-catalog-1.preview.emergentagent.com)
 
 ## Backend Tests Completed
 
@@ -73,7 +73,7 @@ Environment: Production (https://renovation-calc-5.preview.emergentagent.com)
 - All database operations successful
 
 ## Test Environment Details
-- Backend URL: https://renovation-calc-5.preview.emergentagent.com/api
+- Backend URL: https://worker-catalog-1.preview.emergentagent.com/api
 - Database: MongoDB (qtechnics)
 - Authentication: Admin credentials (test/test123)
 - File Storage: Local filesystem with API serving

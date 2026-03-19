@@ -1,0 +1,145 @@
+{
+  "summary": "Completed comprehensive testing of Material Request new features (manual entry, custom size, inline inputs). Backend: 13/13 tests passed (100%). Frontend: All UI elements present and functional.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_material_catalog_new_features.py",
+    "/app/test_reports/pytest/pytest_results_material_new_features.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_material_catalog_new_features.py"
+  ],
+  "success_rate": {
+    "backend": "100% (13/13 passed)",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "worker_username": "testwerkman",
+    "worker_password": "Werk123456",
+    "admin_username": "liam",
+    "admin_password": "Liammail123"
+  },
+  "seed_data_creation": "Created TEST_ prefixed material orders during testing (automatically visible in Mijn Bestellingen)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Material Request features fully implemented. All 3 new features working: 1) Manual entry section ('Niet in catalogus?') with description, qty, m², lm inputs and photo upload. 2) Custom size option 'Anders...' in size dropdown that shows text input field for non-standard sizes. 3) Inline quantity (+/-), m², lm inputs directly on catalog cards. Backend endpoints: POST /api/material-orders (with is_manual and lm fields), POST /api/material-orders/upload-photo (for manual item photos). Manual items show '[Handmatig]' prefix in order titles.",
+  "features_tested": {
+    "Worker Login": {
+      "status": "PASS",
+      "details": "POST /api/auth/worker/login works with testwerkman/Werk123456, returns session_token"
+    },
+    "Material Catalog": {
+      "status": "PASS",
+      "details": "GET /api/material-catalog returns catalog items with sizes array"
+    },
+    "Material Categories": {
+      "status": "PASS",
+      "details": "GET /api/material-categories returns collapsible category list"
+    },
+    "Inline Inputs on Catalog Cards": {
+      "status": "PASS",
+      "details": "Each catalog card has data-testid='inline-qty-plus-{id}', 'inline-qty-minus-{id}', 'inline-m2-{id}', 'inline-lm-{id}'"
+    },
+    "Custom Size 'Anders...' Option": {
+      "status": "PASS",
+      "details": "Size dropdown includes '__custom__' value that shows text input field (data-testid='custom-size-input-{id}')"
+    },
+    "Manual Entry Section": {
+      "status": "PASS",
+      "details": "Section visible with data-testid='manual-entry-section', includes description input, qty +/- buttons, m² input, lm input, photo button, add button"
+    },
+    "Manual Entry Photo Upload": {
+      "status": "PASS",
+      "details": "POST /api/material-orders/upload-photo accepts image files, returns image_url starting with /api/static/catalog/"
+    },
+    "Material Order with Manual Item": {
+      "status": "PASS",
+      "details": "POST /api/material-orders accepts is_manual=true items, creates MaterialRequest with '[Handmatig]' prefix in title"
+    },
+    "Material Order with lm Field": {
+      "status": "PASS",
+      "details": "lm (lopende meter) field is stored and displayed in order title (e.g., '- 8.5lm')"
+    },
+    "Cart Display Handmatig Badge": {
+      "status": "PASS",
+      "details": "Manual items show 'Handmatig' badge in cart (amber colored badge)"
+    },
+    "Cart lm Inputs": {
+      "status": "PASS",
+      "details": "Cart items have data-testid='cart-lm-{idx}' input for lopende meter"
+    },
+    "Project Selection": {
+      "status": "PASS",
+      "details": "data-testid='order-project-select' dropdown populated from GET /api/projects"
+    },
+    "Order Submission": {
+      "status": "PASS",
+      "details": "Full order flow works: catalog items + manual items submitted, success toast shown, redirected to Mijn Bestellingen"
+    }
+  },
+  "ui_verification": {
+    "screenshots_taken": [
+      "Worker dashboard after login",
+      "Material page with categories",
+      "Expanded catalog with inline inputs",
+      "Manual entry form filled",
+      "Manual item added to cart",
+      "Custom size Anders option selected",
+      "Order ready to submit",
+      "Order submitted - Mijn Bestellingen showing all orders"
+    ],
+    "elements_verified": {
+      "page_title": "PASS - 'Materiaal Bestellen / Замовити матеріали'",
+      "tabs": "PASS - 'Catalogus' and 'Mijn Bestellingen' tabs",
+      "search_input": "PASS - data-testid='catalog-search'",
+      "categories_collapsible": "PASS - Categories expand/collapse on click",
+      "catalog_cards": "PASS - Cards show title (NL/UA), description, image placeholder, inline inputs",
+      "size_dropdown": "PASS - Items with sizes have dropdown with 'Anders...' option",
+      "manual_section": "PASS - 'Niet in catalogus? / Немає в каталозі?' section visible",
+      "cart_panel": "PASS - 'Bestelling / Замовлення' panel on right side",
+      "delivery_date": "PASS - data-testid='delivery-date-input' with ASAP option",
+      "notes_textarea": "PASS - data-testid='order-notes'",
+      "submit_button": "PASS - data-testid='submit-order-btn'"
+    }
+  },
+  "data_testid_attributes_verified": [
+    "tab-catalog",
+    "tab-orders",
+    "catalog-search",
+    "catalog-card-{id}",
+    "size-select-{id}",
+    "custom-size-input-{id}",
+    "inline-qty-plus-{id}",
+    "inline-qty-minus-{id}",
+    "inline-m2-{id}",
+    "inline-lm-{id}",
+    "add-to-cart-{id}",
+    "manual-entry-section",
+    "manual-desc-input",
+    "manual-qty-plus",
+    "manual-qty-minus",
+    "manual-m2-input",
+    "manual-lm-input",
+    "manual-photo-btn",
+    "manual-add-btn",
+    "cart-size-{idx}",
+    "cart-m2-{idx}",
+    "cart-lm-{idx}",
+    "cart-remove-{idx}",
+    "cart-plus-{idx}",
+    "cart-minus-{idx}",
+    "order-project-select",
+    "delivery-date-input",
+    "order-notes",
+    "submit-order-btn"
+  ]
+}
