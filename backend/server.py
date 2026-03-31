@@ -12,8 +12,10 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional
 import uuid
+import random
 from datetime import datetime, timezone
 import resend
+from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 
 ROOT_DIR = Path(__file__).parent
@@ -35,6 +37,9 @@ RECIPIENT_EMAILS = [e.strip() for e in os.environ.get('RECIPIENT_EMAILS', '').sp
 # QTechnics Dashboard Webhook Configuration
 QTECHNICS_WEBHOOK_URL = os.environ.get('QTECHNICS_WEBHOOK_URL', '')
 QTECHNICS_API_KEY = os.environ.get('QTECHNICS_API_KEY', '')
+
+# LLM Key for blog generation
+EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -488,6 +493,222 @@ async def delete_project(project_id: str):
     
     return {"message": "Project deleted successfully"}
 
+# ============ BLOG SYSTEM ============
+
+class BlogPost(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    slug: str
+    excerpt: str = ""
+    content: str = ""
+    category: str = "renovatie"
+    tags: List[str] = []
+    published: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+def slugify(text: str) -> str:
+    import re
+    text = text.lower().strip()
+    text = re.sub(r'[àáâã]', 'a', text)
+    text = re.sub(r'[èéêë]', 'e', text)
+    text = re.sub(r'[ìíîï]', 'i', text)
+    text = re.sub(r'[òóôõ]', 'o', text)
+    text = re.sub(r'[ùúûü]', 'u', text)
+    text = re.sub(r'[^a-z0-9\s-]', '', text)
+    text = re.sub(r'[\s]+', '-', text)
+    text = re.sub(r'-+', '-', text)
+    return text.strip('-')
+
+BLOG_TOPICS = [
+    "Badkamer renovatie trends in {year}",
+    "Keuken verbouwen: {count} tips voor een geslaagd project",
+    "Totaalrenovatie plannen: waar moet je op letten?",
+    "Vloerverwarming installeren: voordelen en kosten",
+    "Inloopdouche plaatsen: de ultieme gids",
+    "Maatkasten: maximale opbergruimte in elk interieur",
+    "Duurzaam renoveren: milieuvriendelijke materialen",
+    "Kookeiland plaatsen: praktische tips en inspiratie",
+    "Interieurafwerking: van pleisterwerk tot schilderwerk",
+    "Energiezuinig renoveren: bespaar op uw energierekening",
+    "Moderne badkamer op maat: luxe binnen handbereik",
+    "Elektriciteit renoveren: veiligheid en domotica",
+    "Open keuken of gesloten keuken: voor- en nadelen",
+    "Sanitair renovatie: alles over leidingen en aansluitingen",
+    "Verbouwing plannen: stap-voor-stap handleiding",
+    "Kleine badkamer renoveren: slimme oplossingen",
+    "Keuken trends {year}: materialen en kleuren",
+    "Renoveren of nieuwbouw: wat is voordeliger?",
+    "Huis renoveren in Limburg: lokale tips en regelgeving",
+    "Inbouwkasten op maat: van slaapkamer tot hal",
+    "Woning renoveren: waardevermeerdering van uw huis",
+    "Tegelwerk in badkamer en keuken: soorten en prijzen",
+    "Verlichting bij renovatie: LED en sfeerverlichting",
+    "Ventilatie bij renovatie: gezond binnenklimaat",
+    "Renovatiepremies in Vlaanderen: waar hebt u recht op?",
+    "Betonlook in badkamer en keuken: stijlvol en onderhoudsvriendelijk",
+    "Dressing op maat: luxe inloopkast ontwerpen",
+    "Akoestiek bij renovatie: geluidsisolatie tips",
+    "Slimme woning: domotica bij renovatie",
+    "Renoveren met behoud van karakter: oude woningen",
+]
+
+async def generate_blog_with_ai(topic: str) -> dict:
+    """Generate a blog post using AI"""
+    chat = LlmChat(
+        api_key=EMERGENT_LLM_KEY,
+        session_id=f"blog-gen-{uuid.uuid4()}",
+        system_message="""Je bent een ervaren copywriter gespecialiseerd in renovatie en interieurdesign in Vlaanderen.
+Je schrijft SEO-geoptimaliseerde blogartikelen in het Nederlands voor Max Q, een renovatiebedrijf uit Tessenderlo-Ham met 35+ jaar ervaring.
+Schrijf in een professionele maar toegankelijke stijl. Gebruik concrete voorbeelden en praktische tips.
+Focus op de Belgische markt (Limburg, Antwerpen, Vlaams-Brabant).
+Vermeld subtiel dat Max Q specialist is in renovaties met een sterke technische basis.
+Gebruik GEEN emoji's."""
+    )
+    
+    year = datetime.now().year
+    formatted_topic = topic.replace("{year}", str(year)).replace("{count}", str(random.randint(5, 10)))
+    
+    prompt = f"""Schrijf een volledig blogartikel over: "{formatted_topic}"
+
+Geef het resultaat in exact dit formaat:
+TITEL: [pakkende SEO-titel, max 70 tekens]
+EXCERPT: [korte samenvatting, max 160 tekens voor meta description]
+CATEGORIE: [kies uit: badkamer, keuken, interieur, renovatie, technieken, duurzaamheid]
+TAGS: [3-5 tags gescheiden door komma's]
+---
+[Het volledige artikel in HTML-opmaak met <h2>, <h3>, <p>, <ul>, <li> tags. Minimaal 800 woorden. Gebruik geen <h1> tag.]"""
+    
+    msg = UserMessage(text=prompt)
+    response = await chat.send_message(msg)
+    
+    lines = response.strip().split('\n')
+    title = ""
+    excerpt = ""
+    category = "renovatie"
+    tags = []
+    content_start = 0
+    
+    for i, line in enumerate(lines):
+        if line.startswith('TITEL:'):
+            title = line.replace('TITEL:', '').strip()
+        elif line.startswith('EXCERPT:'):
+            excerpt = line.replace('EXCERPT:', '').strip()
+        elif line.startswith('CATEGORIE:'):
+            category = line.replace('CATEGORIE:', '').strip().lower()
+        elif line.startswith('TAGS:'):
+            tags = [t.strip() for t in line.replace('TAGS:', '').split(',')]
+        elif line.strip() == '---':
+            content_start = i + 1
+            break
+    
+    content = '\n'.join(lines[content_start:]).strip()
+    
+    # Clean markdown code fences from content
+    import re
+    content = re.sub(r'^```html\s*', '', content)
+    content = re.sub(r'^```\s*', '', content)
+    content = re.sub(r'\s*```$', '', content)
+    content = content.strip()
+    
+    if not title:
+        title = formatted_topic
+    if not excerpt:
+        excerpt = f"Lees alles over {formatted_topic.lower()} bij Max Q."
+    
+    return {
+        "title": title,
+        "slug": slugify(title),
+        "excerpt": excerpt,
+        "content": content,
+        "category": category,
+        "tags": tags,
+    }
+
+@api_router.get("/blogs")
+async def get_blogs(published_only: bool = True):
+    """Get all blog posts"""
+    query = {"published": True} if published_only else {}
+    blogs = await db.blogs.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    for blog in blogs:
+        if isinstance(blog.get('created_at'), str):
+            blog['created_at'] = datetime.fromisoformat(blog['created_at'])
+        blog.pop('content', None)
+    return blogs
+
+@api_router.get("/blogs/{slug}")
+async def get_blog(slug: str):
+    """Get a single blog post by slug"""
+    blog = await db.blogs.find_one({"slug": slug}, {"_id": 0})
+    if not blog:
+        raise HTTPException(status_code=404, detail="Blog niet gevonden")
+    if isinstance(blog.get('created_at'), str):
+        blog['created_at'] = datetime.fromisoformat(blog['created_at'])
+    return blog
+
+@api_router.post("/blogs/generate")
+async def generate_blog(background_tasks: BackgroundTasks):
+    """Generate and publish a new AI blog post"""
+    if not EMERGENT_LLM_KEY:
+        raise HTTPException(status_code=500, detail="LLM key niet geconfigureerd")
+    
+    existing = await db.blogs.find({}, {"_id": 0}).to_list(100)
+    used_topics = [b.get('title', '') for b in existing]
+    
+    available = [t for t in BLOG_TOPICS if not any(
+        slugify(t.replace("{year}", str(datetime.now().year)).replace("{count}", "7")) == slugify(u) 
+        for u in used_topics
+    )]
+    
+    if not available:
+        available = BLOG_TOPICS
+    
+    topic = random.choice(available)
+    
+    try:
+        blog_data = await generate_blog_with_ai(topic)
+        blog = BlogPost(**blog_data)
+        doc = blog.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        await db.blogs.insert_one(doc)
+        logger.info(f"Blog generated: {blog.title}")
+        return {"id": blog.id, "title": blog.title, "slug": blog.slug}
+    except Exception as e:
+        logger.error(f"Blog generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Blog generatie mislukt: {str(e)}")
+
+@api_router.delete("/blogs/{blog_id}")
+async def delete_blog(blog_id: str):
+    """Delete a blog post"""
+    result = await db.blogs.delete_one({"id": blog_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Blog niet gevonden")
+    return {"message": "Blog verwijderd"}
+
+async def auto_generate_daily_blog():
+    """Background task that generates a blog post every 24 hours"""
+    await asyncio.sleep(10)
+    while True:
+        try:
+            today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+            existing_today = await db.blogs.find_one({
+                "created_at": {"$regex": f"^{today}"}
+            })
+            
+            if not existing_today and EMERGENT_LLM_KEY:
+                available = list(BLOG_TOPICS)
+                topic = random.choice(available)
+                blog_data = await generate_blog_with_ai(topic)
+                blog = BlogPost(**blog_data)
+                doc = blog.model_dump()
+                doc['created_at'] = doc['created_at'].isoformat()
+                await db.blogs.insert_one(doc)
+                logger.info(f"Daily auto-blog generated: {blog.title}")
+        except Exception as e:
+            logger.error(f"Auto blog generation failed: {str(e)}")
+        
+        await asyncio.sleep(86400)
+
 # Include the router in the main app
 app.include_router(api_router)
 
@@ -505,6 +726,12 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+@app.on_event("startup")
+async def startup_event():
+    """Start daily blog auto-generation task"""
+    asyncio.create_task(auto_generate_daily_blog())
+    logger.info("Daily blog auto-generation task started")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
