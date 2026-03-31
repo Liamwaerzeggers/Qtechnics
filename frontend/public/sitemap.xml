@@ -4,44 +4,129 @@
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
     
-    <!-- Homepage -->
+    <!-- Main Pages -->
     <url>
         <loc>https://maxq.be/</loc>
         <lastmod>2024-12-01</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
     </url>
-    
-    <!-- Renoveren -->
     <url>
         <loc>https://maxq.be/renoveren</loc>
         <lastmod>2024-12-01</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.9</priority>
     </url>
-    
-    <!-- Projecten -->
     <url>
         <loc>https://maxq.be/projecten</loc>
         <lastmod>2024-12-01</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
     </url>
-    
-    <!-- Contact -->
     <url>
         <loc>https://maxq.be/contact</loc>
         <lastmod>2024-12-01</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
-    
-    <!-- Start / Aanvraag -->
     <url>
         <loc>https://maxq.be/start</loc>
         <lastmod>2024-12-01</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
+    
+    <!-- Limburg - Location SEO Pages -->
+    <url><loc>https://maxq.be/renovatie/tessenderlo</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/renovatie/tessenderlo/badkamer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/tessenderlo/keuken</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/ham</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/renovatie/ham/badkamer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/ham/keuken</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/leopoldsburg</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/renovatie/leopoldsburg/badkamer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/leopoldsburg/keuken</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/beringen</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/renovatie/beringen/badkamer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/beringen/keuken</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/heusden-zolder</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/renovatie/heusden-zolder/badkamer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/heusden-zolder/keuken</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/houthalen-helchteren</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/renovatie/houthalen-helchteren/badkamer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/houthalen-helchteren/keuken</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/lummen</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/lummen/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/lummen/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/halen</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/halen/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/halen/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/zonhoven</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/zonhoven/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/zonhoven/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/hasselt</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/renovatie/hasselt/badkamer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/hasselt/keuken</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/genk</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/renovatie/genk/badkamer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/genk/keuken</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/diepenbeek</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/diepenbeek/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/diepenbeek/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/peer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/peer/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/peer/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/pelt</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/pelt/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/pelt/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/lommel</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/lommel/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/lommel/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    
+    <!-- Antwerpen Province - Location SEO Pages -->
+    <url><loc>https://maxq.be/renovatie/meerhout</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/renovatie/meerhout/badkamer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/meerhout/keuken</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/geel</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/renovatie/geel/badkamer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/geel/keuken</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/mol</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/mol/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/mol/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/balen</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/balen/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/balen/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/laakdal</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/laakdal/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/laakdal/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/westerlo</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/westerlo/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/westerlo/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/herselt</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/herselt/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/herselt/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/herentals</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/herentals/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/herentals/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/turnhout</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/turnhout/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/turnhout/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    
+    <!-- Vlaams-Brabant - Location SEO Pages -->
+    <url><loc>https://maxq.be/renovatie/diest</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/diest/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/diest/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/scherpenheuvel-zichem</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/scherpenheuvel-zichem/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/scherpenheuvel-zichem/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/aarschot</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/aarschot/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/aarschot/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/tienen</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/tienen/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/tienen/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/leuven</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/renovatie/leuven/badkamer</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/renovatie/leuven/keuken</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
     
 </urlset>
