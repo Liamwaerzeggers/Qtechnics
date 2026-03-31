@@ -79,17 +79,39 @@ const ServicePage = () => {
   
   const pageTitle = serviceData.title + locSuffix + ' | 35 Jaar Ervaring | Max Q';
   const metaDesc = serviceData.description + locSuffix + ' Vraag gratis offerte aan!';
+  const canonicalUrl = 'https://maxq.be/diensten/' + service + (location ? '/' + location : '');
+  
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": serviceData.title + locSuffix,
+    "description": metaDesc,
+    "provider": {
+      "@type": "LocalBusiness",
+      "name": "Max Q",
+      "address": { "@type": "PostalAddress", "streetAddress": "Gerhees 118", "addressLocality": "Ham", "postalCode": "3945", "addressCountry": "BE" },
+      "telephone": "+32488152028",
+      "url": "https://maxq.be"
+    },
+    ...(locationData ? { "areaServed": { "@type": "City", "name": locationData.name } } : { "areaServed": { "@type": "State", "name": "Limburg, Antwerpen, Vlaams-Brabant" } })
+  };
 
   return (
     <div>
       <Helmet>
         <title>{pageTitle}</title>
         <meta name="description" content={metaDesc} />
-        <meta name="keywords" content={serviceData.keywords} />
+        <meta name="keywords" content={serviceData.keywords + (locName ? ', ' + locName : '')} />
         <meta name="robots" content="index, follow" />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={metaDesc} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:type" content="website" />
+        <script type="application/ld+json">{JSON.stringify(schemaData)}</script>
       </Helmet>
 
-      <section className="bg-gradient-to-br from-[#3a190b] to-[#500000] text-white py-20">
+      <section className="bg-gradient-to-br from-[#3a190b] to-[#500000] text-white py-20" data-testid="service-hero">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-wrap gap-4 mb-6">
             <span className="inline-flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full text-sm">
@@ -103,16 +125,16 @@ const ServicePage = () => {
             </span>
           </div>
           
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">{serviceData.h1}{locSuffix}</h1>
-          <p className="text-xl text-white/90 mb-8 max-w-3xl">{serviceData.description}</p>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6" data-testid="service-h1">{serviceData.h1}{locSuffix}</h1>
+          <p className="text-xl text-white/90 mb-8 max-w-3xl">{locationData ? `Zoekt u een specialist voor ${serviceData.title.toLowerCase()} in ${locName}? Max Q uit Tessenderlo-Ham helpt u met 35+ jaar vakmanschap.` : serviceData.description}</p>
           
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link to="/start">
+            <Link to="/start" data-testid="service-cta-offerte">
               <Button className="bg-white text-[#3a190b] hover:bg-gray-100 px-6 py-3">
                 Gratis offerte aanvragen<ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </Link>
-            <a href="tel:+32488152028">
+            <a href="tel:+32488152028" data-testid="service-cta-phone">
               <Button variant="outline" className="border-white text-white hover:bg-white/10 px-6 py-3">
                 <Phone className="h-4 w-4 mr-2" />+32 488 15 20 28
               </Button>
@@ -148,15 +170,22 @@ const ServicePage = () => {
         </div>
       </section>
 
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-white" data-testid="service-why-section">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-12">
             <div>
-              <h2 className="text-3xl font-bold mb-6">Waarom kiezen voor Max Q?</h2>
-              <p className="text-lg text-gray-700 mb-6">
-                Met meer dan 35 jaar ervaring in de bouwsector hebben wij een stevige basis opgebouwd in techniek. 
-                Deze expertise maakt het verschil bij elke renovatie.
-              </p>
+              <h2 className="text-3xl font-bold mb-6">Waarom kiezen voor Max Q{locSuffix}?</h2>
+              {locationData ? (
+                <p className="text-lg text-gray-700 mb-6">
+                  Vanuit ons atelier in Tessenderlo-Ham bedienen wij al meer dan 35 jaar klanten in {locName} en de rest van {locationData.province}. 
+                  Onze sterke technische achtergrond in elektriciteit, sanitair en verwarming maakt het verschil bij elke {serviceData.title.toLowerCase()}.
+                </p>
+              ) : (
+                <p className="text-lg text-gray-700 mb-6">
+                  Met meer dan 35 jaar ervaring in de bouwsector hebben wij een stevige basis opgebouwd in techniek. 
+                  Deze expertise maakt het verschil bij elke renovatie.
+                </p>
+              )}
               <ul className="space-y-3">
                 {['Gratis adviesgesprek', 'Gedetailleerde offerte', 'Alle technieken in eigen beheer', 'Persoonlijke begeleiding', 'Kwaliteitsgarantie'].map((item, i) => (
                   <li key={i} className="flex items-center gap-3">
@@ -184,15 +213,60 @@ const ServicePage = () => {
       </section>
 
       {!locationData && (
-        <section className="py-12 bg-gray-50">
+        <section className="py-12 bg-gray-50" data-testid="service-locations-section">
           <div className="max-w-7xl mx-auto px-4">
-            <h3 className="font-bold mb-6">{serviceData.title} in uw regio</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {LOCATIONS.slice(0, 18).map(loc => (
-                <Link key={loc.slug} to={'/diensten/' + service + '/' + loc.slug} className="text-sm text-[#3a190b] hover:underline bg-white px-3 py-2 rounded shadow-sm">
-                  {loc.name}
-                </Link>
-              ))}
+            <h2 className="text-2xl font-bold mb-2">{serviceData.title} in uw regio</h2>
+            <p className="text-gray-600 mb-8">Wij zijn actief in heel Limburg, Antwerpen en Vlaams-Brabant. Kies uw gemeente:</p>
+            
+            {['Limburg', 'Antwerpen', 'Vlaams-Brabant'].map(province => {
+              const locs = LOCATIONS.filter(l => l.province === province);
+              if (locs.length === 0) return null;
+              return (
+                <div key={province} className="mb-6">
+                  <h3 className="font-semibold text-[#3a190b] mb-3">{province}</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                    {locs.map(loc => (
+                      <Link
+                        key={loc.slug}
+                        to={'/diensten/' + service + '/' + loc.slug}
+                        className="text-sm text-[#3a190b] hover:underline bg-white px-3 py-2 rounded shadow-sm hover:shadow-md transition-shadow"
+                        data-testid={'service-location-' + loc.slug}
+                      >
+                        {loc.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {locationData && (
+        <section className="py-12 bg-gray-50" data-testid="other-services-section">
+          <div className="max-w-7xl mx-auto px-4">
+            <h3 className="font-bold mb-4">Andere diensten in {locName}</h3>
+            <div className="flex flex-wrap gap-2 mb-8">
+              {Object.entries(SERVICES)
+                .filter(([slug]) => slug !== service)
+                .filter(([slug]) => ['badkamer-renoveren', 'keuken-renoveren', 'interieur-renoveren', 'totaalrenovatie', 'huis-renoveren', 'keuken-vernieuwen'].includes(slug))
+                .map(([slug, data]) => (
+                  <Link key={slug} to={'/diensten/' + slug + '/' + location} className="text-sm bg-white text-[#3a190b] border border-[#3a190b]/20 hover:border-[#3a190b] px-4 py-2 rounded-full transition-colors">
+                    {data.title}
+                  </Link>
+                ))}
+            </div>
+            <h3 className="font-bold mb-4">{serviceData.title} in de buurt</h3>
+            <div className="flex flex-wrap gap-2">
+              {LOCATIONS
+                .filter(l => l.slug !== location && l.province === locationData.province)
+                .slice(0, 15)
+                .map(l => (
+                  <Link key={l.slug} to={'/diensten/' + service + '/' + l.slug} className="text-sm text-[#3a190b] hover:underline">
+                    {l.name}
+                  </Link>
+                ))}
             </div>
           </div>
         </section>

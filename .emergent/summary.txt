@@ -1,0 +1,138 @@
+<analysis>**original_problem_statement**: 
+The user wants to create a pixel-perfect clone of their interior design website with a multi-step lead generation form (), an admin dashboard for project and lead management, and extensive SEO/GEO optimization. New requirements include automatically syncing incoming leads to an external webhook (), maintaining persistent project images (now stored via MongoDB instead of local files), and creating dynamically generated SEO landing pages for specific locations (within 30km of Oostham) and services (kitchen, bathroom, interior).
+
+**PRODUCT REQUIREMENTS:**
+1. Replicate existing site design with specific color palette and logos.
+2. Multi-step lead generation form.
+3. Admin dashboard to manage Projects (CRUD, image uploads) and Leads.
+4. Auto-sync leads via Webhook to .
+5. Robust SEO/GEO optimization including , , , schema.org data, and dynamic location/service-specific landing pages.
+6. Persistent image uploads (handling deployment constraints).
+
+**User's preferred language**: Dutch (INSTRUCT the next agent to respond in the user's preferred language only).
+
+**what currently exists?** 
+A full-stack React + FastAPI application. The core site (Homepage, Projects, Contact, FAQ, Admin Dashboard) is built. Leads are successfully captured, stored in MongoDB, and synced via a webhook. Image uploads have been refactored to save as Base64 strings in MongoDB to ensure persistence across deployments. Extensive SEO features (sitemaps, llms.txt, Schema structured data) and Location-based SEO pages have been implemented. The app is currently crashing in the dev environment due to a new component.
+
+**Last working item**:
+- **Last item agent was working**: Creating  for service-specific SEO landing pages (e.g., bathroom, kitchen renovation). The agent encountered a Maximum call stack size exceeded error when compiling this new component and was about to split it into smaller components.
+- **Status**: IN PROGRESS
+- **Agent Testing Done**: N
+- **Which testing method agent to use?** both
+- **User Testing Done**: N
+
+**All Pending/In progress Issue list**:
+- **Issue 1**: Frontend compilation fails with Maximum call stack size exceeded in . (PRIORITY: P0)
+   - **Attempted fixes**: The agent identified the issue as a Babel plugin conflict with large components and planned to refactor it. (Note: Earlier in the session, the same issue on  was successfully fixed by converting  syntax to arrow functions ).
+   - **Next debug checklist**: 
+      1. Review .
+      2. Ensure all components use arrow functions instead of standard  declarations to bypass the Babel metadata plugin bug.
+      3. Split  into smaller, bite-sized components if the error persists.
+   - **Why fix this issue and what will be achieved with the fix?**: Unblocks the frontend development server and allows the new SEO service pages to render.
+   - **Status**: IN PROGRESS
+   - **Is recurring issue?**: Y
+   - **Should Test frontend/backend/both after fix?**: frontend
+   - **Blocked on other issue**: None
+
+**In progress Task List**:
+- **Task 1**: Complete SEO Service Landing Pages (). (PRIORITY: P0)
+   - **Where to resume**: Fix the compilation error in . Then verify the dynamic routes ( and ) work correctly and display the targeted 35-years experience copy. Update  if needed.
+   - **What will be achieved with this?**: Fulfills the user's request for highly targeted SEO landing pages based on popular search terms (badkamer renoveren, keuken vernieuwen, etc.).
+   - **Status**: IN PROGRESS
+   - **Should Test frontend/backend/both after fix?**: frontend
+   - **Blocked on something**: Issue 1
+
+**Upcoming and Future Tasks**:
+- **P1 - Expand Service Pages with Regions**: The user explicitly requested combining the new Service SEO pages with all regions/villages (e.g., Badkamer renoveren in Tessenderlo). Ensure the routing and component logic fully supports this matrix.
+- **P2 - Backend Integration for Admin Login**: The current admin login at  (/) is strictly a hardcoded frontend mock. It needs a secure backend JWT authentication system.
+- **P2 - Email Sending Confirmation**: The backend code uses Resend for emails, but it requires  or a Resend key in the  to actually send form confirmations.
+
+**Completed work in this session**:
+- Fixed the previous fork's Babel stack overflow error on  &  (by using arrow functions).
+- Implemented Lead management tab in .
+- Integrated a Webhook in  to auto-sync incoming leads to .
+- Refactored File Uploads: Moved from local file storage to Base64 in MongoDB ( endpoint) to fix missing images on live production deployments.
+- Updated UI: Larger logo, Powered by Qtechnics branding, ScrollToTop behavior on route changes, global phone number change to .
+- Deep SEO/AI Optimization: Added , , , , , and Schema.org JSON-LD data.
+- Created  for targeted 30km radius local SEO landing pages.
+
+**Earlier issues found/mentioned but not fixed**:
+- None.
+
+**Known issue recurrence from previous fork**:
+- **Issue recurrence in previous fork**: Frontend dev server crashing with Maximum call stack size exceeded via Babel plugin.
+- **Recurrence count**: 2 (Previously blocked fork 1, now blocking current session on a newly created file).
+- **Status**: IN PROGRESS
+- **Note**: This is triggered by large files OR by using  syntax instead of . Keep components small and strictly use arrow functions.
+
+**Code Architecture**:
+
+
+**Key Technical Concepts**:
+- **Frontend**: React, React Router, TailwindCSS, React Helmet (for dynamic SEO meta tags).
+- **Backend**: FastAPI, Pydantic, Motor (async MongoDB driver), Httpx (for webhook).
+- **Image Storage**: Images are now converted to Base64 and stored directly inside MongoDB to bypass ephemeral file system limits during deployment.
+
+**key DB schema**:
+- **projects**: 
+- **leads**: 
+- **images**:  (Newly added for persistent uploads).
+
+**changes in tech stack**:
+- Added  to frontend dependencies for dynamic head tag management (SEO).
+- Replaced local filesystem file storage with MongoDB base64 storage.
+
+**All files of reference**:
+- : (NEW) Currently causing the frontend crash. Needs arrow-function refactor.
+- : (NEW) Working template for dynamic SEO pages.
+- : Updated with all new SEO routes.
+- : Contains new webhook sync function  and  endpoint.
+- : Created and updated to track roadmap.
+
+**Areas that need refactoring**:
+- : Needs immediate refactoring to fix the Babel stack size error.
+
+**key api endpoints**:
+- : Captures lead, stores in DB, and fires Webhook.
+- : Receives file, converts to Base64, stores in MongoDB.
+- : Serves the Base64 image back to the frontend.
+- : (External)  to sync leads.
+
+**Critical Info for New Agent**:
+- **CRITICAL COMPILATION BUG**: The  in the frontend environment crashes easily with large React components or when using standard  declarations. **Always use arrow functions ** and keep components under 150 lines by breaking them into smaller child components.
+- Image uploads were moved to MongoDB (base64) because local uploads in the  folder do not persist to production. Ensure any new file handling logic uses the DB-driven  endpoints.
+- Admin authentication is purely mocked on the frontend ( / ).
+
+**documents and test reports created in this job**:
+- 
+
+**Last 10 User Messages and any pending HUMAN messages**:
+1. **User**: Provided feedback that images uploaded in the dashboard are not visible on the live site.
+2. **Agent**: Discovered local uploads don't persist on production. Implemented DB-based Base64 image storage and updated live DB manually to unblock user.
+3. **User**: Request to change all phone numbers to +32 488 15 20 28 with  links.
+4. **Agent**: Replaced phone numbers across all components and SEO files.
+5. **User**: SEO request: Homepage should state they are a firm from Tessenderlo-ham renovating in Limburg/Antwerp. Create hidden SEO landing pages for every village in a 30km radius around Oostham (general, kitchen, bathroom).
+6. **Agent**: Updated Homepage copy. Created , added react-helmet, updated routes and sitemap.
+7. **User**: Perfect. Now create similar landing pages focused on popular search terms (interieur renoveren, badkamer renoveren, keuken vernieuwen), emphasizing 35 years experience and technical basis. Also combine these with all regions/villages later. (PENDING COMPLETION)
+8. **Agent**: Created , added routes, updated sitemap. Tested the page but encountered Maximum call stack size exceeded error. Planned to split the component.
+
+**Project Health Check**:
+- **Broken**: Frontend dev server (yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.) is crashing due to Babel plugin issue in .
+- **Mocked**: Admin authentication () is a frontend-only hardcoded mock.
+
+**3rd Party Integrations**:
+- **External Webhook (Leads)**:  (Requires User API Key  currently hardcoded in ).
+- **Resend (Email)**: Uses Emergent LLM Key / Environment variable (Currently lacking key in  so emails fail silently while webhook succeeds).
+
+**Testing status**:
+- **Testing agent used after significant changes**: YES (Used before SEO updates).
+- **Troubleshoot agent used after agent stuck in loop**: NO
+- **Test files created**: []
+- **Known regressions**:  breaks frontend compilation.
+
+**Credentials to test flow**:
+- **Admin Panel**:  (Username: , Password: )
+
+**What agent forgot to execute**:
+- The agent successfully implemented the DB base64 images but forgot that the previous Babel issue was specifically fixed by using *arrow functions*. The agent just noted the component was too big instead of applying the exact syntax fix used earlier.</analysis>
