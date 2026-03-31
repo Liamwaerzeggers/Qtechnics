@@ -17,6 +17,7 @@ import ContactPage from './components/ContactPage';
 import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
 import StartPage from './components/StartPage';
+import LocationPage from './components/LocationPage';
 
 // Component to scroll to top on route change
 const ScrollToTop = () => {
@@ -64,6 +65,10 @@ function App() {
           <Route path="/projecten" element={<MainLayout><ProjectenPage /></MainLayout>} />
           <Route path="/projecten/:id" element={<MainLayout><ProjectDetail /></MainLayout>} />
           <Route path="/contact" element={<MainLayout><ContactPage /></MainLayout>} />
+          
+          {/* SEO Location pages - not in menu */}
+          <Route path="/renovatie/:location" element={<MainLayout><LocationPage /></MainLayout>} />
+          <Route path="/renovatie/:location/:service" element={<MainLayout><LocationPage /></MainLayout>} />
           
           {/* Admin pages without header/footer */}
           <Route path="/admin" element={<AdminLogin />} />
