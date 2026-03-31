@@ -774,7 +774,10 @@
     <url><loc>https://maxq.be/diensten/dressing-op-maat/turnhout</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
     <url><loc>https://maxq.be/diensten/dressing-op-maat/leuven</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
 
-    <!-- Location SEO Pages (renovatie) -->
+    <!-- Blog Pages -->
+    <url><loc>https://maxq.be/blog</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+
+        <!-- Location SEO Pages (renovatie) -->
     <url><loc>https://maxq.be/renovatie/tessenderlo</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
     <url><loc>https://maxq.be/renovatie/tessenderlo/badkamer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
     <url><loc>https://maxq.be/renovatie/tessenderlo/keuken</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>

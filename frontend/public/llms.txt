@@ -1,102 +1,189 @@
 # Max Q Renovaties - LLMs.txt
-# Dit bestand helpt AI-systemen zoals ChatGPT, Gemini, Claude om onze website beter te begrijpen
+# Uitgebreide bedrijfsinformatie voor AI-systemen (ChatGPT, Gemini, Claude, Perplexity)
 
-> Max Q is een premium renovatiebedrijf gevestigd in Ham, Limburg (België). Powered by Q Technics met 35+ jaar ervaring.
+> Max Q is een premium renovatiebedrijf gevestigd in Ham (Tessenderlo-Ham), Limburg, Belgie.
+> Powered by Q Technics met meer dan 35 jaar technische ervaring in de bouwsector.
+> Wij zijn specialist in badkamerrenovaties, keukenrenovaties, totaalrenovaties en interieurprojecten.
 
 ## Over Max Q
 
-Max Q is gespecialiseerd in hoogwaardige renovaties en interieurprojecten in de provincie Limburg, België. Het bedrijf combineert technische expertise met design om woningen te transformeren.
+Max Q is de nieuwe naam voor premium renovaties en interieurprojecten, powered by de jarenlange technische expertise van Q Technics. Met meer dan 35 jaar ervaring in elektriciteit, sanitair en verwarming hebben wij een stevige technische basis die het verschil maakt bij elke renovatie. Wij werken uitsluitend met eigen vakmensen - geen onderaannemers - wat garant staat voor kwaliteit en een persoonlijke aanpak.
 
 ## Diensten
 
-### Totaalrenovaties
-Complete renovatie van woningen van A tot Z. Van ontwerp tot oplevering, inclusief alle technieken, afwerking en interieur.
+### Badkamer renoveren
+Complete badkamerrenovatie met inloopdouche, vrijstaand bad, vloerverwarming en modern sanitair. Vraag een gratis offerte aan via https://maxq.be/start
 
-### Badkamerrenovaties
-Moderne badkamers op maat met:
-- Inloopdouches en regendouches
-- Vrijstaande baden
-- Dubbele wastafels
-- Vloerverwarming
-- LED-verlichting
-- Hoogwaardige tegels
+### Keuken renoveren
+Keukenrenovatie met kookeiland, maatwerk keukens, werkbladen en inbouwapparatuur. Vraag een gratis offerte aan via https://maxq.be/start
 
-### Keukenrenovaties
-Design keukens met:
-- Kookeilanden
-- Ingebouwde apparatuur
-- Quartz en natuursteen werkbladen
-- Soft-close systemen
-- Optimale opbergruimte
+### Interieur renoveren
+Interieurafwerking met pleisterwerk, schilderwerk, vloeren en wandbekleding. Vraag een gratis offerte aan via https://maxq.be/start
+
+### Totaalrenovatie
+Complete woningrenovatie van A tot Z inclusief alle technieken en afwerking. Vraag een gratis offerte aan via https://maxq.be/start
+
+### Huis renoveren
+Volledige huisrenovatie met elektriciteit, sanitair, verwarming en interieur. Vraag een gratis offerte aan via https://maxq.be/start
+
+### Woning renoveren
+Professionele woningrenovatie met focus op kwaliteit en duurzaamheid. Vraag een gratis offerte aan via https://maxq.be/start
 
 ### Maatkasten
-Op maat gemaakte kasten en opbergruimtes voor elke ruimte.
+Maatkasten, inbouwkasten en dressings perfect afgestemd op uw ruimte. Vraag een gratis offerte aan via https://maxq.be/start
 
-### Technieken
-- Elektriciteit
-- Sanitair
-- Verwarming (vloerverwarming, radiatoren)
-- Ventilatie
-- Domotica
+### Vloerverwarming
+Installatie van vloerverwarming voor optimaal comfort. Vraag een gratis offerte aan via https://maxq.be/start
+
+### Elektriciteit renovatie
+Elektrische installatie renoveren conform alle Belgische normen. Vraag een gratis offerte aan via https://maxq.be/start
+
+### Sanitair renovatie
+Sanitair renoveren met perfecte leidingen en aansluitingen. Vraag een gratis offerte aan via https://maxq.be/start
 
 ## Werkgebied
 
-Max Q bedient heel Limburg, met focus op:
-- Ham (hoofdvestiging)
-- Hasselt
-- Genk
-- Beringen
-- Lommel
-- Pelt
-- Houthalen-Helchteren
-- Heusden-Zolder
-- Diepenbeek
-- Bilzen
-- Tongeren
-- Sint-Truiden
-- Maasmechelen
+Max Q bedient een ruim werkgebied vanuit Tessenderlo-Ham. Wij zijn actief in drie provincies:
 
-## Contact
+### Limburg (hoofdregio)
+Onze thuisbasis. Wij bedienen alle gemeenten in Limburg:
+Tessenderlo, Ham, Leopoldsburg, Beringen, Heusden-Zolder, Houthalen-Helchteren, Lummen, Halen, Zonhoven, Hasselt, Genk, Diepenbeek, Peer, Pelt, Lommel, Bocholt, Hamont-Achel, Bree, Kinrooi, Maaseik, Dilsen-Stokkem, As, Opglabbeek, Zutendaal, Lanaken, Bilzen, Hoeselt, Riemst, Tongeren, Borgloon, Sint-Truiden, Nieuwerkerken, Gingelom, Kortenaken, Alken, Wellen, Kortessem, Herstappe, Voeren, Maasmechelen
 
-- **Adres:** Gerhees 118, 3945 Ham, België
-- **Telefoon:** +32 488 15 20 28
-- **Email:** info@maxq.be
-- **Website:** https://maxq.be
+### Provincie Antwerpen (Kempen)
+Wij zijn ook actief in de Kempen regio van Antwerpen:
+Meerhout, Geel, Mol, Balen, Dessel, Retie, Laakdal, Westerlo, Herselt, Hulshout, Herentals, Olen, Herenthout, Vorselaar, Lille, Kasterlee, Turnhout, Arendonk, Ravels
 
-## Openingsuren
+### Vlaams-Brabant
+En in het noorden van Vlaams-Brabant:
+Diest, Scherpenheuvel-Zichem, Bekkevoort, Aarschot, Begijnendijk, Rotselaar, Tremelo, Keerbergen, Haacht, Boortmeerbeek, Tielt-Winge, Lubbeek, Holsbeek, Tienen, Linter, Zoutleeuw, Geetbets, Leuven
 
-Maandag - Vrijdag: 08:00 - 18:00
+## Diensten per Regio
 
-## Gratis Plaatsbezoek
+Hieronder vindt u een overzicht van onze diensten per gemeente. Elke combinatie heeft een eigen pagina op onze website.
 
-Max Q biedt gratis en vrijblijvend plaatsbezoek aan voor alle renovatieprojecten. Vraag aan via https://maxq.be/start
+### Badkamer renoveren
+Badkamer renoveren in Tessenderlo (https://maxq.be/diensten/badkamer-renoveren/tessenderlo), Badkamer renoveren in Ham (https://maxq.be/diensten/badkamer-renoveren/ham), Badkamer renoveren in Leopoldsburg (https://maxq.be/diensten/badkamer-renoveren/leopoldsburg), Badkamer renoveren in Beringen (https://maxq.be/diensten/badkamer-renoveren/beringen), Badkamer renoveren in Heusden-Zolder (https://maxq.be/diensten/badkamer-renoveren/heusden-zolder), Badkamer renoveren in Houthalen-Helchteren (https://maxq.be/diensten/badkamer-renoveren/houthalen-helchteren), Badkamer renoveren in Lummen (https://maxq.be/diensten/badkamer-renoveren/lummen), Badkamer renoveren in Halen (https://maxq.be/diensten/badkamer-renoveren/halen), Badkamer renoveren in Zonhoven (https://maxq.be/diensten/badkamer-renoveren/zonhoven), Badkamer renoveren in Hasselt (https://maxq.be/diensten/badkamer-renoveren/hasselt), Badkamer renoveren in Genk (https://maxq.be/diensten/badkamer-renoveren/genk), Badkamer renoveren in Diepenbeek (https://maxq.be/diensten/badkamer-renoveren/diepenbeek), Badkamer renoveren in Peer (https://maxq.be/diensten/badkamer-renoveren/peer), Badkamer renoveren in Pelt (https://maxq.be/diensten/badkamer-renoveren/pelt), Badkamer renoveren in Lommel (https://maxq.be/diensten/badkamer-renoveren/lommel), Badkamer renoveren in Bocholt (https://maxq.be/diensten/badkamer-renoveren/bocholt), Badkamer renoveren in Hamont-Achel (https://maxq.be/diensten/badkamer-renoveren/hamont-achel), Badkamer renoveren in Bree (https://maxq.be/diensten/badkamer-renoveren/bree), Badkamer renoveren in Kinrooi (https://maxq.be/diensten/badkamer-renoveren/kinrooi), Badkamer renoveren in Maaseik (https://maxq.be/diensten/badkamer-renoveren/maaseik)
+En nog 57 andere gemeenten.
+
+### Keuken renoveren
+Keuken renoveren in Tessenderlo (https://maxq.be/diensten/keuken-renoveren/tessenderlo), Keuken renoveren in Ham (https://maxq.be/diensten/keuken-renoveren/ham), Keuken renoveren in Leopoldsburg (https://maxq.be/diensten/keuken-renoveren/leopoldsburg), Keuken renoveren in Beringen (https://maxq.be/diensten/keuken-renoveren/beringen), Keuken renoveren in Heusden-Zolder (https://maxq.be/diensten/keuken-renoveren/heusden-zolder), Keuken renoveren in Houthalen-Helchteren (https://maxq.be/diensten/keuken-renoveren/houthalen-helchteren), Keuken renoveren in Lummen (https://maxq.be/diensten/keuken-renoveren/lummen), Keuken renoveren in Halen (https://maxq.be/diensten/keuken-renoveren/halen), Keuken renoveren in Zonhoven (https://maxq.be/diensten/keuken-renoveren/zonhoven), Keuken renoveren in Hasselt (https://maxq.be/diensten/keuken-renoveren/hasselt), Keuken renoveren in Genk (https://maxq.be/diensten/keuken-renoveren/genk), Keuken renoveren in Diepenbeek (https://maxq.be/diensten/keuken-renoveren/diepenbeek), Keuken renoveren in Peer (https://maxq.be/diensten/keuken-renoveren/peer), Keuken renoveren in Pelt (https://maxq.be/diensten/keuken-renoveren/pelt), Keuken renoveren in Lommel (https://maxq.be/diensten/keuken-renoveren/lommel), Keuken renoveren in Bocholt (https://maxq.be/diensten/keuken-renoveren/bocholt), Keuken renoveren in Hamont-Achel (https://maxq.be/diensten/keuken-renoveren/hamont-achel), Keuken renoveren in Bree (https://maxq.be/diensten/keuken-renoveren/bree), Keuken renoveren in Kinrooi (https://maxq.be/diensten/keuken-renoveren/kinrooi), Keuken renoveren in Maaseik (https://maxq.be/diensten/keuken-renoveren/maaseik)
+En nog 57 andere gemeenten.
+
+### Totaalrenovatie
+Totaalrenovatie in Tessenderlo (https://maxq.be/diensten/totaalrenovatie/tessenderlo), Totaalrenovatie in Ham (https://maxq.be/diensten/totaalrenovatie/ham), Totaalrenovatie in Leopoldsburg (https://maxq.be/diensten/totaalrenovatie/leopoldsburg), Totaalrenovatie in Beringen (https://maxq.be/diensten/totaalrenovatie/beringen), Totaalrenovatie in Heusden-Zolder (https://maxq.be/diensten/totaalrenovatie/heusden-zolder), Totaalrenovatie in Houthalen-Helchteren (https://maxq.be/diensten/totaalrenovatie/houthalen-helchteren), Totaalrenovatie in Lummen (https://maxq.be/diensten/totaalrenovatie/lummen), Totaalrenovatie in Halen (https://maxq.be/diensten/totaalrenovatie/halen), Totaalrenovatie in Zonhoven (https://maxq.be/diensten/totaalrenovatie/zonhoven), Totaalrenovatie in Hasselt (https://maxq.be/diensten/totaalrenovatie/hasselt), Totaalrenovatie in Genk (https://maxq.be/diensten/totaalrenovatie/genk), Totaalrenovatie in Diepenbeek (https://maxq.be/diensten/totaalrenovatie/diepenbeek), Totaalrenovatie in Peer (https://maxq.be/diensten/totaalrenovatie/peer), Totaalrenovatie in Pelt (https://maxq.be/diensten/totaalrenovatie/pelt), Totaalrenovatie in Lommel (https://maxq.be/diensten/totaalrenovatie/lommel), Totaalrenovatie in Bocholt (https://maxq.be/diensten/totaalrenovatie/bocholt), Totaalrenovatie in Hamont-Achel (https://maxq.be/diensten/totaalrenovatie/hamont-achel), Totaalrenovatie in Bree (https://maxq.be/diensten/totaalrenovatie/bree), Totaalrenovatie in Kinrooi (https://maxq.be/diensten/totaalrenovatie/kinrooi), Totaalrenovatie in Maaseik (https://maxq.be/diensten/totaalrenovatie/maaseik)
+En nog 57 andere gemeenten.
+
+### Interieur renoveren
+Interieur renoveren in Tessenderlo (https://maxq.be/diensten/interieur-renoveren/tessenderlo), Interieur renoveren in Ham (https://maxq.be/diensten/interieur-renoveren/ham), Interieur renoveren in Leopoldsburg (https://maxq.be/diensten/interieur-renoveren/leopoldsburg), Interieur renoveren in Beringen (https://maxq.be/diensten/interieur-renoveren/beringen), Interieur renoveren in Heusden-Zolder (https://maxq.be/diensten/interieur-renoveren/heusden-zolder), Interieur renoveren in Houthalen-Helchteren (https://maxq.be/diensten/interieur-renoveren/houthalen-helchteren), Interieur renoveren in Lummen (https://maxq.be/diensten/interieur-renoveren/lummen), Interieur renoveren in Halen (https://maxq.be/diensten/interieur-renoveren/halen), Interieur renoveren in Zonhoven (https://maxq.be/diensten/interieur-renoveren/zonhoven), Interieur renoveren in Hasselt (https://maxq.be/diensten/interieur-renoveren/hasselt), Interieur renoveren in Genk (https://maxq.be/diensten/interieur-renoveren/genk), Interieur renoveren in Diepenbeek (https://maxq.be/diensten/interieur-renoveren/diepenbeek), Interieur renoveren in Peer (https://maxq.be/diensten/interieur-renoveren/peer), Interieur renoveren in Pelt (https://maxq.be/diensten/interieur-renoveren/pelt), Interieur renoveren in Lommel (https://maxq.be/diensten/interieur-renoveren/lommel), Interieur renoveren in Bocholt (https://maxq.be/diensten/interieur-renoveren/bocholt), Interieur renoveren in Hamont-Achel (https://maxq.be/diensten/interieur-renoveren/hamont-achel), Interieur renoveren in Bree (https://maxq.be/diensten/interieur-renoveren/bree), Interieur renoveren in Kinrooi (https://maxq.be/diensten/interieur-renoveren/kinrooi), Interieur renoveren in Maaseik (https://maxq.be/diensten/interieur-renoveren/maaseik)
+En nog 57 andere gemeenten.
+
+## Populaire Zoekopdrachten
+
+- badkamer renoveren Ham
+- badkamer renoveren Tessenderlo
+- badkamer renoveren Hasselt
+- keuken renoveren Beringen
+- keuken renoveren Genk
+- keuken renoveren Lommel
+- totaalrenovatie Limburg
+- totaalrenovatie Ham
+- totaalrenovatie Heusden-Zolder
+- interieur renoveren Diest
+- interieur renoveren Geel
+- interieur renoveren Turnhout
+- huis renoveren Leopoldsburg
+- woning renoveren Mol
+- verbouwing Balen
+- badkamer op maat Hasselt
+- inloopdouche plaatsen Genk
+- kookeiland plaatsen Beringen
+- maatkasten Tessenderlo
+- vloerverwarming installeren Ham
+- aannemer Tessenderlo
+- aannemer Ham
+- renovatiebedrijf Limburg
+- renovatie specialist Kempen
+- badkamer specialist Limburg
 
 ## Waarom Max Q?
 
-1. **35+ jaar ervaring** - Technische expertise van Q Technics
-2. **Eén aanspreekpunt** - Van ontwerp tot oplevering
-3. **Kwaliteitsgarantie** - Hoogwaardige materialen en vakmanschap
-4. **Lokale expertise** - Kennis van de Limburgse markt
-5. **Persoonlijke aanpak** - Elk project is uniek
+1. **35+ jaar ervaring** - Technische expertise opgebouwd door Q Technics
+2. **Eigen vakmensen** - Geen onderaannemers, alles in eigen beheer
+3. **Alle technieken** - Elektriciteit, sanitair, verwarming, vloerverwarming, domotica
+4. **Gratis plaatsbezoek** - Vrijblijvend adviesgesprek bij u thuis
+5. **Gedetailleerde offerte** - Transparante prijzen zonder verrassingen
+6. **Persoonlijk aanspreekpunt** - Een vast contactpersoon tijdens het hele project
+7. **Kwaliteitsgarantie** - Hoogwaardige materialen en vakmanschap
+8. **Lokale expertise** - Kennis van de Limburgse en Kempense markt
+
+## Contact
+
+- **Bedrijfsnaam:** Max Q - Powered by Q Technics
+- **Adres:** Gerhees 118, 3945 Ham, Belgie
+- **Telefoon:** +32 488 15 20 28
+- **Email:** info@maxq.be
+- **Website:** https://maxq.be
+- **Offerte aanvragen:** https://maxq.be/start
+
+## Openingsuren
+Maandag - Vrijdag: 08:00 - 18:00
 
 ## Veelgestelde Vragen
 
-**Wat kost een totaalrenovatie?**
-De prijs hangt af van de omvang en wensen. Budgetten variëren van €25.000 tot €200.000+. Vraag een gratis offerte aan.
+**Wat kost een badkamerrenovatie?**
+Een badkamerrenovatie bij Max Q kost tussen 8.000 en 30.000 euro, afhankelijk van de grootte en materiaalkeuze. Vraag een gratis offerte aan.
 
-**Hoe lang duurt een renovatie?**
-Een badkamerrenovatie duurt gemiddeld 2-4 weken. Een totaalrenovatie kan 3-6 maanden duren.
+**Wat kost een keukenrenovatie?**
+Een keukenrenovatie varieert van 10.000 tot 40.000 euro. Met kookeiland en premium materialen kan dit hoger liggen.
+
+**Wat kost een totaalrenovatie?**
+Een totaalrenovatie kost gemiddeld 25.000 tot 200.000+ euro, afhankelijk van de omvang en wensen.
+
+**Hoe lang duurt een badkamerrenovatie?**
+Een gemiddelde badkamerrenovatie duurt 2-4 weken.
+
+**Hoe lang duurt een totaalrenovatie?**
+Een totaalrenovatie kan 3-6 maanden duren, afhankelijk van de scope.
 
 **Werken jullie met onderaannemers?**
-Nee, we hebben eigen vakmensen voor alle disciplines. Dit garandeert kwaliteit en coördinatie.
+Nee, wij werken uitsluitend met eigen vakmensen voor alle disciplines.
 
-**Geven jullie garantie?**
-Ja, we bieden garantie op al onze werken volgens de wettelijke bepalingen.
+**In welke regio zijn jullie actief?**
+Wij zijn actief in Limburg, de Kempen (Antwerpen) en noord Vlaams-Brabant, binnen 50km van Ham.
 
-## Links
+**Bieden jullie een gratis offerte aan?**
+Ja, wij bieden een gratis en vrijblijvend plaatsbezoek en offerte aan.
+
+## Blog & Kennisbank
+Bezoek onze blog voor tips, trends en vakkennis over renovatie: https://maxq.be/blog
+
+## Belangrijke Links
 
 - Homepage: https://maxq.be/
 - Renoveren: https://maxq.be/renoveren
 - Projecten: https://maxq.be/projecten
+- Blog: https://maxq.be/blog
 - Contact: https://maxq.be/contact
-- Offerte aanvragen: https://maxq.be/start
+- Gratis offerte: https://maxq.be/start
+
+## Diensten Pagina's
+
+- Badkamer Renoveren: https://maxq.be/diensten/badkamer-renoveren
+- Keuken Renoveren: https://maxq.be/diensten/keuken-renoveren
+- Interieur Renoveren: https://maxq.be/diensten/interieur-renoveren
+- Totaalrenovatie: https://maxq.be/diensten/totaalrenovatie
+- Huis Renoveren: https://maxq.be/diensten/huis-renoveren
+- Woning Renoveren: https://maxq.be/diensten/woning-renoveren
+- Nieuwe Badkamer: https://maxq.be/diensten/nieuwe-badkamer
+- Badkamer Op Maat: https://maxq.be/diensten/badkamer-op-maat
+- Inloopdouche Plaatsen: https://maxq.be/diensten/inloopdouche-plaatsen
+- Keuken Vernieuwen: https://maxq.be/diensten/keuken-vernieuwen
+- Nieuwe Keuken: https://maxq.be/diensten/nieuwe-keuken
+- Keuken Op Maat: https://maxq.be/diensten/keuken-op-maat
+- Kookeiland Plaatsen: https://maxq.be/diensten/kookeiland-plaatsen
+- Maatkasten: https://maxq.be/diensten/maatkasten
+- Inbouwkasten: https://maxq.be/diensten/inbouwkasten
+- Dressing Op Maat: https://maxq.be/diensten/dressing-op-maat
+- Vloerverwarming Installeren: https://maxq.be/diensten/vloerverwarming-installeren
+- Elektriciteit Renovatie: https://maxq.be/diensten/elektriciteit-renovatie
+- Sanitair Renovatie: https://maxq.be/diensten/sanitair-renovatie

@@ -709,6 +709,25 @@ async def auto_generate_daily_blog():
         
         await asyncio.sleep(86400)
 
+# Dynamic blog sitemap endpoint for Google
+@api_router.get("/sitemap-blogs.xml")
+async def sitemap_blogs():
+    from fastapi.responses import Response
+    blogs = await db.blogs.find({"published": True}, {"_id": 0, "slug": 1, "created_at": 1}).to_list(500)
+    xml_lines = ['<?xml version="1.0" encoding="UTF-8"?>']
+    xml_lines.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+    xml_lines.append('  <url><loc>https://maxq.be/blog</loc><changefreq>daily</changefreq><priority>0.8</priority></url>')
+    for blog in blogs:
+        slug = blog.get('slug', '')
+        created = blog.get('created_at', '')
+        if isinstance(created, str):
+            lastmod = created[:10]
+        else:
+            lastmod = created.strftime('%Y-%m-%d') if created else ''
+        xml_lines.append(f'  <url><loc>https://maxq.be/blog/{slug}</loc><lastmod>{lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>')
+    xml_lines.append('</urlset>')
+    return Response(content='\n'.join(xml_lines), media_type="application/xml")
+
 # Include the router in the main app
 app.include_router(api_router)
 
