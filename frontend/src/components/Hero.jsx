@@ -44,7 +44,7 @@ const Hero = () => {
             className="text-lg md:text-xl text-[#202020]/80 mb-8 leading-relaxed text-left"
             itemProp="description"
           >
-            Max Q realiseert badkamers, keukens en totaalprojecten in <strong>Ham, Hasselt, Genk</strong> en heel <strong>Limburg</strong> — technisch onderbouwd dankzij Q Technics.
+            Max Q is een renovatiebedrijf uit <strong>Tessenderlo-Ham</strong> gespecialiseerd in badkamers, keukens en totaalprojecten in <strong>Limburg</strong> en <strong>Antwerpen</strong> — technisch onderbouwd dankzij Q Technics.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-start">
