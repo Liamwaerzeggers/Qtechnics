@@ -36,6 +36,43 @@
         <priority>0.8</priority>
     </url>
     
+    <!-- SERVICE SEO PAGES - Popular Search Terms -->
+    <!-- Interieur -->
+    <url><loc>https://maxq.be/diensten/interieur-renoveren</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/diensten/interieur-verbouwen</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/diensten/interieurafwerking</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    
+    <!-- Badkamer -->
+    <url><loc>https://maxq.be/diensten/badkamer-renoveren</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+    <url><loc>https://maxq.be/diensten/badkamer-verbouwen</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/diensten/nieuwe-badkamer</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/diensten/badkamer-op-maat</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/diensten/inloopdouche-plaatsen</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    
+    <!-- Keuken -->
+    <url><loc>https://maxq.be/diensten/keuken-renoveren</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+    <url><loc>https://maxq.be/diensten/keuken-verbouwen</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/diensten/keuken-vernieuwen</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/diensten/nieuwe-keuken</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/diensten/keuken-op-maat</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/diensten/kookeiland-plaatsen</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    
+    <!-- Totaalrenovatie -->
+    <url><loc>https://maxq.be/diensten/totaalrenovatie</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+    <url><loc>https://maxq.be/diensten/huis-renoveren</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+    <url><loc>https://maxq.be/diensten/woning-renoveren</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/diensten/verbouwing</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    
+    <!-- Technieken -->
+    <url><loc>https://maxq.be/diensten/elektriciteit-renovatie</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/diensten/sanitair-renovatie</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/diensten/vloerverwarming-installeren</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    
+    <!-- Maatwerk -->
+    <url><loc>https://maxq.be/diensten/maatkasten</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/diensten/inbouwkasten</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    <url><loc>https://maxq.be/diensten/dressing-op-maat</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+    
     <!-- Limburg - Location SEO Pages -->
     <url><loc>https://maxq.be/renovatie/tessenderlo</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
     <url><loc>https://maxq.be/renovatie/tessenderlo/badkamer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
