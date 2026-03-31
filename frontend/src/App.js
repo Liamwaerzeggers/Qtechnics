@@ -71,6 +71,10 @@ function App() {
           <Route path="/renovatie/:location" element={<MainLayout><LocationPage /></MainLayout>} />
           <Route path="/renovatie/:location/:service" element={<MainLayout><LocationPage /></MainLayout>} />
           
+          {/* SEO Service pages - not in menu */}
+          <Route path="/diensten/:service" element={<MainLayout><ServicePage /></MainLayout>} />
+          <Route path="/diensten/:service/:location" element={<MainLayout><ServicePage /></MainLayout>} />
+          
           {/* Admin pages without header/footer */}
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
