@@ -18,6 +18,7 @@ import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
 import StartPage from './components/StartPage';
 import LocationPage from './components/LocationPage';
+import ServicePage from './components/ServicePage';
 
 // Component to scroll to top on route change
 const ScrollToTop = () => {
