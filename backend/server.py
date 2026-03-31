@@ -672,10 +672,33 @@ async def generate_blog(background_tasks: BackgroundTasks):
         doc['created_at'] = doc['created_at'].isoformat()
         await db.blogs.insert_one(doc)
         logger.info(f"Blog generated: {blog.title}")
+        await update_static_blog_sitemap()
         return {"id": blog.id, "title": blog.title, "slug": blog.slug}
     except Exception as e:
         logger.error(f"Blog generation failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Blog generatie mislukt: {str(e)}")
+
+async def update_static_blog_sitemap():
+    """Generate a static sitemap-blogs.xml file in the frontend public folder"""
+    try:
+        blogs = await db.blogs.find({"published": True}, {"_id": 0, "slug": 1, "created_at": 1}).to_list(500)
+        xml_lines = ['<?xml version="1.0" encoding="UTF-8"?>']
+        xml_lines.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+        xml_lines.append('  <url><loc>https://maxq.be/blog</loc><changefreq>daily</changefreq><priority>0.8</priority></url>')
+        for blog in blogs:
+            slug = blog.get('slug', '')
+            created = blog.get('created_at', '')
+            if isinstance(created, str):
+                lastmod = created[:10]
+            else:
+                lastmod = created.strftime('%Y-%m-%d') if created else ''
+            xml_lines.append(f'  <url><loc>https://maxq.be/blog/{slug}</loc><lastmod>{lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>')
+        xml_lines.append('</urlset>')
+        sitemap_path = Path(__file__).parent.parent / 'frontend' / 'public' / 'sitemap-blogs.xml'
+        sitemap_path.write_text('\n'.join(xml_lines))
+        logger.info(f"Static blog sitemap updated: {len(blogs)} blogs")
+    except Exception as e:
+        logger.error(f"Failed to update static blog sitemap: {str(e)}")
 
 @api_router.delete("/blogs/{blog_id}")
 async def delete_blog(blog_id: str):
@@ -683,6 +706,7 @@ async def delete_blog(blog_id: str):
     result = await db.blogs.delete_one({"id": blog_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Blog niet gevonden")
+    await update_static_blog_sitemap()
     return {"message": "Blog verwijderd"}
 
 async def auto_generate_daily_blog():
@@ -704,6 +728,7 @@ async def auto_generate_daily_blog():
                 doc['created_at'] = doc['created_at'].isoformat()
                 await db.blogs.insert_one(doc)
                 logger.info(f"Daily auto-blog generated: {blog.title}")
+                await update_static_blog_sitemap()
         except Exception as e:
             logger.error(f"Auto blog generation failed: {str(e)}")
         
@@ -748,7 +773,8 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_event():
-    """Start daily blog auto-generation task"""
+    """Start daily blog auto-generation task and generate initial blog sitemap"""
+    await update_static_blog_sitemap()
     asyncio.create_task(auto_generate_daily_blog())
     logger.info("Daily blog auto-generation task started")
 

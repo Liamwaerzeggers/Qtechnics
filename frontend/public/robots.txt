@@ -9,7 +9,7 @@ Disallow: /api/
 
 # Sitemap
 Sitemap: https://maxq.be/sitemap.xml
-Sitemap: https://maxq.be/api/sitemap-blogs.xml
+Sitemap: https://maxq.be/sitemap-blogs.xml
 
 # AI Crawlers - Explicitly allowed
 User-agent: GPTBot
