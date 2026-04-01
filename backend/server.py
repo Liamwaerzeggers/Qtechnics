@@ -3441,17 +3441,21 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
         story.append(Paragraph(f"<b>Adres:</b> {lead['address']}", styles['Normal']))
         story.append(Spacer(1, 0.3*inch))
     
-    # Separate labor and material items
+    # Separate labor and material items, excluding subtitle/subtotal visual markers
     labor_items = [item for item in items if item['item_type'] == 'arbeid']
-    material_items = [item for item in items if item['item_type'] != 'arbeid']
+    material_items = [item for item in items if item['item_type'] == 'materiaal']
+    subtitle_items = [item for item in items if item['item_type'] == 'subtitle']
+    subtotal_items = [item for item in items if item['item_type'] == 'subtotal']
+    other_items = [item for item in items if item['item_type'] == 'overig']
     
     # Calculate bundled labor total
     labor_total_excl = sum(item.get('total_excl_vat', item.get('quantity', 0) * item.get('unit_price', 0)) for item in labor_items)
+    other_total_excl = sum(item.get('total_excl_vat', item.get('quantity', 0) * item.get('unit_price', 0)) for item in other_items)
     labor_vat_rate = 6  # Renovatie tarief
     labor_vat = labor_total_excl * (labor_vat_rate / 100)
     labor_total_incl = labor_total_excl + labor_vat
     
-    # === ARBEID SECTIE MET DETAILS MAAR ZONDER EENHEIDSPRIJZEN ===
+    # === ARBEID SECTIE MET KAMER-GROEPERING ===
     if labor_items:
         # Arbeid header
         labor_header_style = ParagraphStyle('LaborHeader', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor('#1E40AF'))
@@ -3460,53 +3464,135 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
         
         # Style for wrapping description text
         desc_style = ParagraphStyle('DescStyle', parent=styles['Normal'], fontSize=9, leading=11)
+        room_header_style = ParagraphStyle('RoomHeader', parent=styles['Normal'], fontSize=10, leading=12, textColor=colors.white)
+        subtotal_style = ParagraphStyle('SubtotalStyle', parent=styles['Normal'], fontSize=9, leading=11, textColor=colors.HexColor('#7a1f1f'))
         
-        # Create labor table showing items with quantity and unit (NO unit price)
-        # Same column layout as materials for consistency
+        # Group labor items by room
+        # Strategy: if subtitle items exist, use the order from the items list.
+        # Otherwise, parse room name from description prefix ("kamer: item")
+        rooms_ordered = []
+        room_items_map = {}
+        room_subtotals = {}
+        
+        if subtitle_items:
+            # New format: use subtitle items as room markers
+            # Items are already in order: subtitle, items, subtotal, subtitle, items, subtotal...
+            current_room = None
+            for item in items:
+                if item['item_type'] == 'subtitle':
+                    current_room = item['description'].replace('---', '').strip()
+                    if current_room not in room_items_map:
+                        rooms_ordered.append(current_room)
+                        room_items_map[current_room] = []
+                elif item['item_type'] == 'subtotal':
+                    if current_room:
+                        room_subtotals[current_room] = item.get('total', 0)
+                elif item['item_type'] == 'arbeid' and current_room:
+                    room_items_map[current_room].append(item)
+        else:
+            # Old format: parse room name from description prefix
+            import re
+            for item in labor_items:
+                desc = item.get('description', '')
+                # Try to extract room name from "kamer: rest" pattern
+                match = re.match(r'^(.+?):\s*(.+)$', desc)
+                if match:
+                    room_name = match.group(1).strip()
+                    # Store cleaned description without room prefix
+                    item['_clean_desc'] = match.group(2).strip()
+                else:
+                    room_name = "Overig"
+                    item['_clean_desc'] = desc
+                
+                if room_name not in room_items_map:
+                    rooms_ordered.append(room_name)
+                    room_items_map[room_name] = []
+                room_items_map[room_name].append(item)
+        
+        # Build the table with room grouping
         labor_table_data = [['Omschrijving', 'Aantal', 'Eenheid', '', 'Subtotaal', '']]
+        labor_row_styles = []  # Track which rows are room headers/subtotals for styling
+        row_idx = 1  # Start after header row
         
-        for item in labor_items:
-            unit = item.get('unit', 'm²')
-            # Clean up unit display
-            if unit in ['m2', 'vierkante meter']:
-                unit = 'm²'
-            elif unit in ['lm', 'lopende meter']:
-                unit = 'm'
+        for room_name in rooms_ordered:
+            r_items = room_items_map.get(room_name, [])
+            if not r_items:
+                continue
             
-            # Use Paragraph for description to allow text wrapping
-            desc_para = Paragraph(item['description'], desc_style)
-            
+            # Room header row
             labor_table_data.append([
-                desc_para,
-                f"{item['quantity']:.2f}" if item['quantity'] else '-',
-                unit,
-                '',  # Empty column for alignment with materials
-                '',  # No individual subtotal shown
+                Paragraph(f'<b>{room_name}</b>', room_header_style),
+                '', '', '', '', ''
+            ])
+            labor_row_styles.append(('room_header', row_idx))
+            row_idx += 1
+            
+            room_total = 0
+            for item in r_items:
+                unit = item.get('unit', 'm²')
+                if unit in ['m2', 'vierkante meter']:
+                    unit = 'm²'
+                elif unit in ['lm', 'lopende meter']:
+                    unit = 'm'
+                
+                # Use cleaned description if available (old format), otherwise use as-is
+                display_desc = item.get('_clean_desc', item['description'])
+                desc_para = Paragraph(display_desc, desc_style)
+                
+                item_total = item.get('total_excl_vat', item.get('quantity', 0) * item.get('unit_price', 0))
+                room_total += item_total
+                
+                labor_table_data.append([
+                    desc_para,
+                    f"{item['quantity']:.2f}" if item.get('quantity') else '-',
+                    unit,
+                    '',
+                    '',  # No individual price shown for labor
+                    ''
+                ])
+                row_idx += 1
+            
+            # Room subtotal row
+            actual_subtotal = room_subtotals.get(room_name, room_total)
+            labor_table_data.append([
+                Paragraph(f'<b>Subtotaal {room_name}</b>', subtotal_style),
+                '', '', '',
+                f"€{actual_subtotal:.2f}",
                 ''
             ])
+            labor_row_styles.append(('room_subtotal', row_idx))
+            row_idx += 1
         
-        # Add labor total rows
+        # Add overall labor total rows
         labor_table_data.append([
             Paragraph('<b>Subtotaal Arbeid</b>', desc_style),
             '', '', '', 
             f"€{labor_total_excl:.2f}",
             'excl. BTW'
         ])
+        labor_row_styles.append(('total', row_idx))
+        row_idx += 1
         labor_table_data.append([
             Paragraph(f'<b>BTW {labor_vat_rate}%</b>', desc_style),
             '', '', '',
             f"€{labor_vat:.2f}",
             ''
         ])
+        labor_row_styles.append(('total', row_idx))
+        row_idx += 1
         labor_table_data.append([
             Paragraph('<b>Totaal Arbeid incl. BTW</b>', desc_style),
             '', '', '',
             f"€{labor_total_incl:.2f}",
             ''
         ])
+        labor_row_styles.append(('total', row_idx))
+        row_idx += 1
         
         labor_table = Table(labor_table_data, colWidths=[2.4*inch, 0.6*inch, 0.6*inch, 0.5*inch, 0.9*inch, 0.7*inch])
-        labor_table.setStyle(TableStyle([
+        
+        # Base table style
+        base_style = [
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E5E7EB')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1E40AF')),
             ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
@@ -3516,11 +3602,24 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
             ('FONTSIZE', (0, 0), (-1, -1), 9),
             ('TOPPADDING', (0, 0), (-1, -1), 6),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            # Highlight totals
-            ('BACKGROUND', (0, -3), (-1, -1), colors.HexColor('#D1FAE5')),
-            ('FONTNAME', (4, -3), (4, -1), 'Helvetica-Bold'),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB'))
-        ]))
+        ]
+        
+        # Apply room header and subtotal styling
+        for style_type, ridx in labor_row_styles:
+            if style_type == 'room_header':
+                base_style.append(('BACKGROUND', (0, ridx), (-1, ridx), colors.HexColor('#7a1f1f')))
+                base_style.append(('TEXTCOLOR', (0, ridx), (-1, ridx), colors.white))
+                base_style.append(('SPAN', (0, ridx), (-1, ridx)))
+            elif style_type == 'room_subtotal':
+                base_style.append(('BACKGROUND', (0, ridx), (-1, ridx), colors.HexColor('#FEF2F2')))
+                base_style.append(('FONTNAME', (0, ridx), (-1, ridx), 'Helvetica-Bold'))
+                base_style.append(('FONTNAME', (4, ridx), (4, ridx), 'Helvetica-Bold'))
+            elif style_type == 'total':
+                base_style.append(('BACKGROUND', (0, ridx), (-1, ridx), colors.HexColor('#D1FAE5')))
+                base_style.append(('FONTNAME', (4, ridx), (4, ridx), 'Helvetica-Bold'))
+        
+        labor_table.setStyle(TableStyle(base_style))
         story.append(labor_table)
         story.append(Spacer(1, 0.3*inch))
     

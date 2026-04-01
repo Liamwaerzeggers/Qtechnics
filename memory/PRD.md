@@ -11,7 +11,7 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - MongoDB bestandsopslag (overleeft redeployments)
 - Robuuste financiële herberekening vanuit brondata
 - Offerte regelitem omschrijving bewerken (inline edit)
-- Per-kamer groepering met subtitels en subtotalen bij offerte generatie vanuit berekening
+- Per-kamer groepering met subtitels en subtotalen (zowel in UI als PDF export)
 
 ## Recent Opgeloste Issues (april 2026)
 ### Offerte Omschrijving Bewerking & Per-Kamer Groepering
@@ -20,18 +20,16 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
   - Subtitel rij (donkerrood header met kamernaam)
   - Subtotaal rij (rood geaccentueerde samenvatting per kamer)
 - Subtitle/subtotal items tellen NIET mee in quote totalen (geen dubbeltelling)
+- PDF export toont kamer-groepering met:
+  - Donkerrode kamer-header rijen
+  - Lichtroze subtotaalrijen per kamer met bedrag
+  - Werkt voor nieuwe offertes (subtitle items) EN bestaande offertes (parsing van kamer-prefix)
 
 ### Financieel Tab - Brondata Berekening
 - Frontend berekent ALTIJD vanuit brondata (quotes + legacy docs + invoice uploads)
-- Vertrouwt niet meer op project.sales_price of project.total_costs
 
 ### Aankoop Factuur Upload - Handmatig Bedrag
 - PDF upload + handmatig bedrag invoer (incl. BTW) + omschrijving
-- Factuurkosten worden automatisch bij Totale Kosten geteld
-
-### Gefaseerde Facturatie & Admin Toegang
-- Alle invoice endpoints gefixeerd: admin krijgt toegang zonder user_id filter
-- Deelfacturen werken nu ook met legacy offertes als basis
 
 ## Bekende Issues
 - P1: Taaktoewijzing fout (user verificatie pending)
