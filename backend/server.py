@@ -8172,40 +8172,89 @@ async def generate_quote_from_calculation(project_id: str, current_user: User = 
     }
     await db.quotes.insert_one(quote_doc)
     
-    # Create line items from all included calculation items
+    # Create line items from all included calculation items, grouped by room
     line_items = []
     total_excl = 0
     
+    # First, gather items per room
+    rooms = {}
     for rc in calc.get("room_calculations", []):
-        room_name = rc.get("room_name", "")
+        room_name = rc.get("room_name", "Overig")
+        if room_name not in rooms:
+            rooms[room_name] = []
         for cat_key in ["floor_items", "wall_items", "ceiling_items", "other_items"]:
             for item in rc.get(cat_key, []):
                 if not item.get("included"):
                     continue
-                
-                li_id = str(uuid.uuid4())
-                quantity = item.get("quantity", 1)
-                unit_price = item.get("unit_price", 0)
-                subtotal = round(quantity * unit_price, 2)
-                vat_rate = 21.0
-                vat_amount = round(subtotal * vat_rate / 100, 2)
-                
-                line_item = {
-                    "id": li_id,
-                    "quote_id": quote_id,
-                    "description": f"{room_name}: {item.get('title', '?')} ({item.get('quantity', 0)} {item.get('unit', 'stuk')})",
-                    "quantity": quantity,
-                    "unit_price": unit_price,
-                    "item_type": "arbeid",
-                    "vat_rate": vat_rate,
-                    "total_excl_vat": subtotal,
-                    "vat_amount": vat_amount,
-                    "total_incl_vat": round(subtotal + vat_amount, 2),
-                    "total": subtotal,
-                    "created_at": datetime.now(timezone.utc).isoformat()
-                }
-                line_items.append(line_item)
-                total_excl += subtotal
+                rooms[room_name].append(item)
+    
+    # Now build line items per room with subtitles and subtotals
+    for room_name, items in rooms.items():
+        if not items:
+            continue
+        
+        # Add room subtitle line item
+        subtitle_id = str(uuid.uuid4())
+        subtitle_item = {
+            "id": subtitle_id,
+            "quote_id": quote_id,
+            "description": f"--- {room_name} ---",
+            "quantity": 0,
+            "unit_price": 0,
+            "item_type": "subtitle",
+            "vat_rate": 0,
+            "total_excl_vat": 0,
+            "vat_amount": 0,
+            "total_incl_vat": 0,
+            "total": 0,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        line_items.append(subtitle_item)
+        
+        room_total = 0
+        for item in items:
+            li_id = str(uuid.uuid4())
+            quantity = item.get("quantity", 1)
+            unit_price = item.get("unit_price", 0)
+            subtotal = round(quantity * unit_price, 2)
+            vat_rate = 21.0
+            vat_amount = round(subtotal * vat_rate / 100, 2)
+            
+            line_item = {
+                "id": li_id,
+                "quote_id": quote_id,
+                "description": f"{item.get('title', '?')} ({item.get('quantity', 0)} {item.get('unit', 'stuk')})",
+                "quantity": quantity,
+                "unit_price": unit_price,
+                "item_type": "arbeid",
+                "vat_rate": vat_rate,
+                "total_excl_vat": subtotal,
+                "vat_amount": vat_amount,
+                "total_incl_vat": round(subtotal + vat_amount, 2),
+                "total": subtotal,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            line_items.append(line_item)
+            room_total += subtotal
+            total_excl += subtotal
+        
+        # Add room subtotal line item (visual only - vat=0 to avoid double counting)
+        subtotal_id = str(uuid.uuid4())
+        subtotal_item = {
+            "id": subtotal_id,
+            "quote_id": quote_id,
+            "description": f"Subtotaal {room_name}",
+            "quantity": 1,
+            "unit_price": round(room_total, 2),
+            "item_type": "subtotal",
+            "vat_rate": 0,
+            "total_excl_vat": 0,
+            "vat_amount": 0,
+            "total_incl_vat": 0,
+            "total": round(room_total, 2),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        line_items.append(subtotal_item)
     
     if line_items:
         await db.line_items.insert_many(line_items)
@@ -11584,7 +11633,7 @@ async def send_customer_notification(project_id: str, subject: str, content_desc
         portal_token = project.get("customer_access_token")
         portal_link = ""
         if portal_token:
-            portal_link = f"<p><a href='{os.environ.get('APP_URL', 'https://worker-catalog-1.preview.emergentagent.com')}/customer/{portal_token}' style='background-color: #1E40AF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;'>Bekijk uw project</a></p>"
+            portal_link = f"<p><a href='{os.environ.get('APP_URL', 'https://quote-room-grouping.preview.emergentagent.com')}/customer/{portal_token}' style='background-color: #1E40AF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;'>Bekijk uw project</a></p>"
         
         # Build HTML email
         html_content = f"""

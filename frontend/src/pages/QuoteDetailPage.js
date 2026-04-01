@@ -59,7 +59,7 @@ export default function QuoteDetailPage() {
   
   // Inline editing state for line items
   const [editingItem, setEditingItem] = useState(null);
-  const [editValues, setEditValues] = useState({ quantity: '', unit_price: '' });
+  const [editValues, setEditValues] = useState({ description: '', quantity: '', unit_price: '' });
 
   useEffect(() => {
     fetchQuoteData();
@@ -364,6 +364,7 @@ export default function QuoteDetailPage() {
   const startEditingItem = (item) => {
     setEditingItem(item.id);
     setEditValues({
+      description: item.description || '',
       quantity: item.quantity.toString(),
       unit_price: item.unit_price.toString()
     });
@@ -372,14 +373,19 @@ export default function QuoteDetailPage() {
   // Cancel editing
   const cancelEditing = () => {
     setEditingItem(null);
-    setEditValues({ quantity: '', unit_price: '' });
+    setEditValues({ description: '', quantity: '', unit_price: '' });
   };
 
   // Save edited line item
   const handleUpdateItem = async (itemId) => {
+    const description = editValues.description.trim();
     const quantity = parseFloat(editValues.quantity);
     const unit_price = parseFloat(editValues.unit_price);
 
+    if (!description) {
+      toast.error('Omschrijving mag niet leeg zijn');
+      return;
+    }
     if (isNaN(quantity) || quantity <= 0) {
       toast.error('Voer een geldige hoeveelheid in');
       return;
@@ -392,12 +398,12 @@ export default function QuoteDetailPage() {
     try {
       await axios.put(
         `${API}/quotes/${quoteId}/items/${itemId}`,
-        { quantity, unit_price },
+        { description, quantity, unit_price },
         { headers: getAuthHeaders() }
       );
-      toast.success('Item bijgewerkt! ✏️');
+      toast.success('Item bijgewerkt!');
       setEditingItem(null);
-      setEditValues({ quantity: '', unit_price: '' });
+      setEditValues({ description: '', quantity: '', unit_price: '' });
       fetchQuoteData();
     } catch (error) {
       console.error('Update error:', error);
@@ -1220,7 +1226,40 @@ Q Technics`;
               <p style={{color: '#94A3B8'}}>Nog geen items toegevoegd</p>
             ) : (
               <div className="space-y-3">
-                {lineItems.map((item) => (
+                {lineItems.map((item) => {
+                  // Subtitle row - room header
+                  if (item.item_type === 'subtitle') {
+                    return (
+                      <div 
+                        key={item.id}
+                        data-testid={`line-item-subtitle-${item.id}`}
+                        className="px-4 py-2 rounded-lg mt-4 first:mt-0"
+                        style={{backgroundColor: '#7a1f1f'}}
+                      >
+                        <div className="font-bold text-white text-sm tracking-wide uppercase">
+                          {item.description.replace(/^---\s*/, '').replace(/\s*---$/, '')}
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  // Subtotal row - room total
+                  if (item.item_type === 'subtotal') {
+                    return (
+                      <div 
+                        key={item.id}
+                        data-testid={`line-item-subtotal-${item.id}`}
+                        className="px-4 py-2 rounded-lg flex justify-between items-center"
+                        style={{backgroundColor: '#FEF2F2', borderLeft: '3px solid #7a1f1f'}}
+                      >
+                        <div className="font-semibold text-sm" style={{color: '#7a1f1f'}}>{item.description}</div>
+                        <div className="font-bold" style={{color: '#7a1f1f'}}>€{(item.total || 0).toFixed(2)}</div>
+                      </div>
+                    );
+                  }
+                  
+                  // Normal line item
+                  return (
                   <div 
                     key={item.id} 
                     data-testid={`line-item-${item.id}`}
@@ -1230,18 +1269,29 @@ Q Technics`;
                     {editingItem === item.id ? (
                       // Edit mode
                       <div className="space-y-3">
-                        <div className="font-semibold" style={{color: '#1E293B'}}>{item.description}</div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-sm font-medium" style={{color: '#64748B'}}>Omschrijving:</label>
+                          <input
+                            type="text"
+                            data-testid={`edit-description-${item.id}`}
+                            value={editValues.description}
+                            onChange={(e) => setEditValues({...editValues, description: e.target.value})}
+                            className="flex-1 px-2 py-1 border rounded text-sm font-semibold"
+                            style={{borderColor: '#E5E7EB', color: '#1E293B'}}
+                            autoFocus
+                          />
+                        </div>
                         <div className="flex flex-wrap items-center gap-3">
                           <div className="flex items-center gap-2">
                             <label className="text-sm" style={{color: '#64748B'}}>Aantal:</label>
                             <input
                               type="number"
                               step="0.01"
+                              data-testid={`edit-quantity-${item.id}`}
                               value={editValues.quantity}
                               onChange={(e) => setEditValues({...editValues, quantity: e.target.value})}
                               className="w-24 px-2 py-1 border rounded text-sm"
                               style={{borderColor: '#E5E7EB'}}
-                              autoFocus
                             />
                           </div>
                           <div className="flex items-center gap-2">
@@ -1249,6 +1299,7 @@ Q Technics`;
                             <input
                               type="number"
                               step="0.01"
+                              data-testid={`edit-unit-price-${item.id}`}
                               value={editValues.unit_price}
                               onChange={(e) => setEditValues({...editValues, unit_price: e.target.value})}
                               className="w-24 px-2 py-1 border rounded text-sm"
@@ -1261,6 +1312,7 @@ Q Technics`;
                           <div className="flex gap-2 ml-auto">
                             <Button
                               size="sm"
+                              data-testid={`save-edit-${item.id}`}
                               onClick={() => handleUpdateItem(item.id)}
                               style={{backgroundColor: '#10B981', color: 'white'}}
                             >
@@ -1270,6 +1322,7 @@ Q Technics`;
                             <Button
                               variant="outline"
                               size="sm"
+                              data-testid={`cancel-edit-${item.id}`}
                               onClick={cancelEditing}
                             >
                               <X size={16} className="mr-1" />
@@ -1318,7 +1371,8 @@ Q Technics`;
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
