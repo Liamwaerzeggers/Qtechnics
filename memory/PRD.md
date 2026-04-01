@@ -10,18 +10,24 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - PWA met push notificaties voor admin
 - MongoDB bestandsopslag (overleeft redeployments)
 - Robuuste financiële herberekening vanuit brondata
+- Offerte regelitem omschrijving bewerken (inline edit)
+- Per-kamer groepering met subtitels en subtotalen bij offerte generatie vanuit berekening
 
-## Recent Opgeloste Issues (maart 2026)
+## Recent Opgeloste Issues (april 2026)
+### Offerte Omschrijving Bewerking & Per-Kamer Groepering
+- Omschrijving (description) van offerteregelitems is nu inline bewerkbaar in QuoteDetailPage
+- generate-quote-from-calculation groepeert items per kamer met:
+  - Subtitel rij (donkerrood header met kamernaam)
+  - Subtotaal rij (rood geaccentueerde samenvatting per kamer)
+- Subtitle/subtotal items tellen NIET mee in quote totalen (geen dubbeltelling)
+
 ### Financieel Tab - Brondata Berekening
 - Frontend berekent ALTIJD vanuit brondata (quotes + legacy docs + invoice uploads)
 - Vertrouwt niet meer op project.sales_price of project.total_costs
 
 ### Aankoop Factuur Upload - Handmatig Bedrag
 - PDF upload + handmatig bedrag invoer (incl. BTW) + omschrijving
-- Geen OCR/scanning meer — betrouwbare handmatige invoer
 - Factuurkosten worden automatisch bij Totale Kosten geteld
-- Facturen opgeslagen in MongoDB (overleeft redeployments)
-- Delete herberekent kosten automatisch
 
 ### Gefaseerde Facturatie & Admin Toegang
 - Alle invoice endpoints gefixeerd: admin krijgt toegang zonder user_id filter
@@ -34,5 +40,6 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 
 ## Backlog
 - P1: server.py refactoring naar route modules
-- P2: Onderaannemers Module / Investeerders Module
-- P3: Commerciële logica / MongoDB voor alle uploads
+- P2: Onderaannemers Module
+- P2: Investeerders Module
+- P3: Commerciële logica / abonnementen & betalingen
