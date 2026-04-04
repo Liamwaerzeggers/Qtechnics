@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, Check, Home, Bath, ChefHat, Layers, Wrench, Calendar, User, Mail, Phone, MapPin } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -35,7 +36,7 @@ const timelines = [
 const StartPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     projectTypes: [],
     budget: '',
@@ -100,7 +101,7 @@ const StartPage = () => {
       });
       
       if (response.ok) {
-        setIsSubmitted(true);
+        navigate('/bedankt');
       } else {
         alert('Er is iets misgegaan. Probeer het opnieuw.');
       }
@@ -110,28 +111,6 @@ const StartPage = () => {
     }
     setIsSubmitting(false);
   };
-
-  if (isSubmitted) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="max-w-lg w-full text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check className="h-10 w-10 text-green-600" />
-          </div>
-          <h1 className="text-3xl font-bold text-[#202020] mb-4">Bedankt voor uw aanvraag!</h1>
-          <p className="text-[#202020]/70 mb-8">
-            We hebben uw renovatie-aanvraag ontvangen. Een van onze experts neemt binnen 24 uur contact met u op om uw project te bespreken.
-          </p>
-          <Button 
-            onClick={() => window.location.href = '/'}
-            className="bg-[#3a190b] hover:bg-[#500000] text-white px-6 py-3"
-          >
-            Terug naar home
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">

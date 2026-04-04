@@ -21,6 +21,7 @@ import LocationPage from './components/LocationPage';
 import ServicePage from './components/ServicePage';
 import BlogPage from './components/BlogPage';
 import BlogDetail from './components/BlogDetail';
+import BedanktPage from './components/BedanktPage';
 
 // Component to scroll to top on route change
 const ScrollToTop = () => {
@@ -87,6 +88,9 @@ function App() {
           
           {/* Lead funnel page without header/footer */}
           <Route path="/start" element={<StartPage />} />
+          
+          {/* Thank you / conversion page */}
+          <Route path="/bedankt" element={<MainLayout><BedanktPage /></MainLayout>} />
         </Routes>
       </BrowserRouter>
     </div>

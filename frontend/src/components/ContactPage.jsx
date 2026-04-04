@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Phone, Mail, MapPin, Clock, Send } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Link } from 'react-router-dom';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -15,17 +18,47 @@ const ContactPage = () => {
     message: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Mock submission
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
-    setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+    setIsSubmitting(true);
+    try {
+      const leadData = {
+        projectTypes: ['contact'],
+        budget: 'onbekend',
+        timeline: 'onbekend',
+        description: (formData.subject ? formData.subject + ': ' : '') + formData.message,
+        firstName: formData.name.split(' ')[0] || formData.name,
+        lastName: formData.name.split(' ').slice(1).join(' ') || '',
+        email: formData.email,
+        phone: formData.phone || '',
+        street: '',
+        city: '',
+        postalCode: '',
+      };
+      const response = await fetch(API_URL + '/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(leadData),
+      });
+      if (response.ok) {
+        navigate('/bedankt');
+      } else {
+        setSubmitted(true);
+        setTimeout(() => setSubmitted(false), 3000);
+      }
+    } catch (error) {
+      console.error('Contact submit error:', error);
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 3000);
+    }
+    setIsSubmitting(false);
   };
 
   return (
@@ -128,9 +161,11 @@ const ContactPage = () => {
 
                 <Button 
                   type="submit" 
+                  disabled={isSubmitting}
                   className="bg-[#3a190b] hover:bg-[#500000] text-white px-6 py-3 flex items-center gap-2"
+                  data-testid="contact-submit-btn"
                 >
-                  Verstuur bericht
+                  {isSubmitting ? 'Versturen...' : 'Verstuur bericht'}
                   <Send className="h-4 w-4" />
                 </Button>
               </form>
