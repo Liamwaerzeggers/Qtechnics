@@ -11,25 +11,20 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - MongoDB bestandsopslag (overleeft redeployments)
 - Robuuste financiële herberekening vanuit brondata
 - Offerte regelitem omschrijving bewerken (inline edit)
-- Per-kamer groepering met subtitels en subtotalen (zowel in UI als PDF export)
+- Per-kamer groepering met subtitels en subtotalen (UI + PDF export)
+- Slimme renovatie berekening met correcte plafond afbraak/opbouw scheiding
 
 ## Recent Opgeloste Issues (april 2026)
 ### Offerte Omschrijving Bewerking & Per-Kamer Groepering
-- Omschrijving (description) van offerteregelitems is nu inline bewerkbaar in QuoteDetailPage
-- generate-quote-from-calculation groepeert items per kamer met:
-  - Subtitel rij (donkerrood header met kamernaam)
-  - Subtotaal rij (rood geaccentueerde samenvatting per kamer)
-- Subtitle/subtotal items tellen NIET mee in quote totalen (geen dubbeltelling)
-- PDF export toont kamer-groepering met:
-  - Donkerrode kamer-header rijen
-  - Lichtroze subtotaalrijen per kamer met bedrag
-  - Werkt voor nieuwe offertes (subtitle items) EN bestaande offertes (parsing van kamer-prefix)
+- Omschrijving van offerteregelitems is nu inline bewerkbaar
+- Items worden per kamer gegroepeerd met subtitel en subtotaal
+- PDF export toont kamer-groepering met donkerrode headers en subtotalen
+- Werkt voor nieuwe EN bestaande offertes
 
-### Financieel Tab - Brondata Berekening
-- Frontend berekent ALTIJD vanuit brondata (quotes + legacy docs + invoice uploads)
-
-### Aankoop Factuur Upload - Handmatig Bedrag
-- PDF upload + handmatig bedrag invoer (incl. BTW) + omschrijving
+### Plafond Dubbele Afbraak Bug
+- find_work_item_price zocht "gyproc" en vond "Afbraak plafond gyproc" als eerste match
+- Opgelost met exclude_pattern parameter: afbraak items worden nu overgeslagen bij opbouw-zoekactie
+- Resultaat: correct afbraak plafond (€25/m²) + opbouw witte gyproc (€150/m²)
 
 ## Bekende Issues
 - P1: Taaktoewijzing fout (user verificatie pending)

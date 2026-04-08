@@ -9999,11 +9999,15 @@ async def update_work_item_label(
 # --- Renovation Calculator ---
 
 # Helper function to find work item price by title pattern
-def find_work_item_price(work_items, title_pattern, default_price, default_unit="m²"):
+def find_work_item_price(work_items, title_pattern, default_price, default_unit="m²", exclude_pattern=None):
     """Find a work item by title pattern (case-insensitive partial match)"""
     pattern_lower = title_pattern.lower()
+    exclude_lower = exclude_pattern.lower() if exclude_pattern else None
     for item in work_items:
-        if pattern_lower in item.get("title", "").lower():
+        item_title = item.get("title", "").lower()
+        if pattern_lower in item_title:
+            if exclude_lower and exclude_lower in item_title:
+                continue
             return {
                 "id": item.get("id"),
                 "title": item.get("title"),
@@ -10431,8 +10435,8 @@ async def _perform_renovation_calculation(rooms):
         ))
         room_subtotal += afbraak_plafond_total
         
-        # Nieuw plafond gyproc
-        plafond_gyproc_info = find_work_item_price(plafond_items, "gyproc", DEFAULT_PRICES["plafond_gyproc"])
+        # Nieuw plafond gyproc (exclude afbraak items)
+        plafond_gyproc_info = find_work_item_price(plafond_items, "gyproc", DEFAULT_PRICES["plafond_gyproc"], exclude_pattern="afbraak")
         plafond_gyproc_total = ceiling_area * plafond_gyproc_info["price"]
         room_calc.ceiling_items.append(CalculationItem(
             work_item_id=plafond_gyproc_info["id"],
