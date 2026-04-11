@@ -22,6 +22,8 @@ import ServicePage from './components/ServicePage';
 import BlogPage from './components/BlogPage';
 import BlogDetail from './components/BlogDetail';
 import BedanktPage from './components/BedanktPage';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import AlgemeneVoorwaarden from './components/AlgemeneVoorwaarden';
 
 // Component to scroll to top on route change
 const ScrollToTop = () => {
@@ -91,6 +93,8 @@ function App() {
           
           {/* Thank you / conversion page */}
           <Route path="/bedankt" element={<MainLayout><BedanktPage /></MainLayout>} />
+          <Route path="/privacybeleid" element={<MainLayout><PrivacyPolicy /></MainLayout>} />
+          <Route path="/algemene-voorwaarden" element={<MainLayout><AlgemeneVoorwaarden /></MainLayout>} />
         </Routes>
       </BrowserRouter>
     </div>

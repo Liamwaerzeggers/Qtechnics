@@ -565,12 +565,18 @@ async def generate_blog_with_ai(topic: str) -> dict:
     chat = LlmChat(
         api_key=EMERGENT_LLM_KEY,
         session_id=f"blog-gen-{uuid.uuid4()}",
-        system_message="""Je bent een ervaren copywriter gespecialiseerd in renovatie en interieurdesign in Vlaanderen.
-Je schrijft SEO-geoptimaliseerde blogartikelen in het Nederlands voor Max Q, een renovatiebedrijf uit Tessenderlo-Ham met 35+ jaar ervaring.
-Schrijf in een professionele maar toegankelijke stijl. Gebruik concrete voorbeelden en praktische tips.
-Focus op de Belgische markt (Limburg, Antwerpen, Vlaams-Brabant).
-Vermeld subtiel dat Max Q specialist is in renovaties met een sterke technische basis.
-Gebruik GEEN emoji's."""
+        system_message="""Je bent een ervaren SEO-copywriter gespecialiseerd in renovatie en interieurdesign in Vlaanderen.
+Je schrijft voor Max Q, een renovatiebedrijf met 9 medewerkers uit Ham (Tessenderlo-Ham) met 25+ jaar ervaring.
+Je doel is LEADS genereren en BEZOEKERS naar de website trekken via SEO.
+
+SCHRIJFREGELS:
+- Schrijf in het Nederlands, professioneel maar toegankelijk
+- Gebruik concrete voorbeelden, prijsindicaties en praktische tips
+- Focus op de Belgische markt (Limburg, Kempen, Vlaams-Brabant)
+- Verwerk de zoekwoorden natuurlijk in de tekst (koppen, eerste alinea, tussenkopjes)
+- Eindig ALTIJD met een call-to-action: "Wilt u meer weten? Vraag een gratis en vrijblijvend adviesgesprek aan bij Max Q via <a href='https://maxq.be/start'>maxq.be/start</a> of bel <a href='tel:+32488152028'>+32 488 15 20 28</a>."
+- Voeg 1-2 interne links toe naar relevante diensten (bijv. <a href='https://maxq.be/diensten/badkamer-renoveren'>badkamer renoveren</a>)
+- Gebruik GEEN emoji's"""
     )
     
     year = datetime.now().year
@@ -655,22 +661,27 @@ async def get_blog(slug: str):
 
 @api_router.post("/blogs/generate")
 async def generate_blog(background_tasks: BackgroundTasks):
-    """Generate and publish a new AI blog post"""
+    """Generate and publish a new AI blog post, prioritizing custom topics"""
     if not EMERGENT_LLM_KEY:
         raise HTTPException(status_code=500, detail="LLM key niet geconfigureerd")
     
-    existing = await db.blogs.find({}, {"_id": 0}).to_list(100)
-    used_topics = [b.get('title', '') for b in existing]
+    # Check for custom topics first
+    custom = await db.custom_topics.find_one({"used": {"$ne": True}}, {"_id": 0})
     
-    available = [t for t in BLOG_TOPICS if not any(
-        slugify(t.replace("{year}", str(datetime.now().year)).replace("{count}", "7")) == slugify(u) 
-        for u in used_topics
-    )]
-    
-    if not available:
-        available = BLOG_TOPICS
-    
-    topic = random.choice(available)
+    if custom:
+        topic = custom.get('topic', '')
+        # Mark as used
+        await db.custom_topics.update_one({"id": custom['id']}, {"$set": {"used": True}})
+    else:
+        existing = await db.blogs.find({}, {"_id": 0}).to_list(100)
+        used_topics = [b.get('title', '') for b in existing]
+        available = [t for t in BLOG_TOPICS if not any(
+            slugify(t.replace("{year}", str(datetime.now().year)).replace("{count}", "7")) == slugify(u) 
+            for u in used_topics
+        )]
+        if not available:
+            available = BLOG_TOPICS
+        topic = random.choice(available)
     
     try:
         blog_data = await generate_blog_with_ai(topic)
@@ -720,6 +731,37 @@ async def delete_blog(blog_id: str):
         raise HTTPException(status_code=404, detail="Blog niet gevonden")
     await update_static_blog_sitemap()
     return {"message": "Blog verwijderd"}
+
+# ============ CUSTOM BLOG TOPICS ============
+
+@api_router.get("/blog-topics")
+async def get_blog_topics():
+    """Get all custom blog topics (unused first)"""
+    topics = await db.custom_topics.find({"used": {"$ne": True}}, {"_id": 0}).to_list(100)
+    return topics
+
+@api_router.post("/blog-topics")
+async def add_blog_topic(data: dict):
+    """Add a custom blog topic"""
+    topic_text = data.get('topic', '').strip()
+    if not topic_text:
+        raise HTTPException(status_code=400, detail="Topic is verplicht")
+    doc = {
+        "id": str(uuid.uuid4()),
+        "topic": topic_text,
+        "used": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.custom_topics.insert_one(doc)
+    return {"id": doc["id"], "topic": doc["topic"]}
+
+@api_router.delete("/blog-topics/{topic_id}")
+async def delete_blog_topic(topic_id: str):
+    """Delete a custom blog topic"""
+    result = await db.custom_topics.delete_one({"id": topic_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Topic niet gevonden")
+    return {"message": "Topic verwijderd"}
 
 async def auto_generate_daily_blog():
     """Background task that generates a blog post every 24 hours"""

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, LogOut, Save, X, Upload, Image as ImageIcon, Users, FolderOpen, Mail, Phone, MapPin, Calendar, Euro, Clock, Eye, ExternalLink, ArrowRight } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, Save, X, Upload, Image as ImageIcon, Users, FolderOpen, Mail, Phone, MapPin, Calendar, Euro, Clock, Eye, ExternalLink, ArrowRight, FileText } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import BlogAdmin from './BlogAdmin';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -481,6 +482,18 @@ const AdminDashboard = () => {
                 <span className="bg-[#3a190b] text-white text-xs px-2 py-0.5 rounded-full">{leads.length}</span>
               )}
             </button>
+            <button
+              onClick={() => setActiveTab('blog')}
+              className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 ${
+                activeTab === 'blog' 
+                  ? 'text-[#3a190b] border-[#3a190b]' 
+                  : 'text-gray-500 border-transparent hover:text-[#3a190b]'
+              }`}
+              data-testid="blog-tab"
+            >
+              <FileText className="h-5 w-5" />
+              Blog
+            </button>
           </div>
         </div>
       </div>
@@ -553,6 +566,9 @@ const AdminDashboard = () => {
             )}
           </>
         )}
+
+        {/* Blog Tab */}
+        {activeTab === 'blog' && <BlogAdmin />}
       </main>
 
       {/* Project Dialog */}
