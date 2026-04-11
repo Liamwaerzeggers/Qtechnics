@@ -1,9 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, MapPin } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MapPin } from 'lucide-react';
 import { Button } from './ui/button';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+const BeforeAfterPair = ({ pair, getUrl }) => (
+  <div className="flex items-center gap-3 md:gap-6">
+    <div className="flex-1 relative">
+      <img
+        src={getUrl(pair.before)}
+        alt="Voor"
+        className="w-full aspect-[4/3] object-cover rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.15)]"
+      />
+      <span className="absolute top-3 left-3 bg-[#3a190b]/85 text-white text-xs font-bold px-3 py-1 rounded-full tracking-wide">
+        VOOR
+      </span>
+    </div>
+    <div className="flex-shrink-0">
+      <ArrowRight className="h-6 w-6 md:h-8 md:w-8 text-[#3a190b]" />
+    </div>
+    <div className="flex-1 relative">
+      <img
+        src={getUrl(pair.after)}
+        alt="Na"
+        className="w-full aspect-[4/3] object-cover rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.15)]"
+      />
+      <span className="absolute top-3 left-3 bg-green-700/85 text-white text-xs font-bold px-3 py-1 rounded-full tracking-wide">
+        NA
+      </span>
+    </div>
+  </div>
+);
+
+const BeforeAfterSection = ({ pairs, getUrl }) => {
+  if (!pairs || pairs.length === 0) return null;
+  const validPairs = pairs.filter(p => p.before && p.after);
+  if (validPairs.length === 0) return null;
+
+  return (
+    <div className="mt-12" data-testid="before-after-section">
+      <h2 className="text-2xl font-bold mb-6">Voor & Na</h2>
+      <div className="space-y-8">
+        {validPairs.map((pair, i) => (
+          <BeforeAfterPair key={i} pair={pair} getUrl={getUrl} />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const GalleryGrid = ({ images, getUrl }) => {
   if (!images || images.length === 0) return null;
@@ -131,6 +176,7 @@ const ProjectDetail = () => {
               </div>
             )}
             
+            <BeforeAfterSection pairs={project.beforeAfterImages} getUrl={getUrl} />
             <GalleryGrid images={project.galleryImages} getUrl={getUrl} />
           </div>
 

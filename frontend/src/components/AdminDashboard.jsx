@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, LogOut, Save, X, Upload, Image as ImageIcon, Users, FolderOpen, Mail, Phone, MapPin, Calendar, Euro, Clock, Eye, ExternalLink } from 'lucide-react';
+import { Plus, Edit, Trash2, LogOut, Save, X, Upload, Image as ImageIcon, Users, FolderOpen, Mail, Phone, MapPin, Calendar, Euro, Clock, Eye, ExternalLink, ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -159,6 +159,8 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const mainImageRef = useRef(null);
   const galleryImageRef = useRef(null);
+  const beforeImageRef = useRef(null);
+  const afterImageRef = useRef(null);
   
   // Tab state
   const [activeTab, setActiveTab] = useState('projects');
@@ -183,6 +185,8 @@ const AdminDashboard = () => {
   const [fullDesc, setFullDesc] = useState('');
   const [mainImage, setMainImage] = useState('');
   const [galleryImages, setGalleryImages] = useState([]);
+  const [beforeAfterImages, setBeforeAfterImages] = useState([]);
+  const [baUploadIndex, setBaUploadIndex] = useState(null);
   const [featured, setFeatured] = useState(false);
 
   const loadProjects = useCallback(async () => {
@@ -275,6 +279,42 @@ const AdminDashboard = () => {
     setGalleryImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const addBeforeAfterPair = () => {
+    setBeforeAfterImages(prev => [...prev, { before: '', after: '' }]);
+  };
+
+  const handleBeforeUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || baUploadIndex === null) return;
+    setUploading(true);
+    try {
+      const result = await uploadFile(file);
+      setBeforeAfterImages(prev => prev.map((pair, i) => i === baUploadIndex ? { ...pair, before: result.url } : pair));
+    } catch (error) {
+      alert('Fout bij uploaden');
+    }
+    setUploading(false);
+    setBaUploadIndex(null);
+  };
+
+  const handleAfterUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || baUploadIndex === null) return;
+    setUploading(true);
+    try {
+      const result = await uploadFile(file);
+      setBeforeAfterImages(prev => prev.map((pair, i) => i === baUploadIndex ? { ...pair, after: result.url } : pair));
+    } catch (error) {
+      alert('Fout bij uploaden');
+    }
+    setUploading(false);
+    setBaUploadIndex(null);
+  };
+
+  const removeBeforeAfterPair = (index) => {
+    setBeforeAfterImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const resetForm = () => {
     setTitle('');
     setCategory('totaalproject');
@@ -283,6 +323,8 @@ const AdminDashboard = () => {
     setFullDesc('');
     setMainImage('');
     setGalleryImages([]);
+    setBeforeAfterImages([]);
+    setBaUploadIndex(null);
     setFeatured(false);
   };
 
@@ -301,6 +343,7 @@ const AdminDashboard = () => {
     setFullDesc(project.fullDescription || '');
     setMainImage(project.mainImage || '');
     setGalleryImages(project.galleryImages || []);
+    setBeforeAfterImages(project.beforeAfterImages || []);
     setFeatured(project.featured || false);
     setIsDialogOpen(true);
   };
@@ -340,7 +383,8 @@ const AdminDashboard = () => {
       if (projectId) {
         const params = new URLSearchParams({
           mainImage,
-          galleryImages: JSON.stringify(galleryImages)
+          galleryImages: JSON.stringify(galleryImages),
+          beforeAfterImages: JSON.stringify(beforeAfterImages)
         });
         await fetch(`${BACKEND_URL}/api/projects/${projectId}/images?${params}`, { method: 'PUT' });
       }
@@ -581,6 +625,56 @@ const AdminDashboard = () => {
                 </div>
               </div>
               <input ref={galleryImageRef} type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="hidden" />
+            </div>
+
+            <div>
+              <Label>Voor & Na foto's (optioneel)</Label>
+              <p className="text-xs text-gray-500 mb-2">Upload foto paren om de transformatie te tonen</p>
+              <div className="space-y-3 mt-2">
+                {beforeAfterImages.map((pair, i) => (
+                  <div key={i} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-gray-500 mb-1">VOOR</p>
+                      {pair.before ? (
+                        <img src={getImageUrl(pair.before)} alt="Voor" className="h-20 w-full object-cover rounded" />
+                      ) : (
+                        <div
+                          onClick={() => { setBaUploadIndex(i); beforeImageRef.current?.click(); }}
+                          className="h-20 border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer hover:border-[#3a190b]"
+                        >
+                          <Upload className="h-4 w-4 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <ArrowRight className="h-5 w-5 text-[#3a190b] flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-gray-500 mb-1">NA</p>
+                      {pair.after ? (
+                        <img src={getImageUrl(pair.after)} alt="Na" className="h-20 w-full object-cover rounded" />
+                      ) : (
+                        <div
+                          onClick={() => { setBaUploadIndex(i); afterImageRef.current?.click(); }}
+                          className="h-20 border-2 border-dashed border-gray-300 rounded flex items-center justify-center cursor-pointer hover:border-[#3a190b]"
+                        >
+                          <Upload className="h-4 w-4 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <button onClick={() => removeBeforeAfterPair(i)} className="text-red-500 hover:text-red-700 flex-shrink-0">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addBeforeAfterPair}
+                  className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-[#3a190b] hover:text-[#3a190b] flex items-center justify-center gap-1"
+                >
+                  <Plus className="h-4 w-4" /> Voor & Na paar toevoegen
+                </button>
+              </div>
+              <input ref={beforeImageRef} type="file" accept="image/*" onChange={handleBeforeUpload} className="hidden" />
+              <input ref={afterImageRef} type="file" accept="image/*" onChange={handleAfterUpload} className="hidden" />
             </div>
 
             <div className="flex items-center gap-2">
