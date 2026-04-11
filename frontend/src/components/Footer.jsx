@@ -88,6 +88,7 @@ const Footer = () => {
             <div className="flex space-x-6 mt-4 md:mt-0">
               <Link to="/admin" onClick={scrollToTop} className="hover:text-white transition-colors">Admin</Link>
               <Link to="/privacybeleid" onClick={scrollToTop} className="hover:text-white transition-colors">Privacybeleid</Link>
+              <Link to="/cookiebeleid" onClick={scrollToTop} className="hover:text-white transition-colors">Cookiebeleid</Link>
               <Link to="/algemene-voorwaarden" onClick={scrollToTop} className="hover:text-white transition-colors">Algemene voorwaarden</Link>
             </div>
           </div>

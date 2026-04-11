@@ -53,7 +53,7 @@ const CookieBanner = () => {
             <p className="text-sm text-gray-600 mb-4">
               Wij gebruiken cookies om uw ervaring te verbeteren en ons websiteverkeer te analyseren. 
               U kiest zelf welke cookies u toestaat. 
-              Lees meer in ons <Link to="/privacybeleid" className="text-[#3a190b] underline">privacybeleid</Link>.
+              Lees meer in ons <Link to="/cookiebeleid" className="text-[#3a190b] underline">cookiebeleid</Link>.
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <button

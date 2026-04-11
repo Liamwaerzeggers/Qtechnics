@@ -25,6 +25,7 @@ import BedanktPage from './components/BedanktPage';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import AlgemeneVoorwaarden from './components/AlgemeneVoorwaarden';
 import CookieBanner from './components/CookieBanner';
+import CookiePolicy from './components/CookiePolicy';
 
 // Component to scroll to top on route change
 const ScrollToTop = () => {
@@ -97,6 +98,7 @@ function App() {
           <Route path="/bedankt" element={<MainLayout><BedanktPage /></MainLayout>} />
           <Route path="/privacybeleid" element={<MainLayout><PrivacyPolicy /></MainLayout>} />
           <Route path="/algemene-voorwaarden" element={<MainLayout><AlgemeneVoorwaarden /></MainLayout>} />
+          <Route path="/cookiebeleid" element={<MainLayout><CookiePolicy /></MainLayout>} />
         </Routes>
       </BrowserRouter>
     </div>
