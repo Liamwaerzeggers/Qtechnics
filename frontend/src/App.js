@@ -60,8 +60,10 @@ axios.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('session_token');
+      // Clear stale cookies that may cause auth conflicts
+      document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure';
+      document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       console.warn('Session expired - redirecting to login');
-      // Only redirect if not already on login page
       if (window.location.pathname !== '/') {
         window.location.href = '/';
       }
@@ -129,13 +131,15 @@ function AuthProvider({ children }) {
     try {
       await axios.post(`${API}/auth2/logout`);
     } catch (error) {
-      // Try old endpoint
       try {
         await axios.post(`${API}/auth/logout`);
       } catch (e) {}
     }
     localStorage.removeItem('auth_token');
     localStorage.removeItem('session_token');
+    // Clear any lingering session cookies that might interfere with future logins
+    document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure';
+    document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     setUser(null);
     toast.success('Uitgelogd');
   };
@@ -322,6 +326,12 @@ function LandingPage() {
     e.preventDefault();
     setLoggingIn(true);
     
+    // Clear any old cookies/tokens before login attempt
+    document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure';
+    document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('session_token');
+    
     try {
       const response = await axios.post(`${API}/auth2/login`, {
         username: loginUsername.trim(),
@@ -329,7 +339,6 @@ function LandingPage() {
       });
       
       if (response.data.success && response.data.token) {
-        // Store under both keys for compatibility
         localStorage.setItem('auth_token', response.data.token);
         localStorage.setItem('session_token', response.data.token);
         setUser(response.data.user);

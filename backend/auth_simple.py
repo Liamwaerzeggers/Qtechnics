@@ -57,8 +57,9 @@ async def simple_login(data: LoginRequest):
         if password in valid_passwords:
             token = secrets.token_urlsafe(32)
             
-            # Store session in database
+            # Store session in database - clean up old sessions first to prevent buildup
             db = get_db()
+            await db.user_sessions.delete_many({"user_id": admin["id"]})
             await db.user_sessions.insert_one({
                 "user_id": admin["id"],
                 "session_token": token,

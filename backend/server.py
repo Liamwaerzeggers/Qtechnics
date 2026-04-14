@@ -284,7 +284,7 @@ class Project(BaseModel):
     lead_id: Optional[str] = None  # NEW: Optional link to lead
     quote_id: Optional[str] = None  # BLIJFT: Backward compatible (was verplicht)
     name: str
-    status: str = "gepland"  # eerste bezoek, offerte in opmaak, gepland, in uitvoering, voltooid, niet verkocht
+    status: str = "nieuwe_lead"  # nieuwe_lead, eerste_bezoek, offerte_gemaakt, offerte_voorgesteld, verkocht, in_uitvoering, afgerond, niet_verkocht
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     notes: Optional[str] = None
@@ -1126,13 +1126,20 @@ HARDCODED_ADMINS = {
 }
 
 async def get_current_user(session_token: Optional[str] = Cookie(None), authorization: Optional[str] = Header(None)) -> User:
-    """Get current user from session token (cookie or header)"""
-    token = session_token
+    """Get current user from session token (header preferred over cookie)"""
+    token = None
     
-    if not token and authorization:
+    # IMPORTANT: Prefer Authorization header over cookie
+    # The auth2/login module uses localStorage tokens (via Authorization header)
+    # Old cookies may linger and cause auth failures
+    if authorization:
         parts = authorization.split()
         if len(parts) == 2 and parts[0].lower() == "bearer":
             token = parts[1]
+    
+    # Fall back to cookie only if no Authorization header
+    if not token and session_token:
+        token = session_token
     
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -1625,10 +1632,10 @@ async def update_quote(quote_id: str, quote_update: QuoteUpdate, current_user: U
         
         # If quote is marked as sold, update project status and create celebration
         if update_data.get("is_sold") == True and project:
-            # Update project status to "in uitvoering"
+            # Update project status to "verkocht"
             await db.projects.update_one(
                 {"id": project["id"]},
-                {"$set": {"status": "in uitvoering"}}
+                {"$set": {"status": "verkocht"}}
             )
             
             # Create celebration record for all admins
@@ -1644,7 +1651,7 @@ async def update_quote(quote_id: str, quote_update: QuoteUpdate, current_user: U
                 "seen_by": []  # Track which users have seen this celebration
             }
             await db.celebrations.insert_one(celebration)
-            logger.info(f"Quote {quote_id} marked as sold, project {project['id']} status set to 'in uitvoering'")
+            logger.info(f"Quote {quote_id} marked as sold, project {project['id']} status set to 'verkocht'")
             
             # Push notification for new sale
             amount = existing_quote.get("total_incl_vat", 0)
@@ -3011,13 +3018,42 @@ async def reactivate_project(project_id: str, current_user: User = Depends(get_c
     await db.projects.update_one(
         {"id": project_id},
         {"$set": {
-            "status": "offerte in opmaak",
+            "status": "nieuwe_lead",
             "not_sold_reason": None,
             "not_sold_date": None
         }}
     )
     
     return {"message": "Project opnieuw geactiveerd"}
+
+@api_router.put("/projects/{project_id}/quick-status")
+async def update_project_status(project_id: str, data: dict, current_user: User = Depends(get_current_user)):
+    """Quick status update for a project from the project tiles"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can update project status")
+    
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project niet gevonden")
+    
+    new_status = data.get("status", "").strip()
+    valid_statuses = ["nieuwe_lead", "eerste_bezoek", "offerte_gemaakt", "offerte_voorgesteld", "verkocht", "in_uitvoering", "afgerond", "niet_verkocht"]
+    if new_status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Ongeldige status. Kies uit: {', '.join(valid_statuses)}")
+    
+    update_fields = {"status": new_status}
+    
+    # If status changes to verkocht, also set is_sold on project
+    if new_status == "verkocht":
+        update_fields["is_sold"] = True
+        update_fields["not_sold_reason"] = None
+        update_fields["not_sold_date"] = None
+    elif new_status == "niet_verkocht":
+        update_fields["is_sold"] = False
+    
+    await db.projects.update_one({"id": project_id}, {"$set": update_fields})
+    
+    return {"message": f"Status bijgewerkt naar {new_status}", "status": new_status}
 
 @api_router.post("/projects/{project_id}/invoices")
 async def add_invoice_to_project(project_id: str, invoice: InvoiceUpload, current_user: User = Depends(get_current_user)):

@@ -293,7 +293,7 @@ export default function ProjectDetailPage() {
         { headers: getAuthHeaders() }
       );
       if (isSold) {
-        toast.success('🎉 Offerte gemarkeerd als verkocht! Project status is nu "in uitvoering"');
+        toast.success('Offerte gemarkeerd als verkocht! Project status is nu "Verkocht"');
       } else {
         toast.success('Offerte niet meer als verkocht gemarkeerd');
       }
@@ -313,7 +313,7 @@ export default function ProjectDetailPage() {
         { headers: getAuthHeaders() }
       );
       if (isSold) {
-        toast.success('🎉 Offerte gemarkeerd als verkocht! Project status is nu "in uitvoering"');
+        toast.success('Offerte gemarkeerd als verkocht! Project status is nu "Verkocht"');
       } else {
         toast.success('Offerte niet meer als verkocht gemarkeerd');
       }

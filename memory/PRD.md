@@ -12,19 +12,34 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Robuuste financiële herberekening vanuit brondata
 - Offerte regelitem omschrijving bewerken (inline edit)
 - Per-kamer groepering met subtitels en subtotalen (UI + PDF export)
+- Project status workflow met 8 statussen, kleurcodes, tabs en zoekfunctie
 - Slimme renovatie berekening met correcte plafond afbraak/opbouw scheiding
 
 ## Recent Opgeloste Issues (april 2026)
-### Offerte Omschrijving Bewerking & Per-Kamer Groepering
-- Omschrijving van offerteregelitems is nu inline bewerkbaar
-- Items worden per kamer gegroepeerd met subtitel en subtotaal
-- PDF export toont kamer-groepering met donkerrode headers en subtotalen
-- Werkt voor nieuwe EN bestaande offertes
+### Project Status & Filtering
+- 8 project statussen: Nieuwe Lead, Eerste Bezoek, Offerte Gemaakt, Offerte Voorgesteld, Verkocht, In Uitvoering, Afgerond, Niet Verkocht
+- Horizontale status tabs met aantallen onder sales leaderboard
+- Kleurgecodeerde tegels met gekleurde linkerrand
+- Status dropdown op elke tegel voor snel wijzigen
+- Zoekbalk voor projecten op naam/adres
+- "Verkocht" status gekoppeld aan bestaande sales mechanisme
+- Legacy status mapping voor bestaande projecten
+- Backend PUT /api/projects/{id}/quick-status endpoint
+
+### Auth Bug Fix - Cookie/Token Conflict
+- Root cause: get_current_user gaf prioriteit aan (mogelijk verlopen) cookies boven geldige Authorization headers
+- Fix: Authorization header heeft nu voorrang op cookies
+- Oude sessies worden opgeruimd bij nieuwe login
+- Cookies worden gewist bij uitloggen en bij 401 responses
+- Frontend verwijdert oude cookies/tokens voor elke login poging
+
+### Offerte Omschrijving & Per-Kamer Groepering
+- Omschrijving inline bewerkbaar in QuoteDetailPage
+- generate-quote-from-calculation groepeert per kamer met subtitels/subtotalen
+- PDF export toont kamer-groepering met donkerrode headers
 
 ### Plafond Dubbele Afbraak Bug
-- find_work_item_price zocht "gyproc" en vond "Afbraak plafond gyproc" als eerste match
-- Opgelost met exclude_pattern parameter: afbraak items worden nu overgeslagen bij opbouw-zoekactie
-- Resultaat: correct afbraak plafond (€25/m²) + opbouw witte gyproc (€150/m²)
+- find_work_item_price exclude_pattern voorkomt dubbele afbraak match
 
 ## Bekende Issues
 - P1: Taaktoewijzing fout (user verificatie pending)
