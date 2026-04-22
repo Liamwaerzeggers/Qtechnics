@@ -50,6 +50,13 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Werkt op desktop én mobiel, ververst elke 30s
 - data-testid: `task-count-badge-desktop` en `task-count-badge`
 
+### Browser Push Notificaties voor Taken (feb 2026)
+- VAPID key converter fix: raw 32-byte scalar base64url (pywebpush compatibel)
+- Nieuwe `send_user_push(user_id, ...)` helper (push naar specifieke gebruiker)
+- Push bij `POST /team-tasks` (direct toegewezen) + `PUT /team-tasks/{id}/assign`
+- Service Worker + subscription ook geactiveerd voor workers (naast admins)
+- Automatische opruiming van verlopen (410) en corrupte (base64) subscriptions
+
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 

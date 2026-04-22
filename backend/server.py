@@ -2071,18 +2071,22 @@ VAPID_CLAIM_EMAIL = os.environ.get('VAPID_CLAIM_EMAIL', 'mailto:liam.waerzeggers
 
 # Convert base64 DER to PEM for pywebpush
 _vapid_private_pem = None
+_vapid_private_raw_b64 = None
 if VAPID_PRIVATE_KEY_B64:
     try:
         from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption, load_der_private_key
         _der_bytes = base64.urlsafe_b64decode(VAPID_PRIVATE_KEY_B64 + '==')
         _priv_key = load_der_private_key(_der_bytes, password=None)
         _vapid_private_pem = _priv_key.private_bytes(Encoding.PEM, PrivateFormat.PKCS8, NoEncryption()).decode()
+        # Extract raw 32-byte scalar as base64url (format expected by pywebpush)
+        _raw_scalar = _priv_key.private_numbers().private_value.to_bytes(32, 'big')
+        _vapid_private_raw_b64 = base64.urlsafe_b64encode(_raw_scalar).rstrip(b'=').decode()
     except Exception as e:
         logging.getLogger("server").warning(f"VAPID key load failed: {e}")
 
 async def send_admin_push(title: str, body: str, url: str = "/dashboard", tag: str = "maxq"):
     """Send push notification to all admin subscriptions"""
-    if not _vapid_private_pem:
+    if not _vapid_private_raw_b64:
         return
     subs = await db.push_subscriptions.find({"role": "admin"}, {"_id": 0}).to_list(100)
     if not subs:
@@ -2093,7 +2097,7 @@ async def send_admin_push(title: str, body: str, url: str = "/dashboard", tag: s
             webpush(
                 subscription_info=sub_doc["subscription"],
                 data=payload,
-                vapid_private_key=_vapid_private_pem,
+                vapid_private_key=_vapid_private_raw_b64,
                 vapid_claims={"sub": VAPID_CLAIM_EMAIL}
             )
         except WebPushException as e:
@@ -2101,7 +2105,35 @@ async def send_admin_push(title: str, body: str, url: str = "/dashboard", tag: s
                 await db.push_subscriptions.delete_one({"user_id": sub_doc.get("user_id"), "endpoint": sub_doc.get("endpoint")})
             logger.warning(f"Push failed: {e}")
         except Exception as e:
+            if "base64" in str(e).lower() or "deserialize" in str(e).lower():
+                await db.push_subscriptions.delete_one({"user_id": sub_doc.get("user_id"), "endpoint": sub_doc.get("endpoint")})
             logger.warning(f"Push error: {e}")
+
+async def send_user_push(user_id: str, title: str, body: str, url: str = "/tasks", tag: str = "maxq-task"):
+    """Send push notification to all subscriptions of a specific user"""
+    if not _vapid_private_raw_b64 or not user_id:
+        return
+    subs = await db.push_subscriptions.find({"user_id": user_id}, {"_id": 0}).to_list(50)
+    if not subs:
+        return
+    payload = json.dumps({"title": title, "body": body, "url": url, "tag": tag})
+    for sub_doc in subs:
+        try:
+            webpush(
+                subscription_info=sub_doc["subscription"],
+                data=payload,
+                vapid_private_key=_vapid_private_raw_b64,
+                vapid_claims={"sub": VAPID_CLAIM_EMAIL}
+            )
+        except WebPushException as e:
+            if e.response and e.response.status_code in (404, 410):
+                await db.push_subscriptions.delete_one({"user_id": sub_doc.get("user_id"), "endpoint": sub_doc.get("endpoint")})
+            logger.warning(f"User push failed: {e}")
+        except Exception as e:
+            # Remove corrupt/invalid subscriptions (bad base64 keys etc.)
+            if "base64" in str(e).lower() or "deserialize" in str(e).lower():
+                await db.push_subscriptions.delete_one({"user_id": sub_doc.get("user_id"), "endpoint": sub_doc.get("endpoint")})
+            logger.warning(f"User push error: {e}")
 
 @api_router.post("/push/subscribe")
 async def push_subscribe(request: Request, current_user: User = Depends(get_current_user)):
@@ -6578,6 +6610,20 @@ async def create_team_task(task_data: TeamTaskCreate, current_user: User = Depen
             task_copy = {**task}
             await send_task_email(task_copy, assignee["email"])
             task["email_sent"] = True
+        
+        # Send browser push notification to assignee
+        try:
+            _context = task.get("project_name") or task.get("lead_name") or ""
+            _body = task["title"] + (f" — {_context}" if _context else "")
+            await send_user_push(
+                user_id=task_data.assigned_to,
+                title="Nieuwe taak toegewezen",
+                body=_body,
+                url="/tasks",
+                tag=f"task-{task['id']}"
+            )
+        except Exception as e:
+            logger.warning(f"Push notify on create failed: {e}")
     
     task_response = {**task}
     await db.team_tasks.insert_one(task)
@@ -6630,6 +6676,20 @@ async def assign_team_task(task_id: str, data: dict, current_user: User = Depend
         task.update(update)
         await send_task_email(task, assignee["email"])
         await db.team_tasks.update_one({"id": task_id}, {"$set": {"email_sent": True}})
+    
+    # Send browser push notification to assignee
+    try:
+        _context = task.get("project_name") or task.get("lead_name") or ""
+        _body = task.get("title", "Nieuwe taak") + (f" — {_context}" if _context else "")
+        await send_user_push(
+            user_id=assignee_id,
+            title="Nieuwe taak toegewezen",
+            body=_body,
+            url="/tasks",
+            tag=f"task-{task_id}"
+        )
+    except Exception as e:
+        logger.warning(f"Push notify on assign failed: {e}")
     
     return {"message": f"Taak toegewezen aan {assignee.get('name', assignee_id)}", **update}
 

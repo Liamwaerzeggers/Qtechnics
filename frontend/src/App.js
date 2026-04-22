@@ -114,9 +114,9 @@ function AuthProvider({ children }) {
     return () => window.removeEventListener('auth-expired', handleAuthExpired);
   }, []);
 
-  // Auto-subscribe admin to push notifications
+  // Auto-subscribe to push notifications (admins receive system alerts, workers + admins receive task assignments)
   useEffect(() => {
-    if (user && user.role === 'admin') {
+    if (user && (user.role === 'admin' || user.role === 'worker')) {
       requestNotificationPermission().then((perm) => {
         if (perm === 'granted') {
           subscribeToPush();
