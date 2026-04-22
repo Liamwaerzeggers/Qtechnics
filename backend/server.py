@@ -6711,13 +6711,29 @@ async def resend_task_email(task_id: str, current_user: User = Depends(get_curre
     if not email:
         raise HTTPException(status_code=400, detail=f"Geen e-mailadres bekend voor {assignee.get('name', task['assigned_to'])}")
 
+    # Pre-flight: specific, actionable error messages
+    if not resend.api_key:
+        raise HTTPException(status_code=503, detail="RESEND_API_KEY ontbreekt op deze server. Voeg hem toe aan de .env van de deployment en herstart de backend.")
+    if not SENDER_EMAIL:
+        raise HTTPException(status_code=503, detail="SENDER_EMAIL ontbreekt op deze server. Voeg SENDER_EMAIL=noreply@maxq.be toe aan de .env.")
+
     result = await send_task_email(task, email)
     if not result:
-        raise HTTPException(status_code=502, detail="Verzenden mislukt — controleer Resend dashboard")
+        # send_task_email swallows exceptions but logs them; fetch the last resend error from the logs is not reliable here.
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                f"Resend weigerde het bericht voor {email}. "
+                "Mogelijke oorzaken: (1) RESEND_API_KEY is ongeldig/verlopen, "
+                f"(2) domein van afzender '{SENDER_EMAIL}' is niet (meer) geverifieerd op resend.com/domains, "
+                "(3) rate limit bereikt. Check resend.com/emails voor details."
+            ),
+        )
 
     await db.team_tasks.update_one({"id": task_id}, {"$set": {"email_sent": True}})
     resend_id = result.get("id") if isinstance(result, dict) else None
     return {"message": f"E-mail opnieuw verzonden naar {email}", "email": email, "resend_id": resend_id}
+
 
 
 @api_router.put("/team-tasks/{task_id}/complete")

@@ -455,7 +455,7 @@ export default function TasksPage() {
       toast.success(res.data.message || 'E-mail opnieuw verzonden');
     } catch (e) {
       const msg = e?.response?.data?.detail || 'Kon e-mail niet opnieuw versturen';
-      toast.error(msg);
+      toast.error(msg, { duration: 10000, style: { maxWidth: '520px' } });
     }
   };
 
