@@ -69,6 +69,7 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Per teamlid: voltooid deze week/maand, openstaand (kleur bij >5), gemiddelde doorlooptijd, totaal voltooid
 - Top-performer badge bij koploper van de week
 - Client-side berekening uit bestaande tasks state (geen extra API calls)
+- **Klik op rij**: filtert takenlijst op dat teamlid (toggle aan/uit); chip bovenaan met aantal en "Wis filter"
 
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld

@@ -93,7 +93,7 @@ function formatLeadTime(hours) {
   return `${(hours / 24).toFixed(1)} d`;
 }
 
-function TeamPerformanceWidget({ tasks }) {
+function TeamPerformanceWidget({ tasks, activeUserId, onUserClick }) {
   const [open, setOpen] = React.useState(true);
   const stats = React.useMemo(() => buildTeamStats(tasks), [tasks]);
 
@@ -144,12 +144,20 @@ function TeamPerformanceWidget({ tasks }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {stats.map((u, idx) => (
+                    {stats.map((u, idx) => {
+                      const isActive = activeUserId === u.id;
+                      return (
                       <tr
                         key={u.id}
                         data-testid={`team-stat-row-${u.id}`}
-                        className="border-t"
-                        style={{ borderColor: '#F3F4F6' }}
+                        onClick={() => onUserClick && onUserClick(u.id)}
+                        className="border-t cursor-pointer transition-colors"
+                        style={{
+                          borderColor: '#F3F4F6',
+                          backgroundColor: isActive ? '#f5e6e6' : 'transparent',
+                        }}
+                        onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = '#F9FAFB'; }}
+                        onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = 'transparent'; }}
                       >
                         <td className="py-3 pr-4">
                           <div className="flex items-center gap-2">
@@ -160,11 +168,16 @@ function TeamPerformanceWidget({ tasks }) {
                               {u.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <div className="font-medium" style={{ color: '#1F2937' }}>
+                              <div className="font-medium flex items-center gap-2" style={{ color: isActive ? '#500000' : '#1F2937' }}>
                                 {u.name}
                                 {idx === 0 && u.doneWeek > 0 && (
-                                  <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}>
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}>
                                     <TrendingUp size={10} /> Top
+                                  </span>
+                                )}
+                                {isActive && (
+                                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: '#500000', color: 'white' }}>
+                                    Gefilterd
                                   </span>
                                 )}
                               </div>
@@ -195,7 +208,8 @@ function TeamPerformanceWidget({ tasks }) {
                           {u.totalCompleted}
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -214,6 +228,7 @@ export default function TasksPage() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('active'); // active, completed, all
+  const [assignedFilter, setAssignedFilter] = useState(null); // null | user_id
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', task_type: 'overig', assigned_to: '', project_id: '' });
 
@@ -273,10 +288,15 @@ export default function TasksPage() {
   };
 
   const filtered = tasks.filter(t => {
-    if (filterStatus === 'active') return !t.completed;
-    if (filterStatus === 'completed') return t.completed;
+    if (filterStatus === 'active' && t.completed) return false;
+    if (filterStatus === 'completed' && !t.completed) return false;
+    if (assignedFilter && t.assigned_to !== assignedFilter) return false;
     return true;
   });
+
+  const activeAssigneeName = assignedFilter
+    ? (tasks.find(t => t.assigned_to === assignedFilter)?.assigned_to_name || assignedFilter)
+    : null;
 
   const statusCounts = { active: tasks.filter(t => !t.completed).length, completed: tasks.filter(t => t.completed).length };
 
@@ -353,7 +373,32 @@ export default function TasksPage() {
         </div>
 
         <div className="space-y-3">
-          {user?.role === 'admin' && <TeamPerformanceWidget tasks={tasks} />}
+          {user?.role === 'admin' && (
+            <TeamPerformanceWidget
+              tasks={tasks}
+              activeUserId={assignedFilter}
+              onUserClick={(uid) => setAssignedFilter(prev => (prev === uid ? null : uid))}
+            />
+          )}
+          {assignedFilter && (
+            <div
+              data-testid="assignee-filter-chip"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg"
+              style={{ backgroundColor: '#f5e6e6', color: '#500000' }}
+            >
+              <Filter size={14} />
+              <span className="text-sm">
+                Gefilterd op <strong>{activeAssigneeName}</strong> ({filtered.length} {filtered.length === 1 ? 'taak' : 'taken'})
+              </span>
+              <button
+                data-testid="clear-assignee-filter"
+                onClick={() => setAssignedFilter(null)}
+                className="ml-auto text-xs font-semibold hover:underline"
+              >
+                Wis filter
+              </button>
+            </div>
+          )}
           {filtered.map(task => {
             const typeColor = TASK_TYPE_COLORS[task.task_type] || TASK_TYPE_COLORS.overig;
             const statusColor = STATUS_COLORS[task.status] || '#6B7280';
