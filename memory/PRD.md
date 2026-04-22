@@ -72,6 +72,14 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - **Klik op rij**: filtert takenlijst op dat teamlid (toggle aan/uit); chip bovenaan met aantal en "Wis filter"
 - **Herverdeel-knop** per teamlid (niet gebonden aan een minimum): dialog met openstaande taken, bulk-toewijzing of per-taak toewijzing aan collega; gebruikt bestaande `/api/team-tasks/{id}/assign` endpoint waardoor push- en e-mailnotificaties automatisch verstuurd worden
 
+### Taak Voltooiings-Animatie (feb 2026)
+- `TaskCompletionCelebration` overlay bij het voltooien van een taak op `/tasks`
+- Canvas-confetti burst (bordeaux/goud/groen/blauw/roze) vanuit onderhoeken
+- Random icoon (Trophy, Sparkles, PartyPopper, Star, Award, Medal, Rocket, Flame) met bounce animatie
+- Mix van 18 Nederlandse berichten: 7 serieuze ("Mission accomplished", "Solide werk") + 11 grappige ("Boem. Taak geveld.", "De concurrentie huilt.")
+- Serieuze berichten: bordeaux kleurpalet; grappige: amber/warm palet
+- Auto-dismiss na 2.2s
+
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 

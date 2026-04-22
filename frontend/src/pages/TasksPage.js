@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, CheckCircle, Trash2, UserPlus, Clock, Filter, BarChart3, ChevronDown, ChevronUp, TrendingUp, Shuffle } from 'lucide-react';
 import { toast } from 'sonner';
+import TaskCompletionCelebration from '../components/TaskCompletionCelebration';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
@@ -389,6 +390,7 @@ export default function TasksPage() {
   const [filterStatus, setFilterStatus] = useState('active'); // active, completed, all
   const [assignedFilter, setAssignedFilter] = useState(null); // null | user_id
   const [redistributeUser, setRedistributeUser] = useState(null);
+  const [celebrating, setCelebrating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', task_type: 'overig', assigned_to: '', project_id: '' });
 
@@ -433,7 +435,7 @@ export default function TasksPage() {
   const handleComplete = async (taskId) => {
     try {
       await axios.put(`${API}/team-tasks/${taskId}/complete`, {}, { headers: getAuthHeaders() });
-      toast.success('Taak voltooid!');
+      setCelebrating(true);
       fetchAll();
     } catch (e) { toast.error('Kon taak niet voltooien'); }
   };
@@ -464,6 +466,7 @@ export default function TasksPage() {
 
   return (
     <DashboardLayout showBackToDashboard={true}>
+      <TaskCompletionCelebration show={celebrating} onDone={() => setCelebrating(false)} />
       <div data-testid="tasks-page" className="space-y-6">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <h1 className="text-3xl font-bold" style={{ fontFamily: 'Space Grotesk, sans-serif', color: '#500000' }}>Taken</h1>
