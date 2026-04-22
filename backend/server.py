@@ -6693,6 +6693,33 @@ async def assign_team_task(task_id: str, data: dict, current_user: User = Depend
     
     return {"message": f"Taak toegewezen aan {assignee.get('name', assignee_id)}", **update}
 
+@api_router.post("/team-tasks/{task_id}/resend-email")
+async def resend_task_email(task_id: str, current_user: User = Depends(get_current_user)):
+    """Admin: re-send the assignment email for a task (useful when the original delivery failed or was missed)."""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins")
+
+    task = await db.team_tasks.find_one({"id": task_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Taak niet gevonden")
+
+    if not task.get("assigned_to"):
+        raise HTTPException(status_code=400, detail="Deze taak heeft geen toegewezen teamlid")
+
+    assignee = await _resolve_user(task["assigned_to"])
+    email = assignee.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail=f"Geen e-mailadres bekend voor {assignee.get('name', task['assigned_to'])}")
+
+    result = await send_task_email(task, email)
+    if not result:
+        raise HTTPException(status_code=502, detail="Verzenden mislukt — controleer Resend dashboard")
+
+    await db.team_tasks.update_one({"id": task_id}, {"$set": {"email_sent": True}})
+    resend_id = result.get("id") if isinstance(result, dict) else None
+    return {"message": f"E-mail opnieuw verzonden naar {email}", "email": email, "resend_id": resend_id}
+
+
 @api_router.put("/team-tasks/{task_id}/complete")
 async def complete_team_task(task_id: str, current_user: User = Depends(get_current_user)):
     """Mark a team task as completed"""

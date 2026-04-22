@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, CheckCircle, Trash2, UserPlus, Clock, Filter, BarChart3, ChevronDown, ChevronUp, TrendingUp, Shuffle } from 'lucide-react';
+import { Plus, CheckCircle, Trash2, UserPlus, Clock, Filter, BarChart3, ChevronDown, ChevronUp, TrendingUp, Shuffle, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import TaskCompletionCelebration from '../components/TaskCompletionCelebration';
 
@@ -449,6 +449,16 @@ export default function TasksPage() {
     } catch (e) { toast.error('Kon taak niet verwijderen'); }
   };
 
+  const handleResendEmail = async (taskId) => {
+    try {
+      const res = await axios.post(`${API}/team-tasks/${taskId}/resend-email`, {}, { headers: getAuthHeaders() });
+      toast.success(res.data.message || 'E-mail opnieuw verzonden');
+    } catch (e) {
+      const msg = e?.response?.data?.detail || 'Kon e-mail niet opnieuw versturen';
+      toast.error(msg);
+    }
+  };
+
   const filtered = tasks.filter(t => {
     if (filterStatus === 'active' && t.completed) return false;
     if (filterStatus === 'completed' && !t.completed) return false;
@@ -613,6 +623,19 @@ export default function TasksPage() {
                       {!task.completed && (task.assigned_to === user?.id || user?.role === 'admin') && (
                         <Button data-testid={`complete-task-${task.id}`} size="sm" className="h-8 text-xs" style={{ backgroundColor: '#10B981' }} onClick={() => handleComplete(task.id)}>
                           <CheckCircle size={14} className="mr-1" /> Voltooid
+                        </Button>
+                      )}
+                      {user?.role === 'admin' && task.assigned_to && (
+                        <Button
+                          data-testid={`resend-email-${task.id}`}
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 hover:bg-blue-50"
+                          style={{ color: '#2563EB' }}
+                          onClick={() => handleResendEmail(task.id)}
+                          title={`Stuur e-mail opnieuw naar ${task.assigned_to_name}`}
+                        >
+                          <Mail size={14} />
                         </Button>
                       )}
                       {user?.role === 'admin' && (
