@@ -28,6 +28,7 @@ import RealtorDashboard from './pages/RealtorDashboard';
 import TenantsPage from './pages/TenantsPage';
 import WorkItemLabelsPage from './pages/WorkItemLabelsPage';
 import MaintenancePage from './pages/MaintenancePage';
+import TasksPage from './pages/TasksPage';
 import MaterialRequestPage from './pages/MaterialRequestPage';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
@@ -862,6 +863,7 @@ function App() {
             <Route path="/tenants" element={<ProtectedRoute><TenantsPage /></ProtectedRoute>} />
             <Route path="/work-labels" element={<ProtectedRoute><WorkItemLabelsPage /></ProtectedRoute>} />
             <Route path="/maintenance" element={<ProtectedRoute><MaintenancePage /></ProtectedRoute>} />
+            <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
             <Route path="/configurator" element={<ProtectedRoute><RoomConfiguratorPrototype /></ProtectedRoute>} />
             <Route path="/realtor" element={<ProtectedRoute><RealtorDashboard /></ProtectedRoute>} />
             <Route path="/investor" element={<ProtectedRoute><RealtorDashboard /></ProtectedRoute>} />

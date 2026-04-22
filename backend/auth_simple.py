@@ -35,6 +35,11 @@ ADMIN_USERS = {
     }
 }
 
+# Exported for team member lookup - keyed by user ID
+HARDCODED_ADMINS = {
+    admin["id"]: admin for admin in ADMIN_USERS.values()
+}
+
 def get_db():
     """Get database connection from main server"""
     from server import db

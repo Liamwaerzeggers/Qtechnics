@@ -1,10 +1,11 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../App';
-import { FileText, FileSpreadsheet, Calendar, Package, Users, LogOut, LayoutDashboard, Menu, X, TrendingUp, UserCog, ShieldCheck, PenTool, Building2, Tag, Wrench, ChevronDown, ShoppingCart } from 'lucide-react';
+import { FileText, FileSpreadsheet, Calendar, Package, Users, LogOut, LayoutDashboard, Menu, X, TrendingUp, UserCog, ShieldCheck, PenTool, Building2, Tag, Wrench, ChevronDown, ShoppingCart, ClipboardList } from 'lucide-react';
 import CelebrationModal from './CelebrationModal';
 import WorkerTaskBanner from './WorkerTaskBanner';
 import MaterialRequestBanner from './MaterialRequestBanner';
+import TaskNotificationBar from './TaskNotificationBar';
 
 export default function DashboardLayout({ children, showBackToDashboard = false }) {
   const { user, logout } = useAuth();
@@ -38,6 +39,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
       { name: 'Financiën', path: '/finances', icon: TrendingUp, testId: 'nav-finances' },
       { name: 'Kalender', path: '/calendar', icon: Calendar, testId: 'nav-calendar' },
       { name: 'Materialen', path: '/materials', icon: Package, testId: 'nav-materials' },
+      { name: 'Taken', path: '/tasks', icon: ClipboardList, testId: 'nav-tasks' },
       { name: 'Bestelcatalogus', path: '/material-catalog', icon: ShoppingCart, testId: 'nav-material-catalog' },
       { name: 'Werk Labels', path: '/work-labels', icon: Tag, testId: 'nav-work-labels' },
     ];
@@ -351,6 +353,7 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
 
           {/* Main Content */}
           <main className="flex-1 min-w-0">
+            <TaskNotificationBar />
             {children}
           </main>
         </div>

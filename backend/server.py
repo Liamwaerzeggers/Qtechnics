@@ -623,6 +623,53 @@ class WorkerTaskCreate(BaseModel):
     text: str
     assigned_to: str
 
+# ============= TEAM TASK SYSTEM =============
+
+TASK_TYPES = [
+    "nieuwe_lead",       # Nieuwe lead binnengekomen → offerte maken
+    "eerste_bezoek",     # Eerste bezoek plannen
+    "offerte_maken",     # Offerte opmaken
+    "materiaal_bestellen",  # Materiaal bestellen
+    "planning",          # Planning maken
+    "opvolging",         # Opvolging klant
+    "administratie",     # Administratieve taak
+    "overig"             # Overig
+]
+
+class TeamTask(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: f"TTASK-{str(uuid.uuid4())[:8].upper()}")
+    title: str
+    description: Optional[str] = None
+    task_type: str = "overig"  # One of TASK_TYPES
+    # Assignment
+    assigned_to: Optional[str] = None  # User ID
+    assigned_to_name: Optional[str] = None
+    assigned_by: Optional[str] = None
+    assigned_by_name: Optional[str] = None
+    # Links
+    project_id: Optional[str] = None
+    project_name: Optional[str] = None
+    lead_id: Optional[str] = None
+    lead_name: Optional[str] = None
+    # Status
+    status: str = "open"  # open, assigned, in_progress, completed
+    completed: bool = False
+    completed_at: Optional[str] = None
+    # Auto-created from lead?
+    auto_created: bool = False
+    # Timestamps
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    email_sent: bool = False
+
+class TeamTaskCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    task_type: str = "overig"
+    assigned_to: Optional[str] = None
+    project_id: Optional[str] = None
+    lead_id: Optional[str] = None
+
 # ============= MULTI-TENANT MODELS =============
 
 # Room binnen een Property
@@ -1461,7 +1508,7 @@ async def create_lead(lead: LeadCreate, current_user: User = Depends(get_current
     project = Project(
         lead_id=lead_obj.id,
         name=f"Project - {lead_obj.name}",
-        status="eerste bezoek",
+        status="nieuwe_lead",
         first_visit_date=datetime.now(timezone.utc),
         user_id=current_user.id
     )
@@ -1472,6 +1519,29 @@ async def create_lead(lead: LeadCreate, current_user: User = Depends(get_current
         project_doc["first_visit_date"] = project_doc["first_visit_date"].isoformat()
     
     await db.projects.insert_one(project_doc)
+    
+    # AUTOMATISCH TEAM TAAK AANMAKEN voor nieuwe lead
+    auto_task = {
+        "id": f"TTASK-{str(uuid.uuid4())[:8].upper()}",
+        "title": f"Nieuwe lead: {lead_obj.name}",
+        "description": f"Nieuwe lead binnengekomen. Adres: {lead_obj.address or 'Onbekend'}. Neem contact op en plan eerste bezoek.",
+        "task_type": "nieuwe_lead",
+        "assigned_to": None,
+        "assigned_to_name": None,
+        "assigned_by": "SYSTEEM",
+        "assigned_by_name": "Systeem",
+        "project_id": project.id,
+        "project_name": project.name,
+        "lead_id": lead_obj.id,
+        "lead_name": lead_obj.name,
+        "status": "open",
+        "completed": False,
+        "completed_at": None,
+        "auto_created": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "email_sent": False
+    }
+    await db.team_tasks.insert_one(auto_task)
     
     # Push notification to admin
     await send_admin_push(
@@ -6359,6 +6429,268 @@ async def get_all_worker_tasks(current_user: User = Depends(get_current_user)):
     
     tasks = await db.worker_tasks.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
     return tasks
+
+# ============= TEAM TASK ENDPOINTS =============
+
+async def send_task_email(task: dict, assignee_email: str):
+    """Send email notification when a task is assigned"""
+    if not resend.api_key:
+        logger.warning("RESEND_API_KEY not configured - skipping task email")
+        return None
+    
+    try:
+        task_type_labels = {
+            "nieuwe_lead": "Nieuwe Lead",
+            "eerste_bezoek": "Eerste Bezoek",
+            "offerte_maken": "Offerte Maken",
+            "materiaal_bestellen": "Materiaal Bestellen",
+            "planning": "Planning",
+            "opvolging": "Opvolging",
+            "administratie": "Administratie",
+            "overig": "Overig"
+        }
+        type_label = task_type_labels.get(task.get("task_type", ""), "Taak")
+        project_name = task.get("project_name", "")
+        lead_name = task.get("lead_name", "")
+        context = project_name or lead_name or ""
+        
+        app_url = os.environ.get('APP_URL', 'https://dashboard.qtechnics.be')
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #3a190b 0%, #7a1f1f 100%); padding: 20px; border-radius: 12px 12px 0 0;">
+                <h2 style="color: white; margin: 0;">Nieuwe taak toegewezen</h2>
+            </div>
+            <div style="padding: 20px; border: 1px solid #E5E7EB; border-top: none; border-radius: 0 0 12px 12px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; color: #6B7280; width: 120px;">Type:</td>
+                        <td style="padding: 8px 0; font-weight: bold;">{type_label}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6B7280;">Taak:</td>
+                        <td style="padding: 8px 0; font-weight: bold;">{task.get('title', '')}</td>
+                    </tr>
+                    {'<tr><td style="padding: 8px 0; color: #6B7280;">Context:</td><td style="padding: 8px 0;">' + context + '</td></tr>' if context else ''}
+                    {'<tr><td style="padding: 8px 0; color: #6B7280;">Omschrijving:</td><td style="padding: 8px 0;">' + task.get('description', '') + '</td></tr>' if task.get('description') else ''}
+                    <tr>
+                        <td style="padding: 8px 0; color: #6B7280;">Toegewezen door:</td>
+                        <td style="padding: 8px 0;">{task.get('assigned_by_name', 'Systeem')}</td>
+                    </tr>
+                </table>
+                <div style="margin-top: 20px;">
+                    <a href="{app_url}/dashboard" style="background-color: #7a1f1f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">Open Dashboard</a>
+                </div>
+            </div>
+            <p style="color: #9CA3AF; font-size: 12px; margin-top: 16px;">Q-Technics Team</p>
+        </div>
+        """
+        
+        params = {
+            "from": SENDER_EMAIL,
+            "to": [assignee_email],
+            "subject": f"Nieuwe taak: {task.get('title', type_label)}",
+            "html": html_content
+        }
+        
+        email_result = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"Task email sent to {assignee_email} for task {task.get('id')}")
+        return email_result
+    except Exception as e:
+        logger.error(f"Failed to send task email: {str(e)}")
+        return None
+
+@api_router.get("/team-tasks")
+async def get_team_tasks(current_user: User = Depends(get_current_user)):
+    """Get all team tasks - unassigned shown to everyone, assigned shown to assignee + admins"""
+    tasks = await db.team_tasks.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    
+    if current_user.role != "admin":
+        # Non-admins see: unassigned tasks + their own tasks
+        tasks = [t for t in tasks if not t.get("assigned_to") or t.get("assigned_to") == current_user.id]
+    
+    return tasks
+
+@api_router.get("/team-tasks/unassigned")
+async def get_unassigned_tasks(current_user: User = Depends(get_current_user)):
+    """Get unassigned tasks - shown in notification bar for everyone"""
+    tasks = await db.team_tasks.find(
+        {"status": "open", "assigned_to": None, "completed": False},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return tasks
+
+@api_router.get("/team-tasks/my")
+async def get_my_team_tasks(current_user: User = Depends(get_current_user)):
+    """Get tasks assigned to current user that are not completed"""
+    tasks = await db.team_tasks.find(
+        {"assigned_to": current_user.id, "completed": False},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return tasks
+
+@api_router.post("/team-tasks")
+async def create_team_task(task_data: TeamTaskCreate, current_user: User = Depends(get_current_user)):
+    """Create a new team task"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen taken aanmaken")
+    
+    task = {
+        "id": f"TTASK-{str(uuid.uuid4())[:8].upper()}",
+        "title": task_data.title,
+        "description": task_data.description,
+        "task_type": task_data.task_type if task_data.task_type in TASK_TYPES else "overig",
+        "assigned_to": None,
+        "assigned_to_name": None,
+        "assigned_by": current_user.id,
+        "assigned_by_name": current_user.name or current_user.username,
+        "project_id": task_data.project_id,
+        "project_name": None,
+        "lead_id": task_data.lead_id,
+        "lead_name": None,
+        "status": "open",
+        "completed": False,
+        "completed_at": None,
+        "auto_created": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "email_sent": False
+    }
+    
+    # Populate project/lead names
+    if task_data.project_id:
+        project = await db.projects.find_one({"id": task_data.project_id}, {"_id": 0, "name": 1})
+        if project:
+            task["project_name"] = project.get("name", "")
+    if task_data.lead_id:
+        lead = await db.leads.find_one({"id": task_data.lead_id}, {"_id": 0, "name": 1})
+        if lead:
+            task["lead_name"] = lead.get("name", "")
+    
+    # If assigned directly, update status and send email
+    if task_data.assigned_to:
+        assignee = await _resolve_user(task_data.assigned_to)
+        task["assigned_to"] = task_data.assigned_to
+        task["assigned_to_name"] = assignee.get("name", task_data.assigned_to)
+        task["status"] = "assigned"
+        
+        # Send email if assignee has email
+        if assignee.get("email"):
+            task_copy = {**task}
+            await send_task_email(task_copy, assignee["email"])
+            task["email_sent"] = True
+    
+    task_response = {**task}
+    await db.team_tasks.insert_one(task)
+    return task_response
+
+async def _resolve_user(user_id: str) -> dict:
+    """Resolve user info from ID - checks hardcoded admins, then DB"""
+    from auth_simple import ADMIN_USERS, HARDCODED_ADMINS
+    
+    # Check hardcoded admins
+    if user_id in HARDCODED_ADMINS:
+        info = HARDCODED_ADMINS[user_id]
+        return {"id": user_id, "name": info.get("name", info.get("username", "")), "email": info.get("email", "")}
+    
+    # Check DB users
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if user:
+        return {"id": user_id, "name": user.get("name", user.get("username", "")), "email": user.get("email", "")}
+    
+    return {"id": user_id, "name": user_id, "email": ""}
+
+@api_router.put("/team-tasks/{task_id}/assign")
+async def assign_team_task(task_id: str, data: dict, current_user: User = Depends(get_current_user)):
+    """Assign a task to a team member"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen taken toewijzen")
+    
+    task = await db.team_tasks.find_one({"id": task_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Taak niet gevonden")
+    
+    assignee_id = data.get("assigned_to")
+    if not assignee_id:
+        raise HTTPException(status_code=400, detail="assigned_to is vereist")
+    
+    assignee = await _resolve_user(assignee_id)
+    
+    update = {
+        "assigned_to": assignee_id,
+        "assigned_to_name": assignee.get("name", assignee_id),
+        "assigned_by": current_user.id,
+        "assigned_by_name": current_user.name or current_user.username,
+        "status": "assigned"
+    }
+    
+    await db.team_tasks.update_one({"id": task_id}, {"$set": update})
+    
+    # Send email
+    if assignee.get("email"):
+        task.update(update)
+        await send_task_email(task, assignee["email"])
+        await db.team_tasks.update_one({"id": task_id}, {"$set": {"email_sent": True}})
+    
+    return {"message": f"Taak toegewezen aan {assignee.get('name', assignee_id)}", **update}
+
+@api_router.put("/team-tasks/{task_id}/complete")
+async def complete_team_task(task_id: str, current_user: User = Depends(get_current_user)):
+    """Mark a team task as completed"""
+    task = await db.team_tasks.find_one({"id": task_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Taak niet gevonden")
+    
+    if task.get("assigned_to") != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen de toegewezen medewerker of admin kan voltooien")
+    
+    completed_at = datetime.now(timezone.utc).isoformat()
+    await db.team_tasks.update_one(
+        {"id": task_id},
+        {"$set": {"completed": True, "completed_at": completed_at, "status": "completed"}}
+    )
+    return {"message": "Taak voltooid!", "completed_at": completed_at}
+
+@api_router.delete("/team-tasks/{task_id}")
+async def delete_team_task(task_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a team task"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins")
+    
+    result = await db.team_tasks.delete_one({"id": task_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Taak niet gevonden")
+    return {"message": "Taak verwijderd"}
+
+@api_router.get("/team-members")
+async def get_team_members(current_user: User = Depends(get_current_user)):
+    """Get all team members (admins + workers) for task assignment dropdown"""
+    from auth_simple import HARDCODED_ADMINS
+    
+    members = []
+    # Add hardcoded admins
+    for uid, info in HARDCODED_ADMINS.items():
+        members.append({
+            "id": uid,
+            "name": info.get("name", info.get("username", "")),
+            "email": info.get("email", ""),
+            "role": "admin"
+        })
+    
+    # Add DB users (workers, other admins)
+    db_users = await db.users.find({}, {"_id": 0}).to_list(100)
+    existing_ids = {m["id"] for m in members}
+    for u in db_users:
+        uid = u.get("id", u.get("user_id", ""))
+        if not uid or uid in existing_ids:
+            continue
+        members.append({
+            "id": uid,
+            "name": u.get("name", u.get("username", uid)),
+            "email": u.get("email", ""),
+            "role": u.get("role", "worker")
+        })
+    
+    return members
 
 @api_router.post("/projects/{project_id}/designs")
 async def upload_3d_design(
