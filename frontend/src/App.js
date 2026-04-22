@@ -5,6 +5,7 @@ import axios from 'axios';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { registerServiceWorker, subscribeToPush, requestNotificationPermission } from './pushHelper';
+import ConnectivityBanner from './components/ConnectivityBanner';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -35,6 +36,9 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || window.location.origin;
 const API = `${BACKEND_URL}/api`;
 const AUTH_URL = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(window.location.origin + '/auth/callback')}`;
 
+// === iOS / mobile robustness: timeout + auto retry on transient errors ===
+axios.defaults.timeout = 30000; // 30s - covers iOS background kill threshold while avoiding infinite hangs
+
 // Create axios instance with auth
 const getAuthHeaders = () => {
   const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
@@ -58,9 +62,32 @@ axios.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
+// Retry helper: one retry on network/timeout errors for idempotent methods (GET/HEAD)
+async function retryOnce(error) {
+  const cfg = error.config;
+  if (!cfg || cfg.__retried) return Promise.reject(error);
+  const method = (cfg.method || 'get').toLowerCase();
+  if (method !== 'get' && method !== 'head') return Promise.reject(error);
+  const isNetwork = !error.response; // no response = network/timeout/abort
+  const isTimeout = error.code === 'ECONNABORTED';
+  if (!isNetwork && !isTimeout) return Promise.reject(error);
+  cfg.__retried = true;
+  await new Promise(r => setTimeout(r, 800));
+  return axios(cfg);
+}
+
 axios.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    // Network/timeout → retry once for GET/HEAD (fixes flaky mobile networks, esp. iOS)
+    try {
+      const retried = await retryOnce(error);
+      if (retried) return retried;
+    } catch (e) {
+      // swallow - fall through to 401 handling below with the original error
+      error = e;
+    }
+
     // Only handle 401 once, and NOT during login/auth requests
     const url = error.config?.url || '';
     const isAuthRequest = url.includes('/auth2/login') || url.includes('/auth2/me') || url.includes('/auth/me') || url.includes('/auth/admin/login');
@@ -842,6 +869,7 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <AuthProvider>
+          <ConnectivityBanner />
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth/callback" element={<AuthCallbackHandler />} />

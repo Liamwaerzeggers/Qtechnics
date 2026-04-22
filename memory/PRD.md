@@ -80,6 +80,13 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Serieuze berichten: bordeaux kleurpalet; grappige: amber/warm palet
 - Auto-dismiss na 2.2s
 
+### iOS / Mobile Robustness (feb 2026)
+- `axios.defaults.timeout = 30000` zodat iOS niet oneindig blijft wachten (iOS kill achtergrond-tabs stil)
+- Auto retry op GET/HEAD bij netwerk/timeout fouten (1 retry, 800ms backoff)
+- Handmatige opnieuw-mail knop per taak (`POST /api/team-tasks/{id}/resend-email`)
+- Backend middleware: `Cache-Control: no-store` op alle `/api/auth*` endpoints (voorkomt stale login response cache op iOS)
+- Nieuwe `ConnectivityBanner` component toont sticky rood banner bij offline status
+
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 

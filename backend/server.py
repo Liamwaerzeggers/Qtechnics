@@ -12233,6 +12233,17 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+# iOS PWA / Chrome on iOS aggressively cache responses. Force auth endpoints to stay fresh.
+@app.middleware("http")
+async def _no_store_auth_endpoints(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path or ""
+    if path.startswith("/api/auth2") or path.startswith("/api/auth/"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
