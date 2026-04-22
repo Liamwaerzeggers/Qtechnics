@@ -64,6 +64,12 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Admin endpoint `POST /api/team-tasks/send-weekly-summary[?target_user_id=X]` voor handmatige trigger/test
 - Verstuurd via Resend van `noreply@maxq.be`
 
+### Team Prestaties Widget (feb 2026)
+- Inklapbaar widget bovenaan `/tasks` (alleen voor admins)
+- Per teamlid: voltooid deze week/maand, openstaand (kleur bij >5), gemiddelde doorlooptijd, totaal voltooid
+- Top-performer badge bij koploper van de week
+- Client-side berekening uit bestaande tasks state (geen extra API calls)
+
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 

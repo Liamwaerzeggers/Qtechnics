@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, CheckCircle, Trash2, UserPlus, Clock, Filter } from 'lucide-react';
+import { Plus, CheckCircle, Trash2, UserPlus, Clock, Filter, BarChart3, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 const getAuthHeaders = () => {
@@ -36,6 +36,176 @@ const TASK_TYPE_COLORS = {
 
 const STATUS_LABELS = { open: 'Open', assigned: 'Toegewezen', in_progress: 'Bezig', completed: 'Voltooid' };
 const STATUS_COLORS = { open: '#DC2626', assigned: '#F59E0B', in_progress: '#3B82F6', completed: '#10B981' };
+
+function buildTeamStats(tasks) {
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const byUser = {};
+
+  tasks.forEach(t => {
+    const uid = t.assigned_to;
+    if (!uid) return;
+    if (!byUser[uid]) {
+      byUser[uid] = {
+        id: uid,
+        name: t.assigned_to_name || uid,
+        openCount: 0,
+        doneWeek: 0,
+        doneMonth: 0,
+        totalCompleted: 0,
+        leadTimesMs: [],
+        byType: {},
+      };
+    }
+    const u = byUser[uid];
+    if (t.completed) {
+      u.totalCompleted += 1;
+      const comp = t.completed_at ? new Date(t.completed_at) : null;
+      if (comp) {
+        if (comp >= weekAgo) u.doneWeek += 1;
+        if (comp >= monthAgo) u.doneMonth += 1;
+        if (t.created_at) {
+          const ms = comp - new Date(t.created_at);
+          if (ms > 0) u.leadTimesMs.push(ms);
+        }
+      }
+      u.byType[t.task_type] = (u.byType[t.task_type] || 0) + 1;
+    } else {
+      u.openCount += 1;
+    }
+  });
+
+  return Object.values(byUser)
+    .map(u => {
+      const avgMs = u.leadTimesMs.length
+        ? u.leadTimesMs.reduce((a, b) => a + b, 0) / u.leadTimesMs.length
+        : null;
+      return { ...u, avgLeadTimeHours: avgMs ? avgMs / 3600000 : null };
+    })
+    .sort((a, b) => (b.doneWeek - a.doneWeek) || (b.totalCompleted - a.totalCompleted));
+}
+
+function formatLeadTime(hours) {
+  if (hours == null) return '—';
+  if (hours < 1) return `${Math.round(hours * 60)} min`;
+  if (hours < 24) return `${hours.toFixed(1)} u`;
+  return `${(hours / 24).toFixed(1)} d`;
+}
+
+function TeamPerformanceWidget({ tasks }) {
+  const [open, setOpen] = React.useState(true);
+  const stats = React.useMemo(() => buildTeamStats(tasks), [tasks]);
+
+  const totals = stats.reduce((acc, u) => {
+    acc.doneWeek += u.doneWeek;
+    acc.doneMonth += u.doneMonth;
+    acc.openCount += u.openCount;
+    return acc;
+  }, { doneWeek: 0, doneMonth: 0, openCount: 0 });
+
+  return (
+    <Card data-testid="team-performance-widget" className="border-0 shadow-sm" style={{ backgroundColor: '#FFFFFF' }}>
+      <CardContent className="p-0">
+        <button
+          data-testid="team-performance-toggle"
+          onClick={() => setOpen(!open)}
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#f5e6e6' }}>
+              <BarChart3 size={18} style={{ color: '#500000' }} />
+            </div>
+            <div className="text-left">
+              <h3 className="font-semibold" style={{ color: '#1F2937' }}>Team Prestaties</h3>
+              <p className="text-xs" style={{ color: '#6B7280' }}>
+                {totals.doneWeek} voltooid deze week · {totals.doneMonth} deze maand · {totals.openCount} open
+              </p>
+            </div>
+          </div>
+          {open ? <ChevronUp size={18} style={{ color: '#6B7280' }} /> : <ChevronDown size={18} style={{ color: '#6B7280' }} />}
+        </button>
+
+        {open && (
+          <div className="px-5 pb-5">
+            {stats.length === 0 ? (
+              <p className="text-sm text-gray-400 py-6 text-center">Nog geen toegewezen taken om te analyseren.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left" style={{ color: '#9CA3AF', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <th className="py-2 pr-4 font-medium">Teamlid</th>
+                      <th className="py-2 px-2 font-medium text-center">Week</th>
+                      <th className="py-2 px-2 font-medium text-center">Maand</th>
+                      <th className="py-2 px-2 font-medium text-center">Backlog</th>
+                      <th className="py-2 px-2 font-medium text-center">Ø Doorlooptijd</th>
+                      <th className="py-2 pl-2 font-medium">Totaal voltooid</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.map((u, idx) => (
+                      <tr
+                        key={u.id}
+                        data-testid={`team-stat-row-${u.id}`}
+                        className="border-t"
+                        style={{ borderColor: '#F3F4F6' }}
+                      >
+                        <td className="py-3 pr-4">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold"
+                              style={{ backgroundColor: idx === 0 ? '#FEF3C7' : '#F3F4F6', color: idx === 0 ? '#92400E' : '#374151' }}
+                            >
+                              {u.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="font-medium" style={{ color: '#1F2937' }}>
+                                {u.name}
+                                {idx === 0 && u.doneWeek > 0 && (
+                                  <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}>
+                                    <TrendingUp size={10} /> Top
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-2 text-center font-semibold" style={{ color: '#10B981' }}>
+                          {u.doneWeek}
+                        </td>
+                        <td className="py-3 px-2 text-center" style={{ color: '#1F2937' }}>
+                          {u.doneMonth}
+                        </td>
+                        <td className="py-3 px-2 text-center">
+                          <span
+                            className="inline-block min-w-[28px] px-2 py-0.5 rounded-full text-xs font-semibold"
+                            style={{
+                              backgroundColor: u.openCount > 5 ? '#FEE2E2' : u.openCount > 0 ? '#FEF3C7' : '#F3F4F6',
+                              color: u.openCount > 5 ? '#991B1B' : u.openCount > 0 ? '#92400E' : '#6B7280',
+                            }}
+                          >
+                            {u.openCount}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center" style={{ color: '#6B7280' }}>
+                          {formatLeadTime(u.avgLeadTimeHours)}
+                        </td>
+                        <td className="py-3 pl-2" style={{ color: '#6B7280' }}>
+                          {u.totalCompleted}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function TasksPage() {
   const { user } = useAuth();
@@ -183,6 +353,7 @@ export default function TasksPage() {
         </div>
 
         <div className="space-y-3">
+          {user?.role === 'admin' && <TeamPerformanceWidget tasks={tasks} />}
           {filtered.map(task => {
             const typeColor = TASK_TYPE_COLORS[task.task_type] || TASK_TYPE_COLORS.overig;
             const statusColor = STATUS_COLORS[task.status] || '#6B7280';
