@@ -41,13 +41,17 @@ const getAuthHeaders = () => {
 };
 
 // Setup axios interceptor for authentication - runs on EVERY request
+// Track if we're already handling a 401 to prevent cascading logouts
+let isHandling401 = false;
+let lastValidToken = null;
+
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
   if (token) {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
+    lastValidToken = token;
   }
-  console.log('Axios request:', config.url, 'Has token:', !!token);
   return config;
 }, (error) => {
   return Promise.reject(error);
@@ -56,17 +60,28 @@ axios.interceptors.request.use((config) => {
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.log('Axios error:', error.response?.status, error.config?.url);
-    if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('session_token');
-      // Clear stale cookies that may cause auth conflicts
-      document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=None; Secure';
-      document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-      console.warn('Session expired - redirecting to login');
-      if (window.location.pathname !== '/') {
-        window.location.href = '/';
-      }
+    // Only handle 401 once, and NOT during login/auth requests
+    const url = error.config?.url || '';
+    const isAuthRequest = url.includes('/auth2/login') || url.includes('/auth2/me') || url.includes('/auth/me') || url.includes('/auth/admin/login');
+    
+    if (error.response?.status === 401 && !isAuthRequest && !isHandling401) {
+      isHandling401 = true;
+      console.warn('401 received on:', url);
+      
+      // Don't immediately nuke everything - just mark as needing re-auth
+      // The AuthProvider will handle the actual logout flow gracefully
+      setTimeout(() => {
+        const currentToken = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+        // Only force logout if token is still the same one that failed
+        if (currentToken && currentToken === lastValidToken) {
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('session_token');
+          document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+          // Use soft navigation - no page reload
+          window.dispatchEvent(new CustomEvent('auth-expired'));
+        }
+        isHandling401 = false;
+      }, 500);
     }
     return Promise.reject(error);
   }
@@ -82,10 +97,20 @@ function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     checkAuth();
     registerServiceWorker();
+    
+    // Listen for auth expiry events (soft logout without page reload)
+    const handleAuthExpired = () => {
+      console.warn('Auth expired event received - logging out gracefully');
+      setUser(null);
+      navigate('/');
+    };
+    window.addEventListener('auth-expired', handleAuthExpired);
+    return () => window.removeEventListener('auth-expired', handleAuthExpired);
   }, []);
 
   // Auto-subscribe admin to push notifications
@@ -101,7 +126,6 @@ function AuthProvider({ children }) {
 
   const checkAuth = async () => {
     try {
-      // Check both possible token keys for backwards compatibility
       const storedToken = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
       if (!storedToken) {
         setUser(null);
@@ -109,16 +133,17 @@ function AuthProvider({ children }) {
         return;
       }
       
-      // Try new endpoint first, fall back to old one
-      try {
-        const response = await axios.get(`${API}/auth2/me`);
+      // Verify session with backend - try auth2 first
+      const response = await axios.get(`${API}/auth2/me`);
+      if (response.data && response.data.id) {
         setUser(response.data);
-      } catch (e) {
-        // Try old endpoint
-        const response = await axios.get(`${API}/auth/me`);
-        setUser(response.data);
+      } else {
+        setUser(null);
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('session_token');
       }
     } catch (error) {
+      // Session is invalid - clean up silently (no redirect, just set user to null)
       setUser(null);
       localStorage.removeItem('auth_token');
       localStorage.removeItem('session_token');

@@ -169,12 +169,17 @@ export default function ProjectsPage() {
 
   const fetchData = async () => {
     try {
-      const [projectsRes, quotesRes] = await Promise.all([
+      const [projectsRes, quotesRes] = await Promise.allSettled([
         axios.get(`${API}/projects`, { headers: getAuthHeaders() }),
         axios.get(`${API}/quotes`, { headers: getAuthHeaders() })
       ]);
-      setProjects(projectsRes.data);
-      setQuotes(quotesRes.data);
+      if (projectsRes.status === 'fulfilled') setProjects(projectsRes.value.data);
+      if (quotesRes.status === 'fulfilled') setQuotes(quotesRes.value.data);
+      
+      // Only show error if BOTH failed
+      if (projectsRes.status === 'rejected' && quotesRes.status === 'rejected') {
+        toast.error('Kon gegevens niet ophalen');
+      }
     } catch (error) {
       toast.error('Kon gegevens niet ophalen');
     } finally {

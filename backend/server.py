@@ -1130,26 +1130,27 @@ async def get_current_user(session_token: Optional[str] = Cookie(None), authoriz
     token = None
     
     # IMPORTANT: Prefer Authorization header over cookie
-    # The auth2/login module uses localStorage tokens (via Authorization header)
-    # Old cookies may linger and cause auth failures
     if authorization:
         parts = authorization.split()
-        if len(parts) == 2 and parts[0].lower() == "bearer":
-            token = parts[1]
+        if len(parts) == 2 and parts[0].lower() == "bearer" and parts[1].strip():
+            token = parts[1].strip()
     
-    # Fall back to cookie only if no Authorization header
-    if not token and session_token:
-        token = session_token
+    # Fall back to cookie only if no valid Authorization header token
+    if not token and session_token and session_token.strip():
+        token = session_token.strip()
     
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
     # Find session - check both user_sessions (for admins) and sessions (for workers)
-    session = await db.user_sessions.find_one({"session_token": token})
-    if not session:
-        session = await db.sessions.find_one({"session_token": token})
+    try:
+        session = await db.user_sessions.find_one({"session_token": token})
+        if not session:
+            session = await db.sessions.find_one({"session_token": token})
+    except Exception as e:
+        logger.error(f"Database error looking up session: {e}")
+        raise HTTPException(status_code=503, detail="Database temporarily unavailable")
     
-    logger.info(f"Looking for session with token: {token[:10]}... Found: {session is not None}")
     if not session:
         raise HTTPException(status_code=401, detail="Invalid session")
     
@@ -2783,6 +2784,18 @@ async def get_projects(current_user: User = Depends(get_current_user)):
         if project.get("first_visit_date") and isinstance(project["first_visit_date"], str):
             project["first_visit_date"] = datetime.fromisoformat(project["first_visit_date"])
         
+        # Strip base64_data from photos to prevent massive response payloads
+        if project.get("first_visit_photos"):
+            project["first_visit_photos"] = [
+                {k: v for k, v in p.items() if k != "base64_data"} if isinstance(p, dict) else p
+                for p in project["first_visit_photos"]
+            ]
+        if project.get("design_3d_files"):
+            project["design_3d_files"] = [
+                {k: v for k, v in d.items() if k != "base64_data"} if isinstance(d, dict) else d
+                for d in project["design_3d_files"]
+            ]
+        
         # Calculate profit from sales_price (which includes approved quotes + legacy documents)
         if current_user.role != "worker":
             # Use stored sales_price (already updated by approved quotes and legacy documents)
@@ -2847,6 +2860,18 @@ async def get_project(project_id: str, current_user: User = Depends(get_current_
         project["start_date"] = datetime.fromisoformat(project["start_date"])
     if project.get("end_date") and isinstance(project["end_date"], str):
         project["end_date"] = datetime.fromisoformat(project["end_date"])
+    
+    # Strip base64_data from photos to prevent massive response payloads
+    if project.get("first_visit_photos"):
+        project["first_visit_photos"] = [
+            {k: v for k, v in p.items() if k != "base64_data"} if isinstance(p, dict) else p
+            for p in project["first_visit_photos"]
+        ]
+    if project.get("design_3d_files"):
+        project["design_3d_files"] = [
+            {k: v for k, v in d.items() if k != "base64_data"} if isinstance(d, dict) else d
+            for d in project["design_3d_files"]
+        ]
     
     return Project(**project)
 
@@ -4607,18 +4632,48 @@ async def upload_work_slip_photo(
         except Exception as e:
             logger.error(f"Failed to convert HEIC: {str(e)}")
     
-    # Save file to disk
-    upload_dir = Path(__file__).parent / "uploads" / "work_slips" / project_id
-    upload_dir.mkdir(parents=True, exist_ok=True)
+    # Save file to stored_files for persistence across deployments
+    import base64 as b64module
+    
+    # Compress large images
+    if file_extension in ["jpg", "jpeg", "png"] and len(content) > 1 * 1024 * 1024:
+        try:
+            from PIL import Image
+            import io
+            img = Image.open(io.BytesIO(content))
+            if img.mode in ('RGBA', 'P') and file_extension in ['jpg', 'jpeg']:
+                img = img.convert('RGB')
+            max_dim = 2000
+            if max(img.size) > max_dim:
+                img.thumbnail((max_dim, max_dim), Image.LANCZOS)
+            output_buffer = io.BytesIO()
+            img.save(output_buffer, format='JPEG', quality=80)
+            content = output_buffer.getvalue()
+            file_extension = "jpg"
+        except Exception as e:
+            logger.warning(f"Could not compress work slip image: {e}")
     
     unique_filename = f"{slip_id}_{uuid.uuid4().hex[:8]}.{file_extension}"
-    file_path = upload_dir / unique_filename
+    file_id = f"ws-photo-{uuid.uuid4()}"
     
-    with open(file_path, "wb") as f:
-        f.write(content)
+    content_types = {
+        "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+        "gif": "image/gif", "webp": "image/webp"
+    }
+    ct = content_types.get(file_extension, "image/jpeg")
     
-    # Add to work slip photos array
-    photo_url = f"/api/static/work_slips/{project_id}/{unique_filename}"
+    await db.stored_files.insert_one({
+        "id": file_id,
+        "filename": unique_filename,
+        "content_type": ct,
+        "data": b64module.b64encode(content).decode("utf-8"),
+        "project_id": project_id,
+        "file_type": "work_slips",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Add to work slip photos array - use persistent URL
+    photo_url = f"/api/photos/work_slips/{project_id}/{unique_filename}"
     await db.work_slips.update_one(
         {"id": slip_id},
         {"$push": {"photos": photo_url}}
@@ -5758,70 +5813,78 @@ async def upload_first_visit_photo(
             import pillow_heif
             import io
             
-            # Register HEIF opener with Pillow
             pillow_heif.register_heif_opener()
-            
-            # Open HEIC image and convert to JPEG
             heic_image = Image.open(io.BytesIO(file_content))
-            
-            # Convert to RGB if necessary (HEIC can have alpha channel)
             if heic_image.mode in ('RGBA', 'P'):
                 heic_image = heic_image.convert('RGB')
-            
-            # Save as JPEG
             output_buffer = io.BytesIO()
             heic_image.save(output_buffer, format='JPEG', quality=85)
             file_content = output_buffer.getvalue()
             file_extension = "jpg"
-            
             logger.info(f"Converted HEIC image to JPEG for project {project_id}")
         except ImportError:
             logger.warning("pillow-heif not installed, storing HEIC as-is")
         except Exception as e:
             logger.error(f"Failed to convert HEIC: {str(e)}, storing as-is")
     
+    # Compress large images to reduce storage
+    if file_extension in ["jpg", "jpeg", "png"] and len(file_content) > 1 * 1024 * 1024:
+        try:
+            from PIL import Image
+            import io
+            img = Image.open(io.BytesIO(file_content))
+            if img.mode in ('RGBA', 'P') and file_extension in ['jpg', 'jpeg']:
+                img = img.convert('RGB')
+            # Resize if very large
+            max_dim = 2000
+            if max(img.size) > max_dim:
+                img.thumbnail((max_dim, max_dim), Image.LANCZOS)
+            output_buffer = io.BytesIO()
+            img.save(output_buffer, format='JPEG', quality=80)
+            file_content = output_buffer.getvalue()
+            file_extension = "jpg"
+            logger.info(f"Compressed image from {len(file_content)} bytes for project {project_id}")
+        except Exception as e:
+            logger.warning(f"Could not compress image: {e}")
+    
     base64_data = base64.b64encode(file_content).decode('utf-8')
     unique_filename = f"{uuid.uuid4()}.{file_extension}"
+    file_id = f"photo-{uuid.uuid4()}"
     
-    # Determine content type
     content_types = {
-        "jpg": "image/jpeg",
-        "jpeg": "image/jpeg",
-        "png": "image/png",
-        "gif": "image/gif",
-        "webp": "image/webp",
-        "heic": "image/heic",
-        "heif": "image/heif"
+        "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+        "gif": "image/gif", "webp": "image/webp", "heic": "image/heic", "heif": "image/heif"
     }
     content_type = content_types.get(file_extension, "image/jpeg")
     
-    # Create photo record with base64 data for persistent storage
+    # Store base64 data in SEPARATE collection (not in project doc to avoid 16MB limit)
+    await db.stored_files.insert_one({
+        "id": file_id,
+        "filename": unique_filename,
+        "content_type": content_type,
+        "data": base64_data,
+        "project_id": project_id,
+        "file_type": "first_visit",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Store only reference in project document (NO base64 data)
     photo_record = {
         "filename": unique_filename,
         "original_filename": file.filename,
         "url": f"/api/photos/first_visit/{project_id}/{unique_filename}",
+        "file_id": file_id,
         "room": room or "Algemeen",
         "uploaded_at": datetime.now(timezone.utc).isoformat(),
-        "base64_data": base64_data,
         "content_type": content_type
     }
     
-    # Also save to file system for backward compatibility (preview)
-    photos_dir = ROOT_DIR / "uploads" / "first_visit" / project_id
-    photos_dir.mkdir(parents=True, exist_ok=True)
-    file_path = photos_dir / unique_filename
-    with open(file_path, "wb") as buffer:
-        buffer.write(file_content)
-    
-    # Update project - store as object with base64 data
     await db.projects.update_one(
         {"id": project_id},
         {"$push": {"first_visit_photos": photo_record}}
     )
     
-    # Return record without base64 data (too large for response)
-    return_record = {k: v for k, v in photo_record.items() if k != "base64_data"}
-    return return_record
+    return photo_record
 
 @api_router.delete("/projects/{project_id}/first-visit/photos/{photo_name}")
 async def delete_first_visit_photo(
@@ -5858,6 +5921,13 @@ async def delete_first_visit_photo(
         elif isinstance(photo, dict):
             if photo.get("filename") != photo_name and photo.get("url") != photo_url:
                 updated_photos.append(photo)
+            else:
+                # Also delete from stored_files collection
+                file_id = photo.get("file_id")
+                if file_id:
+                    await db.stored_files.delete_one({"id": file_id})
+                else:
+                    await db.stored_files.delete_one({"filename": photo_name, "project_id": project_id})
     
     await db.projects.update_one(
         {"id": project_id},
@@ -5869,49 +5939,48 @@ async def delete_first_visit_photo(
 # Serve photos from database (persistent storage)
 @api_router.get("/photos/{file_type}/{project_id}/{filename}")
 async def serve_photo_from_db(file_type: str, project_id: str, filename: str):
-    """Serve photos from database (base64 storage) - persistent across deployments"""
+    """Serve photos from database - checks stored_files collection first, then project document"""
     import base64
     from fastapi.responses import Response
     
     if file_type not in ["first_visit", "designs", "work_slips"]:
         raise HTTPException(status_code=404, detail="Invalid file type")
     
-    # Find the project
+    # Strategy 1: Check stored_files collection (new method - preferred)
+    stored = await db.stored_files.find_one({"filename": filename, "project_id": project_id}, {"_id": 0})
+    if stored and stored.get("data"):
+        image_bytes = base64.b64decode(stored["data"])
+        return Response(content=image_bytes, media_type=stored.get("content_type", "image/jpeg"))
+    
+    # Strategy 2: Check project document for legacy base64_data (old method)
     project = await db.projects.find_one({"id": project_id})
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+    if project:
+        photo_data = None
+        if file_type == "first_visit":
+            photos = project.get("first_visit_photos", [])
+            for photo in photos:
+                if isinstance(photo, dict) and photo.get("filename") == filename:
+                    photo_data = photo
+                    break
+        elif file_type == "designs":
+            designs = project.get("design_3d_files", [])
+            for design in designs:
+                if isinstance(design, dict) and design.get("filename") == filename:
+                    photo_data = design
+                    break
+        
+        if photo_data and photo_data.get("base64_data"):
+            content_type = photo_data.get("content_type", "image/jpeg")
+            image_bytes = base64.b64decode(photo_data["base64_data"])
+            return Response(content=image_bytes, media_type=content_type)
     
-    # Search for the photo in the appropriate field
-    photo_data = None
-    if file_type == "first_visit":
-        photos = project.get("first_visit_photos", [])
-        for photo in photos:
-            if isinstance(photo, dict) and photo.get("filename") == filename:
-                photo_data = photo
-                break
-    elif file_type == "designs":
-        designs = project.get("design_3d_files", [])
-        for design in designs:
-            if isinstance(design, dict) and design.get("filename") == filename:
-                photo_data = design
-                break
-    
-    # If found in database with base64 data, serve it
-    if photo_data and photo_data.get("base64_data"):
-        content_type = photo_data.get("content_type", "image/jpeg")
-        image_bytes = base64.b64decode(photo_data["base64_data"])
-        return Response(content=image_bytes, media_type=content_type)
-    
-    # Fallback: try to serve from file system (for old photos)
+    # Strategy 3: Fallback to file system
     file_path = ROOT_DIR / "uploads" / file_type / project_id / filename
     if file_path.exists():
         suffix = file_path.suffix.lower()
         content_types = {
-            ".jpg": "image/jpeg",
-            ".jpeg": "image/jpeg",
-            ".png": "image/png",
-            ".gif": "image/gif",
-            ".webp": "image/webp",
+            ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+            ".gif": "image/gif", ".webp": "image/webp",
         }
         content_type = content_types.get(suffix, "image/jpeg")
         return FileResponse(file_path, media_type=content_type)
@@ -7726,17 +7795,32 @@ async def get_customer_portal_data(access_token: str):
             # Explicitly NOT including: hours_worked, labor_cost, hourly_rate, etc.
         })
     
-    # Build safe project data for customer (NO financial info)
+    # Build safe project data for customer (NO financial info, NO base64 data)
+    # Strip base64_data from photos to prevent massive response payloads
+    safe_photos = []
+    for photo in project.get("first_visit_photos", []):
+        if isinstance(photo, dict):
+            safe_photos.append({k: v for k, v in photo.items() if k != "base64_data"})
+        else:
+            safe_photos.append(photo)
+    
+    safe_designs = []
+    for design in project.get("design_3d_files", []):
+        if isinstance(design, dict):
+            safe_designs.append({k: v for k, v in design.items() if k != "base64_data"})
+        else:
+            safe_designs.append(design)
+    
     customer_project = {
         "id": project["id"],
         "name": project.get("name", ""),
         "status": project.get("status", ""),
         "start_date": project.get("start_date"),
         "end_date": project.get("end_date"),
-        # First visit photos
-        "first_visit_photos": project.get("first_visit_photos", []),
-        # 3D designs
-        "design_3d_files": project.get("design_3d_files", []),
+        # First visit photos (without base64 data)
+        "first_visit_photos": safe_photos,
+        # 3D designs (without base64 data)
+        "design_3d_files": safe_designs,
         # Planning
         "scheduled_days": project.get("scheduled_days", []),
         "planning_start_date": project.get("planning_start_date"),
@@ -11804,6 +11888,27 @@ async def send_customer_notification(project_id: str, subject: str, content_desc
     except Exception as e:
         logger.error(f"Failed to send email notification: {str(e)}")
         return None
+
+@app.on_event("startup")
+async def startup_cleanup():
+    """Clean up expired sessions and create indexes on startup"""
+    try:
+        # Create indexes for faster session lookups
+        await db.user_sessions.create_index("session_token")
+        await db.user_sessions.create_index("user_id")
+        await db.user_sessions.create_index("expires_at")
+        await db.sessions.create_index("session_token")
+        await db.stored_files.create_index("filename")
+        await db.stored_files.create_index("id")
+        logger.info("Database indexes created")
+        
+        # Clean up expired sessions
+        now = datetime.now(timezone.utc).isoformat()
+        result1 = await db.user_sessions.delete_many({"expires_at": {"$lt": now}})
+        result2 = await db.sessions.delete_many({"expires_at": {"$lt": now}})
+        logger.info(f"Cleaned up {result1.deleted_count + result2.deleted_count} expired sessions")
+    except Exception as e:
+        logger.error(f"Startup cleanup error: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

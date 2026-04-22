@@ -13,33 +13,27 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Offerte regelitem omschrijving bewerken (inline edit)
 - Per-kamer groepering met subtitels en subtotalen (UI + PDF export)
 - Project status workflow met 8 statussen, kleurcodes, tabs en zoekfunctie
-- Slimme renovatie berekening met correcte plafond afbraak/opbouw scheiding
 
-## Recent Opgeloste Issues (april 2026)
-### Project Status & Filtering
-- 8 project statussen: Nieuwe Lead, Eerste Bezoek, Offerte Gemaakt, Offerte Voorgesteld, Verkocht, In Uitvoering, Afgerond, Niet Verkocht
-- Horizontale status tabs met aantallen onder sales leaderboard
-- Kleurgecodeerde tegels met gekleurde linkerrand
-- Status dropdown op elke tegel voor snel wijzigen
-- Zoekbalk voor projecten op naam/adres
-- "Verkocht" status gekoppeld aan bestaande sales mechanisme
-- Legacy status mapping voor bestaande projecten
-- Backend PUT /api/projects/{id}/quick-status endpoint
+## Kritieke Bugfixes (april 2026)
 
-### Auth Bug Fix - Cookie/Token Conflict
-- Root cause: get_current_user gaf prioriteit aan (mogelijk verlopen) cookies boven geldige Authorization headers
-- Fix: Authorization header heeft nu voorrang op cookies
-- Oude sessies worden opgeruimd bij nieuwe login
-- Cookies worden gewist bij uitloggen en bij 401 responses
-- Frontend verwijdert oude cookies/tokens voor elke login poging
+### Auth Stabiliteit - Navigatie Crasht Platform
+- **Root cause**: 401 interceptor deed `window.location.href = '/'` (full page reload) bij ELKE 401 response
+- **Cascade effect**: Eén gefaalde API call → alle tokens gewist → andere API calls falen ook → complete logout
+- **Fix**: Soft event-systeem (`auth-expired` custom event), debounced 401 handler, skip auth-requests
+- **Extra**: `Promise.allSettled` i.p.v. `Promise.all` op data-fetch pagina's
 
-### Offerte Omschrijving & Per-Kamer Groepering
-- Omschrijving inline bewerkbaar in QuoteDetailPage
-- generate-quote-from-calculation groepeert per kamer met subtitels/subtotalen
-- PDF export toont kamer-groepering met donkerrode headers
+### Foto Upload Stopt Na Paar Foto's
+- **Root cause**: Base64 data opgeslagen IN project document → MongoDB 16MB document limiet bereikt
+- **Fix**: Foto data nu in aparte `stored_files` collectie, project houdt alleen URL referentie
+- **Serving**: Zoekt eerst in stored_files, dan in project doc (legacy), dan filesystem
 
-### Plafond Dubbele Afbraak Bug
-- find_work_item_price exclude_pattern voorkomt dubbele afbraak match
+### Login Intermittent Ongeldig
+- **Root cause**: get_current_user gaf prioriteit aan verlopen cookies boven geldige Authorization header
+- **Fix**: Authorization header heeft voorrang, database error handling, indexes voor snellere lookups
+
+### Klantenportaal Foto's Niet Zichtbaar
+- **Root cause**: base64_data werd meegestuurd in response (gigantische payload), of foto niet vindbaar
+- **Fix**: base64_data gestript uit alle project responses, foto serving endpoint doorzoekt 3 bronnen
 
 ## Bekende Issues
 - P1: Taaktoewijzing fout (user verificatie pending)
