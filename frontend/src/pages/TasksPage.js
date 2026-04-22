@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, CheckCircle, Trash2, UserPlus, Clock, Filter, BarChart3, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
+import { Plus, CheckCircle, Trash2, UserPlus, Clock, Filter, BarChart3, ChevronDown, ChevronUp, TrendingUp, Shuffle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const getAuthHeaders = () => {
@@ -93,7 +93,150 @@ function formatLeadTime(hours) {
   return `${(hours / 24).toFixed(1)} d`;
 }
 
-function TeamPerformanceWidget({ tasks, activeUserId, onUserClick }) {
+function RedistributeDialog({ open, onOpenChange, sourceUser, tasks, teamMembers, onReassigned }) {
+  const openTasks = React.useMemo(
+    () => tasks.filter(t => !t.completed && t.assigned_to === sourceUser?.id),
+    [tasks, sourceUser]
+  );
+  const [assignments, setAssignments] = React.useState({});
+  const [bulkTarget, setBulkTarget] = React.useState('');
+  const [saving, setSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    if (open) {
+      setAssignments({});
+      setBulkTarget('');
+    }
+  }, [open, sourceUser?.id]);
+
+  const applyBulk = (targetId) => {
+    setBulkTarget(targetId);
+    const next = {};
+    openTasks.forEach(t => { next[t.id] = targetId; });
+    setAssignments(next);
+  };
+
+  const pendingChanges = Object.entries(assignments).filter(
+    ([taskId, newAssignee]) => newAssignee && newAssignee !== sourceUser?.id
+  );
+
+  const handleSave = async () => {
+    if (pendingChanges.length === 0) {
+      toast.error('Selecteer minstens één taak om te herverdelen');
+      return;
+    }
+    setSaving(true);
+    let success = 0;
+    let failed = 0;
+    for (const [taskId, newAssignee] of pendingChanges) {
+      try {
+        await axios.put(
+          `${API}/team-tasks/${taskId}/assign`,
+          { assigned_to: newAssignee },
+          { headers: getAuthHeaders() }
+        );
+        success += 1;
+      } catch (e) {
+        failed += 1;
+      }
+    }
+    setSaving(false);
+    if (success > 0) toast.success(`${success} ${success === 1 ? 'taak' : 'taken'} herverdeeld`);
+    if (failed > 0) toast.error(`${failed} ${failed === 1 ? 'taak' : 'taken'} mislukt`);
+    onOpenChange(false);
+    onReassigned && onReassigned();
+  };
+
+  const others = teamMembers.filter(m => m.id !== sourceUser?.id);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent data-testid="redistribute-dialog" className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Shuffle size={18} style={{ color: '#500000' }} />
+            Taken herverdelen van {sourceUser?.name}
+          </DialogTitle>
+        </DialogHeader>
+
+        {openTasks.length === 0 ? (
+          <p className="py-6 text-center text-gray-500">Geen openstaande taken om te herverdelen.</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: '#F9FAFB' }}>
+              <span className="text-sm font-medium" style={{ color: '#374151' }}>Alles toewijzen aan:</span>
+              <Select value={bulkTarget} onValueChange={applyBulk}>
+                <SelectTrigger data-testid="bulk-assign-select" className="flex-1 h-9">
+                  <SelectValue placeholder="Kies teamlid…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {others.map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.name} ({m.role})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="max-h-[50vh] overflow-y-auto space-y-2 pr-1">
+              {openTasks.map(t => {
+                const target = assignments[t.id] || '';
+                return (
+                  <div
+                    key={t.id}
+                    data-testid={`redistribute-row-${t.id}`}
+                    className="flex items-start gap-3 p-3 rounded-lg border"
+                    style={{ borderColor: target ? '#500000' : '#E5E7EB', backgroundColor: target ? '#f5e6e6' : 'white' }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm" style={{ color: '#1F2937' }}>{t.title}</div>
+                      {(t.project_name || t.lead_name) && (
+                        <div className="text-xs mt-0.5" style={{ color: '#6B7280' }}>
+                          {t.project_name || t.lead_name}
+                        </div>
+                      )}
+                    </div>
+                    <Select
+                      value={target}
+                      onValueChange={(v) => setAssignments(prev => ({ ...prev, [t.id]: v }))}
+                    >
+                      <SelectTrigger data-testid={`row-assign-${t.id}`} className="h-8 text-xs w-40 flex-shrink-0">
+                        <SelectValue placeholder="Nieuwe eigenaar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {others.map(m => (
+                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t">
+              <span className="text-sm" style={{ color: '#6B7280' }}>
+                {pendingChanges.length} van {openTasks.length} geselecteerd
+              </span>
+              <div className="flex gap-2">
+                <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Annuleren</Button>
+                <Button
+                  data-testid="confirm-redistribute-btn"
+                  onClick={handleSave}
+                  disabled={saving || pendingChanges.length === 0}
+                  style={{ backgroundColor: '#500000' }}
+                >
+                  {saving ? 'Bezig...' : `Herverdelen (${pendingChanges.length})`}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TeamPerformanceWidget({ tasks, activeUserId, onUserClick, onRedistribute }) {
   const [open, setOpen] = React.useState(true);
   const stats = React.useMemo(() => buildTeamStats(tasks), [tasks]);
 
@@ -141,6 +284,7 @@ function TeamPerformanceWidget({ tasks, activeUserId, onUserClick }) {
                       <th className="py-2 px-2 font-medium text-center">Backlog</th>
                       <th className="py-2 px-2 font-medium text-center">Ø Doorlooptijd</th>
                       <th className="py-2 pl-2 font-medium">Totaal voltooid</th>
+                      <th className="py-2 pl-2 font-medium text-right">Actie</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -207,6 +351,21 @@ function TeamPerformanceWidget({ tasks, activeUserId, onUserClick }) {
                         <td className="py-3 pl-2" style={{ color: '#6B7280' }}>
                           {u.totalCompleted}
                         </td>
+                        <td className="py-3 pl-2 text-right">
+                          <Button
+                            data-testid={`redistribute-btn-${u.id}`}
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); onRedistribute && onRedistribute(u); }}
+                            disabled={u.openCount === 0}
+                            className="h-7 px-2 text-xs"
+                            style={{ color: u.openCount > 0 ? '#500000' : '#9CA3AF' }}
+                            title={u.openCount === 0 ? 'Geen openstaande taken om te herverdelen' : 'Taken herverdelen'}
+                          >
+                            <Shuffle size={12} className="mr-1" />
+                            Herverdeel
+                          </Button>
+                        </td>
                       </tr>
                       );
                     })}
@@ -229,6 +388,7 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('active'); // active, completed, all
   const [assignedFilter, setAssignedFilter] = useState(null); // null | user_id
+  const [redistributeUser, setRedistributeUser] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', task_type: 'overig', assigned_to: '', project_id: '' });
 
@@ -378,6 +538,17 @@ export default function TasksPage() {
               tasks={tasks}
               activeUserId={assignedFilter}
               onUserClick={(uid) => setAssignedFilter(prev => (prev === uid ? null : uid))}
+              onRedistribute={(u) => setRedistributeUser(u)}
+            />
+          )}
+          {user?.role === 'admin' && (
+            <RedistributeDialog
+              open={!!redistributeUser}
+              onOpenChange={(v) => { if (!v) setRedistributeUser(null); }}
+              sourceUser={redistributeUser}
+              tasks={tasks}
+              teamMembers={teamMembers}
+              onReassigned={fetchAll}
             />
           )}
           {assignedFilter && (

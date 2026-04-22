@@ -70,6 +70,7 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Top-performer badge bij koploper van de week
 - Client-side berekening uit bestaande tasks state (geen extra API calls)
 - **Klik op rij**: filtert takenlijst op dat teamlid (toggle aan/uit); chip bovenaan met aantal en "Wis filter"
+- **Herverdeel-knop** per teamlid (niet gebonden aan een minimum): dialog met openstaande taken, bulk-toewijzing of per-taak toewijzing aan collega; gebruikt bestaande `/api/team-tasks/{id}/assign` endpoint waardoor push- en e-mailnotificaties automatisch verstuurd worden
 
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
