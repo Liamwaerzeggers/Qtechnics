@@ -57,6 +57,13 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Service Worker + subscription ook geactiveerd voor workers (naast admins)
 - Automatische opruiming van verlopen (410) en corrupte (base64) subscriptions
 
+### Wekelijkse Samenvattings-e-mail (feb 2026)
+- APScheduler cron: elke maandag 07:00 Europe/Brussels (`weekly_task_summary`)
+- Per teamlid: openstaande taken + afgelopen week voltooide taken
+- Leden zonder activiteit worden overgeslagen (geen noise)
+- Admin endpoint `POST /api/team-tasks/send-weekly-summary[?target_user_id=X]` voor handmatige trigger/test
+- Verstuurd via Resend van `noreply@maxq.be`
+
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 

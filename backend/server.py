@@ -12302,6 +12302,179 @@ async def startup_cleanup():
     except Exception as e:
         logger.error(f"Startup cleanup error: {e}")
 
+# ============= WEEKLY TASK SUMMARY EMAIL =============
+
+TASK_TYPE_LABELS = {
+    "nieuwe_lead": "Nieuwe Lead",
+    "eerste_bezoek": "Eerste Bezoek",
+    "offerte_maken": "Offerte Maken",
+    "materiaal_bestellen": "Materiaal Bestellen",
+    "planning": "Planning",
+    "opvolging": "Opvolging",
+    "administratie": "Administratie",
+    "overig": "Overig",
+}
+
+
+def _render_task_rows(tasks: list, empty_msg: str) -> str:
+    if not tasks:
+        return f'<tr><td colspan="3" style="padding:12px 8px;color:#9CA3AF;font-style:italic;">{empty_msg}</td></tr>'
+    rows = []
+    for t in tasks:
+        tl = TASK_TYPE_LABELS.get(t.get("task_type", "overig"), "Taak")
+        ctx = t.get("project_name") or t.get("lead_name") or ""
+        ctx_html = f'<div style="color:#6B7280;font-size:12px;margin-top:2px;">{ctx}</div>' if ctx else ""
+        rows.append(
+            '<tr>'
+            f'<td style="padding:10px 8px;border-bottom:1px solid #F3F4F6;vertical-align:top;">'
+            f'<div style="font-weight:600;color:#111827;">{t.get("title","")}</div>{ctx_html}</td>'
+            f'<td style="padding:10px 8px;border-bottom:1px solid #F3F4F6;color:#6B7280;font-size:13px;vertical-align:top;">{tl}</td>'
+            '</tr>'
+        )
+    return "".join(rows)
+
+
+async def _build_summary_html(user_name: str, open_tasks: list, completed_last_week: list, app_url: str) -> str:
+    open_rows = _render_task_rows(open_tasks, "Geen openstaande taken. Goed bezig!")
+    done_rows = _render_task_rows(completed_last_week, "Geen afgeronde taken afgelopen week.")
+    return f"""
+    <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:20px;">
+        <div style="background:linear-gradient(135deg,#3a190b 0%,#7a1f1f 100%);padding:24px;border-radius:12px 12px 0 0;">
+            <h2 style="color:white;margin:0;font-size:22px;">Jouw week bij MaxQ</h2>
+            <p style="color:#F5E6E6;margin:6px 0 0 0;font-size:14px;">Hallo {user_name}, hier is jouw overzicht.</p>
+        </div>
+        <div style="padding:20px;border:1px solid #E5E7EB;border-top:none;border-radius:0 0 12px 12px;background:white;">
+            <h3 style="color:#3a190b;font-size:16px;margin:0 0 8px 0;">Openstaande taken deze week ({len(open_tasks)})</h3>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">{open_rows}</table>
+
+            <h3 style="color:#3a190b;font-size:16px;margin:0 0 8px 0;">Afgerond afgelopen week ({len(completed_last_week)})</h3>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">{done_rows}</table>
+
+            <div style="text-align:center;margin-top:20px;">
+                <a href="{app_url}/tasks" style="display:inline-block;padding:12px 24px;background:#500000;color:white;text-decoration:none;border-radius:8px;font-weight:600;">Bekijk taken in MaxQ</a>
+            </div>
+            <p style="color:#9CA3AF;font-size:12px;margin-top:24px;text-align:center;">Q-Technics / MaxQ Team</p>
+        </div>
+    </div>
+    """
+
+
+async def send_weekly_task_summary(target_user_id: str | None = None) -> dict:
+    """Send weekly task summary email to every team member (or a single user if target_user_id is set)."""
+    if not resend.api_key:
+        logger.warning("RESEND_API_KEY not configured - skipping weekly summary")
+        return {"sent": 0, "skipped": "no_api_key"}
+
+    app_url = os.environ.get('APP_URL', 'https://dashboard.qtechnics.be')
+    now = datetime.now(timezone.utc)
+    week_ago_iso = (now - timedelta(days=7)).isoformat()
+
+    # Collect candidate user_ids: hardcoded admins + DB users with any team_task reference
+    try:
+        from auth_simple import HARDCODED_ADMINS
+    except Exception:
+        HARDCODED_ADMINS = {}
+
+    candidate_ids = set(HARDCODED_ADMINS.keys())
+    async for u in db.users.find({}, {"_id": 0, "id": 1}):
+        if u.get("id"):
+            candidate_ids.add(u["id"])
+    async for t in db.team_tasks.find({"assigned_to": {"$ne": None}}, {"_id": 0, "assigned_to": 1}):
+        if t.get("assigned_to"):
+            candidate_ids.add(t["assigned_to"])
+
+    if target_user_id:
+        candidate_ids = {target_user_id}
+
+    sent = 0
+    errors = []
+    for uid in candidate_ids:
+        info = await _resolve_user(uid)
+        email = info.get("email")
+        if not email:
+            continue
+
+        open_tasks = await db.team_tasks.find(
+            {"assigned_to": uid, "completed": False},
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(100)
+
+        completed_tasks = await db.team_tasks.find(
+            {"assigned_to": uid, "completed": True, "completed_at": {"$gte": week_ago_iso}},
+            {"_id": 0}
+        ).sort("completed_at", -1).to_list(100)
+
+        # Skip users with zero activity in both buckets (no noise)
+        if not open_tasks and not completed_tasks:
+            continue
+
+        html = await _build_summary_html(info.get("name") or "collega", open_tasks, completed_tasks, app_url)
+        try:
+            await asyncio.to_thread(resend.Emails.send, {
+                "from": SENDER_EMAIL,
+                "to": [email],
+                "subject": f"Jouw MaxQ week: {len(open_tasks)} openstaand, {len(completed_tasks)} afgerond",
+                "html": html,
+            })
+            sent += 1
+            logger.info(f"Weekly summary sent to {email} (user {uid})")
+        except Exception as e:
+            errors.append({"user_id": uid, "error": str(e)})
+            logger.error(f"Weekly summary failed for {email}: {e}")
+
+    return {"sent": sent, "errors": errors, "candidates": len(candidate_ids)}
+
+
+@api_router.post("/team-tasks/send-weekly-summary")
+async def trigger_weekly_summary(
+    target_user_id: str | None = None,
+    current_user: User = Depends(get_current_user),
+):
+    """Admin: trigger the weekly task summary email immediately (optionally for one user)."""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins")
+    result = await send_weekly_task_summary(target_user_id=target_user_id)
+    return result
+
+# Re-include router so that late-registered endpoints above are exposed
+app.include_router(api_router)
+
+
+# ============= SCHEDULER =============
+try:
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
+    from apscheduler.triggers.cron import CronTrigger
+    scheduler = AsyncIOScheduler(timezone="Europe/Brussels")
+except Exception as _sched_err:
+    scheduler = None
+    logging.getLogger("server").warning(f"APScheduler unavailable: {_sched_err}")
+
+
+@app.on_event("startup")
+async def start_scheduler():
+    if scheduler is None:
+        return
+    try:
+        # Every Monday at 07:00 Europe/Brussels
+        scheduler.add_job(
+            send_weekly_task_summary,
+            CronTrigger(day_of_week="mon", hour=7, minute=0),
+            id="weekly_task_summary",
+            replace_existing=True,
+            misfire_grace_time=3600,
+        )
+        if not scheduler.running:
+            scheduler.start()
+        logger.info("Weekly task summary scheduler started (Mon 07:00 Europe/Brussels)")
+    except Exception as e:
+        logger.error(f"Scheduler startup failed: {e}")
+
+
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    try:
+        scheduler.shutdown(wait=False)
+    except Exception:
+        pass
     client.close()
