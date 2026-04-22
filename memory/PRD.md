@@ -13,32 +13,40 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Offerte regelitem omschrijving bewerken (inline edit)
 - Per-kamer groepering met subtitels en subtotalen (UI + PDF export)
 - Project status workflow met 8 statussen, kleurcodes, tabs en zoekfunctie
+- Team taaksysteem met notificatiebalk, e-mail notificaties, 8 taaktypes
+- Foto's opgeslagen in aparte stored_files collectie (geen 16MB limiet meer)
 
-## Kritieke Bugfixes (april 2026)
+## Recent Geïmplementeerd (april 2026)
 
-### Auth Stabiliteit - Navigatie Crasht Platform
-- **Root cause**: 401 interceptor deed `window.location.href = '/'` (full page reload) bij ELKE 401 response
-- **Cascade effect**: Eén gefaalde API call → alle tokens gewist → andere API calls falen ook → complete logout
-- **Fix**: Soft event-systeem (`auth-expired` custom event), debounced 401 handler, skip auth-requests
-- **Extra**: `Promise.allSettled` i.p.v. `Promise.all` op data-fetch pagina's
+### Team Taaksysteem
+- 8 taaktypes: Nieuwe Lead, Eerste Bezoek, Offerte Maken, Materiaal Bestellen, Planning, Opvolging, Administratie, Overig
+- Automatische taak bij nieuwe lead (open + onverdeeld)
+- Notificatiebalk bovenaan ELKE pagina: toont onverdeelde taken (rood) + jouw taken (groen)
+- Uitklapbaar met toewijzen/voltooien knoppen
+- Taken pagina (/tasks) met Actief/Voltooid/Alle filters, aanmaak dialog, toewijzing, voltooiing, verwijdering
+- E-mail notificatie via Resend bij toewijzing met link naar dashboard
+- Backend: GET/POST /api/team-tasks, PUT assign/complete, DELETE, GET /team-members
 
-### Foto Upload Stopt Na Paar Foto's
-- **Root cause**: Base64 data opgeslagen IN project document → MongoDB 16MB document limiet bereikt
-- **Fix**: Foto data nu in aparte `stored_files` collectie, project houdt alleen URL referentie
-- **Serving**: Zoekt eerst in stored_files, dan in project doc (legacy), dan filesystem
+### Auth & Navigatie Stabiliteit
+- 401 interceptor: soft event ipv page reload, debounced, cascade-preventie
+- Promise.allSettled ipv Promise.all op data-fetch pagina's
+- Authorization header voorrang boven cookies
 
-### Login Intermittent Ongeldig
-- **Root cause**: get_current_user gaf prioriteit aan verlopen cookies boven geldige Authorization header
-- **Fix**: Authorization header heeft voorrang, database error handling, indexes voor snellere lookups
+### Foto Opslag Fix
+- Base64 data in aparte stored_files collectie (niet in project document)
+- Geen MongoDB 16MB document limiet meer → 20+ foto's mogelijk
+- Photo serving: zoekt stored_files → project doc (legacy) → filesystem
 
-### Klantenportaal Foto's Niet Zichtbaar
-- **Root cause**: base64_data werd meegestuurd in response (gigantische payload), of foto niet vindbaar
-- **Fix**: base64_data gestript uit alle project responses, foto serving endpoint doorzoekt 3 bronnen
+### Project Status & Filtering
+- 8 statussen met kleurcodes, horizontale tabs met aantallen
+- Status dropdown op projecttegels, zoekbalk
+
+### Offerte Verbeteringen
+- Omschrijving inline bewerkbaar
+- Per-kamer groepering met subtitels/subtotalen in UI en PDF
 
 ## Bekende Issues
-- P1: Taaktoewijzing fout (user verificatie pending)
-- P2: 5 foto upload limiet
-- P2: server.py refactoring (>11,600 regels)
+- P2: server.py refactoring (>12.000 regels) - technische schuld
 
 ## Backlog
 - P1: server.py refactoring naar route modules
