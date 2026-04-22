@@ -11,7 +11,7 @@ import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL')
 if not BASE_URL:
-    BASE_URL = "https://quote-room-grouping.preview.emergentagent.com"
+    BASE_URL = "https://site-manager-201.preview.emergentagent.com"
 BASE_URL = BASE_URL.rstrip('/')
 
 # Test credentials

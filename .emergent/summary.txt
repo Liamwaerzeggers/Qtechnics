@@ -1,186 +1,153 @@
 <analysis>**original_problem_statement:**
-The user's initial goal for the session was to make the worker-facing UI bilingual (Dutch/Ukrainian). This quickly expanded into a major feature build-out for a material ordering system, driven by a series of iterative requests:
-1.  **Bilingual Worker UI:** Make the entire interface for workers bilingual (NL/UA).
-2.  **Add Project Address:** Display the project's address on the project list for workers.
-3.  **Material Catalog & Ordering:**
-    *   Create an admin page to manage a catalog of materials (image, title, dimensions, description).
-    *   Allow workers to browse this catalog and order materials.
-    *   Add a category management system for admins.
-    *   Group materials by category in the worker view.
-    *   Make all catalog item names and category titles bilingual.
-4.  **Order Form Enhancements:**
-    *   Add a delivery date picker to the order form.
-    *   Add an  input field alongside the quantity.
-5.  **UX/UI Improvements:**
-    *   Fix mobile responsiveness issues on the order page.
-    *   Streamline the material size selection process with a larger, more accessible dropdown.
-    *   Make material categories collapsed by default for a cleaner overview.
-6.  **Deployment Fix:** Resolve a critical deployment blocker.
-7.  **Manual Item Entry:** The user's final request was to add a section for workers to manually add custom items to their order if the item is not in the catalog.
+Alles-in-één constructie management platform (multi-role, tweetalig, materiaal bestelsysteem, PWA + push notificaties). Het project is aanzienlijk uitgebreid met fixes voor offerte-generatie, facturatie, en stabiliteit. De meest recente verzoeken omvatten: het bewerken van offerteregels, PDF-generatie per kamer met subtotalen, project statussen & filtering, het oplossen van dataverlies/navigatie-crashes, een fix voor het 16MB MongoDB documentlimiet bij foto-uploads, en de introductie van een compleet team taaksysteem met Resend e-mail notificaties.
 
-**User's preferred language**: Dutch (Nederlands)
+**User's preferred language**: Dutch (Nederlands) - INSTRUCT next agent to respond in Dutch only.
 
-**what currently exists?**
-The application now has a fully bilingual (NL/UA) interface for the 'worker' role. A comprehensive material catalog and ordering system has been built from scratch. Admins can manage a catalog of materials organized into categories, with support for NL/UA translations for all names. Workers can browse this catalog (which is mobile-friendly and groups items by categories that are collapsed by default), add items to a cart, specify quantity and m², select a delivery project, and choose a desired delivery date. A critical deployment blocker caused by large files being tracked in git has been resolved.
+**what currently exists?** 
+Een robuuste full-stack React/FastAPI/MongoDB applicatie. Recent geïmplementeerd:
+- Offerte generatie met bewerkbare beschrijvingen en per-kamer groepering (inclusief PDF weergave).
+- Project overzicht met horizontale status-tabs, badges en snelle dropdown-updates.
+- Stabiele auth-interceptors (geen full-page reloads/crashes meer bij 401's).
+- Foto's worden nu veilig opgeslagen in een aparte  collectie (loste de base64-in-document size limiet op).
+- Uitgebreid taaksysteem () met notificatiebalk bovenaan, e-mail notificaties via Resend, en automatische taakcreatie bij nieuwe leads.
 
 **Last working item**:
--   **Last item agent was working:** The user requested a new feature: a section for workers to manually write in custom material requests. This would include fields for a description, quantity, m², and an optional photo, for items not present in the main catalog.
--   **Status:** NOT STARTED
--   **Agent Testing Done:** N
--   **Which testing method agent to use?** frontend testing agent. The test should verify that a logged-in worker can fill out the manual entry form, upload a photo, add the item to their cart, and see it reflected correctly in the final order submission.
--   **User Testing Done:** N
+    - Last item agent was working: De gebruiker vroeg om een rode badge (met het aantal openstaande taken) in het linkermenu naast het Taken navigatie-item. De agent heeft de logica in  toegevoegd, maar liep tegen een timing-probleem aan (API werd aangeroepen voordat het token in  zat, waardoor de badge  bleef). De agent heeft zojuist een aanpassing gepusht (via ) om deze afhankelijkheid te fixen.
+    - Status: IN PROGRESS
+    - Agent Testing Done: N (Screenshot nog nodig om de fix te verifiëren)
+    - Which testing method agent to use? screenshot tool
+    - User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   Issue 1: Implement Manual Material Entry for Workers (P0)
--   Issue 2: Internal Server Error on Task Assignment (P1)
--   Issue 3: 5 Photo Upload Limit (P2)
--   Issue 4: Backend API Route Instability &  Refactor (P2)
--   Issue 5: Property Scraping limitations on major portals (P3)
+  Issue 1: Taak badge in sidebar toont niet direct de juiste count (P0)
+     - Attempted fixes: State en fetch-logica toegevoegd aan . Oorspronkelijke  vuurde te vroeg. Fix is net toegepast maar nog niet geverifieerd.
+     - Next debug checklist: Neem een screenshot van de frontend ( of ) om te zien of de badge met een getal (>0) in het linker menu bij Taken staat. Indien niet, controleer of de API call correct wordt uitgevoerd nadat de  state is gezet in de context.
+     - Why fix this issue and what will be achieved with the fix? Directe visuele indicator voor de gebruiker dat er taken openstaan, wat hun workflow verbetert.
+     - Status: IN PROGRESS
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? frontend (screenshot tool)
+     - Blocked on other issue: None
 
-**Issues Detail**:
--   **Issue 1: Implement Manual Material Entry for Workers**
-    -   **Attempted fixes:** The agent viewed  to begin planning.
-    -   **Next debug checklist:**
-        1.  Create a new state in  to manage the form fields for the manual item (title, quantity, m2, file).
-        2.  Add a new UI section below the existing catalog categories with input fields for manual entry and a file uploader.
-        3.  Create a function to add the manually entered item to the main  state. This item will not have a .
-        4.  Update the backend  endpoint and logic to handle items without a , potentially saving the custom title and details directly. The photo will need to be uploaded and its URL associated with the request.
-    -   **Why fix this issue and what will be achieved with the fix?** Provides flexibility for workers to order items that are not yet in the official catalog, preventing workflow blockages.
-    -   **Status:** NOT STARTED
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Both.
-    -   **Blocked on other issue:** None
-
--   **Issue 2: Internal Server Error on Task Assignment**
-    -   **Attempted fixes:** A backend fix was previously implemented.
-    -   **Next debug checklist:** The agent needs to remind the user to test this on their production environment to confirm the fix.
-    -   **Status:** USER VERIFICATION PENDING
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** User verification is sufficient.
-
--   **Issue 3: 5 Photo Upload Limit**
-    -   **Status:** NOT STARTED
-    -   **Why fix this issue and what will be achieved with the fix?** Allows users to document projects more thoroughly.
-
--   **Issue 4: Backend API Route Instability &  Refactor**
-    -   **Status:** NOT STARTED
-    -   **Why fix this issue and what will be achieved with the fix?**  is now over 11,400 lines. Refactoring is critical for stability, maintainability, and preventing future regressions.
-
--   **Issue 5: Property Scraping limitations on major portals**
-    -   **Status:** NOT STARTED
+  Issue 2: Server.py Monolith Refactoring (P1)
+     - Attempted fixes: Geen in deze sessie. Bestand is inmiddels gegroeid tot >12.000 regels.
+     - Next debug checklist: Opsplitsen van  in API routers (bijv. auth, projects, tasks, quotes).
+     - Why fix this issue and what will be achieved with the fix? Cruciale technical debt; vermindert kans op bugs en time-outs in de editor.
+     - Status: NOT STARTED
+     - Is recurring issue? Y
+     - Should Test frontend/backend/both after fix? both (testing agent MUST be used)
+     - Blocked on other issue: None
 
 **In progress Task List**:
--   There are no in-progress tasks. The bilingual UI task is complete, and the next item is the new manual entry feature (Issue 1).
+  Task 1: Sidebar Taak Badge
+     - Where to resume: Controleer of de zojuist gepushte fix in  werkt via een screenshot.
+     - What will be achieved with this? Voltooiing van het taak-notificatiesysteem verzoek.
+     - Status: TESTING PENDING
+     - Should Test frontend/backend/both after fix? frontend
+     - Blocked on something: None
 
 **Upcoming and Future Tasks**
--   **Upcoming Tasks:**
-    -   (P1) Refactor  (see Issue 4).
-    -   (P2) Phase 2 - Subcontractors Module.
--   **Future Tasks:**
-    -   (P2) Phase 3 - Investors Module.
-    -   (P3) Commercial Logic: Implement subscription tiers and payments.
-    -   (P3) Data Migration for Old Photos.
+    Upcoming Tasks:
+    - (P1)  refactoring naar individuele route modules.
+    Future Tasks:
+    - (P2) Fase 2 - Onderaannemers Module.
+    - (P2) Fase 3 - Investeerders Module.
+    - (P3) Commerciële logica (abonnementen, betalingen).
 
 **Completed work in this session**
--   **Feature (Worker UI Bilingual):** Completed the internationalization of the entire worker-facing UI to be bilingual (Dutch/Ukrainian).
--   **Feature (Project Address for Workers):** Added the project address to worker's project list by enriching the  endpoint data.
--   **Feature (Full Material Catalog System):**
-    -   Built backend and frontend for an admin-managed material catalog with categories and bilingual item names.
-    -   Overhauled the  for workers to browse and order materials from the catalog.
--   **Feature (Order Form Enhancements):** Added a delivery date picker and an  input field to the material order process.
--   **UX/UI (Mobile Responsiveness):** Fixed mobile layout issues on the material order page, implemented collapsible categories (default collapsed), and redesigned the size selection to use a large, touch-friendly dropdown.
--   **Bugfix (Deployment Blocker):** Resolved a critical deployment failure by cleaning the  file and using  to remove over 165MB of tracked upload files from the repository.
+- Omschrijving offerteregels bewerken (DONE)
+- Per-kamer offertes incl. PDF export met kamer headers en subtotalen (DONE)
+- Afbraak plafond dubbele berekening bug gefixt via verbeterde regex matching (DONE)
+- Projecten Dashboard 2.0 (Statussen, tabs, kleurcodes) (DONE)
+- Auth & Navigatie stabiliteit gefixt (401 interceptor verwijderd full page reload) (DONE)
+- Foto upload limiet gefixt (Base64 opgeslagen in aparte  DB i.p.v. in project) (DONE)
+- Foto weergave in klantenportaal hersteld (DONE)
+- Volledig Team Taaksysteem + Notificatiebalk + Resend emails (DONE)
 
 **Earlier issues found/mentioned but not fixed**
--   The issues mentioned (5 photo limit,  refactor, scraping) are tracked in the main Pending/In progress Issue list.
+Geen (alles is tijdens deze sessie verholpen).
 
 **Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork:** Backend API Route Instability &  Refactor.
--   **Recurrence count:** High (5+).
--   **Status:** NOT STARTED. The file has grown from ~10,500 lines to over 11,400 lines in this session, making this technical debt even more critical.
+  - Issue recurrence in previous fork:  is te groot en onoverzichtelijk.
+  - Recurrence count: High
+  - Status: NOT STARTED
+  Note: Dit mag pas opgepakt worden nadat de huidige workflow (badge) is afgerond en goedgekeurd door de gebruiker.
 
 **Code Architecture**
-
+- /app/backend/server.py (Monolith > 12.000 regels)
+- /app/backend/auth_simple.py (Nieuwe simpele auth router)
+- /app/frontend/src/components/ (o.a. DashboardLayout.js, TaskNotificationBar.js)
+- /app/frontend/src/pages/ (o.a. TasksPage.js)
 
 **Key Technical Concepts**
--   **Rapid Prototyping & Iteration:** The agent successfully handled a long chain of small, iterative feature requests, building a complex feature piece by piece.
--   **Git Housekeeping:** Resolved a critical deployment blocker by using  to untrack large directories and cleaning up . This is a crucial skill.
--   **Responsive UI/UX:** Used TailwindCSS responsive prefixes (, ) and conditional rendering to significantly improve the mobile experience for workers. Redesigned interactive elements (buttons to dropdowns) based on user feedback for better usability.
--   **Backend Data Enrichment:** Modified the  endpoint to include  for the 'worker' role, simplifying frontend logic and reducing the number of required API calls.
--   **Complex State Management:** Managed complex UI state in React using  for a catalog, shopping cart, collapsed categories, and multiple form inputs simultaneously in a single component.
+React frontend, FastAPI backend, MongoDB, PyWebPush (notificaties), Resend (emails), LocalStorage auth tokens.
 
 **key DB schema**
--   **material_catalog (NEW Collection):** Stores catalog items .
--   **material_categories (NEW Collection):** Stores categories .
--   **material_requests (UPDATED Collection):** The  is now constructed to include size and m² (e.g., ). The  field now stores the selected delivery date.
--   **projects (UPDATED Pydantic Model):** The  model now includes  to pass enriched data to the frontend.
+  - : {id, status, is_sold, ...}
+  - : {id, filename, data (base64 string)}
+  - : {id, title, task_type, status, assigned_to, created_by, ...}
+  -  & : Managed tokens.
 
 **changes in tech stack**
--   None.
+  -  pip package geïnstalleerd voor email notificaties.
+  - Base64 images definitief losgekoppeld van de document records en verplaatst naar de  tabel om MongoDB limieten (16MB) te omzeilen.
 
 **All files of reference**
--    (Heavily modified with new models and endpoints)
--    (Heavily refactored and expanded for catalog/ordering)
--    (New file for admin catalog management)
--    (Updated to display project address)
--    (Updated with admin navigation)
--    (Updated to fix deployment blocker)
+  -  (Laatste wijzigingen voor de menu badge).
+  -  (Nieuw)
+  -  (Nieuw)
+  -  (Aangepast voor /api/tasks, project get/update flows)
+  -  (Auth interceptors aangepast -  is vervangen door event listeners)
 
 **Areas that need refactoring**:
--   **/app/backend/server.py**: **CRITICAL**. At over 11,400 lines, this monolithic file is a severe liability. It desperately needs to be broken down into a proper package structure (e.g., , , ).
--   **/app/frontend/src/pages/MaterialRequestPage.js**: Now over 680 lines, this component manages an enormous amount of state and logic (data fetching, catalog display, cart management, order submission, responsive layouts). It should be broken down into smaller components and potentially use custom hooks to manage logic.
+  -  is >12.000 regels lang.
 
 **key api endpoints**
--   **Material Catalog (NEW):**  & image upload.
--   **Material Categories (NEW):** .
--   **Material Orders (UPDATED):**  (now accepts  and ).
--   **Projects (UPDATED):**  (now returns ).
--   **Static Serving (NEW):** .
+  -  (Ophalen van taken, inclusief onverdeelde taken)
+  -  (Auth route, in auth_simple.py)
 
 **Critical Info for New Agent**
--   **Communicate in Dutch.**
--   **Immediate Task:** Your top priority is implementing the manual material entry feature as described in Last working item and Issue 1. The user wants a form for workers to add items not found in the catalog.
--   **Code Health Warning:** Be extremely cautious when editing  and . They are massive, complex, and prone to breaking. Proposing the  refactor to the user should be a high priority after completing the current task.
--   **User is Testing on Production:** The user has mentioned deployment issues. Be aware they may be checking a live version that is not yet updated with your latest changes. When you complete a feature, clearly state that it's ready in the preview environment and will be visible after they redeploy.
+- **Reageer uitsluitend in het Nederlands.**
+- Begin direct met het nemen van een screenshot van  of  om te verifiëren of de taak-badge nu wél gerenderd wordt in het linkermenu. 
+- Maak GEEN gebruik van  in de frontend bij auth fouten. Dit triggert een harde state clear die dataloss veroorzaakt bij het navigeren. Gebruik de nieuw geïmplementeerde React Auth context mechanismen.
 
 **documents and test reports created in this job**
--    (Updated multiple times)
--   The testing agent was used, generating reports for the Material Catalog feature, but the specific paths were not retained in the final history.
+  - /app/memory/PRD.md
+  - /app/test_reports/iteration_15.json
+  - /app/test_reports/iteration_16.json
 
-**Last 10 User Messages and any pending HUMAN messages**
-10. Request for a manual material entry section for workers. (STATUS: Not Started)
-9. Request to make material categories collapsed by default. (STATUS: Completed)
-8. Request to shorten dropdown text from Kies afmeting to Afmeting. (STATUS: Completed)
-7. Request to improve UX: translate all buttons, use a large dropdown for sizes, and streamline the ordering flow. (STATUS: Completed)
-6. Request to add an  input field to material orders. (STATUS: Completed)
-5. User is unable to redeploy and also wants a delivery date picker for material orders. (STATUS: Completed)
-4. Request to add categories to the material catalog. (STATUS: Completed)
-3. Request to add Ukrainian translations for catalog item and category names. (STATUS: Completed)
-2. Request for an admin page to manage a list of materials for workers to order. (STATUS: Completed)
-1. Report of mobile UI being broken on the material order page. (STATUS: Completed)
+**Last 10 User Messages and any pending HUMAN messages** 
+ - User vroeg om een tekstballon/badge bij Taken in het linker menu die het aantal actieve taken toont. (PENDING - fix is net geschreven, moet enkel nog geverifieerd worden)
+ - User vroeg om een taaksysteem voor het team en het oplossen van de foto-upload limieten & stabiliteitscrashes. (COMPLETED)
+ - User rapporteerde dat het dashboard leeg wordt (crasht/uitlogt) wanneer er terug genavigeerd wordt vanuit een project. (COMPLETED - 401 interceptor fix)
+ - User rapporteerde dat foto upload stopte na ~5 foto's en dat ze niet zichtbaar waren in het portaal. Ook login faalde vaak. (COMPLETED - DB 16MB fix & Auth fix)
+ - User verzocht om een project status overzicht (Nieuwe lead, Eerste bezoek, etc.) met tabs en een zoekbalk. (COMPLETED)
+ - User rapporteerde een bug: Afbraak plafond kwam dubbel voor in de calculaties. (COMPLETED)
+ - User verzocht om aanpassing van de PDF: groepering per kamer ontbrak. (COMPLETED)
 
 **Project Health Check:**
--   **Broken:** No features are broken.
--   **Mocked:** None.
+- Broken: None
+- Mocked: None
 
 **3rd Party Integrations**
--   Billit (Payments/PEPPOL)
--   OpenAI GPT-4o Vision
--   Resend (Email)
--   canvas-confetti (UI Animation)
--   beautifulsoup4 / httpx (Web Scraping)
--   pillow-heif (HEIC to JPEG conversion)
+- Resend (Email) — requires User API Key ()
+- pywebpush (Push Notifications) — Uses environment VAPID keys
+- OpenAI GPT-4o Vision — uses Emergent LLM Key
+- Billit (Payments/PEPPOL) — requires User API Key
 
 **Testing status**
--   **Testing agent used after significant changes:** YES.
--   **Troubleshoot agent used after agent stuck in loop:** NO.
--   **Test files created:** None.
--   **Known regressions:** None.
+  - Testing agent used after significant changes: YES (iteration 15 & 16)
+  - Troubleshoot agent used after agent stuck in loop: NO
+  - Test files created: []
+  - Known regressions: None
 
 **Credentials to test flow:**
--   **Admin Login:** Username: , Password: 
--   **Realtor (Makelaar) Login:** Username: , Password: 
--   **Worker (Werkman) Login:** Username: , Password: 
+  - Username: 
+  - Password: 
 
 **What agent forgot to execute**
--   The agent successfully managed a high volume of iterative user requests and fixed a critical deployment issue. It correctly deferred long-term technical debt ( refactor, 5-photo limit) in favor of immediate user-facing feature delivery. Nothing was forgotten.</analysis>
+De agent heeft de code-fix voor de taak-badge in  net geschreven, maar vergat de verificatie-screenshot te nemen en de sessie formeel af te sluiten via de  tool voordat de job afbrak.
+
+**Debugging checklist for current issue**
+    Issue: Taak-badge in de sidebar toont niet bij eerste render.
+    Frontend files to check:  (Controleer of de  de  afvuurt nadat de  uit  succesvol beschikbaar is).
+    Actie: Neem een screenshot en gebruik eventueel de console logs om te zien of de API oproep faalt of de teller simpelweg 0 terugkrijgt. Gebruik  als het succesvol is.</analysis>

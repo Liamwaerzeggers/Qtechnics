@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class CrossAdminQuoteAccessTester:
-    def __init__(self, base_url="https://quote-room-grouping.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://site-manager-201.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0

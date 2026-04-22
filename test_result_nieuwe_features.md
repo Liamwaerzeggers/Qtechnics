@@ -3,7 +3,7 @@
 ## Testing Summary
 Date: 2025-01-27
 Tester: Backend Testing Agent
-Environment: Production (https://quote-room-grouping.preview.emergentagent.com)
+Environment: Production (https://site-manager-201.preview.emergentagent.com)
 
 ## Backend Tests Completed
 
@@ -73,7 +73,7 @@ Environment: Production (https://quote-room-grouping.preview.emergentagent.com)
 - All database operations successful
 
 ## Test Environment Details
-- Backend URL: https://quote-room-grouping.preview.emergentagent.com/api
+- Backend URL: https://site-manager-201.preview.emergentagent.com/api
 - Database: MongoDB (qtechnics)
 - Authentication: Admin credentials (test/test123)
 - File Storage: Local filesystem with API serving

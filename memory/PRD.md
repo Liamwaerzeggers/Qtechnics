@@ -45,6 +45,11 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Omschrijving inline bewerkbaar
 - Per-kamer groepering met subtitels/subtotalen in UI en PDF
 
+### Sidebar Taak Badge (feb 2026)
+- Rode badge in linker sidebar naast "Taken" met aantal openstaande taken (onverdeeld + eigen)
+- Werkt op desktop én mobiel, ververst elke 30s
+- data-testid: `task-count-badge-desktop` en `task-count-badge`
+
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 

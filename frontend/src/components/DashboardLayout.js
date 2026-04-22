@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../App';
+import { useAuth, API } from '../App';
+import axios from 'axios';
 import { FileText, FileSpreadsheet, Calendar, Package, Users, LogOut, LayoutDashboard, Menu, X, TrendingUp, UserCog, ShieldCheck, PenTool, Building2, Tag, Wrench, ChevronDown, ShoppingCart, ClipboardList } from 'lucide-react';
 import CelebrationModal from './CelebrationModal';
 import WorkerTaskBanner from './WorkerTaskBanner';
@@ -13,6 +14,32 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [topMenuOpen, setTopMenuOpen] = React.useState(false);
+  const [activeTaskCount, setActiveTaskCount] = React.useState(0);
+
+  // Fetch active task count for sidebar badge
+  React.useEffect(() => {
+    if (!user) return;
+    
+    const fetchCount = async () => {
+      const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
+      if (!token) return;
+      try {
+        const headers = { Authorization: `Bearer ${token}` };
+        const [unassignedRes, myRes] = await Promise.allSettled([
+          axios.get(`${API}/team-tasks/unassigned`, { headers }),
+          axios.get(`${API}/team-tasks/my`, { headers })
+        ]);
+        const unassigned = unassignedRes.status === 'fulfilled' ? unassignedRes.value.data.length : 0;
+        const my = myRes.status === 'fulfilled' ? myRes.value.data.length : 0;
+        setActiveTaskCount(unassigned + my);
+      } catch (e) {}
+    };
+    
+    // Small delay to ensure token is available after login
+    const timer = setTimeout(fetchCount, 500);
+    const interval = setInterval(fetchCount, 30000);
+    return () => { clearTimeout(timer); clearInterval(interval); };
+  }, [user]);
 
   // SIDEBAR items - main navigation (overzichtelijk)
   const getSidebarItems = () => {
@@ -256,7 +283,16 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
                     }}
                   >
                     <Icon size={20} />
-                    <span>{item.name}</span>
+                    <span className="flex-1">{item.name}</span>
+                    {item.path === '/tasks' && activeTaskCount > 0 && (
+                      <span
+                        data-testid="task-count-badge"
+                        className="min-w-[22px] h-[22px] flex items-center justify-center text-xs font-bold rounded-full text-white"
+                        style={{ backgroundColor: '#DC2626' }}
+                      >
+                        {activeTaskCount}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -338,12 +374,21 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
                   >
                     <Icon size={20} />
                     {item.name.includes(' / ') ? (
-                      <span className="font-medium text-left leading-tight">
+                      <span className="font-medium text-left leading-tight flex-1">
                         <span className="block text-sm">{item.name.split(' / ')[0]}</span>
                         <span className="block text-xs opacity-70">{item.name.split(' / ')[1]}</span>
                       </span>
                     ) : (
-                      <span className="font-medium">{item.name}</span>
+                      <span className="font-medium flex-1 text-left">{item.name}</span>
+                    )}
+                    {item.path === '/tasks' && activeTaskCount > 0 && (
+                      <span
+                        data-testid="task-count-badge-desktop"
+                        className="min-w-[22px] h-[22px] flex items-center justify-center text-xs font-bold rounded-full text-white ml-auto"
+                        style={{ backgroundColor: '#DC2626' }}
+                      >
+                        {activeTaskCount}
+                      </span>
                     )}
                   </button>
                 );
