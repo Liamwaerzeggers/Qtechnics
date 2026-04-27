@@ -87,6 +87,17 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Backend middleware: `Cache-Control: no-store` op alle `/api/auth*` endpoints (voorkomt stale login response cache op iOS)
 - Nieuwe `ConnectivityBanner` component toont sticky rood banner bij offline status
 
+### PDF Branding Refresh: Offertes & Facturen (feb 2026)
+- Nieuw `pdf_branding.py` module met gedeelde building blocks (header, info-blokken, items-tabel, totals box, signature/payment footers)
+- Bordeaux #500000 hoofdaccent in heel het document
+- Header: logo links + "OFFERTE" / "FACTUUR" titel rechts + meta-info (nummer, datum, geldig tot, status)
+- KLANT + PROJECT info in twee-koloms blok, gescheiden door subtiele divider
+- Items-tabel met bordeaux header band + per-kamer groepering behouden + subtotalen
+- Totals box rechts naast voorwaarden links, eindigt met bordeaux "TOTAAL TE BETALEN" band
+- **Offertes**: signature footer met "Naam & handtekening klant" + "Datum"
+- **Facturen**: payment footer met IBAN, BTW-nummer en gestructureerde mededeling
+- Visuele materiaaloverzicht (offertes) op aparte pagina behouden
+
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 

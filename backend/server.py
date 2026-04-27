@@ -3558,423 +3558,307 @@ async def download_customer_legacy_document(access_token: str, document_id: str)
 
 @api_router.get("/quotes/{quote_id}/export/pdf")
 async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_current_user)):
-    """Export quote as PDF with logo and VAT details (all admins can export)"""
-    from reportlab.lib.utils import ImageReader
-    from reportlab.platypus import Image as ReportLabImage
-    
-    # All admins can export any quote
+    """Export quote as PDF in MaxQ bordeaux brand style."""
+    from reportlab.platypus import Image as ReportLabImage, PageBreak
+    from pdf_branding import (
+        base_styles, build_header, build_info_blocks, section_heading,
+        grouped_items_table, build_totals_box, build_terms_and_totals, build_signature_footer,
+        BRAND,
+    )
+
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can export quotes")
-    
-    # Get quote
+
     quote = await db.quotes.find_one({"id": quote_id})
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
-    
-    # Get lead
     lead = await db.leads.find_one({"id": quote["lead_id"]})
-    
-    # Get line items
     items = await db.line_items.find({"quote_id": quote_id}, {"_id": 0}).to_list(1000)
-    
-    # Create PDF
+
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch, leftMargin=0.75*inch, rightMargin=0.75*inch)
-    
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        topMargin=0.5 * inch, bottomMargin=0.5 * inch,
+        leftMargin=0.6 * inch, rightMargin=0.6 * inch,
+    )
     story = []
-    styles = getSampleStyleSheet()
-    
-    # Add logo if exists
-    logo_path = Path(__file__).parent / 'qtechnics_logo.png'
-    if logo_path.exists():
-        logo = ReportLabImage(str(logo_path), width=2.5*inch, height=1.1*inch)
-        story.append(logo)
-        story.append(Spacer(1, 0.2*inch))
-    
-    # Title
-    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'], fontSize=20, textColor=colors.HexColor('#1E40AF'))
-    story.append(Paragraph(f"Offerte {quote['quote_number']}", title_style))
-    story.append(Spacer(1, 0.2*inch))
-    
-    # Lead info
+    pdf_styles = base_styles()
+
+    # === HEADER ===
+    quote_date_iso = quote.get("created_at", "")
+    try:
+        if isinstance(quote_date_iso, str) and quote_date_iso:
+            quote_date_str = datetime.fromisoformat(quote_date_iso.replace("Z", "+00:00")).strftime("%d-%m-%Y")
+        else:
+            quote_date_str = datetime.now(timezone.utc).strftime("%d-%m-%Y")
+    except Exception:
+        quote_date_str = datetime.now(timezone.utc).strftime("%d-%m-%Y")
+    valid_until_str = quote.get("valid_until", "—")
+    try:
+        if isinstance(valid_until_str, str) and valid_until_str and valid_until_str != "—":
+            valid_until_str = datetime.fromisoformat(valid_until_str.replace("Z", "+00:00")).strftime("%d-%m-%Y")
+    except Exception:
+        pass
+
+    meta_pairs = [
+        ("Offertenummer", str(quote["quote_number"])),
+        ("Datum", quote_date_str),
+        ("Geldig tot", str(valid_until_str)),
+    ]
+    if lead and lead.get("id"):
+        meta_pairs.append(("Klant ID", str(lead["id"])[:12]))
+
+    logo_path = Path(__file__).parent / "qtechnics_logo.png"
+    story += build_header(pdf_styles, "OFFERTE", meta_pairs, logo_path=logo_path)
+
+    # === CUSTOMER + PROJECT BLOCKS ===
+    customer_lines = []
     if lead:
-        story.append(Paragraph(f"<b>Klant:</b> {lead['name']}", styles['Normal']))
-        story.append(Paragraph(f"<b>Email:</b> {lead['email']}", styles['Normal']))
-        story.append(Paragraph(f"<b>Telefoon:</b> {lead['phone']}", styles['Normal']))
-        story.append(Paragraph(f"<b>Adres:</b> {lead['address']}", styles['Normal']))
-        story.append(Spacer(1, 0.3*inch))
-    
-    # Separate labor and material items, excluding subtitle/subtotal visual markers
-    labor_items = [item for item in items if item['item_type'] == 'arbeid']
-    material_items = [item for item in items if item['item_type'] == 'materiaal']
-    subtitle_items = [item for item in items if item['item_type'] == 'subtitle']
-    subtotal_items = [item for item in items if item['item_type'] == 'subtotal']
-    other_items = [item for item in items if item['item_type'] == 'overig']
-    
-    # Calculate bundled labor total
-    labor_total_excl = sum(item.get('total_excl_vat', item.get('quantity', 0) * item.get('unit_price', 0)) for item in labor_items)
-    other_total_excl = sum(item.get('total_excl_vat', item.get('quantity', 0) * item.get('unit_price', 0)) for item in other_items)
-    labor_vat_rate = 6  # Renovatie tarief
-    labor_vat = labor_total_excl * (labor_vat_rate / 100)
-    labor_total_incl = labor_total_excl + labor_vat
-    
-    # === ARBEID SECTIE MET KAMER-GROEPERING ===
+        if lead.get("name"):
+            customer_lines.append(f"<b>{lead['name']}</b>")
+        if lead.get("address"):
+            customer_lines.append(lead["address"])
+        if lead.get("email"):
+            customer_lines.append(lead["email"])
+        if lead.get("phone"):
+            customer_lines.append(lead["phone"])
+    if not customer_lines:
+        customer_lines = ["—"]
+
+    project_lines = []
+    if quote.get("title"):
+        project_lines.append(f"<b>{quote['title']}</b>")
+    if quote.get("description"):
+        project_lines.append(quote["description"])
+    if not project_lines:
+        project_lines = ["Project specificatie hieronder"]
+
+    story += build_info_blocks(pdf_styles, customer_lines, project_lines)
+
+    # === LINE ITEMS ===
+    labor_items = [i for i in items if i.get("item_type") == "arbeid"]
+    material_items = [i for i in items if i.get("item_type") == "materiaal"]
+    subtitle_items = [i for i in items if i.get("item_type") == "subtitle"]
+    subtotal_items_lst = [i for i in items if i.get("item_type") == "subtotal"]
+    other_items = [i for i in items if i.get("item_type") == "overig"]
+
+    desc_style = pdf_styles["table_cell"]
+    rows = []
+
+    # ARBEID — gerouped per kamer (behouden van bestaande feature)
     if labor_items:
-        # Arbeid header
-        labor_header_style = ParagraphStyle('LaborHeader', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor('#1E40AF'))
-        story.append(Paragraph("Arbeid", labor_header_style))
-        story.append(Spacer(1, 0.1*inch))
-        
-        # Style for wrapping description text
-        desc_style = ParagraphStyle('DescStyle', parent=styles['Normal'], fontSize=9, leading=11)
-        room_header_style = ParagraphStyle('RoomHeader', parent=styles['Normal'], fontSize=10, leading=12, textColor=colors.white)
-        subtotal_style = ParagraphStyle('SubtotalStyle', parent=styles['Normal'], fontSize=9, leading=11, textColor=colors.HexColor('#7a1f1f'))
-        
-        # Group labor items by room
-        # Strategy: if subtitle items exist, use the order from the items list.
-        # Otherwise, parse room name from description prefix ("kamer: item")
         rooms_ordered = []
         room_items_map = {}
         room_subtotals = {}
-        
         if subtitle_items:
-            # New format: use subtitle items as room markers
-            # Items are already in order: subtitle, items, subtotal, subtitle, items, subtotal...
             current_room = None
-            for item in items:
-                if item['item_type'] == 'subtitle':
-                    current_room = item['description'].replace('---', '').strip()
+            for it in items:
+                t = it.get("item_type")
+                if t == "subtitle":
+                    current_room = (it.get("description") or "").replace("---", "").strip() or "Onbenoemd"
                     if current_room not in room_items_map:
                         rooms_ordered.append(current_room)
                         room_items_map[current_room] = []
-                elif item['item_type'] == 'subtotal':
-                    if current_room:
-                        room_subtotals[current_room] = item.get('total', 0)
-                elif item['item_type'] == 'arbeid' and current_room:
-                    room_items_map[current_room].append(item)
+                elif t == "subtotal" and current_room:
+                    room_subtotals[current_room] = it.get("total", 0)
+                elif t == "arbeid" and current_room:
+                    room_items_map[current_room].append(it)
         else:
-            # Old format: parse room name from description prefix
-            import re
-            for item in labor_items:
-                desc = item.get('description', '')
-                # Try to extract room name from "kamer: rest" pattern
-                match = re.match(r'^(.+?):\s*(.+)$', desc)
-                if match:
-                    room_name = match.group(1).strip()
-                    # Store cleaned description without room prefix
-                    item['_clean_desc'] = match.group(2).strip()
+            import re as _re
+            for it in labor_items:
+                desc = it.get("description", "")
+                m = _re.match(r"^(.+?):\s*(.+)$", desc)
+                if m:
+                    room = m.group(1).strip()
+                    it["_clean_desc"] = m.group(2).strip()
                 else:
-                    room_name = "Overig"
-                    item['_clean_desc'] = desc
-                
-                if room_name not in room_items_map:
-                    rooms_ordered.append(room_name)
-                    room_items_map[room_name] = []
-                room_items_map[room_name].append(item)
-        
-        # Build the table with room grouping
-        labor_table_data = [['Omschrijving', 'Aantal', 'Eenheid', '', 'Subtotaal', '']]
-        labor_row_styles = []  # Track which rows are room headers/subtotals for styling
-        row_idx = 1  # Start after header row
-        
-        for room_name in rooms_ordered:
-            r_items = room_items_map.get(room_name, [])
-            if not r_items:
+                    room = "Overig"
+                    it["_clean_desc"] = desc
+                if room not in room_items_map:
+                    rooms_ordered.append(room)
+                    room_items_map[room] = []
+                room_items_map[room].append(it)
+
+        rows.append(("room", [Paragraph("ARBEID", pdf_styles["room_header"]), "", "", ""]))
+
+        for room in rooms_ordered:
+            rs = room_items_map.get(room, [])
+            if not rs:
                 continue
-            
-            # Room header row
-            labor_table_data.append([
-                Paragraph(f'<b>{room_name}</b>', room_header_style),
-                '', '', '', '', ''
-            ])
-            labor_row_styles.append(('room_header', row_idx))
-            row_idx += 1
-            
+            rows.append(("room", [Paragraph(room, pdf_styles["room_header"]), "", "", ""]))
             room_total = 0
-            for item in r_items:
-                unit = item.get('unit', 'm²')
-                if unit in ['m2', 'vierkante meter']:
-                    unit = 'm²'
-                elif unit in ['lm', 'lopende meter']:
-                    unit = 'm'
-                
-                # Use cleaned description if available (old format), otherwise use as-is
-                display_desc = item.get('_clean_desc', item['description'])
-                desc_para = Paragraph(display_desc, desc_style)
-                
-                item_total = item.get('total_excl_vat', item.get('quantity', 0) * item.get('unit_price', 0))
+            for it in rs:
+                unit = it.get("unit", "m²")
+                if unit in ["m2", "vierkante meter"]:
+                    unit = "m²"
+                elif unit in ["lm", "lopende meter"]:
+                    unit = "m"
+                disp = it.get("_clean_desc") or it.get("description", "")
+                qty = it.get("quantity") or 0
+                item_total = it.get("total_excl_vat", qty * (it.get("unit_price") or 0))
                 room_total += item_total
-                
-                labor_table_data.append([
-                    desc_para,
-                    f"{item['quantity']:.2f}" if item.get('quantity') else '-',
-                    unit,
-                    '',
-                    '',  # No individual price shown for labor
-                    ''
-                ])
-                row_idx += 1
-            
-            # Room subtotal row
-            actual_subtotal = room_subtotals.get(room_name, room_total)
-            labor_table_data.append([
-                Paragraph(f'<b>Subtotaal {room_name}</b>', subtotal_style),
-                '', '', '',
-                f"€{actual_subtotal:.2f}",
-                ''
-            ])
-            labor_row_styles.append(('room_subtotal', row_idx))
-            row_idx += 1
-        
-        # Add overall labor total rows
-        labor_table_data.append([
-            Paragraph('<b>Subtotaal Arbeid</b>', desc_style),
-            '', '', '', 
-            f"€{labor_total_excl:.2f}",
-            'excl. BTW'
-        ])
-        labor_row_styles.append(('total', row_idx))
-        row_idx += 1
-        labor_table_data.append([
-            Paragraph(f'<b>BTW {labor_vat_rate}%</b>', desc_style),
-            '', '', '',
-            f"€{labor_vat:.2f}",
-            ''
-        ])
-        labor_row_styles.append(('total', row_idx))
-        row_idx += 1
-        labor_table_data.append([
-            Paragraph('<b>Totaal Arbeid incl. BTW</b>', desc_style),
-            '', '', '',
-            f"€{labor_total_incl:.2f}",
-            ''
-        ])
-        labor_row_styles.append(('total', row_idx))
-        row_idx += 1
-        
-        labor_table = Table(labor_table_data, colWidths=[2.4*inch, 0.6*inch, 0.6*inch, 0.5*inch, 0.9*inch, 0.7*inch])
-        
-        # Base table style
-        base_style = [
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E5E7EB')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1E40AF')),
-            ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
-            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('TOPPADDING', (0, 0), (-1, -1), 6),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB'))
-        ]
-        
-        # Apply room header and subtotal styling
-        for style_type, ridx in labor_row_styles:
-            if style_type == 'room_header':
-                base_style.append(('BACKGROUND', (0, ridx), (-1, ridx), colors.HexColor('#7a1f1f')))
-                base_style.append(('TEXTCOLOR', (0, ridx), (-1, ridx), colors.white))
-                base_style.append(('SPAN', (0, ridx), (-1, ridx)))
-            elif style_type == 'room_subtotal':
-                base_style.append(('BACKGROUND', (0, ridx), (-1, ridx), colors.HexColor('#FEF2F2')))
-                base_style.append(('FONTNAME', (0, ridx), (-1, ridx), 'Helvetica-Bold'))
-                base_style.append(('FONTNAME', (4, ridx), (4, ridx), 'Helvetica-Bold'))
-            elif style_type == 'total':
-                base_style.append(('BACKGROUND', (0, ridx), (-1, ridx), colors.HexColor('#D1FAE5')))
-                base_style.append(('FONTNAME', (4, ridx), (4, ridx), 'Helvetica-Bold'))
-        
-        labor_table.setStyle(TableStyle(base_style))
-        story.append(labor_table)
-        story.append(Spacer(1, 0.3*inch))
-    
-    # === MATERIALEN SECTIE (met prijzen) ===
+                rows.append((
+                    "item",
+                    [Paragraph(disp, desc_style), f"{qty:.2f}", unit, ""],
+                ))
+            actual_subtotal = room_subtotals.get(room, room_total)
+            rows.append((
+                "subtotal",
+                [
+                    Paragraph(f"Subtotaal {room}", pdf_styles["subtotal_label"]),
+                    "", "",
+                    f"€{actual_subtotal:,.2f}".replace(",", " "),
+                ],
+            ))
+
+    # MATERIALEN
     if material_items:
-        material_header_style = ParagraphStyle('MaterialHeader', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor('#1E40AF'))
-        story.append(Paragraph("Materialen", material_header_style))
-        story.append(Spacer(1, 0.1*inch))
-        
-        # Style for wrapping description text
-        desc_style = ParagraphStyle('DescStyle', parent=styles['Normal'], fontSize=9, leading=11)
-        
-        # Line items table with VAT for materials
-        table_data = [['Omschrijving', 'Aantal', 'Eenheid', 'Prijs', 'Subtotaal', 'BTW%']]
-        
-        # Add individual material items
-        for item in material_items:
-            excl_vat = item.get('total_excl_vat', item.get('quantity', 0) * item.get('unit_price', 0))
-            vat_rate = item.get('vat_rate', 21)
-            unit = item.get('unit', 'stuk')
-            
-            # Use Paragraph for description to allow text wrapping
-            desc_para = Paragraph(item['description'], desc_style)
-            
-            table_data.append([
-                desc_para,
-                f"{item['quantity']:.2f}" if item['quantity'] else '-',
-                unit,
-                f"€{item['unit_price']:.2f}",
-                f"€{excl_vat:.2f}",
-                f"{vat_rate}%"
-            ])
-        
-        # Calculate material totals
-        material_total_excl = sum(item.get('total_excl_vat', 0) for item in material_items)
-        material_vat = sum(item.get('vat_amount', 0) for item in material_items)
-        material_total_incl = material_total_excl + material_vat
-        
-        # Add material total rows
-        table_data.append([
-            Paragraph('<b>Subtotaal Materialen</b>', desc_style),
-            '', '', '',
-            f"€{material_total_excl:.2f}",
-            'excl.'
-        ])
-        table_data.append([
-            Paragraph('<b>BTW Materialen</b>', desc_style),
-            '', '', '',
-            f"€{material_vat:.2f}",
-            ''
-        ])
-        table_data.append([
-            Paragraph('<b>Totaal Materialen incl. BTW</b>', desc_style),
-            '', '', '',
-            f"€{material_total_incl:.2f}",
-            ''
-        ])
-        
-        table = Table(table_data, colWidths=[2.4*inch, 0.6*inch, 0.6*inch, 0.7*inch, 0.9*inch, 0.5*inch])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E5E7EB')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1E40AF')),
-            ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
-            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('TOPPADDING', (0, 0), (-1, -1), 6),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('BACKGROUND', (0, -3), (-1, -1), colors.HexColor('#DBEAFE')),
-            ('FONTNAME', (4, -3), (4, -1), 'Helvetica-Bold'),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB'))
-        ]))
-        story.append(table)
-        story.append(Spacer(1, 0.2*inch))
-    
-    # Totals with VAT breakdown
-    total_excl = quote.get('total_excl_vat', quote.get('total_price', 0))
-    vat_breakdown = quote.get('vat_breakdown', {})
-    total_vat = quote.get('total_vat', 0)
-    total_incl = quote.get('total_incl_vat', quote.get('total_price', 0))
-    
-    story.append(Paragraph(f"<b>Totaal excl. BTW:</b> €{total_excl:.2f}", styles['Normal']))
-    
-    # Show VAT breakdown
-    if vat_breakdown:
-        story.append(Spacer(1, 0.1*inch))
-        for vat_rate, vat_amount in sorted(vat_breakdown.items()):
-            story.append(Paragraph(f"<b>BTW {vat_rate}%:</b> €{vat_amount:.2f}", styles['Normal']))
-    
-    story.append(Paragraph(f"<b>Totaal BTW:</b> €{total_vat:.2f}", styles['Normal']))
-    story.append(Spacer(1, 0.1*inch))
-    story.append(Paragraph(f"<b>Totaal incl. BTW:</b> €{total_incl:.2f}", title_style))
-    
-    # === VISUELE MATERIAALLIJST ===
-    # Get unique material names from line items and look up their images + prices
-    material_info = {}  # name -> {price, quantity, total}
-    for item in material_items:
-        name = item['description']
-        if name not in material_info:
-            material_info[name] = {
-                'unit_price': item.get('unit_price', 0),
-                'quantity': item.get('quantity', 0),
-                'total': item.get('total', item.get('unit_price', 0) * item.get('quantity', 0))
+        rows.append(("room", [Paragraph("MATERIALEN", pdf_styles["room_header"]), "", "", ""]))
+        for it in material_items:
+            qty = it.get("quantity") or 0
+            unit = it.get("unit", "stuk")
+            excl = it.get("total_excl_vat", qty * (it.get("unit_price") or 0))
+            label = f"{it.get('description','')} <font color='#9CA3AF'>({it.get('vat_rate',21)}% btw)</font>"
+            rows.append((
+                "item",
+                [
+                    Paragraph(label, desc_style),
+                    f"{qty:.2f}",
+                    unit,
+                    f"€{excl:,.2f}".replace(",", " "),
+                ],
+            ))
+
+    # OVERIGE
+    if other_items:
+        rows.append(("room", [Paragraph("OVERIG", pdf_styles["room_header"]), "", "", ""]))
+        for it in other_items:
+            qty = it.get("quantity") or 0
+            unit = it.get("unit", "")
+            excl = it.get("total_excl_vat", qty * (it.get("unit_price") or 0))
+            rows.append((
+                "item",
+                [
+                    Paragraph(it.get("description", ""), desc_style),
+                    f"{qty:.2f}" if qty else "—",
+                    unit or "—",
+                    f"€{excl:,.2f}".replace(",", " "),
+                ],
+            ))
+
+    headers = ["OMSCHRIJVING", "AANTAL", "EENHEID", "TOTAAL"]
+    items_table = grouped_items_table(headers, rows, col_widths=[3.4 * inch, 0.9 * inch, 0.9 * inch, 1.5 * inch])
+    story.append(items_table)
+    story.append(Spacer(1, 14))
+
+    # === TOTALS + TERMS ===
+    total_excl = quote.get("total_excl_vat", quote.get("total_price", 0)) or 0
+    vat_breakdown = quote.get("vat_breakdown", {}) or {}
+    total_vat = quote.get("total_vat", 0) or 0
+    total_incl = quote.get("total_incl_vat", quote.get("total_price", 0)) or 0
+
+    total_lines = [("Subtotaal excl. BTW", f"€{total_excl:,.2f}".replace(",", " "))]
+    for rate, amount in sorted(vat_breakdown.items()):
+        try:
+            r = int(float(rate))
+        except Exception:
+            r = rate
+        total_lines.append((f"BTW {r}%", f"€{float(amount):,.2f}".replace(",", " ")))
+    total_lines.append(("Totaal BTW", f"€{total_vat:,.2f}".replace(",", " ")))
+
+    totals_box = build_totals_box(
+        pdf_styles, total_lines,
+        grand_label="TOTAAL TE BETALEN",
+        grand_value=f"€{total_incl:,.2f}".replace(",", " "),
+    )
+
+    terms = [
+        f"Deze offerte is geldig tot {valid_until_str}.",
+        "Prijzen exclusief BTW tenzij anders vermeld.",
+        "Betaling volgens overeengekomen termijnen na ondertekening.",
+        "Eventuele meerwerken worden afzonderlijk berekend.",
+    ]
+    story.append(build_terms_and_totals(pdf_styles, terms, totals_box))
+
+    # === SIGNATURE FOOTER ===
+    story += build_signature_footer(pdf_styles)
+
+    # === VISUAL MATERIAL LIST (kept on a new page) ===
+    material_info = {}
+    for it in material_items:
+        n = it.get("description")
+        if n and n not in material_info:
+            material_info[n] = {
+                "unit_price": it.get("unit_price", 0),
+                "quantity": it.get("quantity", 0),
+                "total": it.get("total", (it.get("unit_price", 0) * it.get("quantity", 0))),
             }
-    
-    # Find materials with images and add price info
     materials_with_images = []
     for name, info in material_info.items():
         material = await db.materials.find_one({
             "name": {"$regex": f"^{name}$", "$options": "i"},
-            "image_url": {"$ne": None, "$exists": True}
+            "image_url": {"$ne": None, "$exists": True},
         })
-        if material and material.get('image_url'):
-            material['quote_price'] = info['unit_price']
-            material['quote_quantity'] = info['quantity']
-            material['quote_total'] = info['total']
+        if material and material.get("image_url"):
+            material["quote_price"] = info["unit_price"]
+            material["quote_quantity"] = info["quantity"]
+            material["quote_total"] = info["total"]
             materials_with_images.append(material)
-    
-    # Add visual material list if there are materials with images
+
     if materials_with_images:
-        # Page break before visual list
-        from reportlab.platypus import PageBreak
         story.append(PageBreak())
-        
-        # Header for visual material list
-        visual_header_style = ParagraphStyle('VisualHeader', parent=styles['Heading1'], fontSize=18, textColor=colors.HexColor('#1E40AF'))
-        story.append(Paragraph("Visuele Materiaallijst", visual_header_style))
-        story.append(Spacer(1, 0.3*inch))
-        
-        # Create grid of materials (2 columns)
-        material_cells = []
+        story.append(section_heading(pdf_styles, "Visuele Materiaallijst"))
+        story.append(Spacer(1, 8))
+        cells = []
         for material in materials_with_images:
-            image_url = material.get('image_url', '')
+            image_url = material.get("image_url", "")
             image_path = None
-            
-            # Get the actual file path from the URL
-            if image_url.startswith('/api/static/materials/'):
-                filename = image_url.split('/')[-1]
-                potential_path = ROOT_DIR / "uploads" / "materials" / filename
-                if potential_path.exists():
-                    image_path = str(potential_path)
-            
-            # Create cell content
-            cell_content = []
-            
+            if image_url.startswith("/api/static/materials/"):
+                fname = image_url.split("/")[-1]
+                potential = ROOT_DIR / "uploads" / "materials" / fname
+                if potential.exists():
+                    image_path = str(potential)
+            cell = []
             if image_path:
                 try:
-                    # Add image (max 2.5 inch width, maintain aspect ratio)
-                    img = ReportLabImage(image_path, width=2.5*inch, height=2.5*inch)
-                    img.hAlign = 'CENTER'
-                    cell_content.append(img)
-                except:
+                    img = ReportLabImage(image_path, width=2.4 * inch, height=2.4 * inch)
+                    img.hAlign = "CENTER"
+                    cell.append(img)
+                except Exception:
                     pass
-            
-            # Add material name
-            name_style = ParagraphStyle('MaterialName', parent=styles['Normal'], fontSize=11, alignment=1, spaceBefore=6)
-            cell_content.append(Paragraph(f"<b>{material['name']}</b>", name_style))
-            
-            # Add price from quote
-            price_style = ParagraphStyle('MaterialPrice', parent=styles['Normal'], fontSize=10, alignment=1, textColor=colors.HexColor('#1E40AF'))
-            quote_price = material.get('quote_price', 0)
-            cell_content.append(Paragraph(f"€{quote_price:.2f}", price_style))
-            
-            material_cells.append(cell_content)
-        
-        # Create table with 2 columns
-        if material_cells:
-            # Pad to even number
-            if len(material_cells) % 2 != 0:
-                material_cells.append([''])
-            
-            # Create rows of 2
-            for i in range(0, len(material_cells), 2):
-                row_table_data = [[material_cells[i], material_cells[i+1] if i+1 < len(material_cells) else ['']]]
-                row_table = Table(row_table_data, colWidths=[3.25*inch, 3.25*inch])
-                row_table.setStyle(TableStyle([
-                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('TOPPADDING', (0, 0), (-1, -1), 12),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-                ]))
-                story.append(row_table)
-                story.append(Spacer(1, 0.2*inch))
-    
+            name_style = ParagraphStyle(
+                "MName", parent=pdf_styles["body"], fontSize=10,
+                alignment=1, spaceBefore=6, fontName="Helvetica-Bold",
+            )
+            cell.append(Paragraph(material["name"], name_style))
+            price_style = ParagraphStyle(
+                "MPrice", parent=pdf_styles["body"], fontSize=10,
+                alignment=1, textColor=BRAND, fontName="Helvetica-Bold",
+            )
+            cell.append(Paragraph(f"€{material.get('quote_price', 0):.2f}", price_style))
+            cells.append(cell)
+        if len(cells) % 2 != 0:
+            cells.append([""])
+        for i in range(0, len(cells), 2):
+            row_table = Table(
+                [[cells[i], cells[i + 1] if i + 1 < len(cells) else [""]]],
+                colWidths=[3.4 * inch, 3.4 * inch],
+            )
+            row_table.setStyle(TableStyle([
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("TOPPADDING", (0, 0), (-1, -1), 12),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+            ]))
+            story.append(row_table)
+            story.append(Spacer(1, 0.15 * inch))
+
     doc.build(story)
     buffer.seek(0)
-    
     return StreamingResponse(
         buffer,
         media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=offerte_{quote['quote_number']}.pdf"}
+        headers={"Content-Disposition": f"attachment; filename=offerte_{quote['quote_number']}.pdf"},
     )
 
 @api_router.get("/quotes/{quote_id}/export/excel")
@@ -5206,272 +5090,218 @@ async def update_invoice(
 
 @api_router.get("/invoices/{invoice_id}/pdf")
 async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_current_user)):
-    """Generate and download invoice PDF"""
-    # Get invoice
+    """Generate invoice PDF in MaxQ bordeaux brand style."""
+    from pdf_branding import (
+        base_styles, build_header, build_info_blocks,
+        grouped_items_table, build_totals_box, build_terms_and_totals, build_payment_footer,
+    )
+
     invoice = await db.invoices.find_one({"id": invoice_id})
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
-    
-    # Verify user owns the project
+
     if current_user.role == "admin":
         project = await db.projects.find_one({"id": invoice["project_id"]})
     else:
         project = await db.projects.find_one({"id": invoice["project_id"], "user_id": current_user.id})
     if not project:
         raise HTTPException(status_code=403, detail="Not authorized")
-    
-    # Get quote and lead for customer info
-    # quote_id can contain multiple IDs separated by comma (when multiple approved quotes)
-    quote_ids = invoice["quote_id"].split(",")
-    first_quote_id = quote_ids[0].strip()
-    quote = await db.quotes.find_one({"id": first_quote_id})
-    if not quote:
-        raise HTTPException(status_code=404, detail="Quote not found")
-    lead = await db.leads.find_one({"id": quote["lead_id"]})
-    
-    # Create PDF
+
+    # Quote + lead are optional context — invoices must still render even if missing
+    quote = None
+    lead = None
+    quote_id_field = invoice.get("quote_id") or ""
+    if quote_id_field:
+        first_quote_id = quote_id_field.split(",")[0].strip()
+        if first_quote_id:
+            quote = await db.quotes.find_one({"id": first_quote_id})
+    if quote and quote.get("lead_id"):
+        lead = await db.leads.find_one({"id": quote["lead_id"]})
+
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
-    elements = []
-    
-    styles = getSampleStyleSheet()
-    
-    # Logo
-    logo_path = ROOT_DIR / "qtechnics_logo.png"
-    if logo_path.exists():
-        img = Image(str(logo_path), width=100, height=50)
-        elements.append(img)
-        elements.append(Spacer(1, 12))
-    
-    # Title
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=24,
-        textColor=colors.HexColor('#1E40AF'),
-        spaceAfter=30
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        topMargin=0.5 * inch, bottomMargin=0.5 * inch,
+        leftMargin=0.6 * inch, rightMargin=0.6 * inch,
     )
-    elements.append(Paragraph(f"<b>FACTUUR {invoice['invoice_number']}</b>", title_style))
-    elements.append(Spacer(1, 20))
-    
-    # Invoice info table
-    invoice_date_str = datetime.fromisoformat(invoice["invoice_date"]).strftime('%d-%m-%Y') if isinstance(invoice["invoice_date"], str) else invoice["invoice_date"].strftime('%d-%m-%Y')
-    due_date_str = datetime.fromisoformat(invoice["due_date"]).strftime('%d-%m-%Y') if isinstance(invoice["due_date"], str) else invoice["due_date"].strftime('%d-%m-%Y')
-    
-    info_data = [
-        ['Factuurdatum:', invoice_date_str],
-        ['Vervaldatum:', due_date_str],
-        ['Betaaltermijn:', f"{invoice['payment_term_days']} dagen"],
-        ['Status:', 'BETAALD' if invoice['payment_status'] == 'paid' else 'ONBETAALD']
+    story = []
+    pdf_styles = base_styles()
+
+    def _fmt_date(value):
+        try:
+            if isinstance(value, str):
+                return datetime.fromisoformat(value.replace("Z", "+00:00")).strftime("%d-%m-%Y")
+            return value.strftime("%d-%m-%Y")
+        except Exception:
+            return str(value)
+
+    invoice_date_str = _fmt_date(invoice.get("invoice_date"))
+    due_date_str = _fmt_date(invoice.get("due_date"))
+
+    paid = invoice.get("payment_status") == "paid"
+    payment_term_days = invoice.get("payment_term_days", 30)
+    meta_pairs = [
+        ("Factuurnummer", str(invoice["invoice_number"])),
+        ("Factuurdatum", invoice_date_str),
+        ("Vervaldatum", due_date_str),
+        ("Betaaltermijn", f"{payment_term_days} dagen"),
+        ("Status", "BETAALD" if paid else "ONBETAALD"),
     ]
-    
-    info_table = Table(info_data, colWidths=[100, 150])
-    info_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-    ]))
-    elements.append(info_table)
-    elements.append(Spacer(1, 20))
-    
-    # Customer info
-    elements.append(Paragraph("<b>Factuur aan:</b>", styles['Heading2']))
-    customer_info = f"""
-    {lead.get('name', 'N/A')}<br/>
-    {lead.get('address', 'N/A')}<br/>
-    {lead.get('email', 'N/A')}<br/>
-    {lead.get('phone', 'N/A')}
-    """
-    elements.append(Paragraph(customer_info, styles['Normal']))
-    elements.append(Spacer(1, 20))
-    
-    # Milestone info
+    logo_path = Path(__file__).parent / "qtechnics_logo.png"
+    story += build_header(pdf_styles, "FACTUUR", meta_pairs, logo_path=logo_path)
+
+    customer_lines = []
+    if lead:
+        if lead.get("name"):
+            customer_lines.append(f"<b>{lead['name']}</b>")
+        if lead.get("address"):
+            customer_lines.append(lead["address"])
+        if lead.get("email"):
+            customer_lines.append(lead["email"])
+        if lead.get("phone"):
+            customer_lines.append(lead["phone"])
+    if not customer_lines:
+        customer_lines = ["—"]
+
     milestone_names = {
         "10_approval": "10% bij akkoord offerte",
         "40_before_start": "40% een week voor start werken",
         "40_completion": "40% bij oplevering",
-        "10_satisfaction": "10% bij tevredenheid klant"
+        "10_satisfaction": "10% bij tevredenheid klant",
     }
-    milestone_text = milestone_names.get(invoice["milestone"], invoice["milestone"])
-    elements.append(Paragraph(f"<b>Deelfactuur:</b> {milestone_text} ({invoice['milestone_percentage']}%)", styles['Normal']))
-    elements.append(Spacer(1, 20))
-    
-    # Line items with VAT - Bundle labor items
-    elements.append(Paragraph("<b>Specificatie</b>", styles['Heading2']))
-    elements.append(Spacer(1, 10))
-    
-    # Adjust amounts based on milestone percentage
-    percentage = invoice["milestone_percentage"] / 100.0
-    
-    # Bundle all labor items
-    labor_items = [item for item in invoice["line_items"] if item.get("item_type") == "arbeid"]
-    material_items = [item for item in invoice["line_items"] if item.get("item_type") == "materiaal"]
-    
-    # === ARBEID SECTIE MET DETAILS MAAR ZONDER EENHEIDSPRIJZEN ===
+    milestone_text = milestone_names.get(invoice.get("milestone", ""), invoice.get("milestone", ""))
+    project_lines = [
+        f"<b>Deelfactuur:</b> {milestone_text}",
+        f"Aandeel: {invoice.get('milestone_percentage', 100)}% van het project",
+    ]
+    if quote and quote.get("title"):
+        project_lines.append(quote["title"])
+
+    story += build_info_blocks(pdf_styles, customer_lines, project_lines)
+
+    percentage = invoice.get("milestone_percentage", 100) / 100.0
+    line_items = invoice.get("line_items", []) or []
+    labor_items = [it for it in line_items if it.get("item_type") == "arbeid"]
+    material_items = [it for it in line_items if it.get("item_type") == "materiaal"]
+    other_items = [it for it in line_items if it.get("item_type") not in ("arbeid", "materiaal", "subtitle", "subtotal")]
+
+    desc_style = pdf_styles["table_cell"]
+    rows = []
+
     if labor_items:
-        elements.append(Paragraph("<b>Arbeid</b>", styles['Heading3']))
-        elements.append(Spacer(1, 5))
-        
-        labor_total_excl = sum(item.get("total_excl_vat", 0) for item in labor_items) * percentage
-        labor_total_incl = sum(item.get("total_incl_vat", 0) for item in labor_items) * percentage
-        labor_vat_rate = labor_items[0].get("vat_rate", 6) if labor_items else 6
-        labor_vat = labor_total_excl * (labor_vat_rate / 100)
-        
-        # Create labor table showing items with quantity and unit (NO unit price)
-        labor_table_data = [['Omschrijving', 'Hoeveelheid', 'Eenheid']]
-        
-        for item in labor_items:
-            unit = item.get('unit', 'm²')
-            if unit in ['m2', 'vierkante meter']:
-                unit = 'm²'
-            elif unit in ['lm', 'lopende meter']:
-                unit = 'm'
-            
-            qty = item.get("quantity", 0) * percentage
-            labor_table_data.append([
-                item.get('description', '')[:50],
-                f"{qty:.2f}" if qty else '-',
-                unit
-            ])
-        
-        # Add labor total rows
-        labor_table_data.append([
-            'Subtotaal Arbeid',
-            '',
-            f"€{labor_total_excl:.2f} excl. BTW"
-        ])
-        labor_table_data.append([
-            f'BTW {labor_vat_rate}%',
-            '',
-            f"€{labor_vat:.2f}"
-        ])
-        labor_table_data.append([
-            'Totaal Arbeid incl. BTW',
-            '',
-            f"€{labor_total_incl:.2f}"
-        ])
-        
-        labor_table = Table(labor_table_data, colWidths=[250, 80, 100])
-        labor_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E5E7EB')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#1E40AF')),
-            ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
-            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('TOPPADDING', (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-            ('BACKGROUND', (0, -3), (-1, -1), colors.HexColor('#D1FAE5')),
-            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB'))
-        ]))
-        elements.append(labor_table)
-        elements.append(Spacer(1, 15))
-    
-    # === MATERIALEN SECTIE (met prijzen) ===
+        rows.append(("room", [Paragraph("ARBEID", pdf_styles["room_header"]), "", "", ""]))
+        labor_excl = 0
+        for it in labor_items:
+            qty = (it.get("quantity") or 0) * percentage
+            unit = it.get("unit", "m²")
+            if unit in ["m2", "vierkante meter"]:
+                unit = "m²"
+            elif unit in ["lm", "lopende meter"]:
+                unit = "m"
+            sub = (it.get("total_excl_vat") or 0) * percentage
+            labor_excl += sub
+            rows.append((
+                "item",
+                [
+                    Paragraph(it.get("description", ""), desc_style),
+                    f"{qty:.2f}" if qty else "—",
+                    unit,
+                    f"€{sub:,.2f}".replace(",", " "),
+                ],
+            ))
+        rows.append((
+            "subtotal",
+            [
+                Paragraph("Subtotaal arbeid (excl. BTW)", pdf_styles["subtotal_label"]),
+                "", "",
+                f"€{labor_excl:,.2f}".replace(",", " "),
+            ],
+        ))
+
     if material_items:
-        elements.append(Paragraph("<b>Materialen</b>", styles['Heading3']))
-        elements.append(Spacer(1, 5))
-        
-        table_data = [['Omschrijving', 'Aantal', 'Prijs excl.', 'BTW%', 'Totaal excl.', 'Totaal incl.']]
-        
-        for item in material_items:
-            qty = item.get("quantity", 0) * percentage
-            price = item.get("unit_price", 0)
-            vat_rate = item.get("vat_rate", 21)
-            total_excl = item.get("total_excl_vat", 0) * percentage
-            total_incl = item.get("total_incl_vat", 0) * percentage
-            
-            table_data.append([
-                item.get("description", "")[:35],
-                f"{qty:.1f}",
-                f'€{price:.2f}',
-                f'{vat_rate}%',
-                f'€{total_excl:.2f}',
-                f'€{total_incl:.2f}'
-            ])
-        
-        table = Table(table_data, colWidths=[180, 40, 60, 40, 70, 70])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 9),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTSIZE', (0, 1), (-1, -1), 9),
-        ]))
-        elements.append(table)
-        elements.append(Spacer(1, 20))
-    
-    # Totals with VAT breakdown
-    elements.append(Paragraph("<b>Totalen</b>", styles['Heading2']))
-    elements.append(Spacer(1, 10))
-    
-    story = []
-    story.append(Paragraph(f"<b>Totaal excl. BTW:</b> €{invoice['total_excl_vat']:.2f}", styles['Normal']))
-    
-    # VAT breakdown by rate
-    for vat_rate, vat_amount in invoice.get("vat_breakdown", {}).items():
-        story.append(Paragraph(f"<b>BTW {vat_rate}%:</b> €{vat_amount:.2f}", styles['Normal']))
-    
-    story.append(Paragraph(f"<b>Totaal BTW:</b> €{invoice['total_vat']:.2f}", styles['Normal']))
-    story.append(Spacer(1, 10))
-    
-    total_style = ParagraphStyle(
-        'TotalStyle',
-        parent=styles['Normal'],
-        fontSize=14,
-        textColor=colors.HexColor('#1E40AF'),
-        spaceAfter=6
+        rows.append(("room", [Paragraph("MATERIALEN", pdf_styles["room_header"]), "", "", ""]))
+        mat_excl = 0
+        for it in material_items:
+            qty = (it.get("quantity") or 0) * percentage
+            unit = it.get("unit", "stuk")
+            sub = (it.get("total_excl_vat") or 0) * percentage
+            mat_excl += sub
+            label = f"{it.get('description','')} <font color='#9CA3AF'>({it.get('vat_rate',21)}% btw)</font>"
+            rows.append((
+                "item",
+                [
+                    Paragraph(label, desc_style),
+                    f"{qty:.2f}" if qty else "—",
+                    unit,
+                    f"€{sub:,.2f}".replace(",", " "),
+                ],
+            ))
+        rows.append((
+            "subtotal",
+            [
+                Paragraph("Subtotaal materialen (excl. BTW)", pdf_styles["subtotal_label"]),
+                "", "",
+                f"€{mat_excl:,.2f}".replace(",", " "),
+            ],
+        ))
+
+    if other_items:
+        rows.append(("room", [Paragraph("OVERIG", pdf_styles["room_header"]), "", "", ""]))
+        for it in other_items:
+            qty = (it.get("quantity") or 0) * percentage
+            unit = it.get("unit", "")
+            sub = (it.get("total_excl_vat") or 0) * percentage
+            rows.append((
+                "item",
+                [
+                    Paragraph(it.get("description", ""), desc_style),
+                    f"{qty:.2f}" if qty else "—",
+                    unit or "—",
+                    f"€{sub:,.2f}".replace(",", " "),
+                ],
+            ))
+
+    headers = ["OMSCHRIJVING", "AANTAL", "EENHEID", "TOTAAL"]
+    items_table = grouped_items_table(headers, rows, col_widths=[3.4 * inch, 0.9 * inch, 0.9 * inch, 1.5 * inch])
+    story.append(items_table)
+    story.append(Spacer(1, 14))
+
+    total_excl = invoice.get("total_excl_vat", 0)
+    total_vat = invoice.get("total_vat", 0)
+    total_incl = invoice.get("total_incl_vat", 0)
+    vat_breakdown = invoice.get("vat_breakdown", {}) or {}
+
+    total_lines = [("Subtotaal excl. BTW", f"€{total_excl:,.2f}".replace(",", " "))]
+    for rate, amount in sorted(vat_breakdown.items()):
+        try:
+            r = int(float(rate))
+        except Exception:
+            r = rate
+        total_lines.append((f"BTW {r}%", f"€{float(amount):,.2f}".replace(",", " ")))
+    total_lines.append(("Totaal BTW", f"€{total_vat:,.2f}".replace(",", " ")))
+
+    totals_box = build_totals_box(
+        pdf_styles, total_lines,
+        grand_label=("BETAALD" if paid else "TE BETALEN"),
+        grand_value=f"€{total_incl:,.2f}".replace(",", " "),
     )
-    story.append(Paragraph(f"<b>TE BETALEN: €{invoice['total_incl_vat']:.2f}</b>", total_style))
-    
-    for item in story:
-        elements.append(item)
-    
-    elements.append(Spacer(1, 30))
-    
-    # Payment info with OGM reference
-    elements.append(Paragraph("<b>Betalingsinformatie</b>", styles['Heading2']))
-    
-    # Highlight OGM reference
-    ogm_style = ParagraphStyle(
-        'OGMStyle',
-        parent=styles['Normal'],
-        fontSize=12,
-        textColor=colors.HexColor('#1E40AF'),
-        fontName='Helvetica-Bold',
-        spaceAfter=10
+
+    terms = [
+        f"Betaling binnen {payment_term_days} dagen na factuurdatum.",
+        "Bij niet-tijdige betaling wordt 10% nalatigheidsintrest aangerekend.",
+        "Klachten dienen binnen 8 dagen schriftelijk gemeld te worden.",
+    ]
+    story.append(build_terms_and_totals(pdf_styles, terms, totals_box))
+
+    story += build_payment_footer(
+        pdf_styles,
+        total_incl=total_incl,
+        due_days=payment_term_days,
+        ogm=invoice.get("payment_reference"),
     )
-    
-    payment_info = f"""
-    Gelieve het bedrag van €{invoice['total_incl_vat']:.2f} over te maken binnen {invoice['payment_term_days']} dagen.<br/>
-    """
-    elements.append(Paragraph(payment_info, styles['Normal']))
-    
-    # OGM reference in prominent box
-    if invoice.get('payment_reference'):
-        elements.append(Spacer(1, 10))
-        elements.append(Paragraph(f"<b>Gestructureerde mededeling:</b>", styles['Normal']))
-        elements.append(Spacer(1, 5))
-        elements.append(Paragraph(f"{invoice['payment_reference']}", ogm_style))
-        elements.append(Spacer(1, 10))
-    
-    bank_info = f"""
-    <b>Bankgegevens:</b><br/>
-    [IBAN nummer hier invoeren]<br/>
-    [Bank naam]
-    """
-    elements.append(Paragraph(bank_info, styles['Normal']))
-    
-    doc.build(elements)
+
+    doc.build(story)
     buffer.seek(0)
-    
     return Response(
         content=buffer.getvalue(),
         media_type="application/pdf",
