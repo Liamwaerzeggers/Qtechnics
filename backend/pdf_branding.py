@@ -26,9 +26,13 @@ SUBTOTAL_FILL = colors.HexColor("#FEF2F2")
 COMPANY = {
     "name": "MaxQ",
     "tagline": "Interieur · Technieken · Totaalprojecten",
-    "address_line1": "Liersesteenweg 36",
-    "address_line2": "2580 Putte, België",
-    "phone": "+32 15 00 00 00",
+    "office_label": "Kantoor",
+    "office_line1": "Gerhees 118",
+    "office_line2": "3945 Ham",
+    "showroom_label": "Toonzaal",
+    "showroom_line1": "Diamantstraat 8",
+    "showroom_line2": "2200 Herentals",
+    "phone": "0488 15 20 28",
     "email": "info@maxq.be",
     "vat": "BE 0XXX.XXX.XXX",
     "iban": "BE00 0000 0000 0000",
@@ -140,10 +144,16 @@ def build_header(styles, doc_label: str, meta_pairs: list, logo_path: Path = Non
     if not left_cells:
         left_cells.append([Paragraph(COMPANY["name"], styles["logo"])])
     left_cells.append([Paragraph(COMPANY["tagline"], styles["tagline"])])
-    left_cells.append([Spacer(1, 6)])
-    left_cells.append([Paragraph(f"{COMPANY['address_line1']}<br/>{COMPANY['address_line2']}", styles["company_meta"])])
-    left_cells.append([Paragraph(f"{COMPANY['phone']}", styles["company_meta"])])
-    left_cells.append([Paragraph(f"{COMPANY['email']}", styles["company_meta"])])
+    left_cells.append([Spacer(1, 8)])
+    left_cells.append([Paragraph(
+        f"<b>{COMPANY['office_label']}:</b> {COMPANY['office_line1']}, {COMPANY['office_line2']}",
+        styles["company_meta"],
+    )])
+    left_cells.append([Paragraph(
+        f"<b>{COMPANY['showroom_label']}:</b> {COMPANY['showroom_line1']}, {COMPANY['showroom_line2']}",
+        styles["company_meta"],
+    )])
+    left_cells.append([Paragraph(f"{COMPANY['phone']} · {COMPANY['email']}", styles["company_meta"])])
 
     # Right column — doc title + key meta
     right_cells = [[Paragraph(doc_label, styles["doc_title"])], [Spacer(1, 8)]]
