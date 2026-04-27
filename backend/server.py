@@ -3608,7 +3608,7 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
     if lead and lead.get("id"):
         meta_pairs.append(("Klant ID", str(lead["id"])[:12]))
 
-    logo_path = Path(__file__).parent / "qtechnics_logo.png"
+    logo_path = Path(__file__).parent / "maxq_logo.png"
     story += build_header(pdf_styles, "OFFERTE", meta_pairs, logo_path=logo_path)
 
     # === CUSTOMER + PROJECT BLOCKS ===
@@ -5147,7 +5147,7 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
         ("Betaaltermijn", f"{payment_term_days} dagen"),
         ("Status", "BETAALD" if paid else "ONBETAALD"),
     ]
-    logo_path = Path(__file__).parent / "qtechnics_logo.png"
+    logo_path = Path(__file__).parent / "maxq_logo.png"
     story += build_header(pdf_styles, "FACTUUR", meta_pairs, logo_path=logo_path)
 
     customer_lines = []

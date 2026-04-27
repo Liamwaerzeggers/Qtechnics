@@ -24,12 +24,12 @@ SUBTOTAL_FILL = colors.HexColor("#FEF2F2")
 
 # Default company info (override via env vars in deployment)
 COMPANY = {
-    "name": "Q-Technics",
-    "tagline": "Interieur Technieken Totaalprojecten",
+    "name": "MaxQ",
+    "tagline": "Interieur · Technieken · Totaalprojecten",
     "address_line1": "Liersesteenweg 36",
     "address_line2": "2580 Putte, België",
     "phone": "+32 15 00 00 00",
-    "email": "info@qtechnics.be",
+    "email": "info@maxq.be",
     "vat": "BE 0XXX.XXX.XXX",
     "iban": "BE00 0000 0000 0000",
     "bank_name": "Bank",
@@ -131,7 +131,8 @@ def build_header(styles, doc_label: str, meta_pairs: list, logo_path: Path = Non
     left_cells = []
     if logo_path and Path(logo_path).exists():
         try:
-            img = RLImage(str(logo_path), width=1.6 * inch, height=0.7 * inch)
+            # MaxQ logo is roughly 3:1 aspect — keep proportions, fit nicely in left column
+            img = RLImage(str(logo_path), width=2.0 * inch, height=0.65 * inch, kind="proportional")
             img.hAlign = "LEFT"
             left_cells.append([img])
         except Exception:
