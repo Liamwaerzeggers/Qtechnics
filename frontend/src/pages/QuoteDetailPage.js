@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { API } from '../App';
 import DashboardLayout from '../components/DashboardLayout';
+import DescriptionView from '../components/DescriptionView';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -1062,12 +1063,19 @@ Q Technics`;
 
                     <div>
                       <Label>Omschrijving</Label>
-                      <Input 
+                      <textarea
                         data-testid="item-description-input"
-                        value={formData.description} 
-                        onChange={(e) => setFormData({...formData, description: e.target.value})} 
-                        required 
+                        value={formData.description}
+                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                        required
+                        rows={5}
+                        className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring leading-relaxed"
+                        style={{ resize: 'vertical', minHeight: '100px' }}
+                        placeholder={'**Titel werk**\nKorte omschrijving in lopende tekst...\n\n## Inbegrepen werken\n- Eerste taak\n- Tweede taak'}
                       />
+                      <p className="text-xs mt-1" style={{color: '#9CA3AF'}}>
+                        Tip: <b>**vet**</b>, <code>## Subkop</code>, <code>- bullet</code>. Lege regel = paragraaf.
+                      </p>
                     </div>
                     
                     {/* Unit selector for custom work items */}
@@ -1269,17 +1277,21 @@ Q Technics`;
                     {editingItem === item.id ? (
                       // Edit mode
                       <div className="space-y-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-1">
                           <label className="text-sm font-medium" style={{color: '#64748B'}}>Omschrijving:</label>
-                          <input
-                            type="text"
+                          <textarea
                             data-testid={`edit-description-${item.id}`}
                             value={editValues.description}
                             onChange={(e) => setEditValues({...editValues, description: e.target.value})}
-                            className="flex-1 px-2 py-1 border rounded text-sm font-semibold"
-                            style={{borderColor: '#E5E7EB', color: '#1E293B'}}
+                            rows={6}
+                            className="w-full px-3 py-2 border rounded text-sm font-medium leading-relaxed"
+                            style={{borderColor: '#E5E7EB', color: '#1E293B', resize: 'vertical', minHeight: '120px'}}
                             autoFocus
+                            placeholder={'**Titel werk**\nKorte omschrijving in lopende tekst...\n\n## Inbegrepen werken\n- Eerste taak\n- Tweede taak\n\n## Materialen inbegrepen\n- Materiaal 1\n- Materiaal 2'}
                           />
+                          <p className="text-xs" style={{color: '#9CA3AF'}}>
+                            Tip: gebruik <b>**vet**</b>, <code>## Subkop</code> en <code>- bullet</code> voor een nette opsomming. Lege regel = nieuwe paragraaf.
+                          </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
                           <div className="flex items-center gap-2">
@@ -1336,14 +1348,14 @@ Q Technics`;
                       </div>
                     ) : (
                       // View mode
-                      <div className="flex justify-between items-center">
-                        <div className="flex-1">
-                          <div className="font-semibold" style={{color: '#1E293B'}}>{item.description}</div>
-                          <div className="text-sm mt-1" style={{color: '#64748B'}}>
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="flex-1 min-w-0">
+                          <DescriptionView text={item.description} />
+                          <div className="text-sm mt-2" style={{color: '#64748B'}}>
                             {item.quantity} x €{item.unit_price.toFixed(2)} | Type: {item.item_type}
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-shrink-0">
                           <div className="text-xl font-bold" style={{color: '#7a1f1f'}}>
                             €{item.total.toFixed(2)}
                           </div>

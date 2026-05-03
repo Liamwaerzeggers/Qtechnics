@@ -97,6 +97,16 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - **Offertes**: signature footer met "Naam & handtekening klant" + "Datum"
 - **Facturen**: payment footer met IBAN, BTW-nummer en gestructureerde mededeling
 - Visuele materiaaloverzicht (offertes) op aparte pagina behouden
+- Bedrijfsgegevens: Kantoor Gerhees 118 3945 Ham + Toonzaal Diamantstraat 8 2200 Herentals + 0488 15 20 28 + info@maxq.be
+- MaxQ logo (transparante achtergrond) in header
+
+### Rich-text Omschrijvingen op Offerteregels (mrt 2026)
+- Markdown ondersteund in offerte-regel omschrijvingen: `**vet**`, `*cursief*`, `## Subkop`, `- bullet`, lege regel = paragraaf
+- Backend `markdown_to_paragraph_html` helper in `pdf_branding.py` die markdown → ReportLab-Paragraph HTML (`<b>`, `<font color>`, `<br/>`, `<i>`) omzet
+- Eerste regel volledig in `**...**` wordt automatisch een prominente bordeaux heading (size 11)
+- Frontend: `<input>` vervangen door `<textarea>` (6 rijen) in zowel toevoegen-form als edit-mode + tip-tekst
+- Nieuw `DescriptionView` component voor weergave in UI: parsed bullets, koppen en bold inline
+- Visueel gevalideerd via PDF render: hoofdtitel bordeaux+vet, subkoppen bordeaux+vet, bullets geïndenteerd
 
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld

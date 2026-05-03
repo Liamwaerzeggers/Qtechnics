@@ -40,6 +40,68 @@ COMPANY = {
 }
 
 
+def markdown_to_paragraph_html(text: str) -> str:
+    """Convert lightweight markdown (** bold **, * italic *, lines starting with - or • for bullets,
+    blank lines for paragraph breaks, ## for sub-headings) into ReportLab Paragraph-compatible HTML.
+
+    Kept intentionally small: works inside a single Paragraph cell, so newlines become <br/>
+    and bullets become "  •  text".
+
+    A leading line wrapped entirely in **...** is rendered as a prominent heading
+    (slightly larger, bordeaux color).
+    """
+    import re
+    if not text:
+        return ""
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+
+    out_lines = []
+    in_blank = False
+    is_first_real_line = True
+    for raw in text.split("\n"):
+        line = raw.rstrip()
+        if not line.strip():
+            if not in_blank:
+                out_lines.append("<br/>")
+                in_blank = True
+            continue
+        in_blank = False
+        stripped = line.strip()
+        # Detect: first non-empty line wrapped entirely in **...**  → big heading
+        full_bold = re.match(r"^\*\*(.+)\*\*\s*$", stripped)
+        if is_first_real_line and full_bold:
+            content = full_bold.group(1).strip()
+            out_lines.append(f'<font size="11" color="#500000"><b>{content}</b></font>')
+            is_first_real_line = False
+            continue
+        is_first_real_line = False
+        # Sub-heading
+        if stripped.startswith("## "):
+            content = stripped[3:].strip()
+            out_lines.append(f'<br/><font color="#500000"><b>{content}</b></font>')
+            continue
+        # Bullet (-, *, • at start, allowing leading whitespace)
+        m = re.match(r"^\s*[-*•]\s+(.*)$", line)
+        if m:
+            out_lines.append(f"&nbsp;&nbsp;•&nbsp;{m.group(1).strip()}")
+            continue
+        out_lines.append(stripped)
+
+    html = "<br/>".join(out_lines)
+    # **bold** → <b>bold</b>  (remaining inline bolds)
+    html = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", html)
+    # *italic* → <i>italic</i>
+    html = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<i>\1</i>", html)
+    # Cleanup: collapse leading <br/> chains
+    html = re.sub(r"^(<br/>\s*)+", "", html)
+    return html
+
+
+def render_description(text: str, base_style):
+    """Build a single Paragraph from a markdown description (for use inside a table cell)."""
+    return Paragraph(markdown_to_paragraph_html(text or ""), base_style)
+
+
 def base_styles():
     """Returns a dict of named ParagraphStyles used throughout the PDF."""
     base = getSampleStyleSheet()

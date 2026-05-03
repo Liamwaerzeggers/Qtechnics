@@ -3563,7 +3563,7 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
     from pdf_branding import (
         base_styles, build_header, build_info_blocks, section_heading,
         grouped_items_table, build_totals_box, build_terms_and_totals, build_signature_footer,
-        BRAND,
+        BRAND, render_description,
     )
 
     if current_user.role != "admin":
@@ -3699,7 +3699,7 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
                 room_total += item_total
                 rows.append((
                     "item",
-                    [Paragraph(disp, desc_style), f"{qty:.2f}", unit, ""],
+                    [render_description(disp, desc_style), f"{qty:.2f}", unit, ""],
                 ))
             actual_subtotal = room_subtotals.get(room, room_total)
             rows.append((
