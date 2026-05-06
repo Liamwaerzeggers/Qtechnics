@@ -118,6 +118,18 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Modal met naam-input + akkoord-checkbox; bij confirm verschijnt "Digitaal bevestigd" badge in de quote-card
 - PDF-footer toont automatisch een bordeaux "DIGITAAL BEVESTIGD" stamp met naam + UTC-timestamp i.p.v. lege handtekeninglijnen
 
+### Eenheid Aanpasbaar bij Arbeid-items (mei 2026)
+- `LineItem`/`LineItemCreate`/`LineItemUpdate` Pydantic models: nieuwe `unit` veld
+- Toevoegen-form: eenheid-dropdown verschijnt nu altijd voor arbeid (was alleen bij custom material)
+- Edit-mode: nieuwe eenheid-selector (m², m, stuk, uur, dag, forfait, doos, rol, kg, liter)
+- View-mode toont nu *"qty unit × prijs"* zodat de eenheid zichtbaar is
+
+### Offerte Dupliceren binnen Project (mei 2026)
+- Nieuw endpoint `POST /api/quotes/{id}/duplicate` (admin-only): kloont quote + alle line_items met nieuwe ID's
+- Status reset naar `concept`, alle signing/sold/peppol-vlaggen gewist; titel krijgt *"(kopie)"* suffix
+- Frontend: "Kopiëren"-knop met Copy-icoon op elke quote-card in de project-detail pagina
+- Bevestigingsdialoog + toast met aantal gekopieerde regels
+
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 

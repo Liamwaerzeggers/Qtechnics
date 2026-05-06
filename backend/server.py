@@ -1646,6 +1646,59 @@ async def create_quote(quote_create: QuoteCreate, current_user: User = Depends(g
     await db.quotes.insert_one(quote_doc)
     return quote_obj
 
+
+@api_router.post("/quotes/{quote_id}/duplicate")
+async def duplicate_quote(quote_id: str, current_user: User = Depends(get_current_user)):
+    """Clone an existing quote with all its line items.
+
+    The new quote starts as a fresh concept (status=concept, signed/sold flags cleared)
+    so the admin can swap materials without touching the original.
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Alleen admins kunnen offertes dupliceren")
+
+    source = await db.quotes.find_one({"id": quote_id}, {"_id": 0})
+    if not source:
+        raise HTTPException(status_code=404, detail="Offerte niet gevonden")
+
+    new_id = f"OFF-{datetime.now(timezone.utc).year}-{str(uuid.uuid4())[:6].upper()}"
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    new_doc = {**source}
+    new_doc["id"] = new_id
+    new_doc["quote_number"] = new_id
+    new_doc["title"] = (source.get("title") or "Offerte") + " (kopie)"
+    new_doc["status"] = "concept"
+    new_doc["is_sold"] = False
+    # Strip signing + acceptance state
+    for k in ("customer_signed_at", "customer_signed_name", "customer_signed_ip",
+              "approved_at", "rejected_at", "sent_at", "valid_until",
+              "billit_invoice_id", "peppol_status", "email_sent"):
+        new_doc.pop(k, None)
+    new_doc["created_at"] = now_iso
+    new_doc["date"] = now_iso
+    new_doc["user_id"] = current_user.id
+    # MongoDB returned an immutable _id; just to be safe
+    new_doc.pop("_id", None)
+
+    await db.quotes.insert_one(new_doc)
+
+    # Clone all line items
+    source_items = await db.line_items.find({"quote_id": quote_id}, {"_id": 0}).to_list(2000)
+    cloned = 0
+    for it in source_items:
+        new_item = {**it}
+        new_item["id"] = str(uuid.uuid4())
+        new_item["quote_id"] = new_id
+        new_item["created_at"] = now_iso
+        new_item.pop("_id", None)
+        await db.line_items.insert_one(new_item)
+        cloned += 1
+
+    logger.info(f"Quote {quote_id} duplicated to {new_id} with {cloned} line items by user {current_user.id}")
+    new_doc.pop("_id", None)
+    return {"id": new_id, "quote_number": new_id, "items_cloned": cloned, "title": new_doc["title"]}
+
 @api_router.get("/quotes", response_model=List[Quote])
 async def get_quotes(current_user: User = Depends(get_current_user)):
     """Get all quotes (all admins see all data)"""

@@ -304,6 +304,23 @@ export default function ProjectDetailPage() {
     }
   };
 
+  // Duplicate quote (and all its line items) for re-use within the same project
+  const handleDuplicateQuote = async (quoteId, quoteNumber) => {
+    if (!window.confirm(`Wil je offerte ${quoteNumber} dupliceren als een nieuwe concept-offerte?`)) return;
+    try {
+      const res = await axios.post(
+        `${API}/quotes/${quoteId}/duplicate`,
+        {},
+        { headers: getAuthHeaders() }
+      );
+      toast.success(`Offerte ${res.data.quote_number} aangemaakt (${res.data.items_cloned} regels gekopieerd)`);
+      fetchProjectData();
+    } catch (error) {
+      console.error('Duplicate failed:', error);
+      toast.error(error?.response?.data?.detail || 'Kon offerte niet dupliceren');
+    }
+  };
+
   // Mark legacy document as sold
   const handleToggleLegacyDocSold = async (docId, isSold) => {
     try {
@@ -484,6 +501,18 @@ export default function ProjectDetailPage() {
                                 €{quote.total_incl_vat?.toFixed(2) || '0.00'}
                               </p>
                             </div>
+                            
+                            {/* Duplicate Quote button */}
+                            <button
+                              data-testid={`duplicate-quote-${quote.id}`}
+                              onClick={() => handleDuplicateQuote(quote.id, quote.quote_number)}
+                              title="Offerte dupliceren als nieuwe concept"
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors hover:bg-gray-100"
+                              style={{ borderColor: '#E5E7EB', border: '1px solid', color: '#500000' }}
+                            >
+                              <Copy size={13} />
+                              <span className="hidden md:inline">Kopiëren</span>
+                            </button>
                             
                             {/* Verkocht Switch */}
                             <div className="flex items-center gap-2 px-3 py-1 rounded-lg" style={{backgroundColor: quote.is_sold ? '#D1FAE5' : '#F3F4F6'}}>
