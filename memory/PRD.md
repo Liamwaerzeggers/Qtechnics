@@ -130,6 +130,14 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Frontend: "Kopiëren"-knop met Copy-icoon op elke quote-card in de project-detail pagina
 - Bevestigingsdialoog + toast met aantal gekopieerde regels
 
+### Offerte Zichtbaarheid in Klantenportaal (mei 2026)
+- Nieuw veld `visible_to_customer: bool = False` (default **onzichtbaar**) op `Quote` model en `QuoteUpdate`
+- Endpoint `GET /api/customer-portal/{access_token}` filtert quotes nu op `visible_to_customer: true` (naast bestaande status-filter)
+- Bestaande quotes zonder dit veld → standaard verborgen (user moet bewust zichtbaar maken)
+- Frontend: Eye/EyeOff toggle-knop op elke quote-card in `ProjectDetailPage` (naast "Kopiëren") en in de Status-card van `QuoteDetailPage`
+- Toggle wordt opgeslagen via bestaande `PUT /api/quotes/{id}` endpoint
+- E2E getest met curl: toggle true → quote verschijnt in portal; toggle false → verdwijnt
+
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 

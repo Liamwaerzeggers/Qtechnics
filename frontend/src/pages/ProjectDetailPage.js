@@ -304,6 +304,23 @@ export default function ProjectDetailPage() {
     }
   };
 
+  // Toggle quote visibility in customer portal
+  const handleToggleQuoteVisibility = async (quoteId, currentVisibility) => {
+    try {
+      const newVisibility = !currentVisibility;
+      await axios.put(
+        `${API}/quotes/${quoteId}`,
+        { visible_to_customer: newVisibility },
+        { headers: getAuthHeaders() }
+      );
+      toast.success(newVisibility ? 'Offerte zichtbaar voor klant 👁️' : 'Offerte verborgen voor klant');
+      fetchProjectData();
+    } catch (error) {
+      console.error('Failed to toggle quote visibility:', error);
+      toast.error('Kon zichtbaarheid niet wijzigen');
+    }
+  };
+
   // Duplicate quote (and all its line items) for re-use within the same project
   const handleDuplicateQuote = async (quoteId, quoteNumber) => {
     if (!window.confirm(`Wil je offerte ${quoteNumber} dupliceren als een nieuwe concept-offerte?`)) return;
@@ -512,6 +529,25 @@ export default function ProjectDetailPage() {
                             >
                               <Copy size={13} />
                               <span className="hidden md:inline">Kopiëren</span>
+                            </button>
+
+                            {/* Visibility toggle for customer portal */}
+                            <button
+                              data-testid={`toggle-quote-visibility-${quote.id}`}
+                              onClick={() => handleToggleQuoteVisibility(quote.id, quote.visible_to_customer)}
+                              title={quote.visible_to_customer ? 'Zichtbaar voor klant - klik om te verbergen' : 'Verborgen voor klant - klik om zichtbaar te maken'}
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors hover:bg-gray-100"
+                              style={{
+                                borderColor: '#E5E7EB',
+                                border: '1px solid',
+                                color: quote.visible_to_customer ? '#10B981' : '#94A3B8',
+                                backgroundColor: quote.visible_to_customer ? '#ECFDF5' : '#F8FAFC'
+                              }}
+                            >
+                              {quote.visible_to_customer ? <Eye size={13} /> : <EyeOff size={13} />}
+                              <span className="hidden md:inline">
+                                {quote.visible_to_customer ? 'Zichtbaar' : 'Verborgen'}
+                              </span>
                             </button>
                             
                             {/* Verkocht Switch */}

@@ -1,48 +1,42 @@
 <analysis>**original_problem_statement:**
-Alles-in-één constructie management platform (multi-role, tweetalig, materiaal bestelsysteem, PWA + push notificaties). Het project is aanzienlijk uitgebreid met fixes voor offerte-generatie, facturatie, en stabiliteit. De meest recente verzoeken omvatten: het bewerken van offerteregels, PDF-generatie per kamer met subtotalen, project statussen & filtering, het oplossen van dataverlies/navigatie-crashes, een fix voor het 16MB MongoDB documentlimiet bij foto-uploads, en de introductie van een compleet team taaksysteem met Resend e-mail notificaties.
+Alles-in-één constructie management platform (multi-role, tweetalig, materiaal bestelsysteem, PWA + push notificaties). Het project is verder uitgebreid met team management features, verbeterde PDF-offertes en facturen (MaxQ bordeaux branding, markdown, logo's), mobiele (iOS) stabiliteitsverbeteringen, en uitgebreide offerte-functionaliteiten (dupliceren, digitale handtekening via klantenportaal, eenheden wijzigen). Huidig verzoek: Een toggle toevoegen om offertes al dan niet zichtbaar te maken in het klantenportaal.
 
-**User's preferred language**: Dutch (Nederlands) - INSTRUCT next agent to respond in Dutch only.
+**User's preferred language**: Dutch (Nederlands). INSTRUCT NEXT AGENT TO RESPOND IN DUTCH ONLY.
 
 **what currently exists?** 
-Een robuuste full-stack React/FastAPI/MongoDB applicatie. Recent geïmplementeerd:
-- Offerte generatie met bewerkbare beschrijvingen en per-kamer groepering (inclusief PDF weergave).
-- Project overzicht met horizontale status-tabs, badges en snelle dropdown-updates.
-- Stabiele auth-interceptors (geen full-page reloads/crashes meer bij 401's).
-- Foto's worden nu veilig opgeslagen in een aparte  collectie (loste de base64-in-document size limiet op).
-- Uitgebreid taaksysteem () met notificatiebalk bovenaan, e-mail notificaties via Resend, en automatische taakcreatie bij nieuwe leads.
+Een robuuste full-stack React/FastAPI/MongoDB applicatie. Uitgebreid taaksysteem met push-notificaties (pywebpush) en Resend e-mails, inclusief herverdeling, filtering, gamification en wekelijkse samenvattingen via APScheduler. PDF-generatie is overgezet naar een centrale  module met MaxQ-branding, ondersteuning voor Markdown, en digitale handtekeningen. Mobiele stabiliteit is verbeterd met netwerk-retries en no-cache headers voor auth. Offertes kunnen nu gedupliceerd worden en line-items hebben aanpasbare eenheden (stuk, m², etc.).
 
 **Last working item**:
-    - Last item agent was working: De gebruiker vroeg om een rode badge (met het aantal openstaande taken) in het linkermenu naast het Taken navigatie-item. De agent heeft de logica in  toegevoegd, maar liep tegen een timing-probleem aan (API werd aangeroepen voordat het token in  zat, waardoor de badge  bleef). De agent heeft zojuist een aanpassing gepusht (via ) om deze afhankelijkheid te fixen.
+    - Last item agent was working: Een toggle (zichtbaarheids-vinkje) toevoegen op offertes zodat de gebruiker kan bepalen of een offerte zichtbaar is in het klantenportaal. De agent was zojuist gestart met het inspecteren van het  en  model in .
     - Status: IN PROGRESS
-    - Agent Testing Done: N (Screenshot nog nodig om de fix te verifiëren)
-    - Which testing method agent to use? screenshot tool
+    - Agent Testing Done: N
+    - Which testing method agent to use? backend testing agent/ manual testing by curl + screenshot tool
     - User Testing Done: N
 
-**All Pending/In progress Issue list**:
-  Issue 1: Taak badge in sidebar toont niet direct de juiste count (P0)
-     - Attempted fixes: State en fetch-logica toegevoegd aan . Oorspronkelijke  vuurde te vroeg. Fix is net toegepast maar nog niet geverifieerd.
-     - Next debug checklist: Neem een screenshot van de frontend ( of ) om te zien of de badge met een getal (>0) in het linker menu bij Taken staat. Indien niet, controleer of de API call correct wordt uitgevoerd nadat de  state is gezet in de context.
-     - Why fix this issue and what will be achieved with the fix? Directe visuele indicator voor de gebruiker dat er taken openstaan, wat hun workflow verbetert.
+**All Pending/In progress Issue list**: 
+  Issue 1: Offertes zichtbaar/onzichtbaar maken in klantenportaal (P0)
+     - Attempted fixes: Agent heeft  geopend om het Pydantic model () te bekijken voor het toevoegen van een  boolean (vergelijkbaar met hoe dit al bij werkbonnen bestaat).
+     - Next debug checklist: Voeg  (of False, afhankelijk van default wens) toe aan  en  models in . Update de GET-endpoints voor het klantenportaal (rond regel 7970) om alleen offertes terug te geven waarbij . Update de frontend ( of ) met een switch/checkbox om dit aan te passen.
+     - Why fix this issue and what will be achieved with the fix? Klantenportaal beheer; voorkomt dat concept/interne offertes per ongeluk zichtbaar zijn voor de klant.
      - Status: IN PROGRESS
      - Is recurring issue? N
-     - Should Test frontend/backend/both after fix? frontend (screenshot tool)
-     - Blocked on other issue: None
+     - Should Test frontend/backend/both after fix? both
 
   Issue 2: Server.py Monolith Refactoring (P1)
-     - Attempted fixes: Geen in deze sessie. Bestand is inmiddels gegroeid tot >12.000 regels.
-     - Next debug checklist: Opsplitsen van  in API routers (bijv. auth, projects, tasks, quotes).
-     - Why fix this issue and what will be achieved with the fix? Cruciale technical debt; vermindert kans op bugs en time-outs in de editor.
+     - Attempted fixes: Geen. Het bestand is nu meer dan 12.500 regels lang.
+     - Next debug checklist: Opsplitsen van  in API routers (bijv. offertes, facturen, taken, projecten).
+     - Why fix this issue and what will be achieved with the fix? Cruciale technical debt; vermindert kans op bugs, timeouts en context-window limieten in de editor.
      - Status: NOT STARTED
      - Is recurring issue? Y
      - Should Test frontend/backend/both after fix? both (testing agent MUST be used)
      - Blocked on other issue: None
 
 **In progress Task List**:
-  Task 1: Sidebar Taak Badge
-     - Where to resume: Controleer of de zojuist gepushte fix in  werkt via een screenshot.
-     - What will be achieved with this? Voltooiing van het taak-notificatiesysteem verzoek.
-     - Status: TESTING PENDING
-     - Should Test frontend/backend/both after fix? frontend
+  Task 1: Offerte zichtbaarheid toggle
+     - Where to resume: Pas de Pydantic models aan in  (lijn 191) en update de React frontend om de checkbox weer te geven. 
+     - What will be achieved with this? Gebruiker krijgt controle over wat de klant ziet in het portaal.
+     - Status: IN PROGRESS
+     - Should Test frontend/backend/both after fix? both
      - Blocked on something: None
 
 **Upcoming and Future Tasks**
@@ -54,75 +48,85 @@ Een robuuste full-stack React/FastAPI/MongoDB applicatie. Recent geïmplementeer
     - (P3) Commerciële logica (abonnementen, betalingen).
 
 **Completed work in this session**
-- Omschrijving offerteregels bewerken (DONE)
-- Per-kamer offertes incl. PDF export met kamer headers en subtotalen (DONE)
-- Afbraak plafond dubbele berekening bug gefixt via verbeterde regex matching (DONE)
-- Projecten Dashboard 2.0 (Statussen, tabs, kleurcodes) (DONE)
-- Auth & Navigatie stabiliteit gefixt (401 interceptor verwijderd full page reload) (DONE)
-- Foto upload limiet gefixt (Base64 opgeslagen in aparte  DB i.p.v. in project) (DONE)
-- Foto weergave in klantenportaal hersteld (DONE)
-- Volledig Team Taaksysteem + Notificatiebalk + Resend emails (DONE)
+- Sidebar Taak Badge desktop fix (DONE)
+- Push-notificaties via pywebpush voor taaktoewijzingen (DONE)
+- Resend API key update + E-mail notificaties hersteld (DONE)
+- Wekelijkse team taken-samenvatting via APScheduler cron (DONE)
+- Team Prestaties Widget in frontend + filter per teamlid (DONE)
+- Bulk taak-herverdeling dialog toegevoegd (DONE)
+- Taak voltooiing gamification/animatie met  (DONE)
+- Handmatige Opnieuw versturen knop voor taak-emails incl. Resend logging (DONE)
+- Mobiele iOS stabiliteit: Axios retry interceptor, Offline Banner, Cache-Control no-store (DONE)
+- Nieuwe PDF Branding Engine () met bordeaux stijl, MaxQ logo en actuele bedrijfsgegevens (DONE)
+- Markdown ondersteuning (vet, cursief, lijsten) voor offerte omschrijvingen in PDF en UI (DONE)
+- Digitale klant-handtekening flow in klantenportaal incl. PDF visualisatie (DONE)
+- Vrije eenheid-keuze (stuk, m², etc.) voor arbeid-items op offertes (DONE)
+- Offertes dupliceren binnen project backend + frontend functionaliteit (DONE)
 
 **Earlier issues found/mentioned but not fixed**
-Geen (alles is tijdens deze sessie verholpen).
+None.
 
 **Known issue recurrence from previous fork**
-  - Issue recurrence in previous fork:  is te groot en onoverzichtelijk.
+  - Issue recurrence in previous fork:  is te groot en onoverzichtelijk. Deployment-issues waarbij de user klaagt over bugs die op live spelen terwijl de agent ze in preview heeft gefixt (verkeerde env vars of het niet uitvoeren van een redeploy door de user).
   - Recurrence count: High
-  - Status: NOT STARTED
-  Note: Dit mag pas opgepakt worden nadat de huidige workflow (badge) is afgerond en goedgekeurd door de gebruiker.
+  - Status: NOT STARTED (voor refactoring). RESOLVED (voor educatie user rond deployments).
+  Note: Als de user bugs meldt, vraag altijd of ze op preview of op productie (dashboard.qtechnics.be) plaatsvinden.
 
 **Code Architecture**
-- /app/backend/server.py (Monolith > 12.000 regels)
-- /app/backend/auth_simple.py (Nieuwe simpele auth router)
-- /app/frontend/src/components/ (o.a. DashboardLayout.js, TaskNotificationBar.js)
-- /app/frontend/src/pages/ (o.a. TasksPage.js)
+- /app/backend/server.py (Monolith > 12.500 regels)
+- /app/backend/pdf_branding.py (Nieuw: gecentraliseerde ReportLab logica en templates)
+- /app/backend/auth_simple.py (Auth routing)
+- /app/frontend/src/components/ (o.a. RedistributeDialog.js, ConnectivityBanner.js, DescriptionView.js, TaskCompletionCelebration.js)
+- /app/frontend/src/pages/ (o.a. CustomerPortalPage.js, QuoteDetailPage.js, TasksPage.js)
 
 **Key Technical Concepts**
-React frontend, FastAPI backend, MongoDB, PyWebPush (notificaties), Resend (emails), LocalStorage auth tokens.
+React frontend, FastAPI backend, MongoDB, PyWebPush (notificaties), Resend (emails), APScheduler (cron jobs), ReportLab (PDFs), LocalStorage auth.
 
 **key DB schema**
-  - : {id, status, is_sold, ...}
-  - : {id, filename, data (base64 string)}
-  - : {id, title, task_type, status, assigned_to, created_by, ...}
-  -  & : Managed tokens.
+  - : {id, status, ...}
+  - : {id, quote_number, customer_signed_at, customer_signed_name, customer_signed_ip, is_sold, ...} (Moet  aan toegevoegd worden)
+  - : {id, quote_id, description (supports markdown), unit, item_type, ...}
+  - : {id, title, assigned_to, email_sent, ...}
 
 **changes in tech stack**
-  -  pip package geïnstalleerd voor email notificaties.
-  - Base64 images definitief losgekoppeld van de document records en verplaatst naar de  tabel om MongoDB limieten (16MB) te omzeilen.
+  -  toegevoegd voor cron jobs (wekelijkse email).
+  -  toegevoegd in frontend voor gamification.
+  -  (pdftoppm) geïnstalleerd in container voor PDF-naar-Image testing.
 
 **All files of reference**
-  -  (Laatste wijzigingen voor de menu badge).
-  -  (Nieuw)
-  -  (Nieuw)
-  -  (Aangepast voor /api/tasks, project get/update flows)
-  -  (Auth interceptors aangepast -  is vervangen door event listeners)
+  -  (Bezig met aanpassen van Quote Pydantic modellen).
+  -  (Nieuwe module voor PDF layout, kleuren, headers).
+  -  (Bevat quote overzicht, locatie voor de nieuwe visibility toggle).
+  -  (Moet onzichtbare offertes gaan verbergen).
 
 **Areas that need refactoring**:
-  -  is >12.000 regels lang.
+  -  is extreem groot en moet opgesplitst worden (is reeds P1 op de backlog).
 
 **key api endpoints**
-  -  (Ophalen van taken, inclusief onverdeelde taken)
-  -  (Auth route, in auth_simple.py)
+  -  (Ophalen data voor klant)
+  -  (Update quote metadata, gebruiken voor visibility toggle)
+  -  (Kopieert offerte)
 
 **Critical Info for New Agent**
 - **Reageer uitsluitend in het Nederlands.**
-- Begin direct met het nemen van een screenshot van  of  om te verifiëren of de taak-badge nu wél gerenderd wordt in het linkermenu. 
-- Maak GEEN gebruik van  in de frontend bij auth fouten. Dit triggert een harde state clear die dataloss veroorzaakt bij het navigeren. Gebruik de nieuw geïmplementeerde React Auth context mechanismen.
+- De user verwart vaak de  omgeving met zijn  omgeving (). De user moet expliciet de Deploy knop indrukken om code/env vars van preview naar productie te pushen.
+- De agent is net gestopt na de vraag: Ik wil bij de offertes kunnen aanduiden of ze zichtbaar moeten zijn in het klantenportaal of niet. De agent was begonnen met het opzoeken van het Quote model.
+- Maak direct een start met het toevoegen van  (of False) aan het  Pydantic model. Pas de API endpoint voor  aan, en voeg een toggle (Oog-icoon of Switch) toe in de UI ( / ).
 
 **documents and test reports created in this job**
-  - /app/memory/PRD.md
-  - /app/test_reports/iteration_15.json
-  - /app/test_reports/iteration_16.json
+  - Geen nieuwe test reports via de subagent gegenereerd in de laatste iteratie (testing werd manueel via curl en screenshots gedaan). 
 
 **Last 10 User Messages and any pending HUMAN messages** 
- - User vroeg om een tekstballon/badge bij Taken in het linker menu die het aantal actieve taken toont. (PENDING - fix is net geschreven, moet enkel nog geverifieerd worden)
- - User vroeg om een taaksysteem voor het team en het oplossen van de foto-upload limieten & stabiliteitscrashes. (COMPLETED)
- - User rapporteerde dat het dashboard leeg wordt (crasht/uitlogt) wanneer er terug genavigeerd wordt vanuit een project. (COMPLETED - 401 interceptor fix)
- - User rapporteerde dat foto upload stopte na ~5 foto's en dat ze niet zichtbaar waren in het portaal. Ook login faalde vaak. (COMPLETED - DB 16MB fix & Auth fix)
- - User verzocht om een project status overzicht (Nieuwe lead, Eerste bezoek, etc.) met tabs en een zoekbalk. (COMPLETED)
- - User rapporteerde een bug: Afbraak plafond kwam dubbel voor in de calculaties. (COMPLETED)
- - User verzocht om aanpassing van de PDF: groepering per kamer ontbrak. (COMPLETED)
+ - User vroeg om een toggle om offertes zichtbaar of onzichtbaar te maken in het klantenportaal (PENDING / IN PROGRESS).
+ - User rapporteerde not found bij kopiëren van offerte. Agent legde uit dat dit komt omdat live omgeving nog niet her-deployed is. (RESOLVED)
+ - User vroeg om offertes te kunnen dupliceren. (COMPLETED)
+ - User vroeg waarom m² hardcoded was bij arbeid. Agent voegde een unit selector toe. (COMPLETED)
+ - User wilde een onderteken-knop in het klantenportaal. (COMPLETED)
+ - User meldde aanhoudende inlogproblemen op mobiel (productie vs preview sync issues). (RESOLVED door uitleg)
+ - User vroeg om markdown ondersteuning (bullet points) in offerte-regels. (COMPLETED)
+ - User meldde verkeerde adresgegevens in de PDF-header. (COMPLETED)
+ - User vroeg om het PDF logo te updaten. (COMPLETED)
+ - User wilde de bestaande lay-out van een geüploade PDF nabootsen in het systeem (PDF branding). (COMPLETED)
 
 **Project Health Check:**
 - Broken: None
@@ -135,7 +139,7 @@ React frontend, FastAPI backend, MongoDB, PyWebPush (notificaties), Resend (emai
 - Billit (Payments/PEPPOL) — requires User API Key
 
 **Testing status**
-  - Testing agent used after significant changes: YES (iteration 15 & 16)
+  - Testing agent used after significant changes: NO (in this specific session segment, testing was done via e2e curl and screenshots).
   - Troubleshoot agent used after agent stuck in loop: NO
   - Test files created: []
   - Known regressions: None
@@ -145,9 +149,14 @@ React frontend, FastAPI backend, MongoDB, PyWebPush (notificaties), Resend (emai
   - Password: 
 
 **What agent forgot to execute**
-De agent heeft de code-fix voor de taak-badge in  net geschreven, maar vergat de verificatie-screenshot te nemen en de sessie formeel af te sluiten via de  tool voordat de job afbrak.
+- De agent is direct gestopt bij het analyseren van  voor de quote-visibility feature. Het model is nog niet geüpdatet, de frontend heeft nog geen UI toggle, en het klantenportaal-endpoint toont nog altijd alle offertes.
 
 **Debugging checklist for current issue**
-    Issue: Taak-badge in de sidebar toont niet bij eerste render.
-    Frontend files to check:  (Controleer of de  de  afvuurt nadat de  uit  succesvol beschikbaar is).
-    Actie: Neem een screenshot en gebruik eventueel de console logs om te zien of de API oproep faalt of de teller simpelweg 0 terugkrijgt. Gebruik  als het succesvol is.</analysis>
+    Issue: Offertes zichtbaarheids-toggle ontbreekt.
+    Backend files to check:  (Quote model definities rond regel 191;  rond regel 7970).
+    Frontend files to check:  (voor de actieknop) en eventueel .
+    Actie: 
+    1. Voeg  toe aan  en .
+    2. Filter de offertes in het  endpoint ().
+    3. Voeg een Oogje of Zichtbaar/Onzichtbaar toggle toe aan de frontend op de offerte kaart in het project dashboard. Update deze via de  route.
+    4. Controleer via screenshot of het klantenportaal de verborgen offertes inderdaad verbergt.</analysis>

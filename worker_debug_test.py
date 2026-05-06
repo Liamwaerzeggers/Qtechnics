@@ -23,7 +23,7 @@ import sys
 import os
 
 class WorkerProjectDebugger:
-    def __init__(self, base_url="https://site-manager-201.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://offerte-beheer.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.admin_session_token = None
         self.admin_user_id = None

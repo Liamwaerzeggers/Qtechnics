@@ -204,6 +204,7 @@ class Quote(BaseModel):
     total_vat: float = 0.0
     total_incl_vat: float = 0.0
     total_price: float = 0.0  # Backwards compatibility
+    visible_to_customer: bool = False  # Toggle: zichtbaar in klantenportaal
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
 
@@ -215,6 +216,7 @@ class QuoteUpdate(BaseModel):
     status: Optional[str] = None
     room: Optional[str] = None
     is_sold: Optional[bool] = None  # Mark quote as sold/won
+    visible_to_customer: Optional[bool] = None  # Toggle zichtbaarheid klantenportaal
 
 # Line Item Models
 class LineItem(BaseModel):
@@ -8056,6 +8058,7 @@ async def get_customer_portal_data(access_token: str):
     project_quotes = await db.quotes.find({
         "project_id": project_id,
         "status": visible_status_filter,
+        "visible_to_customer": True,
     }, {"_id": 0}).to_list(100)
     quotes.extend(project_quotes)
 
@@ -8064,6 +8067,7 @@ async def get_customer_portal_data(access_token: str):
         lead_quotes = await db.quotes.find({
             "lead_id": lead_id,
             "status": visible_status_filter,
+            "visible_to_customer": True,
         }, {"_id": 0}).to_list(100)
         existing_ids = {q["id"] for q in quotes}
         for q in lead_quotes:
@@ -12279,7 +12283,7 @@ async def send_customer_notification(project_id: str, subject: str, content_desc
         portal_token = project.get("customer_access_token")
         portal_link = ""
         if portal_token:
-            portal_link = f"<p><a href='{os.environ.get('APP_URL', 'https://site-manager-201.preview.emergentagent.com')}/customer/{portal_token}' style='background-color: #1E40AF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;'>Bekijk uw project</a></p>"
+            portal_link = f"<p><a href='{os.environ.get('APP_URL', 'https://offerte-beheer.preview.emergentagent.com')}/customer/{portal_token}' style='background-color: #1E40AF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;'>Bekijk uw project</a></p>"
         
         # Build HTML email
         html_content = f"""

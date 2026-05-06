@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Plus, Download, Trash2, Search, Mail, Scissors, Loader2, Edit2, Check, X, Upload, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Trash2, Search, Mail, Scissors, Loader2, Edit2, Check, X, Upload, Image as ImageIcon, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Helper to get auth headers
@@ -703,6 +703,34 @@ Q Technics`;
                     <SelectItem value="Volledige woning">Volledige woning</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Klantportaal zichtbaarheid toggle */}
+              <div className="flex items-center gap-2">
+                <Label>👁️ Klantportaal:</Label>
+                <button
+                  data-testid="toggle-quote-visibility-detail"
+                  onClick={async () => {
+                    try {
+                      const newVisibility = !quote.visible_to_customer;
+                      await axios.put(`${API}/quotes/${quoteId}`, { visible_to_customer: newVisibility }, { headers: getAuthHeaders() });
+                      setQuote(prev => ({ ...prev, visible_to_customer: newVisibility }));
+                      toast.success(newVisibility ? 'Offerte zichtbaar voor klant 👁️' : 'Offerte verborgen voor klant');
+                    } catch (error) {
+                      toast.error('Kon zichtbaarheid niet wijzigen');
+                    }
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-90"
+                  style={{
+                    border: '1px solid',
+                    borderColor: quote.visible_to_customer ? '#10B981' : '#CBD5E1',
+                    color: quote.visible_to_customer ? '#059669' : '#64748B',
+                    backgroundColor: quote.visible_to_customer ? '#ECFDF5' : '#F8FAFC'
+                  }}
+                >
+                  {quote.visible_to_customer ? <Eye size={16} /> : <EyeOff size={16} />}
+                  <span>{quote.visible_to_customer ? 'Zichtbaar voor klant' : 'Verborgen voor klant'}</span>
+                </button>
               </div>
             </div>
           </CardContent>
