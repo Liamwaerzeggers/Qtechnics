@@ -226,6 +226,7 @@ class LineItem(BaseModel):
     unit_price: float
     item_type: str  # "arbeid", "materiaal", "overig"
     vat_rate: float = 21.0  # BTW percentage (0, 6, 9, 21)
+    unit: Optional[str] = None  # m², stuk, uur, dag, forfait, ...
     total_excl_vat: float = 0.0
     vat_amount: float = 0.0
     total_incl_vat: float = 0.0
@@ -238,6 +239,7 @@ class LineItemCreate(BaseModel):
     unit_price: float
     item_type: str
     vat_rate: float = 21.0
+    unit: Optional[str] = None
 
 class LineItemUpdate(BaseModel):
     description: Optional[str] = None
@@ -245,6 +247,7 @@ class LineItemUpdate(BaseModel):
     unit_price: Optional[float] = None
     item_type: Optional[str] = None
     vat_rate: Optional[float] = None
+    unit: Optional[str] = None
 
 # Material Models
 class Material(BaseModel):

@@ -367,14 +367,15 @@ export default function QuoteDetailPage() {
     setEditValues({
       description: item.description || '',
       quantity: item.quantity.toString(),
-      unit_price: item.unit_price.toString()
+      unit_price: item.unit_price.toString(),
+      unit: item.unit || 'm²'
     });
   };
 
   // Cancel editing
   const cancelEditing = () => {
     setEditingItem(null);
-    setEditValues({ description: '', quantity: '', unit_price: '' });
+    setEditValues({ description: '', quantity: '', unit_price: '', unit: 'm²' });
   };
 
   // Save edited line item
@@ -382,6 +383,7 @@ export default function QuoteDetailPage() {
     const description = editValues.description.trim();
     const quantity = parseFloat(editValues.quantity);
     const unit_price = parseFloat(editValues.unit_price);
+    const unit = editValues.unit || 'm²';
 
     if (!description) {
       toast.error('Omschrijving mag niet leeg zijn');
@@ -399,12 +401,12 @@ export default function QuoteDetailPage() {
     try {
       await axios.put(
         `${API}/quotes/${quoteId}/items/${itemId}`,
-        { description, quantity, unit_price },
+        { description, quantity, unit_price, unit },
         { headers: getAuthHeaders() }
       );
       toast.success('Item bijgewerkt!');
       setEditingItem(null);
-      setEditValues({ description: '', quantity: '', unit_price: '' });
+      setEditValues({ description: '', quantity: '', unit_price: '', unit: 'm²' });
       fetchQuoteData();
     } catch (error) {
       console.error('Update error:', error);
@@ -1078,14 +1080,14 @@ Q Technics`;
                       </p>
                     </div>
                     
-                    {/* Unit selector for custom work items */}
-                    {useCustomMaterial && formData.item_type === 'arbeid' && (
+                    {/* Unit selector for work items - always visible so the admin can pick m², stuk, uur, forfait, ... */}
+                    {formData.item_type === 'arbeid' && (
                       <div>
                         <Label>Eenheid</Label>
                         <select
-                          value={formData.unit}
+                          value={formData.unit || 'm²'}
                           onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                          className="w-full h-10 px-3 border rounded-md text-sm"
+                          className="w-full h-10 px-3 border rounded-md text-sm bg-white"
                           style={{borderColor: '#E2E8F0'}}
                         >
                           <option value="m²">m² (vierkante meter)</option>
@@ -1095,9 +1097,11 @@ Q Technics`;
                           <option value="dag">dag</option>
                           <option value="forfait">forfait</option>
                         </select>
-                        <p className="text-xs mt-1" style={{color: '#64748B'}}>
-                          Dit werk item wordt automatisch aan je catalogus toegevoegd
-                        </p>
+                        {useCustomMaterial && (
+                          <p className="text-xs mt-1" style={{color: '#64748B'}}>
+                            Dit werk item wordt automatisch aan je catalogus toegevoegd
+                          </p>
+                        )}
                       </div>
                     )}
                     
@@ -1318,6 +1322,27 @@ Q Technics`;
                               style={{borderColor: '#E5E7EB'}}
                             />
                           </div>
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm" style={{color: '#64748B'}}>Eenheid:</label>
+                            <select
+                              data-testid={`edit-unit-${item.id}`}
+                              value={editValues.unit || 'm²'}
+                              onChange={(e) => setEditValues({...editValues, unit: e.target.value})}
+                              className="px-2 py-1 border rounded text-sm bg-white"
+                              style={{borderColor: '#E5E7EB'}}
+                            >
+                              <option value="m²">m²</option>
+                              <option value="m">m</option>
+                              <option value="stuk">stuk</option>
+                              <option value="uur">uur</option>
+                              <option value="dag">dag</option>
+                              <option value="forfait">forfait</option>
+                              <option value="doos">doos</option>
+                              <option value="rol">rol</option>
+                              <option value="kg">kg</option>
+                              <option value="liter">liter</option>
+                            </select>
+                          </div>
                           <span className="text-sm" style={{color: '#64748B'}}>
                             = €{((parseFloat(editValues.quantity) || 0) * (parseFloat(editValues.unit_price) || 0)).toFixed(2)}
                           </span>
@@ -1352,7 +1377,7 @@ Q Technics`;
                         <div className="flex-1 min-w-0">
                           <DescriptionView text={item.description} />
                           <div className="text-sm mt-2" style={{color: '#64748B'}}>
-                            {item.quantity} x €{item.unit_price.toFixed(2)} | Type: {item.item_type}
+                            {item.quantity} {item.unit || 'm²'} × €{item.unit_price.toFixed(2)} | Type: {item.item_type}
                           </div>
                         </div>
                         <div className="flex items-center gap-3 flex-shrink-0">
