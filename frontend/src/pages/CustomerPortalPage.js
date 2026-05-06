@@ -67,6 +67,10 @@ export default function CustomerPortalPage() {
   const [expandedUpdates, setExpandedUpdates] = useState({});  const [submittingRating, setSubmittingRating] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [legacyDocuments, setLegacyDocuments] = useState([]);
+  const [signingQuote, setSigningQuote] = useState(null);
+  const [signName, setSignName] = useState('');
+  const [signAccepted, setSignAccepted] = useState(false);
+  const [signSubmitting, setSignSubmitting] = useState(false);
 
   useEffect(() => {
     fetchPortalData();
@@ -116,8 +120,35 @@ export default function CustomerPortalPage() {
     }
   };
 
-  const sendMessage = async () => {
-    if (!newMessage.trim()) return;
+  const submitSignature = async () => {
+    if (!signingQuote) return;
+    if (signName.trim().length < 2) {
+      toast.error('Vul je volledige naam in');
+      return;
+    }
+    if (!signAccepted) {
+      toast.error('Vink het akkoord aan om te bevestigen');
+      return;
+    }
+    setSignSubmitting(true);
+    try {
+      const res = await axios.post(
+        `${API}/customer-portal/${accessToken}/quotes/${signingQuote.id}/sign`,
+        { name: signName.trim(), accepted_terms: true }
+      );
+      toast.success(res.data.message || 'Offerte bevestigd');
+      setSigningQuote(null);
+      setSignName('');
+      setSignAccepted(false);
+      fetchPortalData();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || 'Kon bevestiging niet versturen');
+    } finally {
+      setSignSubmitting(false);
+    }
+  };
+
+  const sendMessage = async () => {    if (!newMessage.trim()) return;
     
     setSendingMessage(true);
     try {
@@ -613,16 +644,28 @@ export default function CustomerPortalPage() {
         {activeTab === 'quotes' && (
           <div className="space-y-4 sm:space-y-6">
             {approved_quotes && approved_quotes.length > 0 ? (
-              approved_quotes.map(quote => (
-                <Card key={quote.id}>
+              approved_quotes.map(quote => {
+                const isSigned = !!quote.customer_signed_at;
+                const canSign = quote.signable && !isSigned;
+                let badgeClass = 'bg-green-100 text-green-700';
+                let badgeLabel = 'Goedgekeurd';
+                if (isSigned) {
+                  badgeClass = 'bg-blue-100 text-blue-700';
+                  badgeLabel = '✓ Door jou bevestigd';
+                } else if (canSign) {
+                  badgeClass = 'bg-amber-100 text-amber-800';
+                  badgeLabel = 'Wacht op jouw bevestiging';
+                }
+                return (
+                <Card key={quote.id} data-testid={`portal-quote-${quote.id}`}>
                   <CardHeader className="pb-2 sm:pb-4">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                       <div>
                         <CardTitle className="text-base sm:text-lg">Offerte {quote.quote_number}</CardTitle>
                         <p className="text-xs sm:text-sm text-gray-500">{formatDate(quote.date)}</p>
                       </div>
-                      <span className="self-start px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs sm:text-sm font-medium">
-                        Goedgekeurd
+                      <span className={`self-start px-2 py-1 rounded-full text-xs sm:text-sm font-medium ${badgeClass}`}>
+                        {badgeLabel}
                       </span>
                     </div>
                   </CardHeader>
@@ -667,9 +710,43 @@ export default function CustomerPortalPage() {
                         Totaal incl. BTW: €{quote.total_incl_vat?.toFixed(2)}
                       </p>
                     </div>
+
+                    {/* Digital signature block */}
+                    {isSigned ? (
+                      <div
+                        data-testid={`portal-quote-signed-${quote.id}`}
+                        className="mt-4 p-4 rounded-lg border-2"
+                        style={{ backgroundColor: '#f5e6e6', borderColor: '#500000' }}
+                      >
+                        <div className="font-semibold text-sm" style={{ color: '#500000' }}>
+                          ✓ Digitaal bevestigd
+                        </div>
+                        <div className="text-sm mt-1" style={{ color: '#374151' }}>
+                          Door <strong>{quote.customer_signed_name}</strong>
+                        </div>
+                        <div className="text-xs mt-1" style={{ color: '#6B7280' }}>
+                          Op {formatDate(quote.customer_signed_at)}
+                        </div>
+                      </div>
+                    ) : canSign ? (
+                      <div className="mt-4 pt-4 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <p className="text-sm text-gray-600">
+                          Akkoord met deze offerte? Bevestig hieronder digitaal — geen handtekening op papier nodig.
+                        </p>
+                        <Button
+                          data-testid={`portal-sign-btn-${quote.id}`}
+                          onClick={() => { setSigningQuote(quote); setSignName(customer_name || ''); setSignAccepted(false); }}
+                          style={{ backgroundColor: '#500000' }}
+                          className="text-white hover:opacity-90"
+                        >
+                          ✓ Offerte digitaal bevestigen
+                        </Button>
+                      </div>
+                    ) : null}
                   </CardContent>
                 </Card>
-              ))
+                );
+              })
             ) : (
               <Card>
                 <CardContent className="py-6 text-center text-gray-500 text-sm">
@@ -935,6 +1012,75 @@ export default function CustomerPortalPage() {
           >
             ✕
           </button>
+        </div>
+      )}
+
+      {/* Digital signature modal */}
+      {signingQuote && (
+        <div
+          data-testid="sign-modal"
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          onClick={() => !signSubmitting && setSigningQuote(null)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-2xl w-full max-w-md p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold mb-2" style={{ color: '#500000' }}>
+              Offerte digitaal bevestigen
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Offerte <strong>{signingQuote.quote_number}</strong> · €{signingQuote.total_incl_vat?.toFixed(2)} incl. BTW
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Jouw volledige naam</label>
+                <input
+                  data-testid="sign-name-input"
+                  type="text"
+                  value={signName}
+                  onChange={(e) => setSignName(e.target.value)}
+                  placeholder="Voornaam Achternaam"
+                  className="w-full px-3 py-2 border rounded text-sm"
+                  style={{ borderColor: '#E5E7EB' }}
+                  autoFocus
+                />
+              </div>
+              <label className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
+                <input
+                  data-testid="sign-accept-check"
+                  type="checkbox"
+                  checked={signAccepted}
+                  onChange={(e) => setSignAccepted(e.target.checked)}
+                  className="mt-1"
+                />
+                <span>
+                  Ik ga akkoord met de inhoud van deze offerte en de bijhorende voorwaarden, en bevestig dat deze digitale handtekening dezelfde rechtskracht heeft als een handgeschreven handtekening.
+                </span>
+              </label>
+            </div>
+
+            <div className="flex gap-2 mt-5">
+              <Button
+                variant="outline"
+                onClick={() => setSigningQuote(null)}
+                disabled={signSubmitting}
+                className="flex-1"
+              >
+                Annuleren
+              </Button>
+              <Button
+                data-testid="sign-confirm-btn"
+                onClick={submitSignature}
+                disabled={signSubmitting || !signAccepted || signName.trim().length < 2}
+                style={{ backgroundColor: '#500000' }}
+                className="text-white flex-1"
+              >
+                {signSubmitting ? 'Bezig...' : '✓ Bevestigen'}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

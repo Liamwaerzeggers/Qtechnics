@@ -3781,7 +3781,11 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
     story.append(build_terms_and_totals(pdf_styles, terms, totals_box))
 
     # === SIGNATURE FOOTER ===
-    story += build_signature_footer(pdf_styles)
+    story += build_signature_footer(
+        pdf_styles,
+        signed_at=quote.get("customer_signed_at"),
+        signed_name=quote.get("customer_signed_name"),
+    )
 
     # === VISUAL MATERIAL LIST (kept on a new page) ===
     material_info = {}
@@ -7987,25 +7991,24 @@ async def get_customer_portal_data(access_token: str):
     if lead_id:
         lead = await db.leads.find_one({"id": lead_id}, {"_id": 0})
     
-    # Get approved quotes for this project (customers can see prices here)
-    # Status can be "approved" or "goedgekeurd" (Dutch)
-    # Search by both project_id AND lead_id since quotes can be linked to either
+    # Get quotes for this project that are visible to customer (any status except rejected/cancelled).
+    # Status filter aligned with how the rest of the app uses it.
     quotes = []
-    
+    visible_status_filter = {"$nin": ["rejected", "cancelled", "geweigerd", "geannuleerd"]}
+
     # First try by project_id
     project_quotes = await db.quotes.find({
         "project_id": project_id,
-        "status": {"$in": ["approved", "goedgekeurd"]}
+        "status": visible_status_filter,
     }, {"_id": 0}).to_list(100)
     quotes.extend(project_quotes)
-    
+
     # Also search by lead_id
     if lead_id:
         lead_quotes = await db.quotes.find({
             "lead_id": lead_id,
-            "status": {"$in": ["approved", "goedgekeurd"]}
+            "status": visible_status_filter,
         }, {"_id": 0}).to_list(100)
-        # Add quotes not already in list (avoid duplicates)
         existing_ids = {q["id"] for q in quotes}
         for q in lead_quotes:
             if q["id"] not in existing_ids:
@@ -8031,10 +8034,12 @@ async def get_customer_portal_data(access_token: str):
             })
         quote["line_items"] = customer_line_items
         
-        # Keep only the grand total for customers
+        # Keep only the grand total + signing info for customers
         quote_totals = {
             "total_incl_vat": quote.get("total_incl_vat") or quote.get("total_price", 0)
         }
+        signed_at = quote.get("customer_signed_at")
+        signed_name = quote.get("customer_signed_name")
         # Remove detailed price breakdowns
         quote.pop("subtotal_labor", None)
         quote.pop("subtotal_material", None)
@@ -8042,6 +8047,9 @@ async def get_customer_portal_data(access_token: str):
         quote.pop("total_vat", None)
         quote.pop("vat_breakdown", None)
         quote["total_incl_vat"] = quote_totals["total_incl_vat"]
+        quote["customer_signed_at"] = signed_at
+        quote["customer_signed_name"] = signed_name
+        quote["signable"] = (not signed_at) and quote.get("status") not in ("rejected", "cancelled")
     
     # Get work slips marked as visible to customer (NO financial info)
     work_slips = await db.work_slips.find({
@@ -8172,6 +8180,89 @@ async def submit_customer_rating(access_token: str, rating_data: dict):
     logger.info(f"Customer rating saved for project {project['id']}: {rating} stars")
     
     return {"success": True, "message": "Bedankt voor uw beoordeling!"}
+
+
+@api_router.post("/customer-portal/{access_token}/quotes/{quote_id}/sign")
+async def customer_sign_quote(access_token: str, quote_id: str, payload: dict, request: Request):
+    """Customer digitally confirms a quote (no auth — uses portal token).
+
+    Stores the typed name + UTC timestamp + IP. Quote moves to 'approved' so it appears
+    in the customer's confirmed list and triggers downstream invoice flows.
+    """
+    # Resolve project via portal token
+    project = await db.projects.find_one({"customer_access_token": access_token}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="Ongeldig toegangslink")
+
+    quote = await db.quotes.find_one({"id": quote_id}, {"_id": 0})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Offerte niet gevonden")
+
+    # Authorization: quote must belong to this project (by project_id or lead_id)
+    if quote.get("project_id") != project["id"] and quote.get("lead_id") != project.get("lead_id"):
+        raise HTTPException(status_code=403, detail="Deze offerte hoort niet bij dit project")
+
+    if quote.get("customer_signed_at"):
+        raise HTTPException(status_code=400, detail="Deze offerte is al digitaal bevestigd")
+
+    name = (payload.get("name") or "").strip()
+    accepted = bool(payload.get("accepted_terms"))
+    if len(name) < 2:
+        raise HTTPException(status_code=400, detail="Vul je volledige naam in")
+    if not accepted:
+        raise HTTPException(status_code=400, detail="Je moet akkoord gaan met de offerte en voorwaarden")
+
+    client_ip = request.client.host if request.client else None
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        client_ip = forwarded.split(",")[0].strip()
+
+    signed_at = datetime.now(timezone.utc).isoformat()
+    update = {
+        "customer_signed_at": signed_at,
+        "customer_signed_name": name,
+        "customer_signed_ip": client_ip,
+        "status": "approved",
+    }
+    await db.quotes.update_one({"id": quote_id}, {"$set": update})
+
+    # Notify admin via push + email
+    try:
+        await send_admin_push(
+            title="Offerte digitaal bevestigd",
+            body=f"{name} heeft offerte {quote.get('quote_number') or quote_id} bevestigd",
+            url="/quotes",
+            tag=f"signed-{quote_id}",
+        )
+    except Exception as e:
+        logger.warning(f"Push on quote sign failed: {e}")
+
+    try:
+        if resend.api_key and SENDER_EMAIL:
+            html = f"""
+            <div style='font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;'>
+              <h2 style='color:#500000;margin:0 0 12px 0;'>Offerte digitaal bevestigd</h2>
+              <p style='color:#1F2937;'><b>{name}</b> heeft de offerte
+              <b>{quote.get('quote_number') or quote_id}</b> digitaal bevestigd.</p>
+              <p style='color:#6B7280;font-size:13px;'>Bevestigd op {signed_at}<br/>IP: {client_ip or 'onbekend'}</p>
+            </div>"""
+            await asyncio.to_thread(resend.Emails.send, {
+                "from": SENDER_EMAIL,
+                "to": ["liam.waerzeggers@qtechnics.be"],
+                "subject": f"Offerte bevestigd door {name}",
+                "html": html,
+            })
+    except Exception as e:
+        logger.warning(f"Email on quote sign failed: {e}")
+
+    logger.info(f"Quote {quote_id} digitally signed by {name} (ip={client_ip})")
+    return {
+        "success": True,
+        "message": "Bedankt! Je bevestiging is geregistreerd.",
+        "signed_at": signed_at,
+        "signed_name": name,
+    }
+
 
 @api_router.post("/projects/{project_id}/customer-messages")
 async def admin_send_message_to_customer(project_id: str, message: dict, current_user: User = Depends(get_current_user)):

@@ -108,6 +108,16 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Nieuw `DescriptionView` component voor weergave in UI: parsed bullets, koppen en bold inline
 - Visueel gevalideerd via PDF render: hoofdtitel bordeaux+vet, subkoppen bordeaux+vet, bullets geïndenteerd
 
+### Digitale Klant-bevestiging op Offertes (mei 2026)
+- Klant kan offertes digitaal bevestigen via het klantenportaal — geen handtekening op papier nodig
+- Nieuwe Quote-velden: `customer_signed_at`, `customer_signed_name`, `customer_signed_ip`
+- Endpoint `POST /api/customer-portal/{token}/quotes/{id}/sign` (publiek, alleen via portal-token), valideert naam (min 2 chars) + akkoord-checkbox, slaat IP op (X-Forwarded-For aware), markeert quote als `approved`
+- Idempotent: tweede poging geeft 400 "Deze offerte is al digitaal bevestigd"
+- Admin krijgt **push-notificatie** + **e-mail** zodra een klant tekent
+- Customer portal toont nu ook draft/concept quotes met dynamische status-badges: "Wacht op jouw bevestiging" / "✓ Door jou bevestigd"
+- Modal met naam-input + akkoord-checkbox; bij confirm verschijnt "Digitaal bevestigd" badge in de quote-card
+- PDF-footer toont automatisch een bordeaux "DIGITAAL BEVESTIGD" stamp met naam + UTC-timestamp i.p.v. lege handtekeninglijnen
+
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 

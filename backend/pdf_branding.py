@@ -423,8 +423,65 @@ def build_terms_and_totals(styles, terms_items: list, totals_table: Table) -> Ta
     return outer
 
 
-def build_signature_footer(styles) -> list:
-    """Acceptance footer with two signature lines for quotes."""
+def build_signature_footer(styles, signed_at: str = None, signed_name: str = None) -> list:
+    """Acceptance footer.
+
+    If `signed_at` + `signed_name` are provided, render a "Digitaal bevestigd" stamp
+    instead of empty signature lines.
+    """
+    if signed_at and signed_name:
+        # Format the date
+        try:
+            from datetime import datetime as _dt
+            dt = _dt.fromisoformat(str(signed_at).replace("Z", "+00:00"))
+            date_str = dt.strftime("%d-%m-%Y om %H:%M")
+        except Exception:
+            date_str = str(signed_at)
+
+        stamp_table = Table(
+            [[
+                Paragraph(
+                    f'<font color="#500000"><b>✓ DIGITAAL BEVESTIGD</b></font>',
+                    ParagraphStyle("StampHead", parent=styles["body"], fontSize=12, leading=14, fontName="Helvetica-Bold"),
+                ),
+                "",
+            ],
+            [
+                Paragraph(
+                    f"door <b>{signed_name}</b>",
+                    ParagraphStyle("StampBy", parent=styles["body"], fontSize=10, leading=12),
+                ),
+                "",
+            ],
+            [
+                Paragraph(
+                    f"op {date_str} (UTC)",
+                    ParagraphStyle("StampDate", parent=styles["body_muted"], fontSize=9, leading=11),
+                ),
+                "",
+            ]],
+            colWidths=[3.4 * inch, 3.4 * inch],
+        )
+        stamp_table.setStyle(TableStyle([
+            ("LEFTPADDING", (0, 0), (-1, -1), 12),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ("BACKGROUND", (0, 0), (-1, -1), BRAND_SOFT),
+            ("BOX", (0, 0), (-1, -1), 1, BRAND),
+        ]))
+        return [
+            Spacer(1, 18),
+            HRFlowable(width="100%", thickness=2, color=BRAND, spaceBefore=0, spaceAfter=10),
+            Paragraph(
+                "Deze offerte is digitaal bevestigd door de klant via het klantenportaal. "
+                "Een handgeschreven handtekening is daardoor niet meer vereist.",
+                styles["footer_caption"],
+            ),
+            Spacer(1, 10),
+            stamp_table,
+        ]
+
     line = HRFlowable(width="100%", thickness=0.5, color=INK)
     sig_block = Table(
         [
