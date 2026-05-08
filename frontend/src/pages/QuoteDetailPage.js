@@ -733,6 +733,54 @@ Q Technics`;
                 </button>
               </div>
             </div>
+
+            {/* Aanpasbare PDF section titles */}
+            <div className="mt-4 pt-4 border-t" style={{borderColor: '#E5E7EB'}}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{color: '#64748B'}}>
+                PDF Sectie Titels (zichtbaar in offerte-PDF)
+              </p>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Titel arbeid-sectie (gesommeerd):</Label>
+                  <Input
+                    data-testid="labor-section-title-input"
+                    type="text"
+                    value={quote.labor_section_title ?? 'ARBEID'}
+                    placeholder="ARBEID"
+                    onChange={(e) => setQuote(prev => ({ ...prev, labor_section_title: e.target.value }))}
+                    onBlur={async (e) => {
+                      try {
+                        await axios.put(`${API}/quotes/${quoteId}`, { labor_section_title: e.target.value || 'ARBEID' }, { headers: getAuthHeaders() });
+                        toast.success('Titel arbeid-sectie opgeslagen');
+                      } catch {
+                        toast.error('Kon titel niet opslaan');
+                      }
+                    }}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Titel materiaal-sectie (per onderdeel):</Label>
+                  <Input
+                    data-testid="material-section-title-input"
+                    type="text"
+                    value={quote.material_section_title ?? 'MATERIALEN'}
+                    placeholder="MATERIALEN"
+                    onChange={(e) => setQuote(prev => ({ ...prev, material_section_title: e.target.value }))}
+                    onBlur={async (e) => {
+                      try {
+                        await axios.put(`${API}/quotes/${quoteId}`, { material_section_title: e.target.value || 'MATERIALEN' }, { headers: getAuthHeaders() });
+                        toast.success('Titel materiaal-sectie opgeslagen');
+                      } catch {
+                        toast.error('Kon titel niet opslaan');
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              <p className="text-xs mt-2" style={{color: '#94A3B8'}}>
+                Tip: gebruik deze velden om de twee sectie-koppen op de PDF te hernoemen (bv. "POSTEN" of "WERKEN") wanneer je iets als materiaal invult maar het geen materiaal is.
+              </p>
+            </div>
           </CardContent>
         </Card>
 

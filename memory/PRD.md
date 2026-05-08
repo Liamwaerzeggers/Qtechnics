@@ -138,6 +138,12 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Toggle wordt opgeslagen via bestaande `PUT /api/quotes/{id}` endpoint
 - E2E getest met curl: toggle true → quote verschijnt in portal; toggle false → verdwijnt
 
+### Multi-line Omschrijvingen behouden in PDF + Aanpasbare Sectie-Titels (mei 2026)
+- **Bug fix**: enters/nieuwe regels in line-item omschrijvingen werden in de PDF samengeplakt op één regel (gold voor MATERIAAL en OVERIG in offerte-PDF, en alle types in factuur-PDF). Beide PDF generators routen nu door `markdown_to_paragraph_html` zodat `\n` correct als `<br/>` rendert. Arbeid-regex `^Room: rest$` werkt nu enkel op de eerste regel zodat extra regels behouden blijven.
+- **Aanpasbare sectie-titels**: Quote heeft twee nieuwe optionele velden `labor_section_title` (default "ARBEID") en `material_section_title` (default "MATERIALEN"). User kan deze in de Status-card op `QuoteDetailPage` aanpassen om bv. "MATERIALEN" te hernoemen naar "POSTEN" wanneer de items per onderdeel getoond worden maar geen materiaal zijn.
+- PDF gebruikt deze waarden in zowel offerte als factuur (factuur leest het van het gelinkte quote-record).
+- E2E getest: titels in DB opgeslagen, PDF rendert met juiste headers.
+
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 

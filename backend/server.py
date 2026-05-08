@@ -205,6 +205,8 @@ class Quote(BaseModel):
     total_incl_vat: float = 0.0
     total_price: float = 0.0  # Backwards compatibility
     visible_to_customer: bool = False  # Toggle: zichtbaar in klantenportaal
+    labor_section_title: str = "ARBEID"  # Aanpasbare titel voor arbeid-sectie in PDF
+    material_section_title: str = "MATERIALEN"  # Aanpasbare titel voor materiaal-sectie in PDF
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user_id: str
 
@@ -217,6 +219,8 @@ class QuoteUpdate(BaseModel):
     room: Optional[str] = None
     is_sold: Optional[bool] = None  # Mark quote as sold/won
     visible_to_customer: Optional[bool] = None  # Toggle zichtbaarheid klantenportaal
+    labor_section_title: Optional[str] = None  # Aanpasbare titel voor arbeid-sectie
+    material_section_title: Optional[str] = None  # Aanpasbare titel voor materiaal-sectie
 
 # Line Item Models
 class LineItem(BaseModel):
@@ -3703,6 +3707,9 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
     desc_style = pdf_styles["table_cell"]
     rows = []
 
+    labor_section_title = (quote.get("labor_section_title") or "ARBEID").strip() or "ARBEID"
+    material_section_title = (quote.get("material_section_title") or "MATERIALEN").strip() or "MATERIALEN"
+
     # ARBEID — gerouped per kamer (behouden van bestaande feature)
     if labor_items:
         rooms_ordered = []
@@ -3741,7 +3748,7 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
                     room_items_map[room] = []
                 room_items_map[room].append(it)
 
-        rows.append(("room", [Paragraph("ARBEID", pdf_styles["room_header"]), "", "", ""]))
+        rows.append(("room", [Paragraph(labor_section_title, pdf_styles["room_header"]), "", "", ""]))
 
         for room in rooms_ordered:
             rs = room_items_map.get(room, [])
@@ -3775,7 +3782,7 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
 
     # MATERIALEN
     if material_items:
-        rows.append(("room", [Paragraph("MATERIALEN", pdf_styles["room_header"]), "", "", ""]))
+        rows.append(("room", [Paragraph(material_section_title, pdf_styles["room_header"]), "", "", ""]))
         for it in material_items:
             qty = it.get("quantity") or 0
             unit = it.get("unit", "stuk")
@@ -5256,8 +5263,11 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
     desc_style = pdf_styles["table_cell"]
     rows = []
 
+    labor_section_title = ((quote or {}).get("labor_section_title") or "ARBEID").strip() or "ARBEID"
+    material_section_title = ((quote or {}).get("material_section_title") or "MATERIALEN").strip() or "MATERIALEN"
+
     if labor_items:
-        rows.append(("room", [Paragraph("ARBEID", pdf_styles["room_header"]), "", "", ""]))
+        rows.append(("room", [Paragraph(labor_section_title, pdf_styles["room_header"]), "", "", ""]))
         labor_excl = 0
         for it in labor_items:
             qty = (it.get("quantity") or 0) * percentage
@@ -5287,7 +5297,7 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
         ))
 
     if material_items:
-        rows.append(("room", [Paragraph("MATERIALEN", pdf_styles["room_header"]), "", "", ""]))
+        rows.append(("room", [Paragraph(material_section_title, pdf_styles["room_header"]), "", "", ""]))
         mat_excl = 0
         for it in material_items:
             qty = (it.get("quantity") or 0) * percentage
