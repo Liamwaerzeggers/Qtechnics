@@ -60,7 +60,7 @@ export default function QuoteDetailPage() {
   
   // Inline editing state for line items
   const [editingItem, setEditingItem] = useState(null);
-  const [editValues, setEditValues] = useState({ description: '', quantity: '', unit_price: '' });
+  const [editValues, setEditValues] = useState({ description: '', quantity: '', unit_price: '', unit: 'm²', item_type: 'materiaal' });
 
   useEffect(() => {
     fetchQuoteData();
@@ -368,14 +368,15 @@ export default function QuoteDetailPage() {
       description: item.description || '',
       quantity: item.quantity.toString(),
       unit_price: item.unit_price.toString(),
-      unit: item.unit || 'm²'
+      unit: item.unit || 'm²',
+      item_type: item.item_type || 'materiaal'
     });
   };
 
   // Cancel editing
   const cancelEditing = () => {
     setEditingItem(null);
-    setEditValues({ description: '', quantity: '', unit_price: '', unit: 'm²' });
+    setEditValues({ description: '', quantity: '', unit_price: '', unit: 'm²', item_type: 'materiaal' });
   };
 
   // Save edited line item
@@ -384,6 +385,7 @@ export default function QuoteDetailPage() {
     const quantity = parseFloat(editValues.quantity);
     const unit_price = parseFloat(editValues.unit_price);
     const unit = editValues.unit || 'm²';
+    const item_type = editValues.item_type || 'materiaal';
 
     if (!description) {
       toast.error('Omschrijving mag niet leeg zijn');
@@ -401,12 +403,12 @@ export default function QuoteDetailPage() {
     try {
       await axios.put(
         `${API}/quotes/${quoteId}/items/${itemId}`,
-        { description, quantity, unit_price, unit },
+        { description, quantity, unit_price, unit, item_type },
         { headers: getAuthHeaders() }
       );
       toast.success('Item bijgewerkt!');
       setEditingItem(null);
-      setEditValues({ description: '', quantity: '', unit_price: '', unit: 'm²' });
+      setEditValues({ description: '', quantity: '', unit_price: '', unit: 'm²', item_type: 'materiaal' });
       fetchQuoteData();
     } catch (error) {
       console.error('Update error:', error);
@@ -1417,6 +1419,20 @@ Q Technics`;
                               <option value="rol">rol</option>
                               <option value="kg">kg</option>
                               <option value="liter">liter</option>
+                            </select>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm" style={{color: '#64748B'}}>Type:</label>
+                            <select
+                              data-testid={`edit-item-type-${item.id}`}
+                              value={editValues.item_type || 'materiaal'}
+                              onChange={(e) => setEditValues({...editValues, item_type: e.target.value})}
+                              className="px-2 py-1 border rounded text-sm bg-white"
+                              style={{borderColor: '#E5E7EB'}}
+                            >
+                              <option value="arbeid">Arbeid (gesommeerd)</option>
+                              <option value="materiaal">Materiaal (per onderdeel)</option>
+                              <option value="overig">Overig</option>
                             </select>
                           </div>
                           <span className="text-sm" style={{color: '#64748B'}}>
