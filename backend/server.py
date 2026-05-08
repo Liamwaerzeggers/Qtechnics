@@ -3621,7 +3621,7 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
     from pdf_branding import (
         base_styles, build_header, build_info_blocks, section_heading,
         grouped_items_table, build_totals_box, build_terms_and_totals, build_signature_footer,
-        BRAND, render_description,
+        BRAND, render_description, markdown_to_paragraph_html,
     )
 
     if current_user.role != "admin":
@@ -3725,10 +3725,14 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
             import re as _re
             for it in labor_items:
                 desc = it.get("description", "")
-                m = _re.match(r"^(.+?):\s*(.+)$", desc)
+                # Only check the first line for "Room: ..." pattern; rest of the description
+                # (extra enters / bullets / details) MUST be preserved.
+                first_line, _, rest = desc.partition("\n")
+                m = _re.match(r"^(.+?):\s*(.+)$", first_line)
                 if m:
                     room = m.group(1).strip()
-                    it["_clean_desc"] = m.group(2).strip()
+                    cleaned_first = m.group(2).strip()
+                    it["_clean_desc"] = (cleaned_first + ("\n" + rest if rest else "")).strip()
                 else:
                     room = "Overig"
                     it["_clean_desc"] = desc
@@ -3776,7 +3780,8 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
             qty = it.get("quantity") or 0
             unit = it.get("unit", "stuk")
             excl = it.get("total_excl_vat", qty * (it.get("unit_price") or 0))
-            label = f"{it.get('description','')} <font color='#9CA3AF'>({it.get('vat_rate',21)}% btw)</font>"
+            desc_html = markdown_to_paragraph_html(it.get("description", ""))
+            label = f"{desc_html} <font color='#9CA3AF'>({it.get('vat_rate',21)}% btw)</font>"
             rows.append((
                 "item",
                 [
@@ -3797,7 +3802,7 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
             rows.append((
                 "item",
                 [
-                    Paragraph(it.get("description", ""), desc_style),
+                    render_description(it.get("description", ""), desc_style),
                     f"{qty:.2f}" if qty else "—",
                     unit or "—",
                     f"€{excl:,.2f}".replace(",", " "),
@@ -5156,6 +5161,7 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
     from pdf_branding import (
         base_styles, build_header, build_info_blocks,
         grouped_items_table, build_totals_box, build_terms_and_totals, build_payment_footer,
+        render_description, markdown_to_paragraph_html,
     )
 
     invoice = await db.invoices.find_one({"id": invoice_id})
@@ -5265,7 +5271,7 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
             rows.append((
                 "item",
                 [
-                    Paragraph(it.get("description", ""), desc_style),
+                    render_description(it.get("description", ""), desc_style),
                     f"{qty:.2f}" if qty else "—",
                     unit,
                     f"€{sub:,.2f}".replace(",", " "),
@@ -5288,7 +5294,8 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
             unit = it.get("unit", "stuk")
             sub = (it.get("total_excl_vat") or 0) * percentage
             mat_excl += sub
-            label = f"{it.get('description','')} <font color='#9CA3AF'>({it.get('vat_rate',21)}% btw)</font>"
+            desc_html = markdown_to_paragraph_html(it.get("description", ""))
+            label = f"{desc_html} <font color='#9CA3AF'>({it.get('vat_rate',21)}% btw)</font>"
             rows.append((
                 "item",
                 [
@@ -5316,7 +5323,7 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
             rows.append((
                 "item",
                 [
-                    Paragraph(it.get("description", ""), desc_style),
+                    render_description(it.get("description", ""), desc_style),
                     f"{qty:.2f}" if qty else "—",
                     unit or "—",
                     f"€{sub:,.2f}".replace(",", " "),
