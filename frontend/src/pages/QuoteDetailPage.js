@@ -37,7 +37,8 @@ export default function QuoteDetailPage() {
     unit_price: '',
     item_type: 'materiaal',
     vat_rate: 21,
-    unit: 'm²'  // Added for custom work items
+    unit: 'm²',  // Added for custom work items
+    discount_percent: 0
   });
   const [materials, setMaterials] = useState([]);
   const [materialSearch, setMaterialSearch] = useState('');
@@ -60,7 +61,7 @@ export default function QuoteDetailPage() {
   
   // Inline editing state for line items
   const [editingItem, setEditingItem] = useState(null);
-  const [editValues, setEditValues] = useState({ description: '', quantity: '', unit_price: '', unit: 'm²', item_type: 'materiaal' });
+  const [editValues, setEditValues] = useState({ description: '', quantity: '', unit_price: '', unit: 'm²', item_type: 'materiaal', discount_percent: 0 });
 
   useEffect(() => {
     fetchQuoteData();
@@ -282,7 +283,8 @@ export default function QuoteDetailPage() {
       await axios.post(`${API}/quotes/${quoteId}/items`, {
         ...formData,
         quantity: parseFloat(formData.quantity),
-        unit_price: parseFloat(formData.unit_price)
+        unit_price: parseFloat(formData.unit_price),
+        discount_percent: parseFloat(formData.discount_percent) || 0
       }, { headers: getAuthHeaders() });
       
       // Track added item in session
@@ -304,7 +306,8 @@ export default function QuoteDetailPage() {
         unit_price: '', 
         item_type: 'materiaal', 
         vat_rate: defaultVatRate, // Use default VAT
-        unit: 'm²' 
+        unit: 'm²',
+        discount_percent: 0
       });
       setMaterialSearch('');
       setWorkItemSearch('');
@@ -322,7 +325,7 @@ export default function QuoteDetailPage() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setSessionAddedItems([]);
-    setFormData({ description: '', quantity: '', unit_price: '', item_type: 'materiaal', vat_rate: defaultVatRate, unit: 'm²' });
+    setFormData({ description: '', quantity: '', unit_price: '', item_type: 'materiaal', vat_rate: defaultVatRate, unit: 'm²', discount_percent: 0 });
     setMaterialSearch('');
     setWorkItemSearch('');
     setMaterialImage(null);
@@ -369,14 +372,15 @@ export default function QuoteDetailPage() {
       quantity: item.quantity.toString(),
       unit_price: item.unit_price.toString(),
       unit: item.unit || 'm²',
-      item_type: item.item_type || 'materiaal'
+      item_type: item.item_type || 'materiaal',
+      discount_percent: (item.discount_percent ?? 0).toString()
     });
   };
 
   // Cancel editing
   const cancelEditing = () => {
     setEditingItem(null);
-    setEditValues({ description: '', quantity: '', unit_price: '', unit: 'm²', item_type: 'materiaal' });
+    setEditValues({ description: '', quantity: '', unit_price: '', unit: 'm²', item_type: 'materiaal', discount_percent: 0 });
   };
 
   // Save edited line item
@@ -386,6 +390,7 @@ export default function QuoteDetailPage() {
     const unit_price = parseFloat(editValues.unit_price);
     const unit = editValues.unit || 'm²';
     const item_type = editValues.item_type || 'materiaal';
+    const discount_percent = parseFloat(editValues.discount_percent) || 0;
 
     if (!description) {
       toast.error('Omschrijving mag niet leeg zijn');
@@ -399,16 +404,20 @@ export default function QuoteDetailPage() {
       toast.error('Voer een geldige prijs in');
       return;
     }
+    if (discount_percent < 0 || discount_percent > 100) {
+      toast.error('Korting moet tussen 0 en 100% liggen');
+      return;
+    }
 
     try {
       await axios.put(
         `${API}/quotes/${quoteId}/items/${itemId}`,
-        { description, quantity, unit_price, unit, item_type },
+        { description, quantity, unit_price, unit, item_type, discount_percent },
         { headers: getAuthHeaders() }
       );
       toast.success('Item bijgewerkt!');
       setEditingItem(null);
-      setEditValues({ description: '', quantity: '', unit_price: '', unit: 'm²', item_type: 'materiaal' });
+      setEditValues({ description: '', quantity: '', unit_price: '', unit: 'm²', item_type: 'materiaal', discount_percent: 0 });
       fetchQuoteData();
     } catch (error) {
       console.error('Update error:', error);
@@ -1291,6 +1300,25 @@ Q Technics`;
                         </p>
                       )}
                     </div>
+
+                    <div>
+                      <Label>Korting % (optioneel, 0–100)</Label>
+                      <Input
+                        data-testid="item-discount-input"
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        max="100"
+                        value={formData.discount_percent}
+                        onChange={(e) => setFormData({...formData, discount_percent: e.target.value})}
+                        placeholder="0"
+                      />
+                      {parseFloat(formData.discount_percent) > 0 && parseFloat(formData.quantity) > 0 && parseFloat(formData.unit_price) > 0 && (
+                        <p className="text-xs mt-1" style={{color: '#10B981'}}>
+                          Subtotaal excl. BTW: €{(parseFloat(formData.quantity) * parseFloat(formData.unit_price) * (1 - parseFloat(formData.discount_percent) / 100)).toFixed(2)} (na korting)
+                        </p>
+                      )}
+                    </div>
                     
                     <div className="flex gap-2 pt-2">
                       <Button data-testid="submit-item-button" type="submit" className="flex-1" style={{backgroundColor: '#500000'}}>
@@ -1435,8 +1463,26 @@ Q Technics`;
                               <option value="overig">Overig</option>
                             </select>
                           </div>
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm" style={{color: '#64748B'}}>Korting %:</label>
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max="100"
+                              data-testid={`edit-discount-${item.id}`}
+                              value={editValues.discount_percent}
+                              onChange={(e) => setEditValues({...editValues, discount_percent: e.target.value})}
+                              className="w-20 px-2 py-1 border rounded text-sm"
+                              style={{borderColor: '#E5E7EB'}}
+                              placeholder="0"
+                            />
+                          </div>
                           <span className="text-sm" style={{color: '#64748B'}}>
-                            = €{((parseFloat(editValues.quantity) || 0) * (parseFloat(editValues.unit_price) || 0)).toFixed(2)}
+                            = €{((parseFloat(editValues.quantity) || 0) * (parseFloat(editValues.unit_price) || 0) * (1 - (parseFloat(editValues.discount_percent) || 0) / 100)).toFixed(2)}
+                            {parseFloat(editValues.discount_percent) > 0 && (
+                              <span style={{color: '#10B981'}}> (na -{parseFloat(editValues.discount_percent)}% korting)</span>
+                            )}
                           </span>
                           <div className="flex gap-2 ml-auto">
                             <Button
@@ -1470,6 +1516,11 @@ Q Technics`;
                           <DescriptionView text={item.description} />
                           <div className="text-sm mt-2" style={{color: '#64748B'}}>
                             {item.quantity} {item.unit || 'm²'} × €{item.unit_price.toFixed(2)} | Type: {item.item_type}
+                            {(item.discount_percent ?? 0) > 0 && (
+                              <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold" style={{backgroundColor: '#D1FAE5', color: '#065F46'}}>
+                                -{item.discount_percent}% korting
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-3 flex-shrink-0">

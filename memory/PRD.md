@@ -144,6 +144,18 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - PDF gebruikt deze waarden in zowel offerte als factuur (factuur leest het van het gelinkte quote-record).
 - E2E getest: titels in DB opgeslagen, PDF rendert met juiste headers.
 
+### Item-Type wisselen na aanmaak (mei 2026)
+- In de edit-mode van een line-item kan je nu het type wisselen (Arbeid/Materiaal/Overig). Backend recalculeert automatisch de offerte-totalen.
+- Geen backend wijziging nodig: `LineItemUpdate` ondersteunde `item_type` al.
+
+### Korting % per Regel (mei 2026)
+- Nieuw veld `discount_percent: float = 0.0` op `LineItem`/`LineItemCreate`/`LineItemUpdate`.
+- Backend berekent `total_excl_vat = quantity * unit_price * (1 - discount/100)`. BTW en quote-totalen volgen automatisch.
+- Frontend: extra "Korting %" input in zowel het Item-toevoegen dialog als in de edit-mode (met live preview van het bedrag na korting).
+- View-mode toont een groene badge "-X% korting" wanneer er een korting actief is.
+- PDF (offerte + factuur) toont een groen "(-X% korting)" suffix naast de item-omschrijving voor arbeid, materiaal en overig.
+- E2E getest: 10% korting op €1000 → €900 excl. BTW, 25% korting → €750. PDF toont "(-25% korting)".
+
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 

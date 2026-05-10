@@ -233,6 +233,7 @@ class LineItem(BaseModel):
     item_type: str  # "arbeid", "materiaal", "overig"
     vat_rate: float = 21.0  # BTW percentage (0, 6, 9, 21)
     unit: Optional[str] = None  # m², stuk, uur, dag, forfait, ...
+    discount_percent: float = 0.0  # Korting % per regel (0-100)
     total_excl_vat: float = 0.0
     vat_amount: float = 0.0
     total_incl_vat: float = 0.0
@@ -246,6 +247,7 @@ class LineItemCreate(BaseModel):
     item_type: str
     vat_rate: float = 21.0
     unit: Optional[str] = None
+    discount_percent: float = 0.0
 
 class LineItemUpdate(BaseModel):
     description: Optional[str] = None
@@ -254,6 +256,7 @@ class LineItemUpdate(BaseModel):
     item_type: Optional[str] = None
     vat_rate: Optional[float] = None
     unit: Optional[str] = None
+    discount_percent: Optional[float] = None
 
 # Material Models
 class Material(BaseModel):
@@ -1983,9 +1986,10 @@ async def add_line_item(quote_id: str, item: LineItemCreate, current_user: User 
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
     
-    # Create line item with VAT calculations
+    # Create line item with VAT calculations (with discount applied)
     item_obj = LineItem(**item.model_dump(), quote_id=quote_id)
-    item_obj.total_excl_vat = item_obj.quantity * item_obj.unit_price
+    discount_factor = max(0.0, min(100.0, item_obj.discount_percent or 0.0)) / 100.0
+    item_obj.total_excl_vat = item_obj.quantity * item_obj.unit_price * (1 - discount_factor)
     item_obj.vat_amount = item_obj.total_excl_vat * (item_obj.vat_rate / 100)
     item_obj.total_incl_vat = item_obj.total_excl_vat + item_obj.vat_amount
     item_obj.total = item_obj.total_incl_vat  # Backwards compatibility
@@ -2038,17 +2042,19 @@ async def update_line_item(quote_id: str, item_id: str, item_update: LineItemUpd
     update_data = {k: v for k, v in item_update.model_dump().items() if v is not None}
     
     if update_data:
-        # Recalculate totals if quantity, price, or vat_rate changed
-        if "quantity" in update_data or "unit_price" in update_data or "vat_rate" in update_data:
+        # Recalculate totals if quantity, price, vat_rate, or discount changed
+        if "quantity" in update_data or "unit_price" in update_data or "vat_rate" in update_data or "discount_percent" in update_data:
             quantity = update_data.get("quantity", existing_item["quantity"])
             unit_price = update_data.get("unit_price", existing_item["unit_price"])
             vat_rate = update_data.get("vat_rate", existing_item.get("vat_rate", 21))
-            
-            # Calculate all totals correctly
-            total_excl_vat = quantity * unit_price
+            discount_percent = update_data.get("discount_percent", existing_item.get("discount_percent", 0))
+            discount_factor = max(0.0, min(100.0, discount_percent or 0.0)) / 100.0
+
+            # Calculate all totals correctly (with discount applied)
+            total_excl_vat = quantity * unit_price * (1 - discount_factor)
             vat_amount = total_excl_vat * (vat_rate / 100)
             total_incl_vat = total_excl_vat + vat_amount
-            
+
             update_data["total"] = total_excl_vat  # Base total (excl VAT)
             update_data["total_excl_vat"] = total_excl_vat
             update_data["vat_amount"] = vat_amount
@@ -3766,9 +3772,13 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
                 qty = it.get("quantity") or 0
                 item_total = it.get("total_excl_vat", qty * (it.get("unit_price") or 0))
                 room_total += item_total
+                disp_html = markdown_to_paragraph_html(disp)
+                disc = it.get("discount_percent") or 0
+                if disc and disc > 0:
+                    disp_html = f"{disp_html} <font color='#10B981'><b>(-{disc:g}% korting)</b></font>"
                 rows.append((
                     "item",
-                    [render_description(disp, desc_style), f"{qty:.2f}", unit, ""],
+                    [Paragraph(disp_html, desc_style), f"{qty:.2f}", unit, ""],
                 ))
             actual_subtotal = room_subtotals.get(room, room_total)
             rows.append((
@@ -3788,7 +3798,9 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
             unit = it.get("unit", "stuk")
             excl = it.get("total_excl_vat", qty * (it.get("unit_price") or 0))
             desc_html = markdown_to_paragraph_html(it.get("description", ""))
-            label = f"{desc_html} <font color='#9CA3AF'>({it.get('vat_rate',21)}% btw)</font>"
+            disc = it.get("discount_percent") or 0
+            disc_suffix = f" <font color='#10B981'><b>(-{disc:g}% korting)</b></font>" if disc and disc > 0 else ""
+            label = f"{desc_html} <font color='#9CA3AF'>({it.get('vat_rate',21)}% btw)</font>{disc_suffix}"
             rows.append((
                 "item",
                 [
@@ -3806,10 +3818,14 @@ async def export_quote_pdf(quote_id: str, current_user: User = Depends(get_curre
             qty = it.get("quantity") or 0
             unit = it.get("unit", "")
             excl = it.get("total_excl_vat", qty * (it.get("unit_price") or 0))
+            desc_html = markdown_to_paragraph_html(it.get("description", ""))
+            disc = it.get("discount_percent") or 0
+            if disc and disc > 0:
+                desc_html = f"{desc_html} <font color='#10B981'><b>(-{disc:g}% korting)</b></font>"
             rows.append((
                 "item",
                 [
-                    render_description(it.get("description", ""), desc_style),
+                    Paragraph(desc_html, desc_style),
                     f"{qty:.2f}" if qty else "—",
                     unit or "—",
                     f"€{excl:,.2f}".replace(",", " "),
@@ -5278,10 +5294,14 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
                 unit = "m"
             sub = (it.get("total_excl_vat") or 0) * percentage
             labor_excl += sub
+            disc = it.get("discount_percent") or 0
+            desc_html = markdown_to_paragraph_html(it.get("description", ""))
+            if disc and disc > 0:
+                desc_html = f"{desc_html} <font color='#10B981'><b>(-{disc:g}% korting)</b></font>"
             rows.append((
                 "item",
                 [
-                    render_description(it.get("description", ""), desc_style),
+                    Paragraph(desc_html, desc_style),
                     f"{qty:.2f}" if qty else "—",
                     unit,
                     f"€{sub:,.2f}".replace(",", " "),
@@ -5305,7 +5325,9 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
             sub = (it.get("total_excl_vat") or 0) * percentage
             mat_excl += sub
             desc_html = markdown_to_paragraph_html(it.get("description", ""))
-            label = f"{desc_html} <font color='#9CA3AF'>({it.get('vat_rate',21)}% btw)</font>"
+            disc = it.get("discount_percent") or 0
+            disc_suffix = f" <font color='#10B981'><b>(-{disc:g}% korting)</b></font>" if disc and disc > 0 else ""
+            label = f"{desc_html} <font color='#9CA3AF'>({it.get('vat_rate',21)}% btw)</font>{disc_suffix}"
             rows.append((
                 "item",
                 [
@@ -5330,10 +5352,14 @@ async def export_invoice_pdf(invoice_id: str, current_user: User = Depends(get_c
             qty = (it.get("quantity") or 0) * percentage
             unit = it.get("unit", "")
             sub = (it.get("total_excl_vat") or 0) * percentage
+            desc_html = markdown_to_paragraph_html(it.get("description", ""))
+            disc = it.get("discount_percent") or 0
+            if disc and disc > 0:
+                desc_html = f"{desc_html} <font color='#10B981'><b>(-{disc:g}% korting)</b></font>"
             rows.append((
                 "item",
                 [
-                    render_description(it.get("description", ""), desc_style),
+                    Paragraph(desc_html, desc_style),
                     f"{qty:.2f}" if qty else "—",
                     unit or "—",
                     f"€{sub:,.2f}".replace(",", " "),
