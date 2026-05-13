@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { Calendar, ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
+import InternalLinks from './InternalLinks';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -143,6 +144,8 @@ const BlogPage = () => {
           </Link>
         </div>
       </section>
+
+      <InternalLinks />
     </div>
   );
 };

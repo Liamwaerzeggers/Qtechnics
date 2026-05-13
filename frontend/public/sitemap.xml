@@ -5,6 +5,8 @@
     <url><loc>https://maxq.be/projecten</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
     <url><loc>https://maxq.be/contact</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
     <url><loc>https://maxq.be/start</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+    <url><loc>https://maxq.be/calculator</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+    <url><loc>https://maxq.be/blog</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
 
     <!-- Service SEO Pages -->
     <url><loc>https://maxq.be/diensten/interieur-renoveren</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
@@ -1007,7 +1009,6 @@
     <url><loc>https://maxq.be/renovatie/leuven/badkamer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
     <url><loc>https://maxq.be/renovatie/leuven/keuken</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
     <!-- Blog Articles -->
-    <url><loc>https://maxq.be/blog</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
     <url><loc>https://maxq.be/blog/optimaliseer-verlichting-bij-renovatie-led-en-sfeerbelichting</loc><lastmod>2026-03-31</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
     <url><loc>https://maxq.be/blog/energiezuinig-renoveren-tips-om-geld-te-besparen</loc><lastmod>2026-03-31</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
     <url><loc>https://maxq.be/blog/moderne-badkamer-op-maat-luxe-toegankelijk-in-eigen-woning</loc><lastmod>2026-03-31</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1019,5 +1020,6 @@
     <url><loc>https://maxq.be/blog/geluidsisolatie-bij-renovatie-praktische-tips-voor-optimale-akoestiek</loc><lastmod>2026-04-04</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
     <url><loc>https://maxq.be/blog/maatkasten-optimale-opbergruimte-voor-elk-interieur</loc><lastmod>2026-04-09</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
     <url><loc>https://maxq.be/blog/ontdek-uw-vlaamse-renovatiepremies-maximale-voordelen</loc><lastmod>2026-04-11</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+    <url><loc>https://maxq.be/blog/efficient-uw-verbouwing-plannen-de-ultieme-stap-voor-stap-gids</loc><lastmod>2026-05-13</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
 
 </urlset>

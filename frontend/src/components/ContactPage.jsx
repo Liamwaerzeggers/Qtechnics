@@ -6,6 +6,7 @@ import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Link } from 'react-router-dom';
+import InternalLinks from './InternalLinks';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -256,6 +257,8 @@ const ContactPage = () => {
           </Link>
         </div>
       </section>
+
+      <InternalLinks />
     </div>
   );
 };

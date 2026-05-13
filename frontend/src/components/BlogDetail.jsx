@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { Calendar, ArrowLeft, Tag } from 'lucide-react';
 import { Button } from './ui/button';
+import Breadcrumbs from './Breadcrumbs';
+import InternalLinks from './InternalLinks';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -100,6 +102,12 @@ const BlogDetail = () => {
         <meta property="og:type" content="article" />
       </Helmet>
 
+      <Breadcrumbs items={[
+        { label: 'Home', href: '/' },
+        { label: 'Blog', href: '/blog' },
+        { label: blogTitle }
+      ]} />
+
       <section className="bg-gradient-to-br from-[#3a190b] to-[#500000] text-white py-16">
         <div className="max-w-4xl mx-auto px-4">
           <Link to="/blog" className="inline-flex items-center gap-2 text-white/70 hover:text-white mb-6 transition-colors" data-testid="blog-back-link">
@@ -140,6 +148,8 @@ const BlogDetail = () => {
           </div>
         </div>
       </section>
+
+      <InternalLinks />
     </div>
   );
 };

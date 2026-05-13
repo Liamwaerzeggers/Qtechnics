@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { MapPin, Phone, ArrowRight, CheckCircle } from 'lucide-react';
 import { Button } from './ui/button';
+import Breadcrumbs from './Breadcrumbs';
 
 // All locations within 30km of Oostham (Tessenderlo-Ham area)
 export const LOCATIONS = [
@@ -155,6 +156,11 @@ const LocationPage = () => {
       </Helmet>
 
       {/* Hero Section */}
+      <Breadcrumbs items={[
+        { label: 'Home', href: '/' },
+        { label: 'Renovatie regio', href: '/renoveren' },
+        { label: locationData.name + (service !== 'algemeen' ? ' - ' + serviceData.title : '') }
+      ]} />
       <section className="bg-gradient-to-br from-[#3a190b] to-[#500000] text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 text-white/70 mb-4">

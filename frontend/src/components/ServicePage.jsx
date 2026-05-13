@@ -4,6 +4,8 @@ import { Helmet } from 'react-helmet';
 import { Phone, ArrowRight, CheckCircle, Award, Wrench, Clock, Users } from 'lucide-react';
 import { Button } from './ui/button';
 import { LOCATIONS } from './LocationPage';
+import Breadcrumbs from './Breadcrumbs';
+import InternalLinks from './InternalLinks';
 
 // All service/search term variations for SEO
 export const SERVICES = {
@@ -96,6 +98,17 @@ const ServicePage = () => {
     ...(locationData ? { "areaServed": { "@type": "City", "name": locationData.name } } : { "areaServed": { "@type": "State", "name": "Limburg, Antwerpen, Vlaams-Brabant" } })
   };
 
+  const breadcrumbItems = [
+    { label: 'Home', href: '/' },
+    { label: 'Diensten', href: '/diensten/' + service },
+  ];
+  if (locationData) {
+    breadcrumbItems.push({ label: serviceData.title, href: '/diensten/' + service });
+    breadcrumbItems.push({ label: locName });
+  } else {
+    breadcrumbItems.push({ label: serviceData.title });
+  }
+
   return (
     <div>
       <Helmet>
@@ -110,6 +123,8 @@ const ServicePage = () => {
         <meta property="og:type" content="website" />
         <script type="application/ld+json">{JSON.stringify(schemaData)}</script>
       </Helmet>
+
+      <Breadcrumbs items={breadcrumbItems} />
 
       <section className="bg-gradient-to-br from-[#3a190b] to-[#500000] text-white py-20" data-testid="service-hero">
         <div className="max-w-7xl mx-auto px-4">
@@ -286,6 +301,8 @@ const ServicePage = () => {
           </div>
         </div>
       </section>
+
+      <InternalLinks />
     </div>
   );
 };

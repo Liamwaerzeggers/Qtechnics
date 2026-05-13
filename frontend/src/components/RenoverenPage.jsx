@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, Zap, Droplets, Wind, Plug, Bath, ChefHat, Paintbrush, Grid3X3, Check } from 'lucide-react';
 import { Button } from './ui/button';
 import { Link } from 'react-router-dom';
+import InternalLinks from './InternalLinks';
 
 const RenoverenPage = () => {
   return (
@@ -281,6 +282,8 @@ const RenoverenPage = () => {
           </div>
         </div>
       </section>
+
+      <InternalLinks />
     </div>
   );
 };

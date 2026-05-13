@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { CheckCircle, Phone, ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
+import InternalLinks from './InternalLinks';
 
 const BedanktPage = () => {
   return (
@@ -40,6 +41,8 @@ const BedanktPage = () => {
           </div>
         </div>
       </section>
+
+      <InternalLinks />
     </div>
   );
 };

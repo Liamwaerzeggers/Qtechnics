@@ -9,6 +9,7 @@ import Werkwijze from './components/Werkwijze';
 import Testimonials from './components/Testimonials';
 import FAQ from './components/FAQ';
 import CTA from './components/CTA';
+import InternalLinks from './components/InternalLinks';
 import Footer from './components/Footer';
 import RenoverenPage from './components/RenoverenPage';
 import ProjectenPage from './components/ProjectenPage';
@@ -26,6 +27,7 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 import AlgemeneVoorwaarden from './components/AlgemeneVoorwaarden';
 import CookieBanner from './components/CookieBanner';
 import CookiePolicy from './components/CookiePolicy';
+import RenovatieCalculator from './components/RenovatieCalculator';
 
 // Component to scroll to top on route change
 const ScrollToTop = () => {
@@ -45,6 +47,7 @@ const Home = () => {
       <Services />
       <Projects />
       <Werkwijze />
+      <InternalLinks />
       <Testimonials />
       <FAQ />
       <CTA />
@@ -99,6 +102,8 @@ function App() {
           <Route path="/privacybeleid" element={<MainLayout><PrivacyPolicy /></MainLayout>} />
           <Route path="/algemene-voorwaarden" element={<MainLayout><AlgemeneVoorwaarden /></MainLayout>} />
           <Route path="/cookiebeleid" element={<MainLayout><CookiePolicy /></MainLayout>} />
+          <Route path="/calculator" element={<MainLayout><RenovatieCalculator /></MainLayout>} />
+          <Route path="/renovatie-prijscalculator" element={<MainLayout><RenovatieCalculator /></MainLayout>} />
         </Routes>
       </BrowserRouter>
     </div>

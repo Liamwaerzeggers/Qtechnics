@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, MapPin } from 'lucide-react';
+import Breadcrumbs from './Breadcrumbs';
 import { Button } from './ui/button';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -137,14 +138,11 @@ const ProjectDetail = () => {
 
   return (
     <div>
-      <div className="bg-gray-50 border-b py-4">
-        <div className="max-w-7xl mx-auto px-4">
-          <Link to="/projecten" className="inline-flex items-center text-[#3a190b] hover:underline">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Terug naar projecten
-          </Link>
-        </div>
-      </div>
+      <Breadcrumbs items={[
+        { label: 'Home', href: '/' },
+        { label: 'Projecten', href: '/projecten' },
+        { label: project.title }
+      ]} />
 
       <div 
         className="relative h-96 bg-cover bg-center" 

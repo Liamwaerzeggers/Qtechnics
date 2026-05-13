@@ -47,6 +47,8 @@ const Footer = () => {
               <li><Link to="/" onClick={scrollToTop} className="text-white/80 hover:text-white transition-colors text-sm">Home</Link></li>
               <li><Link to="/renoveren" onClick={scrollToTop} className="text-white/80 hover:text-white transition-colors text-sm">Renoveren</Link></li>
               <li><Link to="/projecten" onClick={scrollToTop} className="text-white/80 hover:text-white transition-colors text-sm">Projecten</Link></li>
+              <li><Link to="/calculator" onClick={scrollToTop} className="text-white/80 hover:text-white transition-colors text-sm">Prijscalculator</Link></li>
+              <li><Link to="/blog" onClick={scrollToTop} className="text-white/80 hover:text-white transition-colors text-sm">Blog</Link></li>
               <li><Link to="/contact" onClick={scrollToTop} className="text-white/80 hover:text-white transition-colors text-sm">Contact</Link></li>
             </ul>
           </div>
