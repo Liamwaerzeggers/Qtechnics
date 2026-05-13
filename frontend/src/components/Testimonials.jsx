@@ -1,14 +1,37 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Star, ArrowRight } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Star } from 'lucide-react';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+} from './ui/carousel';
 import ReviewCard from './ReviewCard';
 import { GOOGLE_REVIEWS, GOOGLE_RATING, REVIEWS_URL } from '../data/googleReviews';
 
-const HOMEPAGE_REVIEWS = GOOGLE_REVIEWS.slice(0, 6);
+const AUTOPLAY_MS = 5000;
 
 const Testimonials = () => {
+  const [api, setApi] = useState(null);
+
+  useEffect(() => {
+    if (!api) return;
+    const interval = setInterval(() => {
+      if (api.canScrollNext()) {
+        api.scrollNext();
+      } else {
+        api.scrollTo(0);
+      }
+    }, AUTOPLAY_MS);
+    return () => clearInterval(interval);
+  }, [api]);
+
   return (
-    <section className="py-16 md:py-24 bg-[#f7f4f1]" data-testid="testimonials-section">
+    <section
+      className="py-16 md:py-24 bg-[#f7f4f1]"
+      data-testid="testimonials-section"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header with Google rating */}
         <div className="text-center mb-12">
@@ -25,7 +48,9 @@ const Testimonials = () => {
                 <Star key={i} className="h-4 w-4 fill-[#FBBC04] text-[#FBBC04]" />
               ))}
             </div>
-            <span className="text-sm text-gray-600">({GOOGLE_RATING.total} reviews)</span>
+            <span className="text-sm text-gray-600">
+              ({GOOGLE_RATING.total} reviews)
+            </span>
           </div>
           <h2 className="text-3xl md:text-4xl font-bold text-[#202020] mb-3">
             Wat onze klanten zeggen
@@ -35,27 +60,43 @@ const Testimonials = () => {
           </p>
         </div>
 
-        {/* Reviews Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
-          {HOMEPAGE_REVIEWS.map((r) => (
-            <ReviewCard key={r.name + r.date} review={r} />
-          ))}
+        {/* Slider */}
+        <div className="px-0 md:px-12">
+          <Carousel
+            setApi={setApi}
+            opts={{ align: 'start', loop: true }}
+            className="w-full"
+            data-testid="reviews-carousel"
+          >
+            <CarouselContent className="-ml-4">
+              {GOOGLE_REVIEWS.map((r) => (
+                <CarouselItem
+                  key={r.name + r.date}
+                  className="pl-4 basis-full md:basis-1/2 lg:basis-1/3"
+                >
+                  <div className="h-full">
+                    <ReviewCard review={r} />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious
+              className="hidden md:flex -left-4 lg:-left-12 bg-white shadow-md border-0 hover:bg-[#3a190b] hover:text-white"
+              data-testid="reviews-prev"
+            />
+            <CarouselNext
+              className="hidden md:flex -right-4 lg:-right-12 bg-white shadow-md border-0 hover:bg-[#3a190b] hover:text-white"
+              data-testid="reviews-next"
+            />
+          </Carousel>
         </div>
 
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            to="/reviews"
-            className="inline-flex items-center gap-2 bg-[#3a190b] text-white px-6 py-3 rounded-full font-medium hover:bg-[#500000] transition-colors"
-            data-testid="view-all-reviews-btn"
-          >
-            Bekijk alle reviews <ArrowRight className="h-4 w-4" />
-          </Link>
+        <div className="text-center mt-10">
           <a
             href={REVIEWS_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-[#3a190b] hover:underline px-6 py-3 text-sm"
+            className="inline-flex items-center gap-2 text-[#3a190b] hover:underline text-sm"
             data-testid="leave-review-btn"
           >
             Schrijf zelf een review op Google

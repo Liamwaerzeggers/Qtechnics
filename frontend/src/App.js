@@ -28,7 +28,30 @@ import AlgemeneVoorwaarden from './components/AlgemeneVoorwaarden';
 import CookieBanner from './components/CookieBanner';
 import CookiePolicy from './components/CookiePolicy';
 import RenovatieCalculator from './components/RenovatieCalculator';
-import ReviewsPage from './components/ReviewsPage';
+import { Helmet } from 'react-helmet';
+import { GOOGLE_REVIEWS, GOOGLE_RATING } from './data/googleReviews';
+
+const reviewSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  '@id': 'https://maxq.be/#reviews',
+  name: 'Max Q - powered by QTechnics',
+  url: 'https://maxq.be',
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: GOOGLE_RATING.aggregate,
+    reviewCount: GOOGLE_RATING.total,
+    bestRating: 5,
+    worstRating: 1,
+  },
+  review: GOOGLE_REVIEWS.map((r) => ({
+    '@type': 'Review',
+    author: { '@type': 'Person', name: r.name },
+    datePublished: r.date,
+    reviewRating: { '@type': 'Rating', ratingValue: r.rating, bestRating: 5, worstRating: 1 },
+    reviewBody: r.text,
+  })),
+};
 
 // Component to scroll to top on route change
 const ScrollToTop = () => {
@@ -44,6 +67,9 @@ const ScrollToTop = () => {
 const Home = () => {
   return (
     <>
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(reviewSchema)}</script>
+      </Helmet>
       <Hero />
       <Services />
       <Projects />
@@ -105,8 +131,6 @@ function App() {
           <Route path="/cookiebeleid" element={<MainLayout><CookiePolicy /></MainLayout>} />
           <Route path="/calculator" element={<MainLayout><RenovatieCalculator /></MainLayout>} />
           <Route path="/renovatie-prijscalculator" element={<MainLayout><RenovatieCalculator /></MainLayout>} />
-          <Route path="/reviews" element={<MainLayout><ReviewsPage /></MainLayout>} />
-          <Route path="/klantenreviews" element={<MainLayout><ReviewsPage /></MainLayout>} />
         </Routes>
       </BrowserRouter>
     </div>
