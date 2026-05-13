@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet';
 import { MapPin, Phone, ArrowRight, CheckCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import Breadcrumbs from './Breadcrumbs';
+import InternalLinks from './InternalLinks';
 
 // All locations within 30km of Oostham (Tessenderlo-Ham area)
 export const LOCATIONS = [
@@ -344,6 +345,8 @@ const LocationPage = () => {
           </div>
         </div>
       </section>
+
+      <InternalLinks />
     </>
   );
 };

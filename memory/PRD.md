@@ -35,6 +35,10 @@ Clone van maxq.be met admin panel, lead management, SEO/GEO optimalisatie, AI bl
 - [x] /bedankt conversie-pagina
 - [x] Privacybeleid (GDPR/AVG) + Algemene Voorwaarden (Belgisch recht)
 - [x] llms.txt 15KB (9 medewerkers, Van Gestel, 25+ jaar)
+- [x] Cookie banner + Cookiebeleid (Google Consent Mode v2)
+- [x] Breadcrumbs (BreadcrumbList schema) op ProjectDetail/BlogDetail/ServicePage/LocationPage/Calculator
+- [x] InternalLinks component (Featured Calculator CTA + 6 diensten + 12 locaties) op Home/Blog/BlogDetail/Contact/Bedankt/Renoveren/Projecten/Service/Location pagina's
+- [x] Renovatie Prijscalculator (/calculator) - link bait tool met FAQ schema voor backlinks
 
 ## Pending/Backlog
 ### P1
@@ -42,7 +46,6 @@ Clone van maxq.be met admin panel, lead management, SEO/GEO optimalisatie, AI bl
 
 ### P2
 - [ ] Blog artikelen bewerken (edit functie)
-- [ ] Cookie banner/consent
 - [ ] Admin dashboard statistieken
 
 ## Credentials
