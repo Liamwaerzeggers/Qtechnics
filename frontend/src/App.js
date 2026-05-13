@@ -28,6 +28,7 @@ import AlgemeneVoorwaarden from './components/AlgemeneVoorwaarden';
 import CookieBanner from './components/CookieBanner';
 import CookiePolicy from './components/CookiePolicy';
 import RenovatieCalculator from './components/RenovatieCalculator';
+import ReviewsPage from './components/ReviewsPage';
 
 // Component to scroll to top on route change
 const ScrollToTop = () => {
@@ -104,6 +105,8 @@ function App() {
           <Route path="/cookiebeleid" element={<MainLayout><CookiePolicy /></MainLayout>} />
           <Route path="/calculator" element={<MainLayout><RenovatieCalculator /></MainLayout>} />
           <Route path="/renovatie-prijscalculator" element={<MainLayout><RenovatieCalculator /></MainLayout>} />
+          <Route path="/reviews" element={<MainLayout><ReviewsPage /></MainLayout>} />
+          <Route path="/klantenreviews" element={<MainLayout><ReviewsPage /></MainLayout>} />
         </Routes>
       </BrowserRouter>
     </div>

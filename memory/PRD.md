@@ -39,6 +39,7 @@ Clone van maxq.be met admin panel, lead management, SEO/GEO optimalisatie, AI bl
 - [x] Breadcrumbs (BreadcrumbList schema) op ProjectDetail/BlogDetail/ServicePage/LocationPage/Calculator
 - [x] InternalLinks component (Featured Calculator CTA + 6 diensten + 12 locaties) op Home/Blog/BlogDetail/Contact/Bedankt/Renoveren/Projecten/Service/Location pagina's
 - [x] Renovatie Prijscalculator (/calculator) - link bait tool met FAQ schema voor backlinks
+- [x] Echte Google reviews op /reviews + homepage (10 reviews, 4.8★/37, Schema.org Review markup voor rich snippets)
 
 ## Pending/Backlog
 ### P1
