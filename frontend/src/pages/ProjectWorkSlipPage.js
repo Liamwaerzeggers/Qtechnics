@@ -315,20 +315,19 @@ export default function ProjectWorkSlipPage() {
       
       const slipId = response.data.id;
       
-      // Upload photos
+      // Upload photos in parallel (mobile-friendly)
       if (photoFiles.length > 0) {
-        for (const file of photoFiles) {
+        await Promise.all(photoFiles.map(async (file) => {
           const formData = new FormData();
           formData.append('file', file);
-          
-          await axios.post(
+          return axios.post(
             `${process.env.REACT_APP_BACKEND_URL}/api/projects/${projectId}/work-slips/${slipId}/photos`,
             formData,
-            { 
-              headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
+            {
+              headers: { ...getAuthHeaders() }, timeout: 120000
             }
           );
-        }
+        }));
       }
       
       toast.success('Werkbon succesvol opgeslagen! ✅');

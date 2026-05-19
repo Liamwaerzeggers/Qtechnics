@@ -344,34 +344,53 @@ export default function ProjectFirstVisitTab({ project, onUpdate }) {
   const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
-    
+
     setUploading(true);
     setShowUploadModal(false);
 
-    try {
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append('file', file);
-
+    // Helper: upload één bestand (met retry voor mobiele netwerken)
+    const uploadOne = async (file, attempt = 1) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
         const response = await axios.post(
           `${API}/projects/${project.id}/first-visit/photos?room=${encodeURIComponent(selectedRoom)}`,
           formData,
-          { 
-            headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
+          {
+            // BELANGRIJK: GEEN handmatige Content-Type — axios voegt de juiste boundary toe voor FormData.
+            headers: { ...getAuthHeaders() },
+            timeout: 120000  // 2 minuten — mobiele uploads kunnen traag zijn
           }
         );
-
-        setPhotos(prev => [...prev, response.data]);
+        return { ok: true, file, data: response.data };
+      } catch (error) {
+        // Eén retry bij netwerkfout (typisch op gsm 4G/wifi-wisseling)
+        const isNetworkError = !error.response;
+        if (isNetworkError && attempt < 2) {
+          await new Promise(r => setTimeout(r, 1500));
+          return uploadOne(file, attempt + 1);
+        }
+        return { ok: false, file, error: error.response?.data?.detail || error.message };
       }
-      
-      // Expand the room we just uploaded to
-      setExpandedRooms(prev => ({ ...prev, [selectedRoom]: true }));
-      
-      toast.success(`${files.length} foto('s) geüpload naar ${selectedRoom}! 📸`);
+    };
+
+    try {
+      // Parallel uploaden — één faler blokkeert de rest niet
+      const results = await Promise.all(files.map(f => uploadOne(f)));
+      const succeeded = results.filter(r => r.ok);
+      const failed = results.filter(r => !r.ok);
+
+      if (succeeded.length > 0) {
+        setPhotos(prev => [...prev, ...succeeded.map(r => r.data)]);
+        setExpandedRooms(prev => ({ ...prev, [selectedRoom]: true }));
+        toast.success(`${succeeded.length} foto('s) geüpload naar ${selectedRoom} 📸`);
+      }
+      if (failed.length > 0) {
+        const names = failed.map(r => r.file.name).join(', ');
+        toast.error(`${failed.length} foto('s) niet geüpload: ${names}. Probeer opnieuw.`);
+        console.error('Upload failures:', failed);
+      }
       onUpdate();
-    } catch (error) {
-      console.error('Photo upload error:', error);
-      toast.error(error.response?.data?.detail || 'Kon foto niet uploaden');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

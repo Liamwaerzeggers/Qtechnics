@@ -133,7 +133,7 @@ export default function ProjectDetailPage() {
         `${API}/projects/${projectId}/legacy-documents?${params.toString()}`,
         formData,
         { 
-          headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
+          headers: { ...getAuthHeaders() }, timeout: 120000
         }
       );
       

@@ -82,7 +82,7 @@ export default function MaterialsPage() {
     setUploading(true);
     try {
       const response = await axios.post(`${API}${endpoint}`, formData, {
-        headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { ...getAuthHeaders() }, timeout: 120000,
         timeout: 60000
       });
       const itemType = activeTab === 'materials' ? 'materialen' : 'werk items';

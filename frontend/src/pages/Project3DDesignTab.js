@@ -83,7 +83,7 @@ export default function Project3DDesignTab({ project, onUpdate }) {
           `${API}/projects/${project.id}/designs?room=${encodeURIComponent(selectedRoom)}`,
           formData,
           { 
-            headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
+            headers: { ...getAuthHeaders() }, timeout: 120000
           }
         );
 

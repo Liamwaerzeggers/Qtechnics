@@ -250,7 +250,7 @@ export default function QuoteDetailPage() {
               `${API}/materials/create-with-image`,
               formDataUpload,
               { 
-                headers: getAuthHeaders(), headers: { 'Content-Type': 'multipart/form-data' }
+                headers: { ...getAuthHeaders() }, timeout: 120000
               }
             );
             
