@@ -46,6 +46,7 @@ db = client[os.environ['DB_NAME']]
 
 # Import simple auth module
 from auth_simple import router as auth2_router
+from ai_quote_agent import router as ai_quote_agent_router
 
 # Resend Email Setup
 resend.api_key = os.environ.get('RESEND_API_KEY')
@@ -12247,6 +12248,7 @@ async def complete_maintenance(contract_id: str, technician_notes: str = Query(d
 # Include routers
 app.include_router(api_router)
 app.include_router(auth2_router, prefix="/api")
+app.include_router(ai_quote_agent_router, prefix="/api")
 
 # CORS configuration - explicit origins for mobile browser compatibility
 cors_origins = os.environ.get('CORS_ORIGINS', '')

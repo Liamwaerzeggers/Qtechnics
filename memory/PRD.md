@@ -156,6 +156,21 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - PDF (offerte + factuur) toont een groen "(-X% korting)" suffix naast de item-omschrijving voor arbeid, materiaal en overig.
 - E2E getest: 10% korting op €1000 → €900 excl. BTW, 25% korting → €750. PDF toont "(-25% korting)".
 
+### Foto Upload Mobiel Bug Fix (mei 2026)
+- Root cause: duplicate `headers` JS-key in 7 upload-handlers gooide de Authorization header weg + zette een corrupte Content-Type zonder boundary. Resultaat: requests faalden onregelmatig en bestanden waren nadien niet meer te openen.
+- Fix in `ProjectFirstVisitTab.js` (parallel uploads + retry + per-file feedback + 120s timeout), `ProjectWorkSlipPage.js` (parallel via Promise.all), en de overige 5 files (header-bug + timeout).
+
+### AI Offerte Agent — Claude Sonnet 4.5 Vision (mei 2026)
+- Nieuwe module `/app/backend/ai_quote_agent.py` met FastAPI router `/api/ai-quote-agent/*` (start-session, list, get, message, apply, delete).
+- Model: `claude-sonnet-4-5-20250929` via `emergentintegrations` + `EMERGENT_LLM_KEY`. Vision support — input images worden automatisch naar PNG getranscodeerd + max 1600px resize voor payload-controle.
+- System prompt instrueert agent als calculator/offerte-specialist die scope-vragen stelt en gestructureerd JSON-voorstel teruggeeft met arbeid + materialen + rationale + open vragen.
+- Context: agent krijgt project info + uittreksel materialen/arbeid catalogus (40 items elk) bij elke beurt.
+- Inputs ondersteund: grondplan (vision), tekstbeschrijving, foto's bestaande ruimte, afmetingen-formulier per kamer.
+- Sessies blijven persistent in `ai_agent_sessions` collectie, multi-turn met laatste 10 berichten als preamble.
+- Frontend pagina `AIQuoteAgentPage.js` op `/projects/:projectId/ai-offerte`: split-view chat (links) + live proposal panel met checkboxes (rechts). Bottom-right "Maak offerte van selectie" creëert nieuwe concept-offerte met de gekozen regels.
+- Knop "✨ AI offerte" naast "Nieuwe Offerte" op `ProjectDetailPage`.
+- E2E getest: grondplan-image (badkamer 4×3m + toilet 2×2m) → Claude leest dimensies correct, 21 regels voorstel (14 arbeid + 7 materiaal), €10.867 estimate excl, 6% BTW correct toegepast, succesvol omgezet naar quote OFF-2026-350718.
+
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 

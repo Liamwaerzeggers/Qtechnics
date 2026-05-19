@@ -472,9 +472,20 @@ export default function ProjectDetailPage() {
                     <h3 className="text-xl font-bold" style={{color: '#3a190b'}}>
                       📄 Offertes voor dit Project
                     </h3>
-                    <Button onClick={handleCreateQuote}>
-                      + Nieuwe Offerte
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => navigate(`/projects/${project.id}/ai-offerte`)}
+                        data-testid="open-ai-quote-agent-btn"
+                        variant="outline"
+                        style={{ borderColor: '#500000', color: '#500000' }}
+                        title="Genereer concept-offerte met AI (Claude Sonnet 4.5)"
+                      >
+                        ✨ AI offerte
+                      </Button>
+                      <Button onClick={handleCreateQuote}>
+                        + Nieuwe Offerte
+                      </Button>
+                    </div>
                   </div>
 
                   {quotes.length === 0 ? (

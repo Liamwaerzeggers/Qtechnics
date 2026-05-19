@@ -18,6 +18,7 @@ import MaterialCatalogAdmin from './pages/MaterialCatalogAdmin';
 import ProjectsPage from './pages/ProjectsPage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import ProjectWorkSlipPage from './pages/ProjectWorkSlipPage';
+import AIQuoteAgentPage from './pages/AIQuoteAgentPage';
 import CalendarPage from './pages/CalendarPage';
 import InvoicesPage from './pages/InvoicesPage';
 import FinancesPage from './pages/FinancesPage';
@@ -883,6 +884,7 @@ function App() {
             <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
             <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectDetailPage /></ProtectedRoute>} />
             <Route path="/projects/:projectId/work-slips" element={<ProtectedRoute><ProjectWorkSlipPage /></ProtectedRoute>} />
+            <Route path="/projects/:projectId/ai-offerte" element={<ProtectedRoute><AIQuoteAgentPage /></ProtectedRoute>} />
             <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
             <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
             <Route path="/finances" element={<ProtectedRoute><FinancesPage /></ProtectedRoute>} />
