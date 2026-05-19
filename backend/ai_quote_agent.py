@@ -203,25 +203,19 @@ def _strip_json_block(text: str) -> str:
 
 
 async def _send_to_llm(session: dict, user_text: str, image_base64s: List[str], context_str: str) -> str:
-    """Stuurt de huidige sessie + nieuw bericht naar Claude Sonnet 4.5."""
+    """Stuurt de huidige sessie + nieuw bericht naar Claude Sonnet 4.5.
+
+    Bij transient errors (502 Bad Gateway, timeouts) wordt automatisch tot 3 keer hergeprobeerd
+    met exponential backoff (1s, 3s, 7s).
+    """
     api_key = os.environ.get('EMERGENT_LLM_KEY')
     if not api_key:
         raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY niet geconfigureerd")
 
     system_msg = SYSTEM_PROMPT + "\n\n" + context_str
 
-    chat = LlmChat(
-        api_key=api_key,
-        session_id=session["id"],
-        system_message=system_msg,
-    ).with_model("anthropic", "claude-sonnet-4-5-20250929")
-
-    # Replay older messages so de agent state behoudt (de lib slaat zelf state op via session_id maar
-    # we replayen niet — Claude session_id is een logical key voor de provider)
-    # Daarom geven we de context-string via system, en de geschiedenis via user-message als preamble.
-
     history_blob = ""
-    for m in session.get("messages", [])[-10:]:  # laatste 10 berichten als preamble
+    for m in session.get("messages", [])[-10:]:
         role = "Gebruiker" if m["role"] == "user" else "Jij eerder"
         history_blob += f"\n[{role}]: {m['text'][:500]}\n"
 
@@ -231,14 +225,35 @@ async def _send_to_llm(session: dict, user_text: str, image_base64s: List[str], 
     )
 
     file_contents = [ImageContent(image_base64=_normalize_image_to_png_base64(b)) for b in image_base64s if b]
-
     user_message = UserMessage(
         text=full_text,
         file_contents=file_contents if file_contents else None,
     )
 
-    response = await chat.send_message(user_message)
-    return response.strip()
+    # Retry-lus voor transient LLM provider errors (502, 503, 429, network)
+    last_error = None
+    for attempt in range(3):
+        try:
+            chat = LlmChat(
+                api_key=api_key,
+                session_id=session["id"] + f"-att{attempt}",
+                system_message=system_msg,
+            ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+            response = await chat.send_message(user_message)
+            return response.strip()
+        except Exception as e:
+            err_str = str(e)
+            last_error = e
+            is_transient = any(code in err_str for code in ["502", "503", "504", "429", "BadGateway", "ServiceUnavailable", "TimeoutError", "timed out"])
+            if attempt < 2 and is_transient:
+                wait = (attempt + 1) * 2 + 1  # 3s, 5s
+                logger.warning(f"AI agent transient error (attempt {attempt+1}): {err_str[:200]} — retry in {wait}s")
+                await asyncio.sleep(wait)
+                continue
+            # Niet-transient of laatste poging: stop
+            break
+
+    raise last_error if last_error else RuntimeError("AI call failed without exception")
 
 
 # ============= ENDPOINTS =============

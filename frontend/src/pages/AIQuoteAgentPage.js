@@ -183,7 +183,13 @@ export default function AIQuoteAgentPage() {
       setPendingImages([]);
     } catch (e) {
       console.error(e);
-      toast.error(e.response?.data?.detail || 'Agent gaf een fout');
+      const detail = e.response?.data?.detail || e.message || '';
+      const isTransient = /502|503|504|BadGateway|timeout|timed out|429/i.test(detail);
+      if (isTransient) {
+        toast.error('De AI-dienst is even overbelast. Probeer opnieuw over een paar seconden.');
+      } else {
+        toast.error(detail || 'Agent gaf een fout — probeer opnieuw');
+      }
       // rol user-bericht terug
       setMessages((prev) => prev.slice(0, -1));
     } finally {
