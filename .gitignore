@@ -13,8 +13,10 @@ node_modules/
 dist/
 
 # Environment files
-*.env
-*.env.*
+# NOTE: .env MOET in git op Emergent — anders deployen secrets/keys niet mee naar productie.
+# Emergent past tijdens deploy PROTECTED_VARIABLES (URL/MONGO/DB_NAME) automatisch aan.
+# *.env
+# *.env.*
 
 # Logs
 npm-debug.log*
@@ -59,6 +61,9 @@ frontend/node_modules/.cache/
 chainlit.md
 .chainlit
 .ipynb_checkpoints/
+
+# Test credentials — never deploy of commit
+memory/test_credentials.md
 frontend/node_modules/.cache/default-development/2.pack
 frontend/node_modules/.cache/default-development/3.pack
 frontend/node_modules/.cache/default-development/3.pack
