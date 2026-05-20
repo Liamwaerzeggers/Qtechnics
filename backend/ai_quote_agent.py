@@ -27,6 +27,15 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ai-quote-agent", tags=["ai-quote-agent"])
 
+AGENT_VERSION = "v3-bgtasks-2026-05-20"  # Bump wanneer backend protocol wijzigt
+
+
+@router.get("/version")
+async def get_version():
+    """Diagnose endpoint: geeft de actuele backend-versie van de agent terug.
+    Gebruik om te checken of de productie de nieuwste deploy heeft."""
+    return {"version": AGENT_VERSION}
+
 
 def _normalize_image_to_png_base64(image_base64: str) -> str:
     """Decodeer base64, converteer naar PNG (om mime-type mismatch met Claude te voorkomen)."""
