@@ -244,6 +244,14 @@ async def _send_to_llm(session: dict, user_text: str, image_base64s: List[str], 
         except Exception as e:
             err_str = str(e)
             last_error = e
+            # Niet-retry-baar: budget overschreden / auth fout
+            if "budget" in err_str.lower() or "Budget has been exceeded" in err_str:
+                raise HTTPException(
+                    status_code=402,
+                    detail="Emergent LLM key budget overschreden. Voeg balance toe via Profile → Universal Key → Add Balance (of activeer Auto top-up).",
+                )
+            if "401" in err_str or "authentication" in err_str.lower():
+                raise HTTPException(status_code=401, detail="LLM authenticatie fout — controleer EMERGENT_LLM_KEY.")
             is_transient = any(code in err_str for code in ["502", "503", "504", "429", "BadGateway", "ServiceUnavailable", "TimeoutError", "timed out"])
             if attempt < 2 and is_transient:
                 wait = (attempt + 1) * 2 + 1  # 3s, 5s
