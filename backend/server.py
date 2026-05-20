@@ -788,6 +788,228 @@ async def auto_generate_daily_blog():
         
         await asyncio.sleep(86400)
 
+# ============================================================
+# SEO BRAIN - Daily Trend Research & Auto-Optimization
+# ============================================================
+
+async def seo_brain_research() -> dict:
+    """Use LLM to research trending Belgian/Flemish renovation queries
+    and pick a smart blog topic for today."""
+    if not EMERGENT_LLM_KEY:
+        return {"trends": [], "blog_topic": None, "qa_pairs": []}
+    
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    chat = LlmChat(
+        api_key=EMERGENT_LLM_KEY,
+        session_id=f"seo-brain-{today}",
+        system_message="""Je bent een SEO-strateeg gespecialiseerd in renovatie en interieurdesign in Vlaanderen (Belgie).
+Je analyseert dagelijks welke zoektermen het meest relevant zijn voor renovatiebedrijf Max Q (Ham, Limburg).
+Je houdt rekening met:
+- Seizoensgebonden zoekgedrag (winter: warmtepomp/isolatie; zomer: badkamer/keuken)
+- Belgische premies (Mijn VerbouwPremie, EPC-labelpremie, renovatieplicht)
+- Lokale steden in Limburg, Kempen, Vlaams-Brabant
+- Long-tail commerciele intentie (offerte, prijs, kosten, aannemer)
+- AI/LLM optimalisatie (vraag-gebaseerde formuleringen)"""
+    )
+    
+    prompt = f"""Vandaag is {today}. Geef het SEO-plan voor maxq.be voor vandaag.
+
+Output EXACT in dit JSON formaat (geen extra tekst):
+{{
+  "trends": [
+    {{"keyword": "string", "intent": "informational|commercial|transactional", "priority": 1-10, "reason": "korte uitleg waarom dit trending is"}},
+    ...10 items
+  ],
+  "blog_topic": "een specifiek, longtail blog onderwerp gebaseerd op trends van vandaag (max 80 tekens)",
+  "qa_pairs": [
+    {{"q": "vraag zoals iemand ChatGPT zou stellen", "a": "concreet antwoord van 2-3 zinnen voor Max Q"}},
+    ...5 items
+  ]
+}}"""
+    
+    try:
+        msg = UserMessage(text=prompt)
+        response = await chat.send_message(msg)
+        import json
+        import re
+        cleaned = re.sub(r'^```json\s*|\s*```$', '', response.strip(), flags=re.MULTILINE)
+        data = json.loads(cleaned)
+        return data
+    except Exception as e:
+        logger.error(f"SEO brain research failed: {str(e)}")
+        return {"trends": [], "blog_topic": None, "qa_pairs": []}
+
+
+async def send_seo_summary_email(run: dict):
+    """Send daily SEO brain summary email."""
+    if not resend.api_key or not RECIPIENT_EMAILS:
+        return
+    
+    trends = run.get('trends', [])[:10]
+    qa = run.get('qa_pairs', [])[:5]
+    blog_title = run.get('blog_title') or '-'
+    trends_html = ''.join([f"<li><strong>{t.get('keyword','')}</strong> ({t.get('intent','')}, prio {t.get('priority','')}/10) — {t.get('reason','')}</li>" for t in trends])
+    qa_html = ''.join([f"<li><strong>{p.get('q','')}</strong><br>{p.get('a','')}</li>" for p in qa])
+    
+    html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
+      <div style="background:#3a190b; padding:20px; text-align:center;">
+        <h1 style="color:white; margin:0;">SEO Brain — Dagrapport</h1>
+        <p style="color:#fff8; margin:5px 0 0;">{datetime.now(timezone.utc).strftime('%d %B %Y')}</p>
+      </div>
+      <div style="background:#f9f9f9; padding:20px; border:1px solid #ddd;">
+        <h2 style="color:#3a190b;">Trending zoektermen vandaag</h2>
+        <ol style="line-height:1.6;">{trends_html or '<li>Geen trends gevonden</li>'}</ol>
+        <h2 style="color:#3a190b; margin-top:25px;">Nieuwe blog</h2>
+        <p style="background:white; padding:12px; border-left:4px solid #3a190b;">{blog_title}</p>
+        <h2 style="color:#3a190b; margin-top:25px;">Nieuwe AI Q&amp;A's (toegevoegd aan llms.txt)</h2>
+        <ol style="line-height:1.6;">{qa_html or '<li>Geen nieuwe Q&A</li>'}</ol>
+        <hr style="margin:25px 0;">
+        <p style="font-size:12px; color:#888;">Automatisch gegenereerd door SEO Brain - maxq.be</p>
+      </div>
+    </div>
+    """
+    try:
+        params = {
+            "from": SENDER_EMAIL,
+            "to": RECIPIENT_EMAILS,
+            "subject": f"SEO Brain dagrapport — {datetime.now(timezone.utc).strftime('%d %b %Y')}",
+            "html": html,
+        }
+        await asyncio.to_thread(resend.Emails.send, params)
+        logger.info("SEO brain email sent")
+    except Exception as e:
+        logger.error(f"SEO brain email failed: {str(e)}")
+
+
+async def run_seo_brain_once() -> dict:
+    """Run a full SEO brain cycle: research + blog + save trends + email."""
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    run = {
+        "id": str(uuid.uuid4()),
+        "date": today,
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "trends": [],
+        "qa_pairs": [],
+        "blog_title": None,
+        "blog_slug": None,
+        "status": "running",
+    }
+    
+    research = await seo_brain_research()
+    run["trends"] = research.get("trends", [])
+    run["qa_pairs"] = research.get("qa_pairs", [])
+    
+    # Save Q&A pairs to DB (deduped by question text)
+    for qa in run["qa_pairs"]:
+        if qa.get("q") and qa.get("a"):
+            await db.seo_qa.update_one(
+                {"q": qa["q"]},
+                {"$set": {"q": qa["q"], "a": qa["a"], "updated_at": today}},
+                upsert=True,
+            )
+    
+    # Save trends
+    for t in run["trends"]:
+        if t.get("keyword"):
+            await db.seo_trends.insert_one({
+                "keyword": t["keyword"],
+                "intent": t.get("intent"),
+                "priority": t.get("priority"),
+                "reason": t.get("reason"),
+                "date": today,
+            })
+    
+    # Generate blog using SEO-driven topic
+    blog_topic = research.get("blog_topic")
+    if blog_topic and EMERGENT_LLM_KEY:
+        try:
+            existing_today = await db.blogs.find_one({"created_at": {"$regex": f"^{today}"}})
+            if not existing_today:
+                blog_data = await generate_blog_with_ai(blog_topic)
+                blog = BlogPost(**blog_data)
+                doc = blog.model_dump()
+                doc['created_at'] = doc['created_at'].isoformat()
+                await db.blogs.insert_one(doc)
+                run["blog_title"] = blog.title
+                run["blog_slug"] = blog.slug
+                await update_static_blog_sitemap()
+                logger.info(f"SEO Brain blog generated: {blog.title}")
+        except Exception as e:
+            logger.error(f"SEO brain blog gen failed: {str(e)}")
+    
+    run["status"] = "completed"
+    run["completed_at"] = datetime.now(timezone.utc).isoformat()
+    await db.seo_runs.insert_one({**run})
+    await send_seo_summary_email(run)
+    return run
+
+
+async def auto_seo_brain_daily():
+    """Background task — runs SEO Brain every 24h."""
+    await asyncio.sleep(30)  # start after blog task initializes
+    while True:
+        try:
+            today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+            existing = await db.seo_runs.find_one({"date": today, "status": "completed"})
+            if not existing:
+                await run_seo_brain_once()
+        except Exception as e:
+            logger.error(f"Auto SEO brain failed: {str(e)}")
+        await asyncio.sleep(86400)
+
+
+@api_router.get("/seo/trends")
+async def get_seo_trends(limit: int = 30):
+    """Get latest SEO trending keywords"""
+    trends = await db.seo_trends.find({}, {"_id": 0}).sort("date", -1).limit(limit).to_list(limit)
+    return trends
+
+
+@api_router.get("/seo/qa")
+async def get_seo_qa(limit: int = 50):
+    """Get all SEO-generated Q&A pairs"""
+    qa = await db.seo_qa.find({}, {"_id": 0}).sort("updated_at", -1).limit(limit).to_list(limit)
+    return qa
+
+
+@api_router.get("/seo/runs")
+async def get_seo_runs(limit: int = 14):
+    """Get history of SEO brain runs"""
+    runs = await db.seo_runs.find({}, {"_id": 0}).sort("date", -1).limit(limit).to_list(limit)
+    return runs
+
+
+@api_router.post("/seo/run-now")
+async def trigger_seo_brain(background_tasks: BackgroundTasks):
+    """Manually trigger an SEO brain run"""
+    if not EMERGENT_LLM_KEY:
+        raise HTTPException(status_code=500, detail="LLM key niet geconfigureerd")
+    background_tasks.add_task(run_seo_brain_once)
+    return {"message": "SEO brain run gestart in background"}
+
+
+@api_router.get("/llms.txt")
+async def dynamic_llms_txt():
+    """Serve dynamic llms.txt with live Q&A from SEO brain"""
+    from fastapi.responses import Response
+    base_path = ROOT_DIR.parent / "frontend" / "public" / "llms.txt"
+    try:
+        with open(base_path, "r", encoding="utf-8") as f:
+            base_content = f.read()
+    except Exception:
+        base_content = "# Max Q Renovaties\n"
+    
+    qa_pairs = await db.seo_qa.find({}, {"_id": 0}).sort("updated_at", -1).limit(50).to_list(50)
+    if qa_pairs:
+        appendix = "\n\n## Actuele Vragen & Antwoorden (Auto-Updated)\n\n"
+        for qa in qa_pairs:
+            appendix += f"**{qa.get('q','')}**\n{qa.get('a','')}\n\n"
+        base_content += appendix
+    
+    return Response(content=base_content, media_type="text/plain; charset=utf-8")
+# ============================================================
+
 # Dynamic blog sitemap endpoint for Google
 @api_router.get("/sitemap-blogs.xml")
 async def sitemap_blogs():
@@ -827,10 +1049,11 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_event():
-    """Start daily blog auto-generation task and generate initial blog sitemap"""
+    """Start daily blog auto-generation task and SEO brain"""
     await update_static_blog_sitemap()
     asyncio.create_task(auto_generate_daily_blog())
-    logger.info("Daily blog auto-generation task started")
+    asyncio.create_task(auto_seo_brain_daily())
+    logger.info("Daily blog auto-generation + SEO brain tasks started")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

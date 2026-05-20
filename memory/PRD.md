@@ -40,6 +40,12 @@ Clone van maxq.be met admin panel, lead management, SEO/GEO optimalisatie, AI bl
 - [x] InternalLinks component (Featured Calculator CTA + 6 diensten + 12 locaties) op Home/Blog/BlogDetail/Contact/Bedankt/Renoveren/Projecten/Service/Location pagina's
 - [x] Renovatie Prijscalculator (/calculator) - link bait tool met FAQ schema voor backlinks
 - [x] Echte Google reviews als slider (3-up, autoplay, 10 reviews) op homepage met Google branding + Schema.org Review markup voor rich snippets
+- [x] **SEO Pillar Page** `/premies-en-renovatieplicht-2026` (Mijn VerbouwPremie 2026 gids + EPC renovatieplicht + FAQPage schema + premie tabel)
+- [x] **AI SEO Brain (Backend)** - dagelijkse cron `auto_seo_brain_daily()` die via LLM trending zoektermen onderzoekt, smart blog topic kiest, Q&A genereert voor llms.txt, opslaat in MongoDB en Resend email dagrapport stuurt
+- [x] **Dynamic /api/llms.txt** endpoint dat statische llms.txt + live Q&A pairs serveert voor AI crawlers
+- [x] Endpoints: `/api/seo/trends`, `/api/seo/qa`, `/api/seo/runs`, `/api/seo/run-now`
+- [x] FAQ uitgebreid met intent vragen (Premies 2026, Renovatieplicht, "renoveren zonder breken") met FAQPage schema
+- [x] llms.txt verrijkt met premies sectie + 7 AI-optimized Q&A's
 
 ## Pending/Backlog
 ### P1

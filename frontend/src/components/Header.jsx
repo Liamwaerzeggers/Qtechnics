@@ -12,6 +12,7 @@ const Header = () => {
     { name: 'Renoveren', href: '/renoveren' },
     { name: 'Projecten', href: '/projecten' },
     { name: 'Calculator', href: '/calculator' },
+    { name: 'Premies', href: '/premies-en-renovatieplicht-2026' },
     { name: 'Blog', href: '/blog' },
     { name: 'Contact', href: '/contact' },
   ];

@@ -7,8 +7,20 @@ const faqs = [
     answer: "De kosten van een totaalrenovatie hangen af van de omvang, materiaalkeuze en specifieke wensen. Gemiddeld variëren budgetten van €25.000 voor kleine projecten tot €200.000+ voor luxe totaalrenovaties. Bij Max Q krijgt u altijd een gratis en vrijblijvende offerte na een plaatsbezoek."
   },
   {
+    question: "Welke premies krijg ik voor renovatie in Vlaanderen in 2026?",
+    answer: "Via Mijn VerbouwPremie krijgt u in 2026 tot €4.000 voor een warmtepomp, €2.750 voor een zonneboiler en premies voor isolatie, ramen en sanitair. Vanaf 1 maart 2026 wijzigen de regels voor inkomenscategorie 1 en 2. Max Q helpt u gratis bij het indienen van uw dossier. Lees onze volledige gids op /premies-en-renovatieplicht-2026."
+  },
+  {
+    question: "Wat is de renovatieplicht na aankoop van een woning?",
+    answer: "Koopt u in Vlaanderen een woning met EPC-label E of F, dan moet u binnen 6 jaar renoveren naar minstens label D. Voor appartementen geldt: van E/F/C naar minimum label B. Niet voldoen kan een boete tot €200.000 opleveren. Max Q maakt een renovatieplan op maat."
+  },
+  {
     question: "Hoe lang duurt een renovatieproject?",
     answer: "De doorlooptijd varieert per project: een badkamerrenovatie duurt gemiddeld 2-4 weken, een keukenrenovatie 3-5 weken, en een totaalrenovatie kan 3-6 maanden duren. We maken vooraf een gedetailleerde planning die we met u doorspreken."
+  },
+  {
+    question: "Kan ik mijn badkamer of keuken renoveren zonder breekwerk?",
+    answer: "Ja, in veel gevallen wel. Voor badkamers passen wij overlay-technieken toe (tegelen op tegelen), prefab inloopdouches en sanitair-vervanging zonder hak- en breekwerk. Voor keukens kunnen we vaak de bestaande indeling behouden. Resultaat: 30-50% sneller en aanzienlijk minder stof."
   },
   {
     question: "Werken jullie met onderaannemers?",
@@ -16,7 +28,7 @@ const faqs = [
   },
   {
     question: "In welke regio's zijn jullie actief?",
-    answer: "Max Q is actief in heel Limburg met focus op Ham, Hasselt, Genk, Beringen, Lommel, Pelt, Houthalen-Helchteren, Heusden-Zolder, Diepenbeek, Bilzen, Tongeren, Sint-Truiden en Maasmechelen. Neem contact op om te kijken wat we voor u kunnen betekenen."
+    answer: "Max Q is actief in heel Limburg met focus op Ham, Hasselt, Genk, Beringen, Lommel, Pelt, Houthalen-Helchteren, Heusden-Zolder, Diepenbeek, Bilzen, Tongeren, Sint-Truiden en Maasmechelen. Daarnaast bedienen we ook Vlaams-Brabant en de Kempen."
   },
   {
     question: "Geven jullie garantie op het werk?",

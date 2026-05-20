@@ -28,6 +28,7 @@ import AlgemeneVoorwaarden from './components/AlgemeneVoorwaarden';
 import CookieBanner from './components/CookieBanner';
 import CookiePolicy from './components/CookiePolicy';
 import RenovatieCalculator from './components/RenovatieCalculator';
+import PremiePage from './components/PremiePage';
 import { Helmet } from 'react-helmet';
 import { GOOGLE_REVIEWS, GOOGLE_RATING } from './data/googleReviews';
 
@@ -131,6 +132,9 @@ function App() {
           <Route path="/cookiebeleid" element={<MainLayout><CookiePolicy /></MainLayout>} />
           <Route path="/calculator" element={<MainLayout><RenovatieCalculator /></MainLayout>} />
           <Route path="/renovatie-prijscalculator" element={<MainLayout><RenovatieCalculator /></MainLayout>} />
+          <Route path="/premies-en-renovatieplicht-2026" element={<MainLayout><PremiePage /></MainLayout>} />
+          <Route path="/mijn-verbouwpremie-2026" element={<MainLayout><PremiePage /></MainLayout>} />
+          <Route path="/renovatiepremies-vlaanderen" element={<MainLayout><PremiePage /></MainLayout>} />
         </Routes>
       </BrowserRouter>
     </div>
