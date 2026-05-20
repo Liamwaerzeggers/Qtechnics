@@ -3,8 +3,10 @@ import { ArrowRight, Zap, Droplets, Wind, Plug, Bath, ChefHat, Paintbrush, Grid3
 import { Button } from './ui/button';
 import { Link } from 'react-router-dom';
 import InternalLinks from './InternalLinks';
+import { useProjectImages } from '../hooks/useProjectImages';
 
 const RenoverenPage = () => {
+  const { pickHero, pick } = useProjectImages();
   return (
     <div>
       {/* Hero Section */}
@@ -12,7 +14,7 @@ const RenoverenPage = () => {
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage: `url(https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1920&q=80)`,
+            backgroundImage: `url(${pickHero()})`,
           }}
         >
           <div className="absolute inset-0 bg-[#3a190b]/60" />
@@ -242,7 +244,7 @@ const RenoverenPage = () => {
             {/* Right - Image */}
             <div className="relative">
               <img
-                src="https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&q=80"
+                src={pick('technieken')}
                 alt="Renovatie werkzaamheden"
                 className="rounded-lg shadow-lg w-full h-[500px] object-cover"
               />

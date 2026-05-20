@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { LOCATIONS } from './LocationPage';
 import Breadcrumbs from './Breadcrumbs';
 import InternalLinks from './InternalLinks';
+import { useProjectImages } from '../hooks/useProjectImages';
 
 // All service/search term variations for SEO
 export const SERVICES = {
@@ -44,6 +45,16 @@ const CATEGORY_IMAGES = {
   maatwerk: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800',
 };
 
+// Maps ServicePage category -> project DB category (used by useProjectImages)
+const SERVICE_TO_PROJECT_CAT = {
+  interieur: 'totaalproject',
+  badkamer: 'badkamer',
+  keuken: 'keuken',
+  totaal: 'totaalproject',
+  technieken: 'technieken',
+  maatwerk: 'maatkasten',
+};
+
 const CATEGORY_SERVICES = {
   interieur: ['Volledige interieurafwerking', 'Pleister- en schilderwerken', 'Vloeren en wandbekleding', 'Plafonds en verlichting'],
   badkamer: ['Complete badkamerrenovatie', 'Inloopdouches', 'Vrijstaande baden', 'Sanitair en leidingen', 'Vloerverwarming', 'Tegelwerk'],
@@ -57,6 +68,7 @@ const ServicePage = () => {
   const params = useParams();
   const service = params.service;
   const location = params.location;
+  const { byCategory } = useProjectImages();
   
   const serviceData = SERVICES[service];
   const locationData = location ? LOCATIONS.find(l => l.slug === location) : null;
@@ -74,7 +86,9 @@ const ServicePage = () => {
   }
 
   const cat = serviceData.category;
-  const catImage = CATEGORY_IMAGES[cat] || CATEGORY_IMAGES.totaal;
+  const projectCat = SERVICE_TO_PROJECT_CAT[cat] || 'totaalproject';
+  const realPhotos = byCategory[projectCat] || [];
+  const catImage = realPhotos[0] || CATEGORY_IMAGES[cat] || CATEGORY_IMAGES.totaal;
   const catServices = CATEGORY_SERVICES[cat] || CATEGORY_SERVICES.totaal;
   const locName = locationData ? locationData.name : '';
   const locSuffix = locName ? ` in ${locName}` : '';

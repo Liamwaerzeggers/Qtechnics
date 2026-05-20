@@ -2,8 +2,11 @@ import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Link } from 'react-router-dom';
+import { useProjectImages } from '../hooks/useProjectImages';
 
 const Hero = () => {
+  const { pickHero } = useProjectImages();
+  const heroImage = pickHero();
   return (
     <section 
       className="relative min-h-[600px] md:min-h-[700px] flex items-center"
@@ -15,10 +18,10 @@ const Hero = () => {
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `url(https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1920&q=80)`,
+          backgroundImage: `url(${heroImage})`,
         }}
         role="img"
-        aria-label="Moderne woonkamer na renovatie door Max Q"
+        aria-label="Renovatie realisatie door Max Q"
       >
         {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/70 to-transparent" />
