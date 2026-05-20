@@ -214,10 +214,12 @@ async def _send_to_llm(session: dict, user_text: str, image_base64s: List[str], 
 
     system_msg = SYSTEM_PROMPT + "\n\n" + context_str
 
+    # Beperk de history om context-bloat te vermijden bij lange chats — laatste 6 berichten,
+    # elk max 400 tekens. De agent heeft sowieso het current_proposal in zijn DB.
     history_blob = ""
-    for m in session.get("messages", [])[-10:]:
+    for m in session.get("messages", [])[-6:]:
         role = "Gebruiker" if m["role"] == "user" else "Jij eerder"
-        history_blob += f"\n[{role}]: {m['text'][:500]}\n"
+        history_blob += f"\n[{role}]: {m['text'][:400]}\n"
 
     full_text = (
         (f"# Vorige gesprek (recent)\n{history_blob}\n\n" if history_blob else "")
@@ -230,9 +232,9 @@ async def _send_to_llm(session: dict, user_text: str, image_base64s: List[str], 
         file_contents=file_contents if file_contents else None,
     )
 
-    # Retry-lus voor transient LLM provider errors (502, 503, 429, network)
+    # Retry-lus voor transient LLM provider errors — slechts 2 pogingen om binnen frontend-timeout te blijven.
     last_error = None
-    for attempt in range(3):
+    for attempt in range(2):
         try:
             chat = LlmChat(
                 api_key=api_key,
@@ -252,12 +254,13 @@ async def _send_to_llm(session: dict, user_text: str, image_base64s: List[str], 
                 )
             if "401" in err_str or "authentication" in err_str.lower():
                 raise HTTPException(status_code=401, detail="LLM authenticatie fout — controleer EMERGENT_LLM_KEY.")
-            is_transient = any(code in err_str for code in ["502", "503", "504", "429", "BadGateway", "ServiceUnavailable", "TimeoutError", "timed out"])
-            if attempt < 2 and is_transient:
-                wait = (attempt + 1) * 2 + 1  # 3s, 5s
-                logger.warning(f"AI agent transient error (attempt {attempt+1}): {err_str[:200]} — retry in {wait}s")
-                await asyncio.sleep(wait)
+            is_transient = any(code in err_str for code in ["502", "503", "504", "429", "BadGateway", "ServiceUnavailable", "Overloaded", "TimeoutError", "timed out"])
+            if attempt < 1 and is_transient:
+                logger.warning(f"AI agent transient error (attempt {attempt+1}): {err_str[:200]} — retry in 3s")
+                await asyncio.sleep(3)
                 continue
+            # Niet-transient of laatste poging: stop
+            break
             # Niet-transient of laatste poging: stop
             break
 

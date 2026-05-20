@@ -169,7 +169,7 @@ export default function AIQuoteAgentPage() {
           image_base64s: pendingImages.map((p) => p.base64),
           dimensions: validDims,
         },
-        { headers: getAuthHeaders(), timeout: 120000 }
+        { headers: getAuthHeaders(), timeout: 180000 }
       );
       const assistantMsg = resp.data.assistant_message;
       setMessages((prev) => [...prev, assistantMsg]);
@@ -184,9 +184,13 @@ export default function AIQuoteAgentPage() {
     } catch (e) {
       console.error(e);
       const detail = e.response?.data?.detail || e.message || '';
-      const isTransient = /502|503|504|BadGateway|timeout|timed out|429/i.test(detail);
-      if (isTransient) {
-        toast.error('De AI-dienst is even overbelast. Probeer opnieuw over een paar seconden.');
+      const status = e.response?.status;
+      if (status === 402 || /budget/i.test(detail)) {
+        toast.error('Emergent LLM budget op. Ga naar Profile → Universal Key → Add Balance.', { duration: 8000 });
+      } else if (/network ?error/i.test(detail) || e.code === 'ECONNABORTED' || /timeout/i.test(detail)) {
+        toast.error('Verbinding/timeout — de agent doet er deze keer lang over. Probeer met een korter bericht of nieuwe sessie.', { duration: 7000 });
+      } else if (/502|503|504|BadGateway|Overloaded|429/i.test(detail)) {
+        toast.error('De AI-dienst is even overbelast. Probeer over 10 seconden opnieuw.', { duration: 6000 });
       } else {
         toast.error(detail || 'Agent gaf een fout — probeer opnieuw');
       }
