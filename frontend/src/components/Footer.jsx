@@ -11,11 +11,13 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Company Info */}
           <div className="md:col-span-1">
-            <img 
-              src="https://customer-assets.emergentagent.com/job_maxq-showcase/artifacts/rn05emza_logo%20maxq.png" 
-              alt="Max Q" 
-              className="h-14 w-auto mb-6"
-            />
+            <div className="inline-block bg-white rounded-xl px-5 py-3 mb-6 shadow-sm">
+              <img 
+                src="https://customer-assets.emergentagent.com/job_maxq-showcase/artifacts/rn05emza_logo%20maxq.png" 
+                alt="Max Q" 
+                className="h-12 w-auto"
+              />
+            </div>
             <p className="text-white/80 text-sm leading-relaxed mb-4">
               Max Q is de nieuwe naam voor premium renovaties en interieurprojecten, powered by de jarenlange technische expertise van Q Technics.
             </p>
