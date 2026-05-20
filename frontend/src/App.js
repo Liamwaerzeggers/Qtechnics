@@ -38,7 +38,9 @@ const API = `${BACKEND_URL}/api`;
 const AUTH_URL = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(window.location.origin + '/auth/callback')}`;
 
 // === iOS / mobile robustness: timeout + auto retry on transient errors ===
-axios.defaults.timeout = 30000; // 30s - covers iOS background kill threshold while avoiding infinite hangs
+// 120s default — verhoogd van 30s zodat polling-requests bij de AI Quote Agent niet
+// vroegtijdig worden afgekapt onder productie-belasting (cf. Emergent support diagnose).
+axios.defaults.timeout = 120000;
 
 // Create axios instance with auth
 const getAuthHeaders = () => {

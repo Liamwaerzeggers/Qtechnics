@@ -200,7 +200,10 @@ export default function AIQuoteAgentPage() {
           break;
         }
         await new Promise((r) => setTimeout(r, POLL_INTERVAL));
-        const sess = await axios.get(`${API}/ai-quote-agent/session/${sessionId}`, { headers: getAuthHeaders() });
+        const sess = await axios.get(
+          `${API}/ai-quote-agent/session/${sessionId}`,
+          { headers: getAuthHeaders(), timeout: 60000 } // Expliciet: erft niet meer de globale default
+        );
         const status = sess.data?.status;
         if (status === 'idle') {
           // Nieuw assistant-bericht ontvangen → laad de hele lijst
