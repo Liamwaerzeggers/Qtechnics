@@ -186,16 +186,17 @@ export default function AIQuoteAgentPage() {
       setInput('');
       setPendingImages([]);
 
-      // Begin met pollen tot status weer 'idle' is (max 5 min)
+      // Begin met pollen tot status weer 'idle' is (max 8 min — langer dan typische Claude max,
+      // korter dan backend auto-recovery van 10 min)
       const startedAt = Date.now();
       const POLL_INTERVAL = 3000;
-      const MAX_WAIT_MS = 5 * 60 * 1000;
+      const MAX_WAIT_MS = 8 * 60 * 1000;
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
         if (Date.now() - startedAt > MAX_WAIT_MS) {
-          toast.error('De agent doet er langer dan 5 minuten over. Probeer een korter bericht of nieuwe sessie.');
-          setMessages((prev) => prev.slice(0, -1));
+          toast.error('De agent doet er langer dan 8 minuten over. Vernieuw de pagina — het antwoord verschijnt mogelijk alsnog. Of probeer een korter bericht.', { duration: 10000 });
+          // NIET het user-bericht terugrollen — task draait nog door op de backend en zal afronden
           break;
         }
         await new Promise((r) => setTimeout(r, POLL_INTERVAL));

@@ -323,15 +323,19 @@ async def send_message(req: SendMessageRequest):
     if not session:
         raise HTTPException(status_code=404, detail="Sessie niet gevonden")
 
-    # Auto-recovery: indien een vorige run >3 min in 'processing' staat is hij vermoedelijk gecrasht
+    # Auto-recovery: indien een vorige run >10 min in 'processing' staat is hij vermoedelijk gecrasht
+    # (een normale Claude call duurt 10s-3min, dus 10min is een ruime veiligheidsmarge)
     if session.get("status") == "processing":
         try:
             updated = datetime.fromisoformat(session.get("updated_at", "").replace("Z", "+00:00"))
             age_seconds = (datetime.now(timezone.utc) - updated).total_seconds()
         except Exception:
-            age_seconds = 9999
-        if age_seconds < 180:
-            raise HTTPException(status_code=409, detail="Agent is nog bezig met vorige bericht — wacht tot het antwoord verschijnt.")
+            age_seconds = 99999
+        if age_seconds < 600:  # < 10 min: nog actief, blokkeer
+            raise HTTPException(
+                status_code=409,
+                detail=f"Agent is nog bezig (al {int(age_seconds)}s) — wacht tot het antwoord verschijnt of klik Reset.",
+            )
         # Anders: behandel als stuck en reset
         logger.warning(f"Session {req.session_id} stuck in processing for {age_seconds:.0f}s — auto-reset")
         session["status"] = "idle"
