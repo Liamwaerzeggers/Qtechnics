@@ -10,7 +10,7 @@ Genereert offerte-voorstellen op basis van:
 
 Gebruikt emergentintegrations + EMERGENT_LLM_KEY.
 """
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, BackgroundTasks
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Any
 from datetime import datetime, timezone
@@ -312,7 +312,7 @@ async def get_session(session_id: str):
 
 
 @router.post("/message")
-async def send_message(req: SendMessageRequest):
+async def send_message(req: SendMessageRequest, background_tasks: BackgroundTasks):
     """Stuur een bericht in een sessie. Start een background task voor de LLM call.
 
     Returnt onmiddellijk met de geüpdatete sessie (status='processing'). Frontend polled
@@ -364,13 +364,16 @@ async def send_message(req: SendMessageRequest):
         }},
     )
 
-    # Background task: voert LLM call uit en update de sessie
-    asyncio.create_task(_process_message_background(
-        session_id=req.session_id,
-        session_snapshot=session,
-        user_text=req.text,
-        image_base64s=req.image_base64s,
-    ))
+    # Background task: voert LLM call uit en update de sessie.
+    # FastAPI BackgroundTasks garandeert dat de response EERST wordt verzonden,
+    # daarna pas de task wordt uitgevoerd. Dit voorkomt dat de HTTP response 30s wacht.
+    background_tasks.add_task(
+        _process_message_background,
+        req.session_id,
+        session,
+        req.text,
+        req.image_base64s,
+    )
 
     return {"status": "processing", "session_id": req.session_id}
 

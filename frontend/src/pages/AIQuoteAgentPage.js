@@ -181,7 +181,7 @@ export default function AIQuoteAgentPage() {
           image_base64s: pendingImages.map((p) => p.base64),
           dimensions: validDims,
         },
-        { headers: getAuthHeaders(), timeout: 30000 } // 30s ruim voor enqueue
+        { headers: getAuthHeaders(), timeout: 60000 } // 60s ruim voor enqueue (zou normaal <1s zijn)
       );
       setInput('');
       setPendingImages([]);
