@@ -116,6 +116,17 @@ export default function AIQuoteAgentPage() {
     }
   };
 
+  const resetStuckSession = async () => {
+    if (!sessionId) return;
+    try {
+      await axios.post(`${API}/ai-quote-agent/session/${sessionId}/reset-status`, {}, { headers: getAuthHeaders() });
+      toast.success('Sessie status gereset. Je kan opnieuw een bericht sturen.');
+      setLoading(false);
+    } catch {
+      toast.error('Kon sessie niet resetten');
+    }
+  };
+
   // --- Bestanden toevoegen ---
   const handleFiles = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -221,7 +232,7 @@ export default function AIQuoteAgentPage() {
       const detail = e.response?.data?.detail || e.message || '';
       const status = e.response?.status;
       if (status === 409) {
-        toast.error('Vorige bericht is nog aan het verwerken. Even geduld.');
+        toast.error('Vorige bericht is nog aan het verwerken. Wacht even of klik "Reset" rechts als het langer dan 3 min duurt.', { duration: 8000 });
       } else if (status === 402 || /budget/i.test(detail)) {
         toast.error('Emergent LLM budget op. Ga naar Profile → Universal Key → Add Balance.', { duration: 8000 });
       } else {
@@ -282,6 +293,9 @@ export default function AIQuoteAgentPage() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={resetStuckSession} title="Reset een vastzittende sessie (vorige bericht hangt)" data-testid="reset-stuck-btn">
+              🔄 Reset
+            </Button>
             <Button variant="outline" onClick={startNewSession} data-testid="new-session-btn">
               <Plus size={16} className="mr-1" /> Nieuwe sessie
             </Button>
