@@ -161,7 +161,8 @@ export default function AIQuoteAgentPage() {
       }));
 
     try {
-      const resp = await axios.post(
+      // Backend start nu een background task — we krijgen meteen "processing" terug
+      await axios.post(
         `${API}/ai-quote-agent/message`,
         {
           session_id: sessionId,
@@ -169,32 +170,63 @@ export default function AIQuoteAgentPage() {
           image_base64s: pendingImages.map((p) => p.base64),
           dimensions: validDims,
         },
-        { headers: getAuthHeaders(), timeout: 180000 }
+        { headers: getAuthHeaders(), timeout: 30000 } // 30s ruim voor enqueue
       );
-      const assistantMsg = resp.data.assistant_message;
-      setMessages((prev) => [...prev, assistantMsg]);
-      if (resp.data.current_proposal) {
-        setProposal(resp.data.current_proposal);
-        const sel = {};
-        resp.data.current_proposal.items.forEach((_, i) => { sel[i] = true; });
-        setSelectedItems(sel);
-      }
       setInput('');
       setPendingImages([]);
+
+      // Begin met pollen tot status weer 'idle' is (max 5 min)
+      const startedAt = Date.now();
+      const POLL_INTERVAL = 3000;
+      const MAX_WAIT_MS = 5 * 60 * 1000;
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        if (Date.now() - startedAt > MAX_WAIT_MS) {
+          toast.error('De agent doet er langer dan 5 minuten over. Probeer een korter bericht of nieuwe sessie.');
+          setMessages((prev) => prev.slice(0, -1));
+          break;
+        }
+        await new Promise((r) => setTimeout(r, POLL_INTERVAL));
+        const sess = await axios.get(`${API}/ai-quote-agent/session/${sessionId}`, { headers: getAuthHeaders() });
+        const status = sess.data?.status;
+        if (status === 'idle') {
+          // Nieuw assistant-bericht ontvangen → laad de hele lijst
+          setMessages(sess.data.messages || []);
+          if (sess.data.current_proposal) {
+            setProposal(sess.data.current_proposal);
+            const sel = {};
+            (sess.data.current_proposal.items || []).forEach((_, i) => { sel[i] = true; });
+            setSelectedItems(sel);
+          }
+          break;
+        }
+        if (status === 'error') {
+          const errDetail = sess.data?.error || '';
+          if (/budget/i.test(errDetail)) {
+            toast.error('Emergent LLM budget op. Ga naar Profile → Universal Key → Add Balance.', { duration: 8000 });
+          } else if (/502|503|504|BadGateway|Overloaded|429/i.test(errDetail)) {
+            toast.error('De AI-dienst is even overbelast. Probeer over 10 seconden opnieuw.', { duration: 6000 });
+          } else {
+            toast.error(errDetail || 'Agent gaf een fout — probeer opnieuw', { duration: 6000 });
+          }
+          // Rol user-message terug
+          setMessages(sess.data.messages.filter((m, i, arr) => !(m.role === 'user' && i === arr.length - 1)));
+          break;
+        }
+        // status === 'processing' → blijven pollen
+      }
     } catch (e) {
       console.error(e);
       const detail = e.response?.data?.detail || e.message || '';
       const status = e.response?.status;
-      if (status === 402 || /budget/i.test(detail)) {
+      if (status === 409) {
+        toast.error('Vorige bericht is nog aan het verwerken. Even geduld.');
+      } else if (status === 402 || /budget/i.test(detail)) {
         toast.error('Emergent LLM budget op. Ga naar Profile → Universal Key → Add Balance.', { duration: 8000 });
-      } else if (/network ?error/i.test(detail) || e.code === 'ECONNABORTED' || /timeout/i.test(detail)) {
-        toast.error('Verbinding/timeout — de agent doet er deze keer lang over. Probeer met een korter bericht of nieuwe sessie.', { duration: 7000 });
-      } else if (/502|503|504|BadGateway|Overloaded|429/i.test(detail)) {
-        toast.error('De AI-dienst is even overbelast. Probeer over 10 seconden opnieuw.', { duration: 6000 });
       } else {
         toast.error(detail || 'Agent gaf een fout — probeer opnieuw');
       }
-      // rol user-bericht terug
       setMessages((prev) => prev.slice(0, -1));
     } finally {
       setLoading(false);

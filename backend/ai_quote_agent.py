@@ -68,6 +68,8 @@ class AIAgentSession(BaseModel):
     messages: List[AIAgentMessage] = []
     current_proposal: Optional[dict] = None  # Het laatst voorgestelde regel-pakket
     dimensions: List[dict] = []  # [{"room": "Badkamer", "length": 4, "width": 3, "height": 2.5}, ...]
+    status: str = "idle"  # idle | processing | error
+    error: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
@@ -311,13 +313,19 @@ async def get_session(session_id: str):
 
 @router.post("/message")
 async def send_message(req: SendMessageRequest):
-    """Stuur een bericht in een sessie en krijg het antwoord van de agent."""
+    """Stuur een bericht in een sessie. Start een background task voor de LLM call.
+
+    Returnt onmiddellijk met de geüpdatete sessie (status='processing'). Frontend polled
+    `/session/{id}` totdat het assistant-bericht verschijnt en status='idle' is.
+    """
     db = await _get_db()
     session = await db.ai_agent_sessions.find_one({"id": req.session_id}, {"_id": 0})
     if not session:
         raise HTTPException(status_code=404, detail="Sessie niet gevonden")
+    if session.get("status") == "processing":
+        raise HTTPException(status_code=409, detail="Agent is nog bezig met vorige bericht — wacht tot het antwoord verschijnt.")
 
-    # Sla user-bericht op
+    # Sla user-bericht op + zet status op processing
     user_msg = AIAgentMessage(
         role="user",
         text=req.text,
@@ -326,49 +334,76 @@ async def send_message(req: SendMessageRequest):
     session["messages"].append(user_msg)
     if req.dimensions:
         session["dimensions"] = req.dimensions
-
-    # Bouw context
-    context_str = await _load_project_context(db, session["project_id"])
-    if session.get("dimensions"):
-        dims_block = "\n## Afmetingen (door gebruiker ingevuld)\n"
-        for d in session["dimensions"]:
-            dims_block += f"- {d.get('room','?')}: {d.get('length',0)}m × {d.get('width',0)}m × {d.get('height',2.7)}m\n"
-        context_str += "\n" + dims_block
-
-    # Roep LLM
-    try:
-        assistant_text = await _send_to_llm(session, req.text, req.image_base64s, context_str)
-    except Exception as e:
-        logger.exception(f"AI agent LLM call failed: {e}")
-        raise HTTPException(status_code=502, detail=f"AI agent fout: {str(e)[:200]}")
-
-    proposal = _extract_proposal_json(assistant_text)
-    display_text = _strip_json_block(assistant_text)
-
-    assistant_msg = AIAgentMessage(
-        role="assistant",
-        text=display_text,
-        proposal=proposal,
-    ).model_dump()
-    session["messages"].append(assistant_msg)
-    if proposal:
-        session["current_proposal"] = proposal
+    session["status"] = "processing"
+    session["error"] = None
     session["updated_at"] = datetime.now(timezone.utc).isoformat()
 
     await db.ai_agent_sessions.update_one(
         {"id": req.session_id},
         {"$set": {
             "messages": session["messages"],
-            "current_proposal": session.get("current_proposal"),
             "dimensions": session.get("dimensions", []),
+            "status": "processing",
+            "error": None,
             "updated_at": session["updated_at"],
         }},
     )
 
-    return {
-        "assistant_message": assistant_msg,
-        "current_proposal": session.get("current_proposal"),
-    }
+    # Background task: voert LLM call uit en update de sessie
+    asyncio.create_task(_process_message_background(
+        session_id=req.session_id,
+        session_snapshot=session,
+        user_text=req.text,
+        image_base64s=req.image_base64s,
+    ))
+
+    return {"status": "processing", "session_id": req.session_id}
+
+
+async def _process_message_background(session_id: str, session_snapshot: dict, user_text: str, image_base64s: List[str]):
+    """Achtergrondtaak: roept Claude aan en schrijft het antwoord terug naar de DB."""
+    db = await _get_db()
+    try:
+        context_str = await _load_project_context(db, session_snapshot["project_id"])
+        if session_snapshot.get("dimensions"):
+            dims_block = "\n## Afmetingen (door gebruiker ingevuld)\n"
+            for d in session_snapshot["dimensions"]:
+                dims_block += f"- {d.get('room','?')}: {d.get('length',0)}m × {d.get('width',0)}m × {d.get('height',2.7)}m\n"
+            context_str += "\n" + dims_block
+
+        assistant_text = await _send_to_llm(session_snapshot, user_text, image_base64s, context_str)
+
+        proposal = _extract_proposal_json(assistant_text)
+        display_text = _strip_json_block(assistant_text)
+        assistant_msg = AIAgentMessage(
+            role="assistant",
+            text=display_text,
+            proposal=proposal,
+        ).model_dump()
+
+        update = {
+            "status": "idle",
+            "error": None,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        push = {"messages": assistant_msg}
+        if proposal:
+            update["current_proposal"] = proposal
+        await db.ai_agent_sessions.update_one(
+            {"id": session_id},
+            {"$set": update, "$push": push},
+        )
+    except HTTPException as he:
+        await db.ai_agent_sessions.update_one(
+            {"id": session_id},
+            {"$set": {"status": "error", "error": he.detail, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+    except Exception as e:
+        logger.exception(f"AI agent background task failed: {e}")
+        await db.ai_agent_sessions.update_one(
+            {"id": session_id},
+            {"$set": {"status": "error", "error": str(e)[:300], "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
 
 
 @router.post("/apply")
