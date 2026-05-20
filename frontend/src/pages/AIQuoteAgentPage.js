@@ -249,11 +249,32 @@ export default function AIQuoteAgentPage() {
   };
 
   // --- Voorstel toepassen ---
+  // State: ingevulde prijzen voor 'unknown' items (idx -> string)
+  const [priceOverrides, setPriceOverrides] = useState({});
+
   const applyProposal = async () => {
     if (!proposal) return;
-    const items = (proposal.items || []).filter((_, i) => selectedItems[i]);
-    if (items.length === 0) {
+    const selectedIdx = (proposal.items || []).map((_, i) => i).filter((i) => selectedItems[i]);
+    if (selectedIdx.length === 0) {
       toast.error('Selecteer minstens één regel');
+      return;
+    }
+    // Bouw items met overrides voor onbekende prijzen
+    const items = selectedIdx.map((i) => {
+      const it = proposal.items[i];
+      const overridePrice = parseFloat(priceOverrides[i]);
+      const finalPrice = !isNaN(overridePrice) ? overridePrice : (parseFloat(it.unit_price) || 0);
+      return {
+        ...it,
+        unit_price: finalPrice,
+        // Behoud price_source zodat backend weet welke items in catalogus opgeslagen mogen worden
+        price_source: it.price_source || (it.unit_price ? 'catalog' : 'unknown'),
+      };
+    });
+    // Controleer of er nog regels zijn met prijs 0 / leeg
+    const missingPrices = items.filter((it) => !it.unit_price || it.unit_price <= 0);
+    if (missingPrices.length > 0) {
+      toast.error(`${missingPrices.length} regel(s) hebben nog geen prijs. Vul deze in voor je de offerte aanmaakt.`, { duration: 6000 });
       return;
     }
     if (!window.confirm(`Maak een nieuwe offerte aan met ${items.length} regels?`)) return;
@@ -264,8 +285,14 @@ export default function AIQuoteAgentPage() {
         { session_id: sessionId, items },
         { headers: getAuthHeaders() }
       );
-      toast.success(`Offerte ${resp.data.quote_id} aangemaakt met ${resp.data.items_added} regels`);
-      setTimeout(() => navigate(`/quotes/${resp.data.quote_id}`, { state: { fromProject: projectId } }), 600);
+      const adds = resp.data.catalog_additions || {};
+      let msg = `Offerte ${resp.data.quote_id} aangemaakt met ${resp.data.items_added} regels`;
+      const catCount = (adds.materialen || 0) + (adds.work_items || 0);
+      if (catCount > 0) {
+        msg += ` (✓ ${catCount} nieuwe prijs(zen) opgeslagen in catalogus voor volgende keer)`;
+      }
+      toast.success(msg, { duration: 6000 });
+      setTimeout(() => navigate(`/quotes/${resp.data.quote_id}`, { state: { fromProject: projectId } }), 800);
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Kon offerte niet aanmaken');
     } finally {
@@ -281,8 +308,21 @@ export default function AIQuoteAgentPage() {
   const removeDimRow = (i) => setDimensions((prev) => prev.filter((_, idx) => idx !== i));
 
   const totalSelected = (proposal?.items || [])
-    .filter((_, i) => selectedItems[i])
-    .reduce((sum, it) => sum + (parseFloat(it.quantity || 0) * parseFloat(it.unit_price || 0)), 0);
+    .map((it, i) => ({ it, i }))
+    .filter(({ i }) => selectedItems[i])
+    .reduce((sum, { it, i }) => {
+      const override = parseFloat(priceOverrides[i]);
+      const price = !isNaN(override) ? override : (parseFloat(it.unit_price) || 0);
+      return sum + (parseFloat(it.quantity || 0) * price);
+    }, 0);
+
+  const itemsWithMissingPrice = (proposal?.items || []).filter((it, i) => {
+    if (!selectedItems[i]) return false;
+    const isUnknown = it.price_source === 'unknown' || !it.unit_price || parseFloat(it.unit_price) <= 0;
+    if (!isUnknown) return false;
+    const override = parseFloat(priceOverrides[i]);
+    return isNaN(override) || override <= 0;
+  }).length;
 
   return (
     <DashboardLayout>
@@ -460,36 +500,63 @@ export default function AIQuoteAgentPage() {
                   <p className="text-sm" style={{ color: '#64748B' }}>{proposal.summary}</p>
 
                   <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1" data-testid="proposal-items">
-                    {(proposal.items || []).map((it, i) => (
-                      <label
-                        key={i}
-                        className="flex items-start gap-2 p-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-sm"
-                        style={{ borderColor: selectedItems[i] ? '#500000' : '#E5E7EB' }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={!!selectedItems[i]}
-                          onChange={(e) => setSelectedItems((prev) => ({ ...prev, [i]: e.target.checked }))}
-                          className="mt-1"
-                          data-testid={`proposal-item-checkbox-${i}`}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs px-1.5 py-0.5 rounded font-medium" style={{
-                              backgroundColor: it.item_type === 'arbeid' ? '#FEF3C7' : it.item_type === 'materiaal' ? '#DBEAFE' : '#F3E8FF',
-                              color: it.item_type === 'arbeid' ? '#92400E' : it.item_type === 'materiaal' ? '#1E40AF' : '#6B21A8',
-                            }}>{it.item_type}</span>
-                            <span className="font-medium">{it.description}</span>
+                    {(proposal.items || []).map((it, i) => {
+                      const isUnknownPrice = it.price_source === 'unknown' || !it.unit_price || parseFloat(it.unit_price) <= 0;
+                      const overrideStr = priceOverrides[i];
+                      const effectivePrice = !isNaN(parseFloat(overrideStr)) ? parseFloat(overrideStr) : (parseFloat(it.unit_price) || 0);
+                      const lineTotal = (parseFloat(it.quantity) || 0) * effectivePrice;
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-start gap-2 p-2 border rounded-lg text-sm"
+                          style={{ borderColor: selectedItems[i] ? '#500000' : '#E5E7EB' }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!!selectedItems[i]}
+                            onChange={(e) => setSelectedItems((prev) => ({ ...prev, [i]: e.target.checked }))}
+                            className="mt-1"
+                            data-testid={`proposal-item-checkbox-${i}`}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs px-1.5 py-0.5 rounded font-medium" style={{
+                                backgroundColor: it.item_type === 'arbeid' ? '#FEF3C7' : it.item_type === 'materiaal' ? '#DBEAFE' : '#F3E8FF',
+                                color: it.item_type === 'arbeid' ? '#92400E' : it.item_type === 'materiaal' ? '#1E40AF' : '#6B21A8',
+                              }}>{it.item_type}</span>
+                              <span className="font-medium">{it.description}</span>
+                              {isUnknownPrice && (
+                                <span className="text-xs px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }}>
+                                  prijs ontbreekt
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs mt-1 flex items-center gap-2 flex-wrap" style={{ color: '#64748B' }}>
+                              <span>{it.quantity} {it.unit} × </span>
+                              {isUnknownPrice ? (
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  data-testid={`price-override-${i}`}
+                                  value={overrideStr ?? ''}
+                                  onChange={(e) => setPriceOverrides((prev) => ({ ...prev, [i]: e.target.value }))}
+                                  placeholder="prijs €"
+                                  className="w-24 px-2 py-1 border rounded text-sm"
+                                  style={{ borderColor: '#F59E0B', backgroundColor: '#FFFBEB' }}
+                                />
+                              ) : (
+                                <span>€{(parseFloat(it.unit_price) || 0).toFixed(2)}</span>
+                              )}
+                              <span>= €{lineTotal.toFixed(2)}</span>
+                            </div>
+                            {it.rationale && (
+                              <div className="text-xs italic mt-0.5" style={{ color: '#94A3B8' }}>↳ {it.rationale}</div>
+                            )}
                           </div>
-                          <div className="text-xs mt-0.5" style={{ color: '#64748B' }}>
-                            {it.quantity} {it.unit} × €{(parseFloat(it.unit_price) || 0).toFixed(2)} = €{((parseFloat(it.quantity) || 0) * (parseFloat(it.unit_price) || 0)).toFixed(2)}
-                          </div>
-                          {it.rationale && (
-                            <div className="text-xs italic mt-0.5" style={{ color: '#94A3B8' }}>↳ {it.rationale}</div>
-                          )}
                         </div>
-                      </label>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   <div className="pt-3 border-t" style={{ borderColor: '#E5E7EB' }}>
@@ -497,11 +564,16 @@ export default function AIQuoteAgentPage() {
                       <span style={{ color: '#64748B' }}>Geselecteerd totaal (excl. BTW):</span>
                       <span className="font-bold" style={{ color: '#500000' }}>€{totalSelected.toFixed(2)}</span>
                     </div>
+                    {itemsWithMissingPrice > 0 && (
+                      <div className="mb-2 p-2 rounded text-xs" style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}>
+                        ⚠️ {itemsWithMissingPrice} regel(s) hebben nog geen prijs. Vul ze in (oranje vakjes) voor je de offerte aanmaakt — ze worden automatisch in je catalogus bewaard.
+                      </div>
+                    )}
                     <Button
                       onClick={applyProposal}
-                      disabled={loading}
+                      disabled={loading || itemsWithMissingPrice > 0}
                       className="w-full"
-                      style={{ backgroundColor: '#10B981', color: 'white' }}
+                      style={{ backgroundColor: itemsWithMissingPrice > 0 ? '#94A3B8' : '#10B981', color: 'white' }}
                       data-testid="apply-proposal-btn"
                     >
                       <Check size={16} className="mr-1" /> Maak offerte van selectie

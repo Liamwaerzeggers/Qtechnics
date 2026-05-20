@@ -107,14 +107,23 @@ SYSTEM_PROMPT = """Je bent een ervaren calculator/offerte-specialist voor Q-Tech
 
 Je taak: op basis van wat de gebruiker geeft (grondplan, foto's, beschrijving, afmetingen) genereer je een **gedetailleerd offerte-voorstel** met arbeid en materialen.
 
+# KRITIEK: Prijzen
+- Gebruik **uitsluitend prijzen uit de catalogus** die hieronder gedeeld wordt.
+- Match items aan de catalogus op naam/categorie. Wees flexibel met naamvariaties.
+- Als je géén exact matchende prijs in de catalogus vindt voor een item, zet dan:
+  - `unit_price`: null (NIET een geschatte waarde!)
+  - `price_source`: "unknown"
+- Bij wel een match: `unit_price` = exacte prijs uit catalogus, `price_source` = "catalog"
+- VERZIN NOOIT prijzen. Beter een leeg veld dan een verkeerde prijs.
+
 # Werkwijze
 1. Stel verhelderende vragen als kritische info ontbreekt (welk type vloer? badkamer of toilet? hoogte plafond?)
 2. Wanneer je voldoende info hebt, genereer je een gestructureerd voorstel
-3. Voor ARBEID: bereken met formules (m² × prijs/m², uren × uurtarief). Gebruik de catalogus zoveel mogelijk.
-4. Voor MATERIALEN: stel concrete materialen voor uit de catalogus (of nieuw indien nodig) met hoeveelheid
+3. Voor ARBEID: bereken hoeveelheid met formules (m² × …). Prijs komt uit catalogus of `null`.
+4. Voor MATERIALEN: kies materialen uit de catalogus. Onbekende materialen → `unit_price: null`.
 
 # JSON output formaat
-Wanneer je een voorstel geeft, ZE ALTIJD aan het einde van je antwoord een JSON-blok in dit exacte formaat:
+Wanneer je een voorstel geeft, voeg ALTIJD aan het einde van je antwoord een JSON-blok toe in dit exacte formaat:
 
 ```json
 {
@@ -126,9 +135,20 @@ Wanneer je een voorstel geeft, ZE ALTIJD aan het einde van je antwoord een JSON-
         "quantity": 12.5,
         "unit": "m²",
         "unit_price": 65.0,
+        "price_source": "catalog",
         "item_type": "arbeid",
         "vat_rate": 21,
-        "rationale": "12,5m² oppervlakte × €65/m² standaard tegeltarief"
+        "rationale": "12,5m² × €65/m² (Tegelwerk standaard uit catalogus)"
+      },
+      {
+        "description": "Mortex muur premium",
+        "quantity": 18,
+        "unit": "m²",
+        "unit_price": null,
+        "price_source": "unknown",
+        "item_type": "materiaal",
+        "vat_rate": 21,
+        "rationale": "Niet in catalogus — prijs in te vullen door calculator"
       }
     ],
     "total_excl_vat_estimate": 1234.56,
@@ -161,7 +181,11 @@ async def _get_db():
 
 
 async def _load_project_context(db, project_id: str) -> str:
-    """Bouwt een korte context-string met project info + catalogus excerpt."""
+    """Bouwt een korte context-string met project info + de VOLLEDIGE catalogus.
+
+    De agent gebruikt deze catalogus om exacte prijzen op te halen. Onbekende items
+    krijgen unit_price=null en price_source='unknown' zodat de calculator ze handmatig invult.
+    """
     project = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not project:
         return ""
@@ -170,24 +194,28 @@ async def _load_project_context(db, project_id: str) -> str:
     if project.get("status"):
         lines.append(f"Status: {project['status']}")
 
-    # Materialen catalogus (top 30 by usage of just first 30 entries)
-    materials = await db.materials.find({}, {"_id": 0, "name": 1, "unit_price": 1, "unit": 1, "category": 1}).limit(40).to_list(40)
+    # VOLLEDIGE materialen catalogus
+    materials = await db.materials.find({}, {"_id": 0, "name": 1, "unit_price": 1, "unit": 1, "category": 1}).to_list(1000)
     if materials:
-        lines.append("\n## Beschikbare materialen (uittreksel uit catalogus)")
-        for m in materials[:40]:
+        lines.append("\n## CATALOGUS — Materialen (gebruik EXACT deze prijzen, anders unit_price=null)")
+        for m in materials:
             price = m.get("unit_price", 0)
             unit = m.get("unit") or "stuk"
             cat = m.get("category") or ""
-            lines.append(f"- {m['name']} ({cat}): €{price:.2f}/{unit}")
+            lines.append(f"- {m['name']} | cat: {cat} | €{price:.2f}/{unit}")
+    else:
+        lines.append("\n## CATALOGUS — Materialen: LEEG (alle materialen → unit_price: null, price_source: 'unknown')")
 
-    # Arbeid-items catalogus
-    work_items = await db.work_items.find({}, {"_id": 0, "title": 1, "price_per_m2": 1, "category": 1}).limit(40).to_list(40)
+    # VOLLEDIGE arbeid-items catalogus
+    work_items = await db.work_items.find({}, {"_id": 0, "title": 1, "price_per_m2": 1, "category": 1}).to_list(1000)
     if work_items:
-        lines.append("\n## Beschikbare arbeid-items (uittreksel)")
-        for w in work_items[:40]:
+        lines.append("\n## CATALOGUS — Arbeid-items (gebruik EXACT deze prijzen, anders unit_price=null)")
+        for w in work_items:
             price = w.get("price_per_m2", 0)
             cat = w.get("category") or ""
-            lines.append(f"- {w.get('title','?')} ({cat}): €{price:.2f}/m²")
+            lines.append(f"- {w.get('title','?')} | cat: {cat} | €{price:.2f}/m²")
+    else:
+        lines.append("\n## CATALOGUS — Arbeid: LEEG (alle arbeid → unit_price: null, price_source: 'unknown')")
 
     return "\n".join(lines)
 
@@ -482,13 +510,50 @@ async def apply_proposal(req: ApplyProposalRequest):
         }
         await db.quotes.insert_one(new_quote)
 
-    # Voeg line items toe
+    # Voeg line items toe — én sla onbekende prijzen op in de catalogus voor hergebruik
     items_to_insert = []
+    catalog_additions = {"materialen": 0, "work_items": 0}
     for it in req.items:
         qty = float(it.get("quantity", 0) or 0)
         unit_price = float(it.get("unit_price", 0) or 0)
         vat_rate = float(it.get("vat_rate", 21) or 21)
         discount = float(it.get("discount_percent", 0) or 0)
+        item_type = it.get("item_type") or "materiaal"
+        unit = it.get("unit") or "stuk"
+        description = it.get("description", "(geen omschrijving)")
+
+        # Als de agent dit als 'unknown' had gemarkeerd én de user vulde een prijs in,
+        # sla het dan op in de catalogus zodat het bij volgende offertes gekend is.
+        price_source = it.get("price_source") or "catalog"
+        if price_source == "unknown" and unit_price > 0:
+            try:
+                if item_type == "arbeid":
+                    # Toevoegen aan work_items collection
+                    exists = await db.work_items.find_one({"title": description}, {"_id": 0, "id": 1})
+                    if not exists:
+                        await db.work_items.insert_one({
+                            "id": str(uuid.uuid4()),
+                            "title": description,
+                            "price_per_m2": unit_price,
+                            "category": "AI-toegevoegd",
+                            "created_at": datetime.now(timezone.utc).isoformat(),
+                        })
+                        catalog_additions["work_items"] += 1
+                elif item_type in ("materiaal", "overig"):
+                    exists = await db.materials.find_one({"name": description}, {"_id": 0, "id": 1})
+                    if not exists:
+                        await db.materials.insert_one({
+                            "id": str(uuid.uuid4()),
+                            "name": description,
+                            "unit_price": unit_price,
+                            "unit": unit,
+                            "category": "AI-toegevoegd",
+                            "created_at": datetime.now(timezone.utc).isoformat(),
+                        })
+                        catalog_additions["materialen"] += 1
+            except Exception as e:
+                logger.warning(f"Kon nieuw catalogus-item niet opslaan ({description}): {e}")
+
         discount_factor = max(0.0, min(100.0, discount)) / 100.0
         total_excl = qty * unit_price * (1 - discount_factor)
         vat_amount = total_excl * (vat_rate / 100)
@@ -497,11 +562,11 @@ async def apply_proposal(req: ApplyProposalRequest):
         items_to_insert.append({
             "id": str(uuid.uuid4()),
             "quote_id": quote_id,
-            "description": it.get("description", "(geen omschrijving)"),
+            "description": description,
             "quantity": qty,
             "unit_price": unit_price,
-            "unit": it.get("unit") or "stuk",
-            "item_type": it.get("item_type") or "materiaal",
+            "unit": unit,
+            "item_type": item_type,
             "vat_rate": vat_rate,
             "discount_percent": discount,
             "total_excl_vat": total_excl,
@@ -522,6 +587,7 @@ async def apply_proposal(req: ApplyProposalRequest):
         "quote_id": quote_id,
         "items_added": len(items_to_insert),
         "is_new_quote": req.quote_id is None,
+        "catalog_additions": catalog_additions,
     }
 
 
