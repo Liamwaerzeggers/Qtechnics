@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import { CheckCircle, AlertCircle, Euro, FileText, Calendar, ArrowRight, Phone } from 'lucide-react';
 import { Button } from './ui/button';
 import Breadcrumbs from './Breadcrumbs';
@@ -55,8 +55,8 @@ const PremiePage = () => {
   return (
     <div data-testid="premie-page">
       <Helmet>
-        <title>Mijn VerbouwPremie & Renovatieplicht 2026 | Volledige Gids | Max Q</title>
-        <meta name="description" content="Alles over de Mijn VerbouwPremie 2026 en renovatieplicht in Vlaanderen. Bedragen, voorwaarden, EPC-eisen en hoe u tot €15.000 premie krijgt voor uw renovatie." />
+        <title>Mijn VerbouwPremie 2026 ✓ Tot €15.000 | Max Q Gids</title>
+        <meta name="description" content="Volledige gids Mijn VerbouwPremie 2026 + renovatieplicht EPC. Premiebedragen per inkomen, voorwaarden en gratis hulp bij uw dossier." />
         <meta name="keywords" content="Mijn VerbouwPremie 2026, renovatiepremie Vlaanderen, EPC renovatieplicht, warmtepomp premie, premies renovatie België" />
         <link rel="canonical" href="https://maxq.be/premies-en-renovatieplicht-2026" />
         <meta property="og:title" content="Mijn VerbouwPremie & Renovatieplicht 2026 | Max Q" />

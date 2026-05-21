@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import { Calendar, ArrowLeft, Tag } from 'lucide-react';
 import { Button } from './ui/button';
 import Breadcrumbs from './Breadcrumbs';

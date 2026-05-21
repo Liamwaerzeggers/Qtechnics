@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import { Calendar, ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 import InternalLinks from './InternalLinks';
@@ -91,8 +91,8 @@ const BlogPage = () => {
   return (
     <div data-testid="blog-page">
       <Helmet>
-        <title>Blog | Renovatie Tips en Inspiratie | Max Q</title>
-        <meta name="description" content="Lees onze blog voor renovatie tips, trends en inspiratie. Expert advies over badkamer, keuken en interieur renovatie in Limburg." />
+        <title>Renovatie Blog ✓ Tips & Premies 2026 | Max Q</title>
+        <meta name="description" content="Dagelijkse renovatie tips, trends en expertadvies. Bespaar duizenden euro's met inzichten over premies, EPC en slim verbouwen in Vlaanderen." />
         <link rel="canonical" href="https://maxq.be/blog" />
       </Helmet>
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import { Calculator, ArrowRight, Phone } from 'lucide-react';
 import { Button } from './ui/button';
 import Breadcrumbs from './Breadcrumbs';
@@ -73,8 +73,8 @@ const RenovatieCalculator = () => {
   return (
     <div data-testid="calculator-page">
       <Helmet>
-        <title>Renovatie Prijscalculator | Bereken uw renovatiekosten | Max Q</title>
-        <meta name="description" content="Bereken gratis de kosten van uw renovatie. Badkamer, keuken of totaalrenovatie? Onze prijscalculator geeft een indicatie op maat. Max Q - 25+ jaar ervaring." />
+        <title>Renovatie Prijscalculator ✓ Gratis in 30s | Max Q</title>
+        <meta name="description" content="Bereken in 30 seconden uw renovatiekost. Direct prijsindicatie voor badkamer, keuken of totaalrenovatie. Gratis, geen e-mail vereist." />
         <link rel="canonical" href="https://maxq.be/calculator" />
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
       </Helmet>

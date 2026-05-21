@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import InternalLinks from './InternalLinks';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -119,6 +120,13 @@ const ProjectenPage = () => {
 
   return (
     <div>
+      <Helmet>
+        <title>Realisaties & Projecten ✓ Echte Foto's | Max Q Limburg</title>
+        <meta name="description" content="Bekijk onze gerealiseerde renovaties in Limburg. Echte projectfoto's van badkamers, keukens en totaalrenovaties. Laat u inspireren door 86+ foto's." />
+        <link rel="canonical" href="https://maxq.be/projecten" />
+        <meta property="og:title" content="Realisaties & Projecten ✓ Echte Foto's | Max Q" />
+        <meta property="og:description" content="Bekijk onze gerealiseerde renovaties in Limburg. Echte projectfoto's van badkamers, keukens en totaalrenovaties." />
+      </Helmet>
       {/* Hero Section */}
       <section className="py-16 md:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

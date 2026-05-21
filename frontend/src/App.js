@@ -29,7 +29,7 @@ import CookieBanner from './components/CookieBanner';
 import CookiePolicy from './components/CookiePolicy';
 import RenovatieCalculator from './components/RenovatieCalculator';
 import PremiePage from './components/PremiePage';
-import { Helmet } from 'react-helmet';
+import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { GOOGLE_REVIEWS, GOOGLE_RATING } from './data/googleReviews';
 
 const reviewSchema = {
@@ -69,6 +69,9 @@ const Home = () => {
   return (
     <>
       <Helmet>
+        <title>Renovaties Limburg ✓ 4,8★ Gratis Offerte | Max Q</title>
+        <meta name="description" content="Renovatiebedrijf in Ham met 35j ervaring. Badkamer, keuken en totaalrenovatie in Limburg. ★ 4,8/5 op Google. Premies geregeld. Plaatsbezoek binnen 48u." />
+        <link rel="canonical" href="https://maxq.be/" />
         <script type="application/ld+json">{JSON.stringify(reviewSchema)}</script>
       </Helmet>
       <Hero />
@@ -94,11 +97,12 @@ const MainLayout = ({ children }) => (
 
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <ScrollToTop />
-        <CookieBanner />
-        <Routes>
+    <HelmetProvider>
+      <div className="App">
+        <BrowserRouter>
+          <ScrollToTop />
+          <CookieBanner />
+          <Routes>
           {/* Public pages with header/footer */}
           <Route path="/" element={<MainLayout><Home /></MainLayout>} />
           <Route path="/renoveren" element={<MainLayout><RenoverenPage /></MainLayout>} />
@@ -138,6 +142,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </div>
+    </HelmetProvider>
   );
 }
 

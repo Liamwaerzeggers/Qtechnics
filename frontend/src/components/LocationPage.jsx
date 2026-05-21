@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import { MapPin, Phone, ArrowRight, CheckCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import Breadcrumbs from './Breadcrumbs';
@@ -139,8 +139,8 @@ const LocationPage = () => {
     );
   }
 
-  const pageTitle = `${serviceData.title} ${locationData.name} | Max Q Renovaties`;
-  const metaDescription = `Zoekt u een specialist voor ${serviceData.description} in ${locationData.name}? Max Q uit Tessenderlo-Ham helpt u! 35+ jaar ervaring, gratis offerte.`;
+  const pageTitle = `Renoveren in ${locationData.name} ✓ Lokaal Vakwerk | Max Q`;
+  const metaDescription = `Renovatiebedrijf actief in ${locationData.name}. Badkamer, keuken en totaalrenovatie met eigen vakmensen. ★ 4,8/5 op Google. Gratis plaatsbezoek binnen 48u.`;
   const canonicalUrl = `https://maxq.be/renovatie/${location}${service !== 'algemeen' ? `/${service}` : ''}`;
 
   return (

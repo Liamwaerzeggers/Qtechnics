@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import { CheckCircle, Phone, ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
 import InternalLinks from './InternalLinks';
@@ -9,7 +9,8 @@ const BedanktPage = () => {
   return (
     <div data-testid="bedankt-page">
       <Helmet>
-        <title>Bedankt voor uw aanvraag | Max Q</title>
+        <title>Bedankt ✓ Wij Bellen U Binnen 24u | Max Q</title>
+        <meta name="description" content="Bedankt voor uw aanvraag. Een Max Q expert neemt binnen 24 uur contact op om uw renovatieproject te bespreken." />
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 

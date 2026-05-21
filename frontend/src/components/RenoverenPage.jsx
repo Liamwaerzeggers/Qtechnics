@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, Zap, Droplets, Wind, Plug, Bath, ChefHat, Paintbrush, Grid3X3, Check } from 'lucide-react';
 import { Button } from './ui/button';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import InternalLinks from './InternalLinks';
 import { useProjectImages } from '../hooks/useProjectImages';
 
@@ -9,6 +10,13 @@ const RenoverenPage = () => {
   const { pickHero, pick } = useProjectImages();
   return (
     <div>
+      <Helmet>
+        <title>Renoveren in Limburg ✓ 35j Ervaring | Max Q</title>
+        <meta name="description" content="Renovatiebedrijf uit Ham voor uw badkamer, keuken of totaalrenovatie in heel Limburg. Eigen vakmensen, premies geregeld en vaste prijs vooraf. Gratis plaatsbezoek." />
+        <link rel="canonical" href="https://maxq.be/renoveren" />
+        <meta property="og:title" content="Renoveren in Limburg ✓ 35j Ervaring | Max Q" />
+        <meta property="og:description" content="Eigen vakmensen voor badkamer, keuken en totaalrenovatie. Premies geregeld. Plaatsbezoek binnen 48u." />
+      </Helmet>
       {/* Hero Section */}
       <section className="relative min-h-[500px] md:min-h-[550px] flex items-center">
         <div

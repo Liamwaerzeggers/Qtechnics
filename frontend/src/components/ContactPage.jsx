@@ -6,6 +6,7 @@ import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import InternalLinks from './InternalLinks';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -64,6 +65,13 @@ const ContactPage = () => {
 
   return (
     <div>
+      <Helmet>
+        <title>Contact ✓ Gratis Plaatsbezoek 48u | Max Q Limburg</title>
+        <meta name="description" content="Bel +32 488 15 20 28 of vraag online uw gratis offerte aan. Plaatsbezoek binnen 48 uur in heel Limburg. Antwoord binnen 24u gegarandeerd." />
+        <link rel="canonical" href="https://maxq.be/contact" />
+        <meta property="og:title" content="Contact ✓ Gratis Plaatsbezoek 48u | Max Q" />
+        <meta property="og:description" content="Plan een gratis plaatsbezoek in heel Limburg. Bel +32 488 15 20 28 of vraag online uw offerte aan." />
+      </Helmet>
       {/* Hero Section */}
       <section className="py-16 md:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

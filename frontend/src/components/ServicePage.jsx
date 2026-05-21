@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet-async';
 import { Phone, ArrowRight, CheckCircle, Award, Wrench, Clock, Users } from 'lucide-react';
 import { Button } from './ui/button';
 import { LOCATIONS } from './LocationPage';
@@ -93,8 +93,12 @@ const ServicePage = () => {
   const locName = locationData ? locationData.name : '';
   const locSuffix = locName ? ` in ${locName}` : '';
   
-  const pageTitle = serviceData.title + locSuffix + ' | 35 Jaar Ervaring | Max Q';
-  const metaDesc = serviceData.description + locSuffix + ' Vraag gratis offerte aan!';
+  const pageTitle = locName 
+    ? serviceData.title + ' ' + locName + ' ✓ Gratis Offerte | Max Q'
+    : serviceData.title + ' ✓ 35j Ervaring | Max Q Limburg';
+  const metaDesc = locName
+    ? serviceData.title + ' in ' + locName + '. Eigen vakmensen, premies geregeld en plaatsbezoek binnen 48u. ★ 4,8/5 op Google. Vraag gratis offerte aan.'
+    : serviceData.description + ' Eigen team uit Ham, premies geregeld. ★ 4,8/5 op Google. Plaatsbezoek binnen 48u.';
   const canonicalUrl = 'https://maxq.be/diensten/' + service + (location ? '/' + location : '');
   
   const schemaData = {
