@@ -171,6 +171,36 @@ Alles-in-één constructie management platform met multi-role, tweetalig, materi
 - Knop "✨ AI offerte" naast "Nieuwe Offerte" op `ProjectDetailPage`.
 - E2E getest: grondplan-image (badkamer 4×3m + toilet 2×2m) → Claude leest dimensies correct, 21 regels voorstel (14 arbeid + 7 materiaal), €10.867 estimate excl, 6% BTW correct toegepast, succesvol omgezet naar quote OFF-2026-350718.
 
+### Fase 1 — Meetstaat Module (mei 2026)
+
+Onderdeel van het Max Q Project Intelligence Platform V3 — eerste fase van de uitbreiding waarbij Meetstaat de centrale bron van waarheid wordt voor alle afgeleide modules (offertes, materialen, bestellingen, mandagen, planning).
+
+**Backend** (nieuwe module `/app/backend/meetstaat.py`, geregistreerd via `meetstaat_router`):
+- Pydantic models: `Room`, `Window`, `Door` met manuele override-velden voor vloer/plafond/wand
+- 10 endpoints onder `/api/projects/{project_id}/meetstaat/*` en `/api/meetstaat/{rooms,windows,doors}/{id}`
+- `compute_room_metrics()`: deterministische berekening van:
+  - Vloer/plafond = L × B
+  - Bruto wand = 2(L+B) × H
+  - Volume = vloer × H
+  - Wand **netto** = bruto − raamoppervlak − deuroppervlak (voor pleister/gyproc/schilder)
+  - Dagkanten raam = 2×B + 2×H (lm, volledige perimeter)
+  - Dagkanten deur = 2×B + H (lm, perimeter min vloer)
+- Standaard dagkant prijs €35/lm (per ruimte overschrijfbaar)
+- Project totals: vloer/plafond/wand netto/volume/raam-count/deur-count/dagkanten-lm/dagkanten-kost
+- E2E getest met Badkamer 4×3×2.6m + 1 raam (1×1) + 1 deur (0.9×2.1): alle 10 berekeningen exact ✓
+
+**Frontend** (nieuw component `/app/frontend/src/pages/ProjectMeetstaatTab.js`):
+- Nieuw tab "📏 Meetstaat" tussen "Eerste Bezoek" en "3D Ontwerpen" in `ProjectDetailPage`
+- Ruimte-presets (Living, Keuken, Badkamer, … 11 templates) of vrije naamkeuze
+- Expandable kamer-cards met inline editing (lengte/breedte/hoogte/dagkant-prijs autosave on blur)
+- Per kamer: ramen en deuren management met label/breedte/hoogte/dagkant-diepte
+- Live berekeningen per kamer: vloer/plafond/wand bruto/wand netto/volume/raamopp./deuropp./dagkanten-kost
+- Project totalen-kaart bovenaan (bordeaux highlight voor dagkanten-kost)
+- Manuele overrides voor vloer/plafond/wand in een details-collapsable sectie
+- Override-indicator (↻ badge) als override actief is
+
+**Hoofdprincipe (uit spec):** Meetstaat = bron van waarheid. Toekomstige fases (offerte 2.0, materialen, bestellingen, mandagen, planning) lezen hieruit. Manuele overrides blijven altijd mogelijk.
+
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 
