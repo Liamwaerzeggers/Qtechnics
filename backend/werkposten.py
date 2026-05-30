@@ -270,14 +270,13 @@ async def duplicate_werkpost(work_item_id: str):
     existing.pop("title", None)  # legacy
     existing.pop("price_per_m2", None)
     new_obj = WorkItem(
-        **{k: v for k, v in existing.items() if k in WorkItem.model_fields},
+        **{k: v for k, v in existing.items() if k in WorkItem.model_fields and k not in ("name", "id", "price_history", "created_at", "updated_at")},
         name=f"{existing.get('name', 'Werkpost')} (kopie)",
     )
     # Reset history bij kopie
-    new_obj_dict = new_obj.model_dump()
-    new_obj_dict["price_history"] = []
-    await db.work_items.insert_one(new_obj_dict)
-    return new_obj_dict
+    new_obj.price_history = []
+    await db.work_items.insert_one(new_obj.model_dump())
+    return new_obj.model_dump()
 
 
 @router.get("/{work_item_id}/history")

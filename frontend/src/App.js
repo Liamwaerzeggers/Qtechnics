@@ -29,6 +29,7 @@ import RoomConfiguratorPrototype from './pages/RoomConfiguratorPrototype';
 import RealtorDashboard from './pages/RealtorDashboard';
 import TenantsPage from './pages/TenantsPage';
 import WorkItemLabelsPage from './pages/WorkItemLabelsPage';
+import WerkpostenPage from './pages/WerkpostenPage';
 import MaintenancePage from './pages/MaintenancePage';
 import TasksPage from './pages/TasksPage';
 import MaterialRequestPage from './pages/MaterialRequestPage';
@@ -894,6 +895,7 @@ function App() {
             <Route path="/admins" element={<ProtectedRoute><AdminsPage /></ProtectedRoute>} />
             <Route path="/tenants" element={<ProtectedRoute><TenantsPage /></ProtectedRoute>} />
             <Route path="/work-labels" element={<ProtectedRoute><WorkItemLabelsPage /></ProtectedRoute>} />
+            <Route path="/werkposten" element={<ProtectedRoute><WerkpostenPage /></ProtectedRoute>} />
             <Route path="/maintenance" element={<ProtectedRoute><MaintenancePage /></ProtectedRoute>} />
             <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
             <Route path="/configurator" element={<ProtectedRoute><RoomConfiguratorPrototype /></ProtectedRoute>} />
