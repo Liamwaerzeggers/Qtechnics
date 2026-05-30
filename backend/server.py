@@ -49,6 +49,7 @@ from auth_simple import router as auth2_router
 from ai_quote_agent import router as ai_quote_agent_router
 from meetstaat import router as meetstaat_router
 from werkposten import router as werkposten_router
+from offerte_generator import router as offerte_generator_router, seed_default_room_templates
 
 # Resend Email Setup
 resend.api_key = os.environ.get('RESEND_API_KEY')
@@ -12253,6 +12254,7 @@ app.include_router(auth2_router, prefix="/api")
 app.include_router(ai_quote_agent_router, prefix="/api")
 app.include_router(meetstaat_router, prefix="/api")
 app.include_router(werkposten_router, prefix="/api")
+app.include_router(offerte_generator_router, prefix="/api")
 
 # CORS configuration - explicit origins for mobile browser compatibility
 cors_origins = os.environ.get('CORS_ORIGINS', '')
@@ -12385,6 +12387,12 @@ async def startup_cleanup():
         logger.info(f"Cleaned up {result1.deleted_count + result2.deleted_count} expired sessions")
     except Exception as e:
         logger.error(f"Startup cleanup error: {e}")
+
+    # Seed standaard ruimte-templates (Fase 1C) — idempotent
+    try:
+        await seed_default_room_templates()
+    except Exception as e:
+        logger.error(f"Room template seed error: {e}")
 
 # ============= WEEKLY TASK SUMMARY EMAIL =============
 

@@ -30,6 +30,7 @@ import RealtorDashboard from './pages/RealtorDashboard';
 import TenantsPage from './pages/TenantsPage';
 import WorkItemLabelsPage from './pages/WorkItemLabelsPage';
 import WerkpostenPage from './pages/WerkpostenPage';
+import RuimteTemplatesPage from './pages/RuimteTemplatesPage';
 import MaintenancePage from './pages/MaintenancePage';
 import TasksPage from './pages/TasksPage';
 import MaterialRequestPage from './pages/MaterialRequestPage';
@@ -896,6 +897,7 @@ function App() {
             <Route path="/tenants" element={<ProtectedRoute><TenantsPage /></ProtectedRoute>} />
             <Route path="/work-labels" element={<ProtectedRoute><WorkItemLabelsPage /></ProtectedRoute>} />
             <Route path="/werkposten" element={<ProtectedRoute><WerkpostenPage /></ProtectedRoute>} />
+            <Route path="/ruimte-templates" element={<ProtectedRoute><RuimteTemplatesPage /></ProtectedRoute>} />
             <Route path="/maintenance" element={<ProtectedRoute><MaintenancePage /></ProtectedRoute>} />
             <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
             <Route path="/configurator" element={<ProtectedRoute><RoomConfiguratorPrototype /></ProtectedRoute>} />

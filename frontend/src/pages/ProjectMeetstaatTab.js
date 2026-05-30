@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2, ChevronDown, ChevronRight, Ruler, Square, Edit2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronRight, Ruler, Square, Edit2, Loader2, Zap } from 'lucide-react';
 import { toast } from 'sonner';
+import OfferteGeneratorModal from './OfferteGeneratorModal';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('auth_token') || localStorage.getItem('session_token');
@@ -28,6 +29,7 @@ export default function ProjectMeetstaatTab({ project }) {
   const [editingRoomId, setEditingRoomId] = useState(null);
   const [newRoomName, setNewRoomName] = useState('Badkamer');
   const [showAddRoom, setShowAddRoom] = useState(false);
+  const [showGenerator, setShowGenerator] = useState(false);
 
   const projectId = project?.id;
 
@@ -136,10 +138,27 @@ export default function ProjectMeetstaatTab({ project }) {
             Centrale bron van waarheid voor afmetingen. Berekeningen lopen automatisch — manuele overrides via potlood-icoon.
           </p>
         </div>
-        <Button onClick={() => setShowAddRoom(!showAddRoom)} style={{ backgroundColor: '#500000', color: 'white' }} data-testid="toggle-add-room-btn">
-          <Plus size={16} className="mr-1" /> Ruimte toevoegen
-        </Button>
+        <div className="flex items-center gap-2">
+          {rooms.length > 0 && (
+            <Button
+              onClick={() => setShowGenerator(true)}
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+              data-testid="open-offerte-generator-btn"
+            >
+              <Zap size={16} className="mr-1" /> Genereer offerte
+            </Button>
+          )}
+          <Button onClick={() => setShowAddRoom(!showAddRoom)} style={{ backgroundColor: '#500000', color: 'white' }} data-testid="toggle-add-room-btn">
+            <Plus size={16} className="mr-1" /> Ruimte toevoegen
+          </Button>
+        </div>
       </div>
+
+      <OfferteGeneratorModal
+        projectId={projectId}
+        open={showGenerator}
+        onClose={() => setShowGenerator(false)}
+      />
 
       {/* Add room form */}
       {showAddRoom && (

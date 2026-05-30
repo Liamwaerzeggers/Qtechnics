@@ -83,6 +83,7 @@ class WorkItem(BaseModel):
     material_profile: List[MaterialConsumption] = []  # Fase 2 gebruikt
     productivity_profile: Optional[ProductivityProfile] = None  # Fase 3 gebruikt
     discipline_order: int = 18  # 1-19 — default "Eindafwerking" als niet ingesteld
+    default_source: Optional[str] = None  # default bron-key (uit SOURCE_REGISTRY) voor offerte-generator
     active: bool = True
     price_history: List[PriceHistoryEntry] = []
     # Backwards compatibility: oude items hebben title + price_per_m2
@@ -102,6 +103,7 @@ class WorkItemCreate(BaseModel):
     material_profile: List[MaterialConsumption] = []
     productivity_profile: Optional[ProductivityProfile] = None
     discipline_order: int = 18
+    default_source: Optional[str] = None
     active: bool = True
 
 
@@ -115,6 +117,7 @@ class WorkItemUpdate(BaseModel):
     material_profile: Optional[List[MaterialConsumption]] = None
     productivity_profile: Optional[ProductivityProfile] = None
     discipline_order: Optional[int] = None
+    default_source: Optional[str] = None
     active: Optional[bool] = None
     price_change_note: Optional[str] = None  # extra context als prijs wijzigt
 
@@ -141,6 +144,7 @@ def _normalize_legacy(doc: dict) -> dict:
     doc.setdefault("material_profile", [])
     doc.setdefault("productivity_profile", None)
     doc.setdefault("discipline_order", 18)
+    doc.setdefault("default_source", None)
     doc.setdefault("active", True)
     doc.setdefault("price_history", [])
     return doc
@@ -215,7 +219,7 @@ async def update_werkpost(work_item_id: str, payload: WorkItemUpdate):
         raise HTTPException(status_code=404, detail="Werkpost niet gevonden")
     existing = _normalize_legacy(existing)
 
-    update_data = {k: v for k, v in payload.model_dump(exclude_unset=True).items() if v is not None or k in ("description", "standard_price")}
+    update_data = {k: v for k, v in payload.model_dump(exclude_unset=True).items() if v is not None or k in ("description", "standard_price", "default_source")}
     note = update_data.pop("price_change_note", None)
 
     # Pydantic objects → dicts

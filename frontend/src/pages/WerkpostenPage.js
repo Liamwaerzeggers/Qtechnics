@@ -33,6 +33,7 @@ const emptyForm = () => ({
   standard_price: '',
   vat_rate: 6,
   discipline_order: 18,
+  default_source: 'none',
   productivity_enabled: false,
   production_per_man_day: '',
   production_unit: 'm²',
@@ -44,6 +45,7 @@ const emptyForm = () => ({
 export default function WerkpostenPage() {
   const [items, setItems] = useState([]);
   const [disciplineMap, setDisciplineMap] = useState({});
+  const [sources, setSources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -63,12 +65,14 @@ export default function WerkpostenPage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [itemsRes, catRes] = await Promise.all([
+      const [itemsRes, catRes, srcRes] = await Promise.all([
         axios.get(`${API}/werkposten`, { headers: getAuthHeaders(), params: { include_inactive: showInactive } }),
         axios.get(`${API}/werkposten/categories`, { headers: getAuthHeaders() }),
+        axios.get(`${API}/offerte-generator/sources`, { headers: getAuthHeaders() }),
       ]);
       setItems(itemsRes.data || []);
       setDisciplineMap(catRes.data?.discipline_order_map || {});
+      setSources(srcRes.data || []);
     } catch (err) {
       toast.error('Kon werkposten niet laden');
     } finally {
@@ -120,6 +124,7 @@ export default function WerkpostenPage() {
       standard_price: item.standard_price ?? '',
       vat_rate: item.vat_rate ?? 6,
       discipline_order: item.discipline_order ?? 18,
+      default_source: item.default_source || 'none',
       productivity_enabled: !!item.productivity_profile,
       production_per_man_day: item.productivity_profile?.production_per_man_day ?? '',
       production_unit: item.productivity_profile?.production_unit || (item.unit || 'm²'),
@@ -153,6 +158,7 @@ export default function WerkpostenPage() {
       standard_price: form.standard_price === '' ? null : parseFloat(form.standard_price),
       vat_rate: parseFloat(form.vat_rate),
       discipline_order: parseInt(form.discipline_order, 10),
+      default_source: form.default_source === 'none' ? null : form.default_source,
       active: form.active,
       material_profile: form.material_profile
         .filter((m) => m.material_name?.trim())
@@ -439,6 +445,18 @@ export default function WerkpostenPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div>
+              <Label>Standaard hoeveelheid-bron (meetstaat)</Label>
+              <Select value={form.default_source} onValueChange={(v) => setForm({ ...form, default_source: v })}>
+                <SelectTrigger data-testid="form-default-source"><SelectValue placeholder="Geen" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Geen / handmatig</SelectItem>
+                  {sources.map((s) => <SelectItem key={s.key} value={s.key}>{s.label} ({s.unit})</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-400 mt-1">Bepaalt welke meetstaat-waarde standaard de hoeveelheid invult bij offertegeneratie.</p>
             </div>
 
             {editingId && form.standard_price !== '' && (

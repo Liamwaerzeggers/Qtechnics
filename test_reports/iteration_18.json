@@ -1,0 +1,44 @@
+{
+  "summary": "Fase 1C Offertegenerator 2.0 fully tested (backend + frontend). 11/11 backend tests pass (1 skipped — project always gets lead_id), all critical UI flows work. Found and fixed 1 backend bug: WorkItem model was missing default_source field, causing the value to be silently stripped on werkpost creation.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "GET /api/quotes/{id}/items",
+        "issue": "response_model=LineItem strips source/work_item_id fields from JSON response (values are stored in DB and learning logic still works, but frontend cannot read them back). Main agent already flagged this."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_offerte_generator.py",
+    "/app/test_reports/pytest/pytest_results_offerte_generator.xml"
+  ],
+  "action_items": [
+    "Optional: Adjust /api/quotes/{id}/items to include source + work_item_id in the response_model so the frontend can re-render bron-labels when reopening an existing quote (current behavior keeps data in DB only).",
+    "Optional: validate the /create-quote 400 path for projects without lead_id via a direct DB seed, since POST /api/projects auto-creates a lead."
+  ],
+  "critical_code_review_comments": [
+    "BUG FIXED — WorkItem model in /app/backend/werkposten.py was missing the default_source field while WorkItemCreate/WorkItemUpdate had it. Pydantic ConfigDict(extra='ignore') silently dropped the field on insert, so the new 'Standaard hoeveelheid-bron' selector on the werkpost form never persisted anything. Added default_source: Optional[str] = None to WorkItem.",
+    "/api/quotes/{id}/items strips offerte-generator-specific fields (source, work_item_id) via response_model=LineItem — consider exposing them so the UI can show bron-labels on the line items list.",
+    "offerte_generator.py is 538 lines and aggregates 3 concerns (templates CRUD, suggest, create-quote). Still readable, but watch for further growth (>700 lines threshold)."
+  ],
+  "updated_files": [
+    "/app/backend/werkposten.py (added default_source field to WorkItem model)",
+    "/app/backend/tests/test_offerte_generator.py (new pytest suite)"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 passed, 1 skipped — env-dependent)",
+    "frontend": "100% (template CRUD, generator flow, quote creation, werkpost default_source field all OK)"
+  },
+  "test_credentials": "username liam / password Liammail123 (admin via /api/auth2/login)",
+  "seed_data_creation": "Test data is created and cleaned up within tests (TEST_ prefixed werkposten and templates). Live created quotes (OFF-2026-09CE0E etc.) remain in DB; not cleaned up because main agent did not provide a delete endpoint test.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend tests live at /app/backend/tests/test_offerte_generator.py and require REACT_APP_BACKEND_URL env var to be passed when running pytest from outside the supervisor environment. Auth uses /api/auth2/login (NOT /api/auth/login). PROJ-60A4159C is a reusable seeded project with a Badkamer meetstaat. The Werkpost API exposes default_source after the bug fix in werkposten.py.",
+  "rca of the issue": "WorkItem (read schema) used ConfigDict(extra='ignore'), so when create_werkpost() instantiated WorkItem(**WorkItemCreate.model_dump()), the default_source key in the dict was discarded before insert. Pydantic v2 silently ignores unknown fields with this config, so no error surfaced. Fix: declare default_source: Optional[str] = None on the WorkItem model. Verified via pytest TestWerkpostDefaultSource: create → returned + GET both now include default_source='floor_area'."
+}
