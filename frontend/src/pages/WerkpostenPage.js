@@ -10,7 +10,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
 import { Switch } from '../components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import {
   Hammer, Plus, Trash2, Edit2, Copy, History, Save, Loader2, Search,
   X, Package, Clock, ChevronDown, ChevronRight, Percent, Layers
@@ -518,6 +518,7 @@ export default function WerkpostenPage() {
         <DialogContent className="max-w-lg" data-testid="history-dialog">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><History className="h-5 w-5" /> Prijshistoriek</DialogTitle>
+            <DialogDescription>Overzicht van alle geregistreerde prijswijzigingen voor deze werkpost.</DialogDescription>
           </DialogHeader>
           <div className="py-2">
             <div className="text-sm text-slate-500 mb-3">

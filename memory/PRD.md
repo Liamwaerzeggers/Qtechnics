@@ -201,11 +201,31 @@ Onderdeel van het Max Q Project Intelligence Platform V3 — eerste fase van de 
 
 **Hoofdprincipe (uit spec):** Meetstaat = bron van waarheid. Toekomstige fases (offerte 2.0, materialen, bestellingen, mandagen, planning) lezen hieruit. Manuele overrides blijven altijd mogelijk.
 
+## Fase 1B — Werkpostbibliotheek (AFGEROND, getest iteratie 17 — 100%)
+**Backend** (`/app/backend/werkposten.py`, router geregistreerd in server.py op `/api/werkposten`):
+- WorkItem model: name, description, category, unit, standard_price, vat_rate, material_profile[], productivity_profile, discipline_order, active, price_history[]
+- Zelflerende prijslogica: prijswijziging via PUT wordt automatisch gelogd in `price_history` (old/new/note/changed_at)
+- Auto discipline_order o.b.v. DISCIPLINE_ORDER map (19 disciplines, Afbraak→Oplevering) wanneer categorie matcht en order=default(18)
+- CRUD endpoints: GET (lijst, filter op category/search/include_inactive), GET /categories, GET /{id}, POST, PUT, DELETE (soft/hard), POST /{id}/duplicate, GET /{id}/history
+- Leest uit bestaande `work_items` collectie met legacy-normalisatie (title→name, price_per_m2→standard_price)
+- Pytest suite: `/app/backend/tests/test_werkposten.py` (16 tests, allemaal groen)
+- 2 bugs gefixt tijdens bouw: dubbele `name` kwarg in duplicate + ObjectId-serialisatie na insert
+
+**Frontend** (`/app/frontend/src/pages/WerkpostenPage.js`, route `/werkposten`, sidebar item "Werkposten"):
+- Lijst gegroepeerd per categorie (collapsible), zoeken op naam, filter op categorie, "Inactieve tonen" toggle
+- Form-dialog: naam, omschrijving, categorie (datalist disciplines), eenheid, standaardprijs, BTW, volgorde, productiviteitsprofiel (toggle + waarde/eenheid), materiaalprofiel (dynamische rijen), actief-toggle, reden-prijswijziging
+- Acties per item: bewerken, dupliceren, deactiveren/activeren, prijshistoriek-dialog
+- Badges tonen prijs/eenheid, BTW%, productiviteit/mandag, aantal materialen, aantal prijswijzigingen
+
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 
 ## Backlog
+- P1: Fase 1C — Offertegenerator 2.0 (Meetstaat → Werkposten → Offerte koppelen)
 - P1: server.py refactoring naar route modules
+- P2: Fase 1.5 — AI plan-upload module (auto ruimtes invullen o.b.v. AI vision)
 - P2: Onderaannemers Module
 - P2: Investeerders Module
+- P3: Fase 2/2B Materiaalbibliotheek + ECK + automatische bestellingen
+- P3: Fase 3/3B Productiviteitsbibliotheek + mandagen-berekening
 - P3: Commerciële logica / abonnementen & betalingen
