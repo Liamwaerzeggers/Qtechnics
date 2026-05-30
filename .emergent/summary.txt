@@ -1,132 +1,119 @@
-<analysis>**original_problem_statement:**
-Alles-in-één constructie management platform (multi-role, tweetalig, materiaal bestelsysteem, PWA + push notificaties). Het project is verder uitgebreid met team management features, verbeterde PDF-offertes en facturen (MaxQ bordeaux branding, markdown, logo's), mobiele (iOS) stabiliteitsverbeteringen, en uitgebreide offerte-functionaliteiten (dupliceren, digitale handtekening via klantenportaal, eenheden wijzigen). Huidig verzoek: Een toggle toevoegen om offertes al dan niet zichtbaar te maken in het klantenportaal.
+<analysis>**original_problem_statement:** 
+MAX Q PROJECT INTELLIGENCE PLATFORM V3. Het bestaande Alles-in-één constructie management platform (met leads, projecten, offertes, planning, werkbonnen, klantenportaal) moet omgebouwd worden tot een geïntegreerd intelligent renovatieplatform. Het hoofdprincipe: Meetstaat → Offerte → Materialen → Bestellingen → Mandagen → Planning → Werfopvolging → Nacalculatie. Er is een strak gefaseerde aanpak afgesproken. Fase 1 (Meetstaat module) is zojuist afgerond. Het huidige verzoek is om te starten met Fase 1B: een robuuste, zelflerende Werkpostbibliotheek die de fundering vormt voor alle toekomstige berekeningen.
 
 **User's preferred language**: Dutch (Nederlands). INSTRUCT NEXT AGENT TO RESPOND IN DUTCH ONLY.
 
 **what currently exists?** 
-Een robuuste full-stack React/FastAPI/MongoDB applicatie. Uitgebreid taaksysteem met push-notificaties (pywebpush) en Resend e-mails, inclusief herverdeling, filtering, gamification en wekelijkse samenvattingen via APScheduler. PDF-generatie is overgezet naar een centrale  module met MaxQ-branding, ondersteuning voor Markdown, en digitale handtekeningen. Mobiele stabiliteit is verbeterd met netwerk-retries en no-cache headers voor auth. Offertes kunnen nu gedupliceerd worden en line-items hebben aanpasbare eenheden (stuk, m², etc.).
+Een robuuste full-stack React/FastAPI/MongoDB applicatie. De app bevat een breed scala aan functionaliteiten (offertes, PDF branding, klantenportaal, notificaties). Nieuw toegevoegd zijn de AI Offerte Agent (gebaseerd op Claude Sonnet 4.5 vision via Emergent LLM key) met async background polling, en de gloednieuwe Meetstaat module (Fase 1) waarin kamers en berekeningen (vloer, wand, plafond, ramen, deuren, dagkanten) worden opgeslagen.  is deels opgesplitst (nieuwe functionaliteiten zijn verplaatst naar  en ).
 
 **Last working item**:
-    - Last item agent was working: Een toggle (zichtbaarheids-vinkje) toevoegen op offertes zodat de gebruiker kan bepalen of een offerte zichtbaar is in het klantenportaal. De agent was zojuist gestart met het inspecteren van het  en  model in .
+    - Last item agent was working: Starten van **Fase 1B: Werkpostbibliotheek**. De agent heeft zojuist het bestand  aangemaakt maar nog geen code geschreven. Deze module moet CRUD acties en modellen gaan bevatten voor Werkposten (inclusief Categorie, Eenheid, Standaardprijs, BTW-regime, Materiaalprofiel, Productiviteitsprofiel, Regels-van-de-kunst volgorde, Prijshistoriek).
     - Status: IN PROGRESS
     - Agent Testing Done: N
     - Which testing method agent to use? backend testing agent/ manual testing by curl + screenshot tool
     - User Testing Done: N
 
 **All Pending/In progress Issue list**: 
-  Issue 1: Offertes zichtbaar/onzichtbaar maken in klantenportaal (P0)
-     - Attempted fixes: Agent heeft  geopend om het Pydantic model () te bekijken voor het toevoegen van een  boolean (vergelijkbaar met hoe dit al bij werkbonnen bestaat).
-     - Next debug checklist: Voeg  (of False, afhankelijk van default wens) toe aan  en  models in . Update de GET-endpoints voor het klantenportaal (rond regel 7970) om alleen offertes terug te geven waarbij . Update de frontend ( of ) met een switch/checkbox om dit aan te passen.
-     - Why fix this issue and what will be achieved with the fix? Klantenportaal beheer; voorkomt dat concept/interne offertes per ongeluk zichtbaar zijn voor de klant.
-     - Status: IN PROGRESS
-     - Is recurring issue? N
-     - Should Test frontend/backend/both after fix? both
-
-  Issue 2: Server.py Monolith Refactoring (P1)
-     - Attempted fixes: Geen. Het bestand is nu meer dan 12.500 regels lang.
-     - Next debug checklist: Opsplitsen van  in API routers (bijv. offertes, facturen, taken, projecten).
-     - Why fix this issue and what will be achieved with the fix? Cruciale technical debt; vermindert kans op bugs, timeouts en context-window limieten in de editor.
-     - Status: NOT STARTED
-     - Is recurring issue? Y
-     - Should Test frontend/backend/both after fix? both (testing agent MUST be used)
-     - Blocked on other issue: None
+ Geen actieve bug-issues. De nadruk ligt volledig op de implementatie van Fase 1B.
 
 **In progress Task List**:
-  Task 1: Offerte zichtbaarheid toggle
-     - Where to resume: Pas de Pydantic models aan in  (lijn 191) en update de React frontend om de checkbox weer te geven. 
-     - What will be achieved with this? Gebruiker krijgt controle over wat de klant ziet in het portaal.
+  Task 1: Fase 1B - Werkpostbibliotheek Backend (P0)
+     - Where to resume: Schrijf de Pydantic modellen en FastAPI routes in het lege bestand . Importeer en registreer deze router daarna in . Zorg dat de datastructuur toekomstbestendig is (bevat velden voor materiaal- en productiviteitsprofielen). Voeg zelflerende prijslogica en prijshistoriek toe.
+     - What will be achieved with this? Een centrale database voor werkposten (als fundering voor de offertegenerator 2.0). 
      - Status: IN PROGRESS
      - Should Test frontend/backend/both after fix? both
      - Blocked on something: None
 
+  Task 2: Fase 1B - Werkpostbibliotheek Frontend (P0)
+     - Where to resume: Bouw een UI/beheerpagina om de werkposten (en hun prijshistoriek/profielen) te beheren, toe te voegen en te editeren.
+     - What will be achieved with this? Gebruiker kan handmatig de bibliotheek onderhouden.
+     - Status: NOT STARTED
+     - Should Test frontend/backend/both after fix? both
+     - Blocked on something: Task 1
+
 **Upcoming and Future Tasks**
     Upcoming Tasks:
-    - (P1)  refactoring naar individuele route modules.
+    - (P1) Fase 1C - Offertegenerator 2.0 (Meetstaat → Werkposten → Offerte integreren).
+    - (P2) Fase 1.5 - AI plan-upload module (Automatisch ruimtes invullen in de meetstaat o.b.v. AI vision).
+    - (P2)  refactoring naar individuele route modules (Blijvende task).
     Future Tasks:
-    - (P2) Fase 2 - Onderaannemers Module.
-    - (P2) Fase 3 - Investeerders Module.
-    - (P3) Commerciële logica (abonnementen, betalingen).
+    - (P3) Fase 2 & 2B - Materiaalbibliotheek + ECK koppeling + Automatische bestellingen genereren.
+    - (P3) Fase 3 & 3B - Productiviteitsbibliotheek + Automatisch Mandagen berekenen.
+    - (P4) Fase 4 & 4B - Projectplanning o.b.v. afhankelijkheden + Capaciteitsplanner.
+    - (P4) Fase 5 & 5B - Nacalculatie Engine + Max Q Knowledge Engine (AI voorspellingen o.b.v. afgewerkte projecten).
 
 **Completed work in this session**
-- Sidebar Taak Badge desktop fix (DONE)
-- Push-notificaties via pywebpush voor taaktoewijzingen (DONE)
-- Resend API key update + E-mail notificaties hersteld (DONE)
-- Wekelijkse team taken-samenvatting via APScheduler cron (DONE)
-- Team Prestaties Widget in frontend + filter per teamlid (DONE)
-- Bulk taak-herverdeling dialog toegevoegd (DONE)
-- Taak voltooiing gamification/animatie met  (DONE)
-- Handmatige Opnieuw versturen knop voor taak-emails incl. Resend logging (DONE)
-- Mobiele iOS stabiliteit: Axios retry interceptor, Offline Banner, Cache-Control no-store (DONE)
-- Nieuwe PDF Branding Engine () met bordeaux stijl, MaxQ logo en actuele bedrijfsgegevens (DONE)
-- Markdown ondersteuning (vet, cursief, lijsten) voor offerte omschrijvingen in PDF en UI (DONE)
-- Digitale klant-handtekening flow in klantenportaal incl. PDF visualisatie (DONE)
-- Vrije eenheid-keuze (stuk, m², etc.) voor arbeid-items op offertes (DONE)
-- Offertes dupliceren binnen project backend + frontend functionaliteit (DONE)
+- Zichtbaarheid toggle offertes in klantenportaal (DONE)
+- Enters/Nieuwe regels behouden in Markdown descriptions op PDF facturen/offertes (DONE)
+- Aanpasbare sectie-titels (Arbeid/Materiaal) op offerte-PDF's en in de UI (DONE)
+- Snel item-type (arbeid/materiaal/overig) wisselen op offerteregels na aanmaak (DONE)
+- % Korting-veld per regel in offertes toegevoegd incl. PDF weergave (DONE)
+- Mobiele foto-upload bugs verholpen (duplicate header verwijderd in 7 upload bestanden) (DONE)
+- Volledige AI Offerte Agent integratie (Claude Sonnet 4.5 vision via Emergent LLM) (DONE)
+-  bug gefixt:  wordt nu correct meegedeployed naar de productieomgeving (DONE)
+- LLM backend refactored naar Async BackgroundTasks + Polling + Auto-recovery om 30s/3m timeouts op de productieserver te vermijden (DONE)
+- AI Offerte Agent kent nu de VOLLEDIGE catalogus en onbekende ingevulde prijzen worden automatisch zelflerend opgeslagen (DONE)
+- Fase 1: Volledige handmatige Meetstaat module gebouwd en gekoppeld aan de UI ( en ) (DONE)
 
 **Earlier issues found/mentioned but not fixed**
 None.
 
 **Known issue recurrence from previous fork**
-  - Issue recurrence in previous fork:  is te groot en onoverzichtelijk. Deployment-issues waarbij de user klaagt over bugs die op live spelen terwijl de agent ze in preview heeft gefixt (verkeerde env vars of het niet uitvoeren van een redeploy door de user).
+  - Issue recurrence in previous fork: Productie deployments & .env vars (Agent fixt iets in preview, user klaagt dat het in productie (live) niet werkt. Of productie gaf timeouts omdat de agent 3 minuten wachttijd voorzag, wat gunicorn/nginx in productie afkapt).
   - Recurrence count: High
-  - Status: NOT STARTED (voor refactoring). RESOLVED (voor educatie user rond deployments).
-  Note: Als de user bugs meldt, vraag altijd of ze op preview of op productie (dashboard.qtechnics.be) plaatsvinden.
+  - Status: RESOLVED (Async background tasks met frontend polling geherintroduceerd.  gefixt).
+  Note: Als de gebruiker bugs rapporteert over timeouts, let op of het asynchrone patronen betreft. Check ALTIJD of de user in de 'live' of 'preview' omgeving zit.
 
 **Code Architecture**
-- /app/backend/server.py (Monolith > 12.500 regels)
-- /app/backend/pdf_branding.py (Nieuw: gecentraliseerde ReportLab logica en templates)
-- /app/backend/auth_simple.py (Auth routing)
-- /app/frontend/src/components/ (o.a. RedistributeDialog.js, ConnectivityBanner.js, DescriptionView.js, TaskCompletionCelebration.js)
-- /app/frontend/src/pages/ (o.a. CustomerPortalPage.js, QuoteDetailPage.js, TasksPage.js)
+- /app/backend/server.py (Monolith app - wordt stilaan opgesplitst)
+- /app/backend/ai_quote_agent.py (AI Offerte generatie module)
+- /app/backend/meetstaat.py (Fase 1: Meetstaat logica en endpoints)
+- /app/backend/werkposten.py (Nieuw: Fase 1B)
+- /app/frontend/src/App.js (Main React Router, axios timeouts = 120s)
+- /app/frontend/src/pages/ProjectMeetstaatTab.js (Frontend voor Meetstaat)
+- /app/frontend/src/pages/AIQuoteAgentPage.js (Chat UI voor de Offerte Agent)
 
 **Key Technical Concepts**
-React frontend, FastAPI backend, MongoDB, PyWebPush (notificaties), Resend (emails), APScheduler (cron jobs), ReportLab (PDFs), LocalStorage auth.
+React frontend, FastAPI backend, MongoDB, ReportLab (PDF), Async/Await met FastAPI BackgroundTasks & Frontend Polling, Emergent LLM integrations (LiteLLM / Claude).
 
 **key DB schema**
-  - : {id, status, ...}
-  - : {id, quote_number, customer_signed_at, customer_signed_name, customer_signed_ip, is_sold, ...} (Moet  aan toegevoegd worden)
-  - : {id, quote_id, description (supports markdown), unit, item_type, ...}
-  - : {id, title, assigned_to, email_sent, ...}
+  - , , , 
+  -  {id, project_id, room_name, length, width, height, windows[], doors[], etc...}
+  -  (Bestaand, maar wordt in Fase 1B uitgebouwd met veel nieuwe velden of overgezet naar een robuuster schema in )
 
 **changes in tech stack**
-  -  toegevoegd voor cron jobs (wekelijkse email).
-  -  toegevoegd in frontend voor gamification.
-  -  (pdftoppm) geïnstalleerd in container voor PDF-naar-Image testing.
+  -  package gebruikt voor de AI Quote Agent (). 
 
 **All files of reference**
-  -  (Bezig met aanpassen van Quote Pydantic modellen).
-  -  (Nieuwe module voor PDF layout, kleuren, headers).
-  -  (Bevat quote overzicht, locatie voor de nieuwe visibility toggle).
-  -  (Moet onzichtbare offertes gaan verbergen).
+  -  (Zojuist aangemaakt; hier dien je je code voor Fase 1B te schrijven)
+  -  (Ter referentie over hoe de data in de meetstaat staat)
+  - 
+  -  (Bevat het uitgebreide plan van Fase 1 t/m 5)
 
 **Areas that need refactoring**:
-  -  is extreem groot en moet opgesplitst worden (is reeds P1 op de backlog).
+  -  (> 12.000 regels). Moet verder opgesplitst worden (in bijv. quotes.py, invoices.py).
 
 **key api endpoints**
-  -  (Ophalen data voor klant)
-  -  (Update quote metadata, gebruiken voor visibility toggle)
-  -  (Kopieert offerte)
+  -  (Start async AI task)
+  -  (Poll AI status)
+  -  (Maak kamer aan in meetstaat)
 
 **Critical Info for New Agent**
 - **Reageer uitsluitend in het Nederlands.**
-- De user verwart vaak de  omgeving met zijn  omgeving (). De user moet expliciet de Deploy knop indrukken om code/env vars van preview naar productie te pushen.
-- De agent is net gestopt na de vraag: Ik wil bij de offertes kunnen aanduiden of ze zichtbaar moeten zijn in het klantenportaal of niet. De agent was begonnen met het opzoeken van het Quote model.
-- Maak direct een start met het toevoegen van  (of False) aan het  Pydantic model. Pas de API endpoint voor  aan, en voeg een toggle (Oog-icoon of Switch) toe in de UI ( / ).
+- De prioriteit is absoluut het invullen van  (Fase 1B: Werkpostbibliotheek) inclusief alle toekomstige velden zoals productiviteit en materiaalprofielen, en hier een Frontend UI voor bouwen.
+- Ga pas naar Fase 1C (Offertegenerator 2.0) nadat Fase 1B grondig en succesvol is getest in zowel back- als frontend.
+- Let op timeouts: De backend communiceert met asynchrone tasks wanneer werk zwaar is. Axios timeout is globaal op 120s gezet.
+- **BELANGRIJK**: Bewaar en bewerk werkposten logica *niet* in de monolith , integreer de router net zoals je zou doen met .
 
 **documents and test reports created in this job**
-  - Geen nieuwe test reports via de subagent gegenereerd in de laatste iteratie (testing werd manueel via curl en screenshots gedaan). 
+  - 
+  -  (Updateerd met Max Q V3 architecture)
 
 **Last 10 User Messages and any pending HUMAN messages** 
- - User vroeg om een toggle om offertes zichtbaar of onzichtbaar te maken in het klantenportaal (PENDING / IN PROGRESS).
- - User rapporteerde not found bij kopiëren van offerte. Agent legde uit dat dit komt omdat live omgeving nog niet her-deployed is. (RESOLVED)
- - User vroeg om offertes te kunnen dupliceren. (COMPLETED)
- - User vroeg waarom m² hardcoded was bij arbeid. Agent voegde een unit selector toe. (COMPLETED)
- - User wilde een onderteken-knop in het klantenportaal. (COMPLETED)
- - User meldde aanhoudende inlogproblemen op mobiel (productie vs preview sync issues). (RESOLVED door uitleg)
- - User vroeg om markdown ondersteuning (bullet points) in offerte-regels. (COMPLETED)
- - User meldde verkeerde adresgegevens in de PDF-header. (COMPLETED)
- - User vroeg om het PDF logo te updaten. (COMPLETED)
- - User wilde de bestaande lay-out van een geüploade PDF nabootsen in het systeem (PDF branding). (COMPLETED)
+ - User en Agent bespraken in detail het Max Q Project Intelligence Platform V3 PRD document.
+ - Agent vroeg met welke Fase er gestart moest worden.
+ - User gaf gedetailleerd antwoord: Start met Fase 1B: Werkpostbibliotheek (fundering voor de rest), dan Fase 1C: Offertegenerator 2.0, en bewaar Fase 1.5: AI plan-upload voor later.
+ - Agent stelde goedkeuring vast, creëerde  en wacht op de start.
 
 **Project Health Check:**
 - Broken: None
@@ -135,11 +122,11 @@ React frontend, FastAPI backend, MongoDB, PyWebPush (notificaties), Resend (emai
 **3rd Party Integrations**
 - Resend (Email) — requires User API Key ()
 - pywebpush (Push Notifications) — Uses environment VAPID keys
-- OpenAI GPT-4o Vision — uses Emergent LLM Key
+- Claude Sonnet 4.5 Vision — uses Emergent LLM Key
 - Billit (Payments/PEPPOL) — requires User API Key
 
 **Testing status**
-  - Testing agent used after significant changes: NO (in this specific session segment, testing was done via e2e curl and screenshots).
+  - Testing agent used after significant changes: NO
   - Troubleshoot agent used after agent stuck in loop: NO
   - Test files created: []
   - Known regressions: None
@@ -149,14 +136,13 @@ React frontend, FastAPI backend, MongoDB, PyWebPush (notificaties), Resend (emai
   - Password: 
 
 **What agent forgot to execute**
-- De agent is direct gestopt bij het analyseren van  voor de quote-visibility feature. Het model is nog niet geüpdatet, de frontend heeft nog geen UI toggle, en het klantenportaal-endpoint toont nog altijd alle offertes.
+- The agent just touched  to create the file, but hasn't added the imports, Pydantic models, and actual routes for Phase 1B yet.
 
 **Debugging checklist for current issue**
-    Issue: Offertes zichtbaarheids-toggle ontbreekt.
-    Backend files to check:  (Quote model definities rond regel 191;  rond regel 7970).
-    Frontend files to check:  (voor de actieknop) en eventueel .
+    Issue: Fase 1B is nog niet geïmplementeerd.
+    Backend files to check:  (leeg) en  (voor router inladen).
+    Frontend files to check: Werkposten catalogus/instellingen page moet gemaakt/uitgebreid worden.
     Actie: 
-    1. Voeg  toe aan  en .
-    2. Filter de offertes in het  endpoint ().
-    3. Voeg een Oogje of Zichtbaar/Onzichtbaar toggle toe aan de frontend op de offerte kaart in het project dashboard. Update deze via de  route.
-    4. Controleer via screenshot of het klantenportaal de verborgen offertes inderdaad verbergt.</analysis>
+    1. Schrijf de modellen voor de Werkpost (inclusief prijshistoriek, productiviteit, materiaalprofiel, BTW).
+    2. Creëer de CRUD REST endpoints.
+    3. Bouw de frontend beheerpagina voor deze nieuwe bibliotheek.</analysis>
