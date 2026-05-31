@@ -220,8 +220,25 @@ Onderdeel van het Max Q Project Intelligence Platform V3 — eerste fase van de 
 ## Bekende Issues
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 
+## Fase 1C — Offertegenerator 2.0 (AFGEROND, getest iteratie 18 — 100%)
+**Kernflow:** Meetstaat → automatische werkpostvoorstellen mét juiste hoeveelheden → gebruiker controleert/bewerkt → offerte aangemaakt (zelflerend op prijzen).
+
+**Backend** (`/app/backend/offerte_generator.py`, router op `/api`):
+- `SOURCE_REGISTRY` (berekeningsbronnen): floor_area, ceiling_area, wall_area_net, wall_plus_ceiling, dagkanten, perimeter, manual. Elke bron leidt de hoeveelheid af uit `compute_room_metrics` van de meetstaat.
+- Werkpost krijgt veld `default_source` (welke meetstaat-waarde standaard de hoeveelheid invult).
+- Ruimte-type templates ("AI voorstelregels") — collectie `room_templates`, CRUD via `/api/room-templates`, idempotente seed van 6 defaults (Badkamer, Keuken, Slaapkamer, Living, WC, Hal). Elke regel = label + categorie + bron + item_type + optionele werkpost-koppeling.
+- `POST /api/projects/{id}/offerte-generator/suggest` — leest meetstaat, matcht template op ruimtenaam, berekent per regel de hoeveelheid uit de bron, matcht werkpost (op id of naam) voor prijs/BTW, sorteert op discipline-volgorde. Optionele `room_template_map` override per ruimte.
+- `POST /api/projects/{id}/offerte-generator/create-quote` — maakt echte offerte + line_items voor de lead van het project, bewaart `source` + `work_item_id` per regel (traceerbaarheid), draait `recalculate_quote_totals`. Zelflerend: ingevulde/gewijzigde prijzen worden teruggeschreven naar de werkpost + gelogd in prijshistoriek.
+- `GET /api/offerte-generator/sources` — bronnenlijst voor frontend.
+- LineItem-model (server.py) uitgebreid met `source` + `work_item_id` zodat herkomst zichtbaar blijft bij heropenen offerte.
+- Pytest: `/app/backend/tests/test_offerte_generator.py` (11 tests groen).
+
+**Frontend:**
+- `OfferteGeneratorModal.js` — geopend via "⚡ Genereer offerte" knop bovenaan de Meetstaat-tab (alleen zichtbaar als er ruimtes zijn). Toont per ruimte voorgestelde regels (bewerkbaar: aantal/eenheidsprijs/BTW/type + in/uitvinken), template-keuze per ruimte, bron-label per regel, live totalen, waarschuwing bij ontbrekende prijzen → "Offerte aanmaken" → navigeert naar de nieuwe offerte.
+- `RuimteTemplatesPage.js` — eigen sidebar-item "Ruimte-templates", volledige CRUD met regels (label/categorie/bron/type).
+- Werkposten-form: nieuw veld "Standaard hoeveelheid-bron".
+
 ## Backlog
-- P1: Fase 1C — Offertegenerator 2.0 (Meetstaat → Werkposten → Offerte koppelen)
 - P1: server.py refactoring naar route modules
 - P2: Fase 1.5 — AI plan-upload module (auto ruimtes invullen o.b.v. AI vision)
 - P2: Onderaannemers Module

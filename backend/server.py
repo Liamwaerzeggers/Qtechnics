@@ -238,6 +238,8 @@ class LineItem(BaseModel):
     vat_rate: float = 21.0  # BTW percentage (0, 6, 9, 21)
     unit: Optional[str] = None  # m², stuk, uur, dag, forfait, ...
     discount_percent: float = 0.0  # Korting % per regel (0-100)
+    source: Optional[str] = None  # Fase 1C: herkomst/berekeningsbron uit de meetstaat
+    work_item_id: Optional[str] = None  # Fase 1C: gekoppelde werkpost (traceerbaarheid)
     total_excl_vat: float = 0.0
     vat_amount: float = 0.0
     total_incl_vat: float = 0.0
@@ -252,6 +254,7 @@ class LineItemCreate(BaseModel):
     vat_rate: float = 21.0
     unit: Optional[str] = None
     discount_percent: float = 0.0
+
 
 class LineItemUpdate(BaseModel):
     description: Optional[str] = None
