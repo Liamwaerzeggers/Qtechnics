@@ -262,6 +262,13 @@ Onderdeel van het Max Q Project Intelligence Platform V3 — eerste fase van de 
 - Afdrukbare lijst (print).
 - Pytest: `/app/backend/tests/test_materiaal_lijst.py` (17 tests groen).
 
+## Fase 2C — Uitgebreide materiaalprofielen + Sanitaire werkposten (AFGEROND, getest iteratie 21 — 100%)
+- **Materiaalprofiel uitgebreid** (`MaterialConsumption`): status (verplicht/aanbevolen/optioneel), rol (basis/hulp), reden, snijverlies %, veiligheidsmarge %, verpakkingseenheid + afronden naar verpakking. Werkpost-form toont al deze velden per materiaalregel.
+- **Verrijkte materiaallijst-generatie**: `netto × (1+snijverlies) × (1+marge)` → afgerond omhoog naar verpakking. Elke regel toont **bron-werkpost, berekening, reden, requirement-status** + aantal verpakkingen; regels uit/aan te zetten (enabled). Totalen tellen verplicht/aanbevolen/optioneel/disabled.
+- **Ontbrekende materiaalprofielen-waarschuwing** bovenaan de materiaallijst (werkposten zonder profiel + knoppen "profiel toevoegen"/"overslaan").
+- **Seed** (`seed_profiles.py`, idempotent, slaat bestaande namen over): ~21 standaard werkposten met realistische profielen (Gyproc, Pleister, Schilder, Tegel, Douchezone waterdichting, Chape, Vloerverwarming, Sanitair ruwbouw, Elektriciteit, Ventilatie, Afwerken dagkanten) + **18 sanitaire plaatsings-werkposten** (Plaatsen lavabomeubel/toilet/bad/douchebak/douchewand/kranen...) elk met aansluitmateriaal-profiel + de bijbehorende materialen in de bibliotheek (zonder prijs → zelflerend).
+- Pytest: `/app/backend/tests/test_fase2c_material_profiles.py` (10 tests groen). Totale regressie: 59 pytests.
+
 ## Backlog (resterend)
 - P2: Fase 1.5 — AI plan-upload module (auto ruimtes invullen o.b.v. AI vision)
 - P2: Onderaannemers Module
