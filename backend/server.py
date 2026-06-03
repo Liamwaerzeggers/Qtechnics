@@ -53,6 +53,8 @@ from offerte_generator import router as offerte_generator_router, seed_default_r
 from materiaal import router as materiaal_router
 from materiaallijst import router as materiaallijst_router
 from ai_profiles import router as ai_profiles_router
+from mandagen import router as mandagen_router
+from ai_productivity import router as ai_productivity_router
 
 # Resend Email Setup
 resend.api_key = os.environ.get('RESEND_API_KEY')
@@ -12264,6 +12266,8 @@ app.include_router(offerte_generator_router, prefix="/api")
 app.include_router(materiaal_router, prefix="/api")
 app.include_router(materiaallijst_router, prefix="/api")
 app.include_router(ai_profiles_router, prefix="/api")
+app.include_router(mandagen_router, prefix="/api")
+app.include_router(ai_productivity_router, prefix="/api")
 
 # CORS configuration - explicit origins for mobile browser compatibility
 cors_origins = os.environ.get('CORS_ORIGINS', '')

@@ -61,6 +61,7 @@ export default function WerkpostenPage() {
   const [historyData, setHistoryData] = useState(null);
   const [materials, setMaterials] = useState([]);
   const [aiLoadingId, setAiLoadingId] = useState(null);
+  const [aiProdLoadingId, setAiProdLoadingId] = useState(null);
 
   useEffect(() => { fetchAll(); }, [showInactive]);
 
@@ -265,6 +266,29 @@ export default function WerkpostenPage() {
     }
   };
 
+  const generateAIProductivity = async (item) => {
+    const prof = item.productivity_profile;
+    const hasProfile = prof && prof.production_per_man_day > 0;
+    if (hasProfile && !window.confirm(`"${item.name}" heeft al een productiviteitsprofiel. Opnieuw genereren met AI (overschrijft het huidige)?`)) return;
+    setAiProdLoadingId(item.id);
+    try {
+      const resp = await axios.post(`${API}/werkposten/${item.id}/ai-productivity-profile`,
+        { mode: hasProfile ? 'replace' : 'fill' },
+        { headers: getAuthHeaders() });
+      if (resp.data.skipped) {
+        toast.info(resp.data.reason || 'Profiel bestaat al');
+      } else {
+        const p = resp.data.productivity_profile;
+        toast.success(`AI-productiviteit · ${p.production_per_man_day} ${p.production_unit}/mandag`);
+      }
+      fetchAll();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || 'AI-generatie mislukt');
+    } finally {
+      setAiProdLoadingId(null);
+    }
+  };
+
   const reactivateItem = async (item) => {
     try {
       await axios.put(`${API}/werkposten/${item.id}`, { active: true }, { headers: getAuthHeaders() });
@@ -396,6 +420,9 @@ export default function WerkpostenPage() {
                             <div className="flex items-center gap-1 shrink-0">
                               <Button size="icon" variant="ghost" className="h-8 w-8" title="AI-materiaalprofiel genereren" onClick={() => generateAIProfile(item)} disabled={aiLoadingId === item.id} data-testid={`ai-profile-${item.id}`}>
                                 {aiLoadingId === item.id ? <Loader2 className="h-4 w-4 animate-spin text-violet-500" /> : <Sparkles className="h-4 w-4 text-violet-500" />}
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8" title="AI-productiviteit genereren" onClick={() => generateAIProductivity(item)} disabled={aiProdLoadingId === item.id} data-testid={`ai-productivity-${item.id}`}>
+                                {aiProdLoadingId === item.id ? <Loader2 className="h-4 w-4 animate-spin text-blue-500" /> : <Clock className="h-4 w-4 text-blue-500" />}
                               </Button>
                               <Button size="icon" variant="ghost" className="h-8 w-8" title="Prijshistoriek" onClick={() => openHistory(item)} data-testid={`history-${item.id}`}>
                                 <History className="h-4 w-4 text-slate-500" />

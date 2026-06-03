@@ -6,7 +6,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import ProjectNotesBanner from '../components/ProjectNotesBanner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, FileText, Camera, Folder, Receipt, Briefcase, CalendarDays, Users, Copy, Link, Check, Upload, Trash2, Download, File, Eye, EyeOff, Trophy, Ruler, Boxes } from 'lucide-react';
+import { ArrowLeft, FileText, Camera, Folder, Receipt, Briefcase, CalendarDays, Users, Copy, Link, Check, Upload, Trash2, Download, File, Eye, EyeOff, Trophy, Ruler, Boxes, HardHat } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import ProjectFirstVisitTab from './ProjectFirstVisitTab';
@@ -16,6 +16,7 @@ import ProjectWorkSlipsTab from './ProjectWorkSlipsTab';
 import ProjectPlanningTab from './ProjectPlanningTab';
 import ProjectMeetstaatTab from './ProjectMeetstaatTab';
 import ProjectMateriaallijstTab from './ProjectMateriaallijstTab';
+import ProjectMandagenTab from './ProjectMandagenTab';
 
 // Helper to get auth headers
 const getAuthHeaders = () => {
@@ -365,6 +366,7 @@ export default function ProjectDetailPage() {
     { id: 'first-visit', label: '📸 Eerste Bezoek', icon: Camera },
     { id: 'meetstaat', label: '📏 Meetstaat', icon: Ruler },
     { id: 'materiaallijst', label: '📦 Materiaallijst', icon: Boxes },
+    { id: 'mandagen', label: '👷 Mandagen', icon: HardHat },
     { id: '3d-designs', label: '🏗️ 3D Ontwerpen', icon: Folder },
     { id: 'quotes', label: '📄 Offertes', icon: FileText },
     { id: 'planning', label: '📅 Planning', icon: CalendarDays },
@@ -470,6 +472,10 @@ export default function ProjectDetailPage() {
 
           {activeTab === 'materiaallijst' && (
             <ProjectMateriaallijstTab project={project} />
+          )}
+
+          {activeTab === 'mandagen' && (
+            <ProjectMandagenTab project={project} />
           )}
 
           {activeTab === '3d-designs' && (

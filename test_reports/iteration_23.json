@@ -1,0 +1,31 @@
+{
+  "summary": "Fase 3 + 3B (Mandagen + AI productiviteitsprofiel) end-to-end getest. Backend: 7/7 pytest passes (config global+override, generate, get grouped, manual line, override_man_days precedence, delete, AI productivity Claude Sonnet 4.5). Frontend: project Mandagen tab rendert, config opslaan werkt, genereer mandagen werkt, override input wijzigt labor_cost correct (1.5 → 5 mandagen → €2000 bij dagtarief €400), missing-profiles blok zichtbaar, bestaande tabs (Meetstaat/Materiaallijst/Offertes) niet gebroken. Werkposten pagina toont 107 ai-productivity-* knoppen naast 107 ai-profile-* knoppen.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ProjectMandagenTab Arbeidsloon-kaart", "issue": "Dagtarief-veld (data-testid='mandagen-day-rate') gebruikt server-side config.day_rate. Bij typen van nieuwe uurloon/uren-per-dag waarden in de inputs blijft het Dagtarief het oude bedrag tonen totdat 'Opslaan' geklikt is. Verwachting: live preview = cfg.hourly_rate * cfg.hours_per_day. Niet blokkerend; functionaliteit klopt na save.", "selector": "[data-testid='mandagen-day-rate']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_mandagen_fase3.py",
+    "/app/test_reports/pytest/mandagen_fase3.xml"
+  ],
+  "action_items": [
+    "Overweeg in ProjectMandagenTab.js de Dagtarief-cel live te berekenen uit cfg (Number(cfg.hourly_rate)*Number(cfg.hours_per_day)) i.p.v. config.day_rate, voor een directe UX-feedback voor opslaan."
+  ],
+  "critical_code_review_comments": [
+    "mandagen.py update_mandag_line: 'update_data = {k:v for ... if v is not None or k in (override_man_days, notes)}'. enabled=False zou via 'v is not None' al doorlopen, maar override_man_days=null als reset-mechanisme wordt niet vastgelegd in MandagUpdate.model_dump(exclude_unset=True) tenzij client expliciet null stuurt — dat is correct, alleen niet gedocumenteerd. Overweeg een expliciete 'clear_override' flag of accepteer override_man_days=None om de override te wissen.",
+    "ai_productivity.py: response-error parsing op string 'auth' is fragiel; gebruik specifieke exception-types van LlmChat indien beschikbaar.",
+    "mandagen.py _get_effective_config geeft 'is_override' alleen terug in /projects/.../mandagen/config en /mandagen endpoint; globale /mandagen/config response bevat geen is_override (consistent gewenst). Geen blocker."
+  ],
+  "updated_files": ["/app/backend/tests/test_mandagen_fase3.py"],
+  "success_rate": {"backend": "100%", "frontend": "95%"},
+  "test_credentials": "admin liam / Liammail123 via /api/auth/admin/login (response.session_token)",
+  "seed_data_creation": "Manuele mandag-regel 'TEST_manueel_regel' aangemaakt en weer verwijderd in backend test. Project-override op PROJ-0D7C9AC0 gezet en gereset.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend project PROJ-0D7C9AC0 heeft 1 werkpost met productivity_profile (Tegelvloer 8 m²/mandag, 12 m² in offerte → 1.5 mandagen, bevestigd). Override flow test gebruikt deze regel. Mandagen tab zit tussen Materiaallijst en 3D Ontwerpen tab. AI productivity endpoint duurt ~5-8 s.",
+  "rca of the issue": "Dagtarief live preview: ProjectMandagenTab.js regel 177 toont `eur(config.day_rate)` waarbij `config` afkomstig is van de laatste server-respons. De cfg-state (gewijzigd door inputs) wordt niet gebruikt voor de Dagtarief-render. Fix: vervang door `eur(Number(cfg.hourly_rate||0)*Number(cfg.hours_per_day||0))`."
+}
