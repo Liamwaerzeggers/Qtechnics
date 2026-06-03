@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Boxes, RefreshCw, Loader2, Plus, Trash2, Truck, ShoppingCart, Printer, Package, AlertTriangle, Eye, EyeOff, Info } from 'lucide-react';
+import { Boxes, RefreshCw, Loader2, Plus, Trash2, Truck, ShoppingCart, Printer, Package, AlertTriangle, Eye, EyeOff, Info, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 const getAuthHeaders = () => {
@@ -34,6 +34,8 @@ export default function ProjectMateriaallijstTab({ project }) {
   const [generating, setGenerating] = useState(false);
   const [selected, setSelected] = useState({});
   const [dismissedProfiles, setDismissedProfiles] = useState({});
+  const [aiFillingId, setAiFillingId] = useState(null);
+  const [aiFillingAll, setAiFillingAll] = useState(false);
   const [newLine, setNewLine] = useState({ name: '', unit: 'stuk', quantity: '', unit_price: '', supplier: '' });
   const [showAdd, setShowAdd] = useState(false);
 
@@ -56,6 +58,41 @@ export default function ProjectMateriaallijstTab({ project }) {
       toast.success(`Materiaallijst bijgewerkt · ${d.created} nieuw, ${d.updated} aangepast${d.removed ? `, ${d.removed} verwijderd` : ''}`);
       fetchData();
     } catch (e) { toast.error('Genereren mislukt'); } finally { setGenerating(false); }
+  };
+
+  const aiFillProfile = async (workItemId) => {
+    setAiFillingId(workItemId);
+    try {
+      const resp = await axios.post(`${API}/werkposten/${workItemId}/ai-material-profile`, { mode: 'fill' }, { headers: getAuthHeaders() });
+      if (!resp.data.skipped) toast.success(`AI-profiel gegenereerd · ${resp.data.material_count} materialen`);
+      return true;
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || 'AI-generatie mislukt');
+      return false;
+    } finally { setAiFillingId(null); }
+  };
+
+  const aiFillSingle = async (workItemId) => {
+    const ok = await aiFillProfile(workItemId);
+    if (ok) await generate();
+  };
+
+  const aiFillAll = async () => {
+    const missing = (data?.missing_profiles || []).filter((mp) => !dismissedProfiles[mp.work_item_id]);
+    if (missing.length === 0) return;
+    setAiFillingAll(true);
+    let done = 0;
+    for (const mp of missing) {
+      setAiFillingId(mp.work_item_id);
+      try {
+        const resp = await axios.post(`${API}/werkposten/${mp.work_item_id}/ai-material-profile`, { mode: 'fill' }, { headers: getAuthHeaders() });
+        if (!resp.data.skipped) done += 1;
+      } catch (e) { /* doorgaan met de rest */ }
+    }
+    setAiFillingId(null);
+    setAiFillingAll(false);
+    toast.success(`${done} materiaalprofiel(en) aangevuld met AI`);
+    await generate();
   };
 
   const updateLine = async (lineId, patch) => {
@@ -143,10 +180,16 @@ export default function ProjectMateriaallijstTab({ project }) {
       {/* Ontbrekende materiaalprofielen */}
       {(data?.missing_profiles || []).filter((mp) => !dismissedProfiles[mp.work_item_id]).length > 0 && (
         <div className="border-2 border-orange-300 rounded-xl overflow-hidden" data-testid="missing-profiles-block">
-          <div className="px-4 py-2.5 bg-orange-50 border-b border-orange-200 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-orange-500" />
-            <span className="font-semibold text-orange-800 text-sm">Ontbrekende materiaalprofielen</span>
-            <span className="text-xs text-orange-600">— deze werkposten leveren nog geen materialen op</span>
+          <div className="px-4 py-2.5 bg-orange-50 border-b border-orange-200 flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              <span className="font-semibold text-orange-800 text-sm">Ontbrekende materiaalprofielen</span>
+              <span className="text-xs text-orange-600">— deze werkposten leveren nog geen materialen op</span>
+            </div>
+            <Button size="sm" className="h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white" onClick={aiFillAll} disabled={aiFillingAll} data-testid="ai-fill-all-btn">
+              {aiFillingAll ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+              Alle met AI aanvullen
+            </Button>
           </div>
           <div className="divide-y divide-orange-100">
             {(data.missing_profiles || []).filter((mp) => !dismissedProfiles[mp.work_item_id]).map((mp) => (
@@ -156,8 +199,12 @@ export default function ProjectMateriaallijstTab({ project }) {
                   <div className="text-[11px] text-slate-400">{mp.quantity} {mp.unit} in offertes</div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  <Button size="sm" className="h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white" onClick={() => aiFillSingle(mp.work_item_id)} disabled={aiFillingId === mp.work_item_id || aiFillingAll} data-testid={`ai-fill-${mp.work_item_id}`}>
+                    {aiFillingId === mp.work_item_id ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+                    AI aanvullen
+                  </Button>
                   <Button size="sm" variant="outline" className="h-8 text-xs border-orange-300 text-orange-700" onClick={() => window.open('/werkposten', '_blank')} data-testid={`add-profile-${mp.work_item_id}`}>
-                    Materiaalprofiel toevoegen
+                    Handmatig
                   </Button>
                   <Button size="sm" variant="ghost" className="h-8 text-xs text-slate-500" onClick={() => setDismissedProfiles((p) => ({ ...p, [mp.work_item_id]: true }))} data-testid={`skip-profile-${mp.work_item_id}`}>
                     Overslaan

@@ -23,7 +23,7 @@ const UNITS = ['stuk', 'zak', 'm²', 'm', 'lm', 'kg', 'liter', 'rol', 'pak', 'do
 
 const emptyForm = () => ({
   name: '', description: '', category: 'Algemeen', unit: 'stuk',
-  purchase_price: '', supplier: '', sku: '', package_qty: '', active: true, price_change_note: '',
+  purchase_price: '', sell_price: '', supplier: '', sku: '', package_qty: '', active: true, price_change_note: '',
 });
 
 export default function MateriaalBibliotheekPage() {
@@ -81,7 +81,7 @@ export default function MateriaalBibliotheekPage() {
     setEditingId(item.id);
     setForm({
       name: item.name || '', description: item.description || '', category: item.category || 'Algemeen',
-      unit: item.unit || 'stuk', purchase_price: item.purchase_price ?? '', supplier: item.supplier || '',
+      unit: item.unit || 'stuk', purchase_price: item.purchase_price ?? '', sell_price: item.sell_price ?? '', supplier: item.supplier || '',
       sku: item.sku || '', package_qty: item.package_qty ?? '', active: item.active !== false, price_change_note: '',
     });
     setShowForm(true);
@@ -91,6 +91,7 @@ export default function MateriaalBibliotheekPage() {
     name: form.name.trim(), description: form.description?.trim() || null,
     category: form.category?.trim() || 'Algemeen', unit: form.unit,
     purchase_price: form.purchase_price === '' ? null : parseFloat(form.purchase_price),
+    sell_price: form.sell_price === '' ? null : parseFloat(form.sell_price),
     supplier: form.supplier?.trim() || null, sku: form.sku?.trim() || null,
     package_qty: form.package_qty === '' ? null : parseFloat(form.package_qty), active: form.active,
   });
@@ -196,6 +197,12 @@ export default function MateriaalBibliotheekPage() {
                                 <Badge variant="secondary" className="font-mono">
                                   {fmtPrice(item.purchase_price) ? `${fmtPrice(item.purchase_price)} / ${item.unit}` : 'Prijs onbekend'}
                                 </Badge>
+                                {item.sell_price != null && (
+                                  <Badge variant="outline" className="gap-1 text-emerald-700 border-emerald-200">
+                                    Verkoop {fmtPrice(item.sell_price)}
+                                    {item.purchase_price > 0 ? ` (+${(((item.sell_price - item.purchase_price) / item.purchase_price) * 100).toFixed(0)}%)` : ''}
+                                  </Badge>
+                                )}
                                 {item.supplier && <Badge variant="outline" className="gap-1 text-emerald-700 border-emerald-200"><Truck className="h-3 w-3" />{item.supplier}</Badge>}
                                 {item.package_qty ? <Badge variant="outline">Verpakking: {item.package_qty}</Badge> : null}
                                 {item.price_history?.length ? <Badge variant="outline" className="gap-1 text-slate-500"><History className="h-3 w-3" />{item.price_history.length}× prijs</Badge> : null}
@@ -252,10 +259,14 @@ export default function MateriaalBibliotheekPage() {
               <Label>Omschrijving</Label>
               <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} />
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
-                <Label>Aankoopprijs (€)</Label>
+                <Label>Aankoopprijs (€) <span className="text-[10px] text-slate-400">intern</span></Label>
                 <Input data-testid="mat-form-price" type="number" step="0.01" value={form.purchase_price} onChange={(e) => setForm({ ...form, purchase_price: e.target.value })} placeholder="leeg = onbekend" />
+              </div>
+              <div>
+                <Label>Verkoopprijs (€)</Label>
+                <Input data-testid="mat-form-sell-price" type="number" step="0.01" value={form.sell_price} onChange={(e) => setForm({ ...form, sell_price: e.target.value })} placeholder="optioneel" />
               </div>
               <div>
                 <Label>Eenheid</Label>
@@ -269,6 +280,11 @@ export default function MateriaalBibliotheekPage() {
                 <Input type="number" step="0.01" value={form.package_qty} onChange={(e) => setForm({ ...form, package_qty: e.target.value })} placeholder="bv. 25" />
               </div>
             </div>
+            {form.purchase_price !== '' && form.sell_price !== '' && parseFloat(form.purchase_price) > 0 && (
+              <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2 py-1 inline-block">
+                Marge: € {(parseFloat(form.sell_price) - parseFloat(form.purchase_price)).toFixed(2)} ({(((parseFloat(form.sell_price) - parseFloat(form.purchase_price)) / parseFloat(form.purchase_price)) * 100).toFixed(0)}%)
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Leverancier</Label>

@@ -39,7 +39,8 @@ class MateriaalItem(BaseModel):
     description: Optional[str] = None
     category: str = "Algemeen"
     unit: str = "stuk"                       # eenheid waarin besteld/verbruikt wordt
-    purchase_price: Optional[float] = None    # aankoopprijs per eenheid (None = onbekend)
+    purchase_price: Optional[float] = None    # aankoopprijs per eenheid (intern — klant ziet dit nooit)
+    sell_price: Optional[float] = None        # verkoopprijs per eenheid (wat we aanrekenen)
     supplier: Optional[str] = None            # leverancier
     sku: Optional[str] = None                 # artikelnummer
     package_qty: Optional[float] = None       # verpakkingseenheid (bv. 25 kg/zak) — informatief
@@ -56,6 +57,7 @@ class MateriaalCreate(BaseModel):
     category: str = "Algemeen"
     unit: str = "stuk"
     purchase_price: Optional[float] = None
+    sell_price: Optional[float] = None
     supplier: Optional[str] = None
     sku: Optional[str] = None
     package_qty: Optional[float] = None
@@ -68,6 +70,7 @@ class MateriaalUpdate(BaseModel):
     category: Optional[str] = None
     unit: Optional[str] = None
     purchase_price: Optional[float] = None
+    sell_price: Optional[float] = None
     supplier: Optional[str] = None
     sku: Optional[str] = None
     package_qty: Optional[float] = None
@@ -155,7 +158,7 @@ async def update_materiaal(material_id: str, payload: MateriaalUpdate):
         raise HTTPException(status_code=404, detail="Materiaal niet gevonden")
     existing = _defaults(existing)
     update_data = {k: v for k, v in payload.model_dump(exclude_unset=True).items()
-                   if v is not None or k in ("description", "purchase_price", "supplier", "sku", "package_qty")}
+                   if v is not None or k in ("description", "purchase_price", "sell_price", "supplier", "sku", "package_qty")}
     note = update_data.pop("price_change_note", None)
     if "purchase_price" in update_data:
         old = existing.get("purchase_price")

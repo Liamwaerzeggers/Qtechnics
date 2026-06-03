@@ -1,0 +1,39 @@
+{
+  "summary": "Phase 2D (AI material profiles + materiaal sell_price) end-to-end verified. Backend: 6/6 pytest cases green using exactly 1 real AI call. Frontend: all required testids present and visible across Materiaalbibliotheek (form + card), Werkposten (ai-profile-{id}, 107 cards), and Project materiaallijst tab (ai-fill-all-btn, ai-fill-{wid}, generate-materiaallijst-btn, missing-profiles-block). No bugs found.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_ai_material_profiles_and_sell_price.py",
+    "/app/test_reports/pytest/pytest_results_ai_profiles_sellprice.xml"
+  ],
+  "action_items": [
+    "None - all requested Phase 2D features behave per spec."
+  ],
+  "critical_code_review_comments": [
+    "ai_profiles._parse_json: when response wraps JSON in ```json fences plus surrounding prose, the split('```',2)[1] takes whatever is between first two fences, then strips a leading 'json' literal of length 4. If the language tag is uppercase 'JSON' or absent it still mostly works thanks to the {…} bracket search, but the explicit-prefix strip is fragile (e.g. 'json5' would lose its first char). Minor robustness improvement: regex r'```(?:json)?\\n?' replacement.",
+    "ai_profiles._materials_to_profile_and_seed seeds new MateriaalItem with purchase_price=None and no sell_price; OK, but consider also defaulting active=True (already default) and verifying duplicate detection is case-insensitive (currently lower() match, but trims may differ for accented chars).",
+    "ai_profiles.ai_material_profile uses session_id=f'matprofile-{werkpost_id}' — repeated replace-mode calls reuse the same session which could affect Claude context across runs. Consider including a timestamp/uuid to guarantee a fresh session per generation.",
+    "materiaal.update_materiaal: history is only logged for purchase_price changes. sell_price changes are silently overwritten with no audit. Acceptable for now but worth a future sell_price_history.",
+    "MateriaalBibliotheekPage: the margin badge appears only when purchase_price > 0 AND sell_price filled. If user enters sell_price but no purchase_price the field still allows save. UX: maybe surface a small hint that margin cannot be computed."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_ai_material_profiles_and_sell_price.py (new pytest suite, 6 tests)"
+  ],
+  "success_rate": {
+    "backend": "100% (6/6 pytest)",
+    "frontend": "100% (mat-form-price, mat-form-sell-price, margin badge 'Marge: € 5.00 (50%)', card 'Verkoop'+'+50%' badge, ai-profile-{id} x107 visible with sparkles svg + dutch tooltip, generate-materiaallijst-btn, ai-fill-all-btn, ai-fill-WP-3A54D672, ai-fill-WP-176F3C96, missing-profiles-block, Handmatig + Overslaan buttons all verified)"
+  },
+  "test_credentials": "Admin /api/auth2/login {username:'liam', password:'Liammail123'}; token stored as localStorage auth_token + session_token. Test project: PROJ-60A4159C.",
+  "seed_data_creation": "1 temporary materiaal 'TEST_UI sellbadge' (hard-deleted) and 2 temporary werkposten 'TEST_AI Vloertegels 60x60' + 'TEST_AI Werkpost met profiel' (hard-deleted). 1 temporary materiaal 'TEST_AI Sellprice Materiaal' (hard-deleted). No persistent test data.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Phase 2D regression suite at /app/backend/tests/test_ai_material_profiles_and_sell_price.py covers (a) AI replace-mode generation (verifies skipped=False, ai_generated=True, material_count>0, persisted profile with status/role/waste_percent fields), (b) AI fill-mode skip on werkpost with existing profile (no AI cost), (c) 404 for unknown werkpost, (d) materiaal CRUD with sell_price (POST/GET/PUT, persistence). Real AI calls are limited to 1 per pytest run. UI testids confirmed: mat-form-price, mat-form-sell-price (form), ai-profile-{wp_id} on every werkpost card with title 'AI-materiaalprofiel genereren' + sparkles svg, ai-fill-all-btn + ai-fill-{wid} + missing-profiles-block on /projects/PROJ-60A4159C → 'Materiaallijst' tab. Frontend routes: /materiaalbibliotheek, /werkposten, /projects/{id}. AI generation actual call: ~10-15s, axios timeout 120s — verified working.",
+  "rca of the issue": "N/A — no bugs."
+}

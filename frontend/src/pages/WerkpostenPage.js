@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../components/ui/dialog';
 import {
   Hammer, Plus, Trash2, Edit2, Copy, History, Save, Loader2, Search,
-  X, Package, Clock, ChevronDown, ChevronRight, Percent, Layers
+  X, Package, Clock, ChevronDown, ChevronRight, Percent, Layers, Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -60,6 +60,7 @@ export default function WerkpostenPage() {
   const [historyItem, setHistoryItem] = useState(null);
   const [historyData, setHistoryData] = useState(null);
   const [materials, setMaterials] = useState([]);
+  const [aiLoadingId, setAiLoadingId] = useState(null);
 
   useEffect(() => { fetchAll(); }, [showInactive]);
 
@@ -243,6 +244,27 @@ export default function WerkpostenPage() {
     }
   };
 
+  const generateAIProfile = async (item) => {
+    const hasProfile = (item.material_profile || []).length > 0;
+    if (hasProfile && !window.confirm(`"${item.name}" heeft al een materiaalprofiel. Opnieuw genereren met AI (overschrijft het huidige profiel)?`)) return;
+    setAiLoadingId(item.id);
+    try {
+      const resp = await axios.post(`${API}/werkposten/${item.id}/ai-material-profile`,
+        { mode: hasProfile ? 'replace' : 'fill' },
+        { headers: getAuthHeaders() });
+      if (resp.data.skipped) {
+        toast.info(resp.data.reason || 'Profiel bestaat al');
+      } else {
+        toast.success(`AI-profiel gegenereerd · ${resp.data.material_count} materialen`);
+      }
+      fetchAll();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || 'AI-generatie mislukt');
+    } finally {
+      setAiLoadingId(null);
+    }
+  };
+
   const reactivateItem = async (item) => {
     try {
       await axios.put(`${API}/werkposten/${item.id}`, { active: true }, { headers: getAuthHeaders() });
@@ -372,6 +394,9 @@ export default function WerkpostenPage() {
                               </div>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
+                              <Button size="icon" variant="ghost" className="h-8 w-8" title="AI-materiaalprofiel genereren" onClick={() => generateAIProfile(item)} disabled={aiLoadingId === item.id} data-testid={`ai-profile-${item.id}`}>
+                                {aiLoadingId === item.id ? <Loader2 className="h-4 w-4 animate-spin text-violet-500" /> : <Sparkles className="h-4 w-4 text-violet-500" />}
+                              </Button>
                               <Button size="icon" variant="ghost" className="h-8 w-8" title="Prijshistoriek" onClick={() => openHistory(item)} data-testid={`history-${item.id}`}>
                                 <History className="h-4 w-4 text-slate-500" />
                               </Button>
