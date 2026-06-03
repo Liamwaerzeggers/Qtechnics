@@ -168,25 +168,19 @@ def _normalize_legacy(doc: dict) -> dict:
 async def list_werkposten(category: Optional[str] = None, search: Optional[str] = None, include_inactive: bool = False):
     """Lijst alle werkposten. Filtert op categorie en/of search-term (naam)."""
     db = await _get_db()
-    query = {}
+    and_clauses = []
     if not include_inactive:
         # Tonen items waar active != False (incl. legacy items zonder active veld)
-        query["$or"] = [{"active": {"$ne": False}}, {"active": {"$exists": False}}]
+        and_clauses.append({"$or": [{"active": {"$ne": False}}, {"active": {"$exists": False}}]})
     if category:
-        query["category"] = category
+        and_clauses.append({"category": category})
     if search:
         # Match name of title (legacy)
-        query["$and"] = [
-            query.pop("$or", {"$or": [{}]}) if "$or" in query else {},
-            {"$or": [
-                {"name": {"$regex": search, "$options": "i"}},
-                {"title": {"$regex": search, "$options": "i"}},
-            ]},
-        ]
-        # Cleanup empty entry
-        query["$and"] = [c for c in query["$and"] if c]
-        if not query["$and"]:
-            del query["$and"]
+        and_clauses.append({"$or": [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"title": {"$regex": search, "$options": "i"}},
+        ]})
+    query = {"$and": and_clauses} if and_clauses else {}
 
     docs = await db.work_items.find(query, {"_id": 0}).sort("category", 1).to_list(1000)
     return [_normalize_legacy(d) for d in docs]

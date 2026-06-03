@@ -231,15 +231,21 @@ Onderdeel van het Max Q Project Intelligence Platform V3 — eerste fase van de 
 - `POST /api/projects/{id}/offerte-generator/create-quote` — maakt echte offerte + line_items voor de lead van het project, bewaart `source` + `work_item_id` per regel (traceerbaarheid), draait `recalculate_quote_totals`. Zelflerend: ingevulde/gewijzigde prijzen worden teruggeschreven naar de werkpost + gelogd in prijshistoriek.
 - `GET /api/offerte-generator/sources` — bronnenlijst voor frontend.
 - LineItem-model (server.py) uitgebreid met `source` + `work_item_id` zodat herkomst zichtbaar blijft bij heropenen offerte.
-- Pytest: `/app/backend/tests/test_offerte_generator.py` (11 tests groen).
+- **Ontbrekende prijzen aanvullen** (zelflerend tijdens offerteproces):
+  - `POST /api/werkposten/learn-price` — vult prijs in voor bestaande werkpost (op id of naam, logt historiek) óf maakt nieuwe werkpost aan.
+  - `create-quote` maakt automatisch een nieuwe werkpost aan voor geprijsde regels zonder gekoppelde werkpost (bibliotheek leert altijd bij).
+  - Offerte kan pas aangemaakt worden wanneer alle noodzakelijke prijzen ingevuld of overgeslagen zijn.
+- Pytest: `/app/backend/tests/test_offerte_generator.py` (11) + `/app/backend/tests/test_offerte_learn_prices.py` (5), alle groen.
+- Bugfix: `GET /api/werkposten?search=` (ongeldige Mongo `$and`-query) opgelost.
 
 **Frontend:**
 - `OfferteGeneratorModal.js` — geopend via "⚡ Genereer offerte" knop bovenaan de Meetstaat-tab (alleen zichtbaar als er ruimtes zijn). Toont per ruimte voorgestelde regels (bewerkbaar: aantal/eenheidsprijs/BTW/type + in/uitvinken), template-keuze per ruimte, bron-label per regel, live totalen, waarschuwing bij ontbrekende prijzen → "Offerte aanmaken" → navigeert naar de nieuwe offerte.
 - `RuimteTemplatesPage.js` — eigen sidebar-item "Ruimte-templates", volledige CRUD met regels (label/categorie/bron/type).
 - Werkposten-form: nieuw veld "Standaard hoeveelheid-bron".
+- Generator-modal heeft bovenaan een blok **"Ontbrekende prijzen aanvullen"**: per regel werkpost · eenheid · hoeveelheid · prijsveld · knop "Bibliotheek" (opslaan in werkpostbibliotheek) · checkbox "Overslaan". "Offerte aanmaken" blijft geblokkeerd tot alle noodzakelijke prijzen ingevuld/overgeslagen zijn.
 
-## Backlog
-- P1: server.py refactoring naar route modules
+## Backlog (volgende prioriteit per gebruiker: Fase 2/2B vóór 1.5)
+- **P1: Fase 2/2B — Materiaalbibliotheek + automatische bestellingen** (volgende taak)
 - P2: Fase 1.5 — AI plan-upload module (auto ruimtes invullen o.b.v. AI vision)
 - P2: Onderaannemers Module
 - P2: Investeerders Module
