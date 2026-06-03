@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Boxes, RefreshCw, Loader2, Plus, Trash2, Truck, ShoppingCart, Printer, Package, AlertTriangle } from 'lucide-react';
+import { Boxes, RefreshCw, Loader2, Plus, Trash2, Truck, ShoppingCart, Printer, Package, AlertTriangle, Eye, EyeOff, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
 const getAuthHeaders = () => {
@@ -20,6 +20,11 @@ const STATUS = {
   besteld: { label: 'Besteld', cls: 'bg-blue-100 text-blue-700 border-blue-200' },
   geleverd: { label: 'Geleverd', cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
 };
+const REQUIREMENT = {
+  verplicht: { label: 'Verplicht', cls: 'bg-red-50 text-red-600 border-red-200' },
+  aanbevolen: { label: 'Aanbevolen', cls: 'bg-amber-50 text-amber-600 border-amber-200' },
+  optioneel: { label: 'Optioneel', cls: 'bg-slate-50 text-slate-500 border-slate-200' },
+};
 const num = (v) => (v === '' || v === null || v === undefined || isNaN(Number(v)) ? 0 : Number(v));
 
 export default function ProjectMateriaallijstTab({ project }) {
@@ -28,6 +33,7 @@ export default function ProjectMateriaallijstTab({ project }) {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [selected, setSelected] = useState({});
+  const [dismissedProfiles, setDismissedProfiles] = useState({});
   const [newLine, setNewLine] = useState({ name: '', unit: 'stuk', quantity: '', unit_price: '', supplier: '' });
   const [showAdd, setShowAdd] = useState(false);
 
@@ -134,6 +140,35 @@ export default function ProjectMateriaallijstTab({ project }) {
         </div>
       )}
 
+      {/* Ontbrekende materiaalprofielen */}
+      {(data?.missing_profiles || []).filter((mp) => !dismissedProfiles[mp.work_item_id]).length > 0 && (
+        <div className="border-2 border-orange-300 rounded-xl overflow-hidden" data-testid="missing-profiles-block">
+          <div className="px-4 py-2.5 bg-orange-50 border-b border-orange-200 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-orange-500" />
+            <span className="font-semibold text-orange-800 text-sm">Ontbrekende materiaalprofielen</span>
+            <span className="text-xs text-orange-600">— deze werkposten leveren nog geen materialen op</span>
+          </div>
+          <div className="divide-y divide-orange-100">
+            {(data.missing_profiles || []).filter((mp) => !dismissedProfiles[mp.work_item_id]).map((mp) => (
+              <div key={mp.work_item_id} className="flex items-center justify-between px-4 py-2 gap-3" data-testid={`missing-profile-${mp.work_item_id}`}>
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-slate-800 truncate">{mp.name}</div>
+                  <div className="text-[11px] text-slate-400">{mp.quantity} {mp.unit} in offertes</div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button size="sm" variant="outline" className="h-8 text-xs border-orange-300 text-orange-700" onClick={() => window.open('/werkposten', '_blank')} data-testid={`add-profile-${mp.work_item_id}`}>
+                    Materiaalprofiel toevoegen
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-8 text-xs text-slate-500" onClick={() => setDismissedProfiles((p) => ({ ...p, [mp.work_item_id]: true }))} data-testid={`skip-profile-${mp.work_item_id}`}>
+                    Overslaan
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
@@ -180,43 +215,59 @@ export default function ProjectMateriaallijstTab({ project }) {
                   <span className="text-sm font-medium text-slate-700">€ {Number(g.subtotal).toFixed(2)}</span>
                 </div>
                 <div className="divide-y">
-                  {g.lines.map((ln) => (
-                    <div key={ln.id} className="grid grid-cols-12 gap-2 items-center px-4 py-2" data-testid={`mll-line-${ln.id}`}>
+                  {g.lines.map((ln) => {
+                    const disabled = ln.enabled === false;
+                    const req = REQUIREMENT[ln.requirement] || REQUIREMENT.verplicht;
+                    return (
+                    <div key={ln.id} className={`grid grid-cols-12 gap-2 items-center px-4 py-2 ${disabled ? 'opacity-45 bg-slate-50' : ''}`} data-testid={`mll-line-${ln.id}`}>
                       <div className="col-span-1 flex justify-center">
-                        {ln.status === 'te_bestellen' && (
+                        {ln.status === 'te_bestellen' && !disabled && (
                           <Checkbox checked={!!selected[ln.id]} onCheckedChange={(c) => setSelected((p) => ({ ...p, [ln.id]: !!c }))} data-testid={`mll-select-${ln.id}`} />
                         )}
                       </div>
                       <div className="col-span-11 sm:col-span-4 min-w-0">
-                        <div className="text-sm font-medium text-slate-800 truncate">{ln.name}</div>
-                        <div className="text-[11px] text-slate-400">
-                          {ln.source === 'auto' ? `auto · ${ln.source_detail || ''}` : 'handmatig'}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-medium text-slate-800 truncate">{ln.name}</span>
+                          {ln.source === 'auto' && <Badge variant="outline" className={`text-[9px] px-1 py-0 ${req.cls}`} data-testid={`mll-req-${ln.id}`}>{req.label}</Badge>}
                         </div>
+                        <div className="text-[11px] text-slate-400 flex items-center gap-1">
+                          {ln.source === 'auto' ? `auto · ${ln.source_detail || ''}` : 'handmatig'}
+                          {ln.calculation && (
+                            <span className="inline-flex items-center gap-0.5 text-slate-400" title={ln.calculation} data-testid={`mll-calc-${ln.id}`}>
+                              <Info className="h-3 w-3" />
+                            </span>
+                          )}
+                        </div>
+                        {ln.reason && <div className="text-[10px] text-slate-400 italic truncate" title={ln.reason}>↳ {ln.reason}</div>}
                       </div>
                       <div className="col-span-4 sm:col-span-2">
                         <Input type="number" step="0.001" className="h-8 text-right text-sm" defaultValue={ln.quantity}
                           onBlur={(e) => { const v = num(e.target.value); if (v !== ln.quantity) updateLine(ln.id, { quantity: v }); }}
                           data-testid={`mll-qty-${ln.id}`} />
-                        <div className="text-[10px] text-slate-400 text-right">{ln.unit}</div>
+                        <div className="text-[10px] text-slate-400 text-right">{ln.unit}{ln.packages ? ` · ${ln.packages} verp.` : ''}</div>
                       </div>
                       <div className="col-span-4 sm:col-span-2">
                         <Input type="number" step="0.01" placeholder="€ prijs" className={`h-8 text-right text-sm ${ln.unit_price === null ? 'border-amber-300 bg-amber-50' : ''}`} defaultValue={ln.unit_price ?? ''}
                           onBlur={(e) => { const v = e.target.value === '' ? null : num(e.target.value); if (v !== ln.unit_price) updateLine(ln.id, { unit_price: v }); }}
                           data-testid={`mll-price-${ln.id}`} />
                       </div>
-                      <div className="col-span-4 sm:col-span-2">
+                      <div className="col-span-3 sm:col-span-2">
                         <Select value={ln.status} onValueChange={(v) => updateLine(ln.id, { status: v })}>
                           <SelectTrigger className={`h-8 text-xs border ${STATUS[ln.status]?.cls || ''}`} data-testid={`mll-status-${ln.id}`}><SelectValue /></SelectTrigger>
                           <SelectContent>{Object.entries(STATUS).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}</SelectContent>
                         </Select>
                       </div>
-                      <div className="col-span-12 sm:col-span-1 flex justify-end">
+                      <div className="col-span-1 flex justify-end gap-0.5">
+                        <Button size="icon" variant="ghost" className="h-8 w-8" title={disabled ? 'Inschakelen' : 'Uitschakelen'} onClick={() => updateLine(ln.id, { enabled: disabled })} data-testid={`mll-toggle-${ln.id}`}>
+                          {disabled ? <EyeOff className="h-4 w-4 text-slate-400" /> : <Eye className="h-4 w-4 text-slate-500" />}
+                        </Button>
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => deleteLine(ln.id)} data-testid={`mll-delete-${ln.id}`}>
                           <Trash2 className="h-4 w-4 text-red-400" />
                         </Button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

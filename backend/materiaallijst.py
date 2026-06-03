@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 from datetime import datetime, timezone
 import uuid
+import math
 import logging
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,12 @@ router = APIRouter(tags=["materiaallijst"])
 STATUS_TE_BESTELLEN = "te_bestellen"
 STATUS_BESTELD = "besteld"
 STATUS_GELEVERD = "geleverd"
+
+REQ_ORDER = {"verplicht": 3, "aanbevolen": 2, "optioneel": 1}
+
+
+def _strictest(a: str, b: str) -> str:
+    return a if REQ_ORDER.get(a, 0) >= REQ_ORDER.get(b, 0) else b
 
 
 # ============= MODELS =============
@@ -43,6 +50,14 @@ class MateriaallijstLine(BaseModel):
     category: Optional[str] = None
     source: str = "auto"                       # "auto" (uit werkposten) of "manual"
     source_detail: Optional[str] = None         # bv. welke werkposten bijdroegen
+    requirement: str = "verplicht"             # verplicht | aanbevolen | optioneel
+    reason: Optional[str] = None                # reden / regels van de kunst
+    calculation: Optional[str] = None           # berekeningsuitleg
+    enabled: bool = True                        # of de regel meetelt (uitschakelbaar)
+    waste_percent: float = 0.0
+    safety_margin_percent: float = 0.0
+    package_qty: Optional[float] = None
+    packages: Optional[float] = None            # aantal verpakkingen (na afronding)
     status: str = STATUS_TE_BESTELLEN
     ordered_at: Optional[str] = None
     delivered_at: Optional[str] = None
@@ -71,6 +86,8 @@ class LineUpdate(BaseModel):
     supplier: Optional[str] = None
     category: Optional[str] = None
     status: Optional[str] = None
+    requirement: Optional[str] = None
+    enabled: Optional[bool] = None
     notes: Optional[str] = None
 
 
@@ -139,23 +156,32 @@ async def generate_materiaallijst(project_id: str):
         if nm and nm not in mat_by_name:
             mat_by_name[nm] = m
 
-    # Aggregeer materiaalbehoefte
-    aggregate = {}  # key -> {name, unit, quantity, material_id, contributors:set}
+    # Aggregeer materiaalbehoefte (incl. snijverlies, marge, reden, status)
+    aggregate = {}
+    missing_profiles = {}  # work_item_id -> {name, quantity, unit}
     for li in line_items:
         wp = werkposten.get(li.get("work_item_id"))
         if not wp:
             continue
         profile = wp.get("material_profile") or []
         line_qty = float(li.get("quantity") or 0)
+        wp_name = wp.get("name") or wp.get("title") or "werkpost"
+        if not profile:
+            # Werkpost zonder materiaalprofiel → waarschuwing
+            mp = missing_profiles.setdefault(wp["id"], {"work_item_id": wp["id"], "name": wp_name, "quantity": 0.0, "unit": wp.get("unit") or "m²"})
+            mp["quantity"] += line_qty
+            continue
         for mc in profile:
             qpu = float(mc.get("quantity_per_unit") or 0)
             if qpu <= 0:
                 continue
-            needed = qpu * line_qty
+            netto = qpu * line_qty
+            waste = float(mc.get("waste_percent") or 0)
+            margin = float(mc.get("safety_margin_percent") or 0)
+            needed = netto * (1 + waste / 100.0) * (1 + margin / 100.0)
             mat_id = mc.get("material_id")
             mname = (mc.get("material_name") or "").strip()
             munit = mc.get("unit") or "stuk"
-            # Match aan bibliotheek
             mat = None
             if mat_id and mat_id in mat_by_id:
                 mat = mat_by_id[mat_id]
@@ -166,14 +192,31 @@ async def generate_materiaallijst(project_id: str):
                 "material_id": mat["id"] if mat else mat_id,
                 "name": mat["name"] if mat else (mname or "Onbekend materiaal"),
                 "unit": (mat.get("unit") if mat else None) or munit,
-                "quantity": 0.0,
+                "netto": 0.0,
+                "needed": 0.0,
                 "unit_price": mat.get("purchase_price") if mat else None,
                 "supplier": mat.get("supplier") if mat else None,
                 "category": mat.get("category") if mat else None,
+                "package_qty": mc.get("package_qty") or (mat.get("package_qty") if mat else None),
+                "round_to_package": bool(mc.get("round_to_package")),
+                "waste_percent": waste,
+                "safety_margin_percent": margin,
+                "requirement": "optioneel",
+                "reasons": set(),
                 "contributors": set(),
             })
-            entry["quantity"] += needed
-            entry["contributors"].add(wp.get("name") or wp.get("title") or "werkpost")
+            entry["netto"] += netto
+            entry["needed"] += needed
+            entry["requirement"] = _strictest(entry["requirement"], mc.get("status") or "verplicht")
+            if mc.get("reason"):
+                entry["reasons"].add(mc.get("reason"))
+            entry["contributors"].add(wp_name)
+            if mc.get("package_qty") and not entry["package_qty"]:
+                entry["package_qty"] = mc.get("package_qty")
+            if mc.get("round_to_package"):
+                entry["round_to_package"] = True
+            entry["waste_percent"] = max(entry["waste_percent"], waste)
+            entry["safety_margin_percent"] = max(entry["safety_margin_percent"], margin)
 
     # Bestaande regels ophalen
     existing = await db.materiaallijst_lines.find({"project_id": project_id}, {"_id": 0}).to_list(2000)
@@ -189,22 +232,46 @@ async def generate_materiaallijst(project_id: str):
 
     for key, agg in aggregate.items():
         seen_keys.add(key)
-        qty = _round(agg["quantity"])
+        needed = agg["needed"]
+        packages = None
+        final_qty = needed
+        pkg = agg.get("package_qty")
+        if agg.get("round_to_package") and pkg and pkg > 0:
+            packages = math.ceil(needed / pkg)
+            final_qty = round(packages * pkg, 3)
+        final_qty = _round(final_qty)
+        # Berekeningsuitleg
+        calc = f"{_round(agg['netto'])} {agg['unit']} netto"
+        if agg["waste_percent"]:
+            calc += f" × {1 + agg['waste_percent']/100:.2f} (snijverlies {agg['waste_percent']:.0f}%)"
+        if agg["safety_margin_percent"]:
+            calc += f" × {1 + agg['safety_margin_percent']/100:.2f} (marge {agg['safety_margin_percent']:.0f}%)"
+        calc += f" = {_round(needed)} {agg['unit']}"
+        if packages is not None:
+            calc += f" → afgerond {packages} verpakking(en) ({pkg} {agg['unit']}) = {final_qty} {agg['unit']}"
+        reason = "; ".join(sorted(agg["reasons"])) if agg["reasons"] else None
         contributors = ", ".join(sorted(agg["contributors"]))
+
         prev = existing_auto.get(key)
         if prev:
-            # Update enkel als nog niet besteld/geleverd
             if prev.get("status") == STATUS_TE_BESTELLEN:
                 await db.materiaallijst_lines.update_one(
                     {"id": prev["id"]},
                     {"$set": {
-                        "quantity": qty,
+                        "quantity": final_qty,
                         "unit": agg["unit"],
                         "unit_price": agg["unit_price"] if prev.get("unit_price") is None else prev.get("unit_price"),
                         "supplier": agg["supplier"] if not prev.get("supplier") else prev.get("supplier"),
                         "category": agg["category"],
                         "source_detail": contributors,
                         "material_id": agg["material_id"],
+                        "requirement": agg["requirement"],
+                        "reason": reason,
+                        "calculation": calc,
+                        "waste_percent": agg["waste_percent"],
+                        "safety_margin_percent": agg["safety_margin_percent"],
+                        "package_qty": pkg,
+                        "packages": packages,
                         "updated_at": now,
                     }},
                 )
@@ -217,12 +284,19 @@ async def generate_materiaallijst(project_id: str):
                 material_id=agg["material_id"],
                 name=agg["name"],
                 unit=agg["unit"],
-                quantity=qty,
+                quantity=final_qty,
                 unit_price=agg["unit_price"],
                 supplier=agg["supplier"],
                 category=agg["category"],
                 source="auto",
                 source_detail=contributors,
+                requirement=agg["requirement"],
+                reason=reason,
+                calculation=calc,
+                waste_percent=agg["waste_percent"],
+                safety_margin_percent=agg["safety_margin_percent"],
+                package_qty=pkg,
+                packages=packages,
             )
             await db.materiaallijst_lines.insert_one(obj.model_dump())
             created += 1
@@ -242,6 +316,9 @@ async def generate_materiaallijst(project_id: str):
         "skipped_locked": skipped,
         "quotes_scanned": len(quote_ids),
         "materials_aggregated": len(aggregate),
+        "missing_profiles": [
+            {**v, "quantity": _round(v["quantity"])} for v in missing_profiles.values()
+        ],
     }
 
 
@@ -254,24 +331,56 @@ async def get_materiaallijst(project_id: str):
 
     by_supplier = {}
     totals = {"total_cost": 0.0, "line_count": len(lines),
-              "te_bestellen": 0, "besteld": 0, "geleverd": 0, "missing_price": 0}
+              "te_bestellen": 0, "besteld": 0, "geleverd": 0, "missing_price": 0,
+              "verplicht": 0, "aanbevolen": 0, "optioneel": 0, "disabled": 0}
     for ln in lines:
         sup = ln.get("supplier") or "Geen leverancier"
         by_supplier.setdefault(sup, []).append(ln)
+        enabled = ln.get("enabled", True)
+        if not enabled:
+            totals["disabled"] += 1
         up = ln.get("unit_price")
-        if up is None:
-            totals["missing_price"] += 1
-        else:
-            totals["total_cost"] += float(up) * float(ln.get("quantity") or 0)
+        if enabled:
+            if up is None:
+                totals["missing_price"] += 1
+            else:
+                totals["total_cost"] += float(up) * float(ln.get("quantity") or 0)
         st = ln.get("status") or STATUS_TE_BESTELLEN
         if st in totals:
             totals[st] += 1
+        req = ln.get("requirement") or "verplicht"
+        if req in totals:
+            totals[req] += 1
     totals["total_cost"] = round(totals["total_cost"], 2)
 
     groups = [{"supplier": sup, "lines": ls,
-               "subtotal": round(sum((float(x.get("unit_price") or 0) * float(x.get("quantity") or 0)) for x in ls), 2)}
+               "subtotal": round(sum((float(x.get("unit_price") or 0) * float(x.get("quantity") or 0))
+                                      for x in ls if x.get("enabled", True)), 2)}
               for sup, ls in sorted(by_supplier.items())]
-    return {"project_id": project_id, "groups": groups, "lines": lines, "totals": totals}
+
+    # Ontbrekende materiaalprofielen (werkposten gebruikt in offertes zonder profiel)
+    project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    missing_profiles = []
+    try:
+        quote_ids = await _collect_quote_ids(db, project_id, project or {})
+        if quote_ids:
+            li_docs = await db.line_items.find({"quote_id": {"$in": quote_ids}}, {"_id": 0, "work_item_id": 1, "quantity": 1}).to_list(5000)
+            wp_ids = {li.get("work_item_id") for li in li_docs if li.get("work_item_id")}
+            if wp_ids:
+                wps = {}
+                async for wp in db.work_items.find({"id": {"$in": list(wp_ids)}}, {"_id": 0}):
+                    wps[wp["id"]] = wp
+                mp = {}
+                for li in li_docs:
+                    wp = wps.get(li.get("work_item_id"))
+                    if wp and not (wp.get("material_profile") or []):
+                        e = mp.setdefault(wp["id"], {"work_item_id": wp["id"], "name": wp.get("name") or wp.get("title"), "quantity": 0.0, "unit": wp.get("unit") or "m²"})
+                        e["quantity"] += float(li.get("quantity") or 0)
+                missing_profiles = [{**v, "quantity": round(v["quantity"], 2)} for v in mp.values()]
+    except Exception as e:
+        logger.warning(f"missing_profiles berekening faalde: {e}")
+
+    return {"project_id": project_id, "groups": groups, "lines": lines, "totals": totals, "missing_profiles": missing_profiles}
 
 
 @router.post("/projects/{project_id}/materiaallijst/lines")

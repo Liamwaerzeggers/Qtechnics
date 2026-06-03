@@ -1,0 +1,39 @@
+{
+  "summary": "Fase 2C (uitbreiding materiaalprofielen + sanitaire werkposten + verrijkte materiaallijst-generatie) end-to-end getest. 10/10 backend pytest cases groen. Frontend Materiaallijst-tab toont alle nieuwe elementen (requirement-badge, calculation, reason, packages, missing-profiles-block, oog-toggle) en de Werkposten-form toont de rijke materiaalprofiel-rijen met juiste seed-waarden. Geen bugs.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_fase2c_material_profiles.py",
+    "/app/test_reports/pytest/pytest_fase2c.xml"
+  ],
+  "action_items": [
+    "Geen — alle gevraagde Fase 2C-features werken volgens spec."
+  ],
+  "critical_code_review_comments": [
+    "materiaallijst.generate update-pad behoudt prev.unit_price en prev.supplier maar overschrijft prev.requirement/reason/calculation altijd. Indien een gebruiker een auto-regel handmatig 'optioneel' gezet had → die wijziging gaat verloren bij hergeneratie. Overweeg deze velden ook lock-in te respecteren of een 'user_overridden' flag toe te voegen.",
+    "seed_profiles.WERKPOST_SEED: 'Tegelvloer' Silicone 'unit'='stuk' met qpu=0.05/m² — eenheid 'stuk' geeft rare berekening (0.05 stuk/m² × area). Mogelijk bedoeld als 'tube' of 'kg'. Niet blocking.",
+    "ProjectMateriaallijstTab.js: missing-profiles-block toont werkposten ook nadat de gebruiker er een profiel aan toevoegde tot 'Genereer' opnieuw wordt geklikt — geen auto-refresh. Minor UX, niet kritisch.",
+    "materiaallijst.py _get_db importeert `server.db` binnen request-scope; tijdens startup-seed wordt er een vergelijkbare import gedaan in seed_profiles.py — werkt, maar prefereer DI om circular-import risico te vermijden.",
+    "materiaallijst.generate: aggregate.requirement begint op 'optioneel' en wordt _strictest met mc.status (default 'verplicht'). Als mc.status leeg is wordt 'verplicht' aangenomen — wellicht beter expliciet 'optioneel' default zodat alleen profielen die echt 'verplicht' aangeven dat ook tonen."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_fase2c_material_profiles.py (nieuwe pytest-suite, 10 tests)"
+  ],
+  "success_rate": {
+    "backend": "100% (10/10 pytest)",
+    "frontend": "100% (Materiaallijst-tab: generate, missing-profiles-block, mll-line/req/calc/toggle, requirement-badge 'Verplicht' zichtbaar, totale aankoopkost en disabled-count updaten bij toggle. Werkpost-form: alle testids material-name/qpu/waste/status/pkg/round/reason + add-material-row aanwezig, seed-waarden correct getoond: Gyproc plaat 12.5mm · 0.34 · 5% · '1 plaat = 3m²; incl. snijverlies'.)"
+  },
+  "test_credentials": "Admin /api/auth2/login {username:'liam', password:'Liammail123'}; token opgeslagen in localStorage als auth_token + session_token. Test project: PROJ-60A4159C.",
+  "seed_data_creation": "1 tijdelijke TEST_F2C_ werkpost (hard-deleted na test) en 1 tijdelijke manual materiaallijst-regel op PROJ-60A4159C (deleted na test). Geen blijvende test-data.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Regression suite voor Fase 2C: /app/backend/tests/test_fase2c_material_profiles.py. Dekt seed-aanwezigheid (Gyproc wand profiel, sanitair, materiaalbibliotheek), werkpost CRUD met rich material_profile-velden, materiaallijst-generate response shape + missing_profiles, ronding-wiskunde (9.996→10), GET requirement/calculation/reason aanwezig in lines, enabled-toggle effect op total_cost en disabled-counter. UI testids bevestigd: generate-materiaallijst-btn, missing-profiles-block, mll-line-{id}, mll-req-{id}, mll-calc-{id}, mll-toggle-{id}, material-name-{idx}, material-qpu-{idx}, material-waste-{idx}, material-status-{idx}, material-pkg-{idx}, material-round-{idx}, material-reason-{idx}, add-material-row. Selectoren voor 'pencil-edit' op werkpostkaart: 3e <button> binnen het kaart-container van de werkpost.",
+  "rca of the issue": "N.v.t. — geen bugs."
+}

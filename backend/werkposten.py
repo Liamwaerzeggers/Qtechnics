@@ -50,11 +50,19 @@ DISCIPLINE_ORDER = {
 # ============= MODELS =============
 
 class MaterialConsumption(BaseModel):
-    """Materiaalprofiel-entry: hoeveel van een materiaal verbruikt per eenheid werkpost."""
-    material_id: Optional[str] = None  # link naar materials collection (komt in Fase 2)
+    """Materiaalprofiel-entry: hoeveel van een materiaal verbruikt per eenheid werkpost,
+    inclusief snijverlies, veiligheidsmarge, verpakkingsafronding, status en reden (regels van de kunst)."""
+    material_id: Optional[str] = None  # link naar materiaalbibliotheek
     material_name: str  # backup als material_id nog niet gelinkt is
     quantity_per_unit: float = 0.0  # bv. 0.34 platen per m²
     unit: str = "stuk"  # eenheid van het materiaal
+    status: str = "verplicht"  # verplicht | aanbevolen | optioneel
+    role: str = "basis"        # basis | hulp (basisproduct vs hulpmateriaal)
+    reason: Optional[str] = None  # reden / regels van de kunst
+    waste_percent: float = 0.0       # snijverlies %
+    safety_margin_percent: float = 0.0  # veiligheidsmarge %
+    package_qty: Optional[float] = None   # verpakkingseenheid (bv. 1.2 m²/doos)
+    round_to_package: bool = False        # afronden naar volledige verpakking
 
 
 class ProductivityProfile(BaseModel):

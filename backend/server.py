@@ -12401,6 +12401,13 @@ async def startup_cleanup():
     except Exception as e:
         logger.error(f"Room template seed error: {e}")
 
+    # Seed standaard materiaalprofielen + materialen (Fase 2C) — idempotent
+    try:
+        from seed_profiles import seed_material_profiles
+        await seed_material_profiles()
+    except Exception as e:
+        logger.error(f"Material profile seed error: {e}")
+
 # ============= WEEKLY TASK SUMMARY EMAIL =============
 
 TASK_TYPE_LABELS = {

@@ -139,7 +139,7 @@ export default function WerkpostenPage() {
   };
 
   const addMaterialRow = () => {
-    setForm((f) => ({ ...f, material_profile: [...f.material_profile, { material_name: '', quantity_per_unit: '', unit: 'stuk' }] }));
+    setForm((f) => ({ ...f, material_profile: [...f.material_profile, { material_name: '', quantity_per_unit: '', unit: 'stuk', status: 'verplicht', role: 'basis', reason: '', waste_percent: '', package_qty: '', round_to_package: false }] }));
   };
   const updateMaterialRow = (idx, key, val) => {
     setForm((f) => {
@@ -179,6 +179,13 @@ export default function WerkpostenPage() {
           quantity_per_unit: m.quantity_per_unit === '' ? 0 : parseFloat(m.quantity_per_unit),
           unit: m.unit || 'stuk',
           material_id: m.material_id || null,
+          status: m.status || 'verplicht',
+          role: m.role || 'basis',
+          reason: m.reason?.trim() || null,
+          waste_percent: m.waste_percent === '' || m.waste_percent === undefined ? 0 : parseFloat(m.waste_percent),
+          safety_margin_percent: m.safety_margin_percent === '' || m.safety_margin_percent === undefined ? 0 : parseFloat(m.safety_margin_percent),
+          package_qty: m.package_qty === '' || m.package_qty === undefined ? null : parseFloat(m.package_qty),
+          round_to_package: !!m.round_to_package,
         })),
       productivity_profile: form.productivity_enabled
         ? {
@@ -515,16 +522,63 @@ export default function WerkpostenPage() {
               ) : (
                 <div className="space-y-2">
                   {form.material_profile.map((m, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <div className="flex-1 relative">
-                        <Input list="materiaal-datalist" placeholder="Materiaal" value={m.material_name} onChange={(e) => updateMaterialRow(idx, 'material_name', e.target.value)} />
+                    <div key={idx} className="rounded-lg border bg-white p-2 space-y-2" data-testid={`material-row-${idx}`}>
+                      <div className="flex items-center gap-2">
+                        <Input list="materiaal-datalist" className="flex-1 h-8" placeholder="Materiaal" value={m.material_name} onChange={(e) => updateMaterialRow(idx, 'material_name', e.target.value)} data-testid={`material-name-${idx}`} />
+                        {m.material_id && <span className="text-[10px] text-emerald-600 whitespace-nowrap" title="Gekoppeld aan bibliotheek">● gekoppeld</span>}
+                        <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => removeMaterialRow(idx)}>
+                          <X className="h-4 w-4 text-red-400" />
+                        </Button>
                       </div>
-                      <Input className="w-24" type="number" step="0.001" placeholder="per eenh." value={m.quantity_per_unit} onChange={(e) => updateMaterialRow(idx, 'quantity_per_unit', e.target.value)} />
-                      <Input className="w-20" placeholder="eenheid" value={m.unit} onChange={(e) => updateMaterialRow(idx, 'unit', e.target.value)} />
-                      {m.material_id && <span className="text-[10px] text-emerald-600 whitespace-nowrap" title="Gekoppeld aan bibliotheek">●</span>}
-                      <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => removeMaterialRow(idx)}>
-                        <X className="h-4 w-4 text-red-400" />
-                      </Button>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div>
+                          <span className="text-[10px] text-slate-400">Per eenheid</span>
+                          <Input className="h-8" type="number" step="0.001" placeholder="bv. 0.34" value={m.quantity_per_unit} onChange={(e) => updateMaterialRow(idx, 'quantity_per_unit', e.target.value)} data-testid={`material-qpu-${idx}`} />
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400">Eenheid</span>
+                          <Input className="h-8" placeholder="eenheid" value={m.unit} onChange={(e) => updateMaterialRow(idx, 'unit', e.target.value)} />
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400">Snijverlies %</span>
+                          <Input className="h-8" type="number" step="1" placeholder="0" value={m.waste_percent ?? ''} onChange={(e) => updateMaterialRow(idx, 'waste_percent', e.target.value)} data-testid={`material-waste-${idx}`} />
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400">Status</span>
+                          <Select value={m.status || 'verplicht'} onValueChange={(v) => updateMaterialRow(idx, 'status', v)}>
+                            <SelectTrigger className="h-8 text-xs" data-testid={`material-status-${idx}`}><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="verplicht">Verplicht</SelectItem>
+                              <SelectItem value="aanbevolen">Aanbevolen</SelectItem>
+                              <SelectItem value="optioneel">Optioneel</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
+                        <div>
+                          <span className="text-[10px] text-slate-400">Rol</span>
+                          <Select value={m.role || 'basis'} onValueChange={(v) => updateMaterialRow(idx, 'role', v)}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="basis">Basisproduct</SelectItem>
+                              <SelectItem value="hulp">Hulpmateriaal</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400">Verpakking</span>
+                          <Input className="h-8" type="number" step="0.01" placeholder="bv. 25" value={m.package_qty ?? ''} onChange={(e) => updateMaterialRow(idx, 'package_qty', e.target.value)} data-testid={`material-pkg-${idx}`} />
+                        </div>
+                        <div className="flex items-center gap-1.5 pb-1">
+                          <Switch checked={!!m.round_to_package} onCheckedChange={(v) => updateMaterialRow(idx, 'round_to_package', v)} data-testid={`material-round-${idx}`} />
+                          <span className="text-[10px] text-slate-500">Afronden naar verpakking</span>
+                        </div>
+                        <div className="col-span-2 sm:col-span-1">
+                          <span className="text-[10px] text-slate-400">Reden</span>
+                          <Input className="h-8" placeholder="regels van de kunst" value={m.reason || ''} onChange={(e) => updateMaterialRow(idx, 'reason', e.target.value)} data-testid={`material-reason-${idx}`} />
+                        </div>
+                      </div>
                     </div>
                   ))}
                   <datalist id="materiaal-datalist">
