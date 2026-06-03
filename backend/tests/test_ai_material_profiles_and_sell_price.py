@@ -10,7 +10,7 @@ import time
 import requests
 import pytest
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://quote-foundation-1.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://material-flow-40.preview.emergentagent.com").rstrip("/")
 LOGIN_URL = f"{BASE_URL}/api/auth2/login"
 USER = {"username": "liam", "password": "Liammail123"}
 
