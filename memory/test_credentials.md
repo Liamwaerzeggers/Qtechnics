@@ -2,6 +2,8 @@
 
 ## Admin (username login)
 - Login via landingspagina → knop "Beheerder Login (gebruikersnaam)"
+- Endpoint: `POST /api/auth/admin/login` met JSON `{"username":"liam","password":"Liammail123"}`
+- Response-veld: `session_token` (NIET `token`). Frontend bewaart in localStorage `auth_token` + `session_token`.
 - Username: `liam`
 - Password: `Liammail123`
 

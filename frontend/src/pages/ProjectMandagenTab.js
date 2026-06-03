@@ -174,7 +174,7 @@ export default function ProjectMandagenTab({ project }) {
             <div>
               <label className="text-xs text-slate-500">Dagtarief</label>
               <div className="h-10 flex items-center font-bold" style={{ color: '#500000' }} data-testid="mandagen-day-rate">
-                {eur(config.day_rate)}
+                {eur(num(cfg.hourly_rate) * num(cfg.hours_per_day))}
               </div>
             </div>
             <div className="flex gap-2">

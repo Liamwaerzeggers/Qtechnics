@@ -273,6 +273,29 @@ Onderdeel van het Max Q Project Intelligence Platform V3 — eerste fase van de 
 - P2: Fase 1.5 — AI plan-upload module (auto ruimtes invullen o.b.v. AI vision)
 - P2: Onderaannemers Module
 - P2: Investeerders Module
-- P3: Fase 2/2B Materiaalbibliotheek + ECK + automatische bestellingen
-- P3: Fase 3/3B Productiviteitsbibliotheek + mandagen-berekening
 - P3: Commerciële logica / abonnementen & betalingen
+
+## Fase 3 + 3B — Productiviteitsbibliotheek + Automatisch Mandagen (AFGEROND, getest iteratie 23 — backend 100%, frontend 95%)
+**Keuze gebruiker:** arbeidsloon = uurloon × uren per dag; AI vult productiviteit in volgens de regels van de kunst, alles blijft aanpasbaar.
+
+**Backend** (`/app/backend/mandagen.py`, router op `/api`):
+- `MandagLine` model: project_id, work_item_id, name, category, discipline_order, unit, quantity, production_per_man_day, man_days, override_man_days, source (auto/manual), enabled, notes.
+- `POST /api/projects/{id}/mandagen/generate` — aggregeert offerteregels per werkpost; mandagen = hoeveelheid / productie_per_mandag. Werkposten zonder productiviteitsprofiel → missing_profiles waarschuwing. Auto-regels worden bijgewerkt, handmatige/override behouden bij hergeneratie.
+- `GET /api/projects/{id}/mandagen` — gegroepeerd per discipline (discipline_order), totalen (mandagen/uren/arbeidskost), config met day_rate. Arbeidskost = effectieve_mandagen × uren/dag × uurloon. override_man_days heeft voorrang.
+- Config (uurloon + uren/dag): `GET/PUT /api/mandagen/config` (globaal) + `GET/PUT/DELETE /api/projects/{id}/mandagen/config` (project-override, is_override-vlag). Defaults 45 €/u × 8u.
+- Handmatige regels: `POST /api/projects/{id}/mandagen/lines`, `PUT/DELETE /api/mandagen/lines/{id}` (override_man_days, enabled).
+- Pytest: `/app/backend/tests/test_mandagen_fase3.py` (7 tests groen).
+
+**AI-productiviteit** (`/app/backend/ai_productivity.py`):
+- `POST /api/werkposten/{id}/ai-productivity-profile` — genereert production_per_man_day + production_unit via Claude Sonnet 4.5 (Emergent LLM Key), regels van de kunst, mode fill/replace. (bv. Tegelvloer → 8 m²/mandag).
+
+**Frontend** (`/app/frontend/src/pages/ProjectMandagenTab.js`, project-tab "👷 Mandagen" tussen Materiaallijst en 3D Ontwerpen):
+- Arbeidsloon-kaart: uurloon + uren/dag (live dagtarief-preview) + opslaan/reset project-override.
+- "Genereer mandagen" knop, totalen-kaart (mandagen/uren/arbeidskost), groepen per discipline met bewerkbare mandagen-override per regel + arbeidskost per regel + enabled-toggle + verwijderen.
+- Ontbrekende-productiviteitsprofielen blok met "AI aanvullen" (per regel + alle) en "Handmatig" link naar /werkposten.
+- Werkposten-pagina: extra AI-productiviteit knop (Clock-icoon, `ai-productivity-{id}`) naast AI-materiaalprofiel knop.
+
+## Bekende Issues (resterend)
+- P2: server.py refactoring (>12.000 regels) - technische schuld
+- P3: Legacy multi-tenant pytests opkuisen
+
