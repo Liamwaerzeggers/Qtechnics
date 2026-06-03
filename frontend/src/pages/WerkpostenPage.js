@@ -59,20 +59,23 @@ export default function WerkpostenPage() {
 
   const [historyItem, setHistoryItem] = useState(null);
   const [historyData, setHistoryData] = useState(null);
+  const [materials, setMaterials] = useState([]);
 
   useEffect(() => { fetchAll(); }, [showInactive]);
 
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [itemsRes, catRes, srcRes] = await Promise.all([
+      const [itemsRes, catRes, srcRes, matRes] = await Promise.all([
         axios.get(`${API}/werkposten`, { headers: getAuthHeaders(), params: { include_inactive: showInactive } }),
         axios.get(`${API}/werkposten/categories`, { headers: getAuthHeaders() }),
         axios.get(`${API}/offerte-generator/sources`, { headers: getAuthHeaders() }),
+        axios.get(`${API}/materiaal`, { headers: getAuthHeaders() }),
       ]);
       setItems(itemsRes.data || []);
       setDisciplineMap(catRes.data?.discipline_order_map || {});
       setSources(srcRes.data || []);
+      setMaterials(matRes.data || []);
     } catch (err) {
       toast.error('Kon werkposten niet laden');
     } finally {
@@ -142,6 +145,15 @@ export default function WerkpostenPage() {
     setForm((f) => {
       const mp = [...f.material_profile];
       mp[idx] = { ...mp[idx], [key]: val };
+      if (key === 'material_name') {
+        const match = materials.find((m) => (m.name || '').toLowerCase() === (val || '').toLowerCase());
+        if (match) {
+          mp[idx].material_id = match.id;
+          if (!mp[idx].unit || mp[idx].unit === 'stuk') mp[idx].unit = match.unit || 'stuk';
+        } else {
+          mp[idx].material_id = null;
+        }
+      }
       return { ...f, material_profile: mp };
     });
   };
@@ -504,14 +516,20 @@ export default function WerkpostenPage() {
                 <div className="space-y-2">
                   {form.material_profile.map((m, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <Input className="flex-1" placeholder="Materiaal" value={m.material_name} onChange={(e) => updateMaterialRow(idx, 'material_name', e.target.value)} />
-                      <Input className="w-24" type="number" step="0.001" placeholder="Aantal" value={m.quantity_per_unit} onChange={(e) => updateMaterialRow(idx, 'quantity_per_unit', e.target.value)} />
+                      <div className="flex-1 relative">
+                        <Input list="materiaal-datalist" placeholder="Materiaal" value={m.material_name} onChange={(e) => updateMaterialRow(idx, 'material_name', e.target.value)} />
+                      </div>
+                      <Input className="w-24" type="number" step="0.001" placeholder="per eenh." value={m.quantity_per_unit} onChange={(e) => updateMaterialRow(idx, 'quantity_per_unit', e.target.value)} />
                       <Input className="w-20" placeholder="eenheid" value={m.unit} onChange={(e) => updateMaterialRow(idx, 'unit', e.target.value)} />
+                      {m.material_id && <span className="text-[10px] text-emerald-600 whitespace-nowrap" title="Gekoppeld aan bibliotheek">●</span>}
                       <Button type="button" size="icon" variant="ghost" className="h-8 w-8" onClick={() => removeMaterialRow(idx)}>
                         <X className="h-4 w-4 text-red-400" />
                       </Button>
                     </div>
                   ))}
+                  <datalist id="materiaal-datalist">
+                    {materials.map((m) => <option key={m.id} value={m.name} />)}
+                  </datalist>
                 </div>
               )}
             </div>

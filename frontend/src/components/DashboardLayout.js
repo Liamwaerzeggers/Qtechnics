@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, API } from '../App';
 import axios from 'axios';
-import { FileText, FileSpreadsheet, Calendar, Package, Users, LogOut, LayoutDashboard, Menu, X, TrendingUp, UserCog, ShieldCheck, PenTool, Building2, Tag, Wrench, ChevronDown, ShoppingCart, ClipboardList, Hammer, LayoutTemplate } from 'lucide-react';
+import { FileText, FileSpreadsheet, Calendar, Package, Users, LogOut, LayoutDashboard, Menu, X, TrendingUp, UserCog, ShieldCheck, PenTool, Building2, Tag, Wrench, ChevronDown, ShoppingCart, ClipboardList, Hammer, LayoutTemplate, Boxes } from 'lucide-react';
 import CelebrationModal from './CelebrationModal';
 import WorkerTaskBanner from './WorkerTaskBanner';
 import MaterialRequestBanner from './MaterialRequestBanner';
@@ -67,8 +67,8 @@ export default function DashboardLayout({ children, showBackToDashboard = false 
       { name: 'Kalender', path: '/calendar', icon: Calendar, testId: 'nav-calendar' },
       { name: 'Materialen', path: '/materials', icon: Package, testId: 'nav-materials' },
       { name: 'Taken', path: '/tasks', icon: ClipboardList, testId: 'nav-tasks' },
-      { name: 'Bestelcatalogus', path: '/material-catalog', icon: ShoppingCart, testId: 'nav-material-catalog' },
       { name: 'Werkposten', path: '/werkposten', icon: Hammer, testId: 'nav-werkposten' },
+      { name: 'Materiaalbibliotheek', path: '/materiaalbibliotheek', icon: Boxes, testId: 'nav-materiaalbibliotheek' },
       { name: 'Ruimte-templates', path: '/ruimte-templates', icon: LayoutTemplate, testId: 'nav-ruimte-templates' },
       { name: 'Werk Labels', path: '/work-labels', icon: Tag, testId: 'nav-work-labels' },
     ];

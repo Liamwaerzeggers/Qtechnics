@@ -1,0 +1,39 @@
+{
+  "summary": "Fase 2 (Materiaalbibliotheek) + Fase 2B (automatische Materiaallijst & bestellingen) fully tested end-to-end. 17/17 backend pytest cases pass and the full frontend UI flow works: Materiaalbibliotheek CRUD + price history + Materiaallijst tab generate → supplier grouping → totals → mark besteld + MaterialRequest creation. No bugs found in either layer for this iteration.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_materiaal_lijst.py",
+    "/app/test_reports/pytest/pytest_results_materiaal_lijst.xml"
+  ],
+  "action_items": [
+    "No fixes required for this iteration. (Pre-existing optional item from iter19: GET /api/werkposten?search=... still 500s — out of scope here.)"
+  ],
+  "critical_code_review_comments": [
+    "materiaal.py update_materiaal: the `update_data` dict-comprehension keeps explicit-null values only for a hard-coded subset of fields. If a caller PUTs `category: null` it is silently dropped — acceptable now but worth documenting as intentional. ",
+    "materiaallijst.py generate: aggregation key falls back to `name.lower()` only when no material_id match exists. If two work_items reference different material_ids that both resolve to the SAME library material (id present), they merge correctly. However, if one line has only material_name='Tegellijm' and another has material_id pointing to that same row, aggregation will create TWO entries (key='MAT-...' vs key='tegellijm'). Consider normalising the name-only branch by checking mat_by_name first before falling back. Low priority — current tests cover the matched path.",
+    "materiaallijst.py order endpoint creates a MaterialRequest with status='ordered' and is_ordered=true bypassing whatever requested/approved workflow material_requests normally has. Confirm this matches the werfsysteem expectations; if not, status should start at 'requested' and the order step should approve+order separately.",
+    "ProjectMateriaallijstTab.js: qty/price inputs commit on onBlur using `defaultValue` (uncontrolled). If the user types a value and clicks Generate without blurring first, the edit is lost. Minor UX, not a bug.",
+    "MateriaalBibliotheekPage.js confirms deactivation with window.confirm() — works but inconsistent with the rest of the app's Dialog-based confirmations."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_materiaal_lijst.py (new pytest suite — 17 tests covering Materiaalbibliotheek CRUD + learn-price + Materiaallijst generate/get/CRUD/order/regenerate-skip-locked)"
+  ],
+  "success_rate": {
+    "backend": "100% (17/17 pytest cases passed)",
+    "frontend": "100% (Materiaalbibliotheek: page load, sidebar nav, create/edit/price-history dialog/deactivate all verified. Materiaallijst tab: open tab, generate, supplier-group rendering, totals card (2 regels, €28), manual line add, select+'Zet op besteld' produces status=besteld and MaterialRequest creation verified via API readback.)"
+  },
+  "test_credentials": "Admin /api/auth2/login {username:'liam', password:'Liammail123'}; token stored in localStorage as both auth_token and session_token",
+  "seed_data_creation": "Tests create TEST_-prefixed materialen, een werkpost met material_profile, en één offerte (OFF-...) op PROJ-60A4159C, plus enkele materiaallijst-regels. Alle TEST_-regels op de materiaallijst worden gewist, werkpost en materiaal worden hard-deleted (?soft=false). De offerte zelf blijft staan in /api/quotes — er is geen delete-endpoint voor quotes.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression suite for Materiaalbibliotheek + Materiaallijst lives at /app/backend/tests/test_materiaal_lijst.py. The E2E flow inside the test (mat → werkpost → quote → generate → order) is self-contained and idempotent thanks to TEST_ prefixes + cleanup class. Re-running may leave a few TEST_-prefixed quotes on PROJ-60A4159C (no DELETE endpoint), but this does not affect future runs because Materiaallijst regenerate respects unique aggregation keys. testIDs used in UI: add-materiaal-btn, mat-form-name/category/price/unit/supplier, save-materiaal-btn, mat-edit-{id}, mat-history-{id}, mat-delete-{id}, materiaal-card-{id}, generate-materiaallijst-btn, supplier-group-{supplier}, mll-line-{id}, mll-select-{id}, mll-qty-{id}, mll-price-{id}, mll-status-{id}, mark-ordered-btn, toggle-add-line-btn, new-line-name, confirm-add-line.",
+  "rca of the issue": "N/A — no bugs encountered during this iteration."
+}
