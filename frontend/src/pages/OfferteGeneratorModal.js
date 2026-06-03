@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Zap, Loader2, AlertTriangle, FileText, Info } from 'lucide-react';
+import { Zap, Loader2, AlertTriangle, FileText, Info, Check, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 const getAuthHeaders = () => {
@@ -30,23 +30,30 @@ export default function OfferteGeneratorModal({ projectId, open, onClose }) {
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [data, setData] = useState(null);
-  const [edit, setEdit] = useState({});           // line.id -> {include, quantity, unit_price, vat_rate, item_type}
+  const [edit, setEdit] = useState({});           // line.id -> {include, quantity, unit_price, vat_rate, item_type, skip, wasMissing}
   const [overrides, setOverrides] = useState({}); // room_id -> template_id
+  const [savedToLib, setSavedToLib] = useState({}); // line.id -> true
+  const [savingLine, setSavingLine] = useState(null);
 
   const initEditState = (resp) => {
     const e = {};
     (resp.rooms || []).forEach((room) => {
       (room.lines || []).forEach((ln) => {
+        const missing = ln.unit_price === null || ln.unit_price === undefined;
         e[ln.id] = {
           include: true,
           quantity: ln.quantity ?? 0,
-          unit_price: ln.unit_price === null || ln.unit_price === undefined ? '' : ln.unit_price,
+          unit_price: missing ? '' : ln.unit_price,
           vat_rate: ln.vat_rate ?? 6,
           item_type: ln.item_type || 'arbeid',
+          skip: false,
+          wasMissing: missing,
+          work_item_id: ln.work_item_id || null,
         };
       });
     });
     setEdit(e);
+    setSavedToLib({});
   };
 
   const fetchSuggest = useCallback(async (ovr = {}) => {
@@ -98,6 +105,16 @@ export default function OfferteGeneratorModal({ projectId, open, onClose }) {
     return result;
   }, [data, edit]);
 
+  // Regels die bij het voorstel geen prijs hadden en aandacht nodig hebben
+  const missingBlockLines = useMemo(() => {
+    return includedLines.filter(({ e }) => e.wasMissing && !e.skip);
+  }, [includedLines]);
+
+  // Blokkeer aanmaken zolang een noodzakelijke (niet-overgeslagen) prijs ontbreekt
+  const blockingLines = useMemo(() => {
+    return includedLines.filter(({ e }) => !e.skip && (e.unit_price === '' || num(e.unit_price) === 0));
+  }, [includedLines]);
+
   const totals = useMemo(() => {
     let excl = 0, incl = 0, missingPrice = 0;
     includedLines.forEach(({ e }) => {
@@ -109,9 +126,42 @@ export default function OfferteGeneratorModal({ projectId, open, onClose }) {
     return { excl, incl, missingPrice, count: includedLines.length };
   }, [includedLines]);
 
+  const learnPrice = async ({ ln, e }) => {
+    const price = num(e.unit_price);
+    if (price <= 0) { toast.error('Vul eerst een prijs in'); return; }
+    setSavingLine(ln.id);
+    try {
+      const resp = await axios.post(
+        `${API}/werkposten/learn-price`,
+        {
+          work_item_id: e.work_item_id || ln.work_item_id || null,
+          name: ln.label,
+          category: ln.category || 'Algemeen',
+          unit: ln.unit || 'stuk',
+          vat_rate: num(e.vat_rate) || 6,
+          default_source: ln.source || null,
+          price,
+          note: 'Aangevuld via offertegenerator',
+        },
+        { headers: getAuthHeaders() }
+      );
+      setLine(ln.id, { work_item_id: resp.data.id });
+      setSavedToLib((prev) => ({ ...prev, [ln.id]: true }));
+      toast.success(resp.data.created ? `"${ln.label}" toegevoegd aan bibliotheek` : `Prijs "${ln.label}" bijgewerkt`);
+    } catch (err) {
+      toast.error('Opslaan in bibliotheek mislukt');
+    } finally {
+      setSavingLine(null);
+    }
+  };
+
   const createQuote = async () => {
     if (includedLines.length === 0) {
       toast.error('Selecteer minstens één regel');
+      return;
+    }
+    if (blockingLines.length > 0) {
+      toast.error('Vul eerst alle noodzakelijke prijzen in of zet ze op "overslaan"');
       return;
     }
     setCreating(true);
@@ -124,7 +174,7 @@ export default function OfferteGeneratorModal({ projectId, open, onClose }) {
         unit: ln.unit,
         item_type: e.item_type,
         source: ln.source,
-        work_item_id: ln.work_item_id || null,
+        work_item_id: e.work_item_id || ln.work_item_id || null,
         category: ln.category,
         room_name: ln.room_name,
       }));
@@ -168,6 +218,70 @@ export default function OfferteGeneratorModal({ projectId, open, onClose }) {
           </div>
         ) : (
           <div className="space-y-5">
+            {/* Ontbrekende prijzen aanvullen */}
+            {missingBlockLines.length > 0 && (
+              <div className="border-2 border-amber-300 rounded-xl overflow-hidden" data-testid="missing-prices-block">
+                <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  <span className="font-semibold text-amber-800 text-sm">Ontbrekende prijzen aanvullen</span>
+                  <span className="text-xs text-amber-600">({missingBlockLines.length}) — vul aan, sla op in de bibliotheek, of sla over</span>
+                </div>
+                <div className="divide-y divide-amber-100">
+                  {missingBlockLines.map(({ ln, room }) => {
+                    const e = edit[ln.id] || {};
+                    const saved = !!savedToLib[ln.id];
+                    return (
+                      <div key={ln.id} className="grid grid-cols-12 gap-2 items-center px-4 py-2" data-testid={`missing-row-${ln.id}`}>
+                        <div className="col-span-12 sm:col-span-4 min-w-0">
+                          <div className="text-sm font-medium text-slate-800 truncate">{ln.label}</div>
+                          <div className="text-[11px] text-slate-400">{room?.room_name || ln.category} · {ln.source_label}</div>
+                        </div>
+                        <div className="col-span-3 sm:col-span-2 text-xs text-slate-500">
+                          {num(e.quantity)} {ln.unit}
+                        </div>
+                        <div className="col-span-4 sm:col-span-2">
+                          <Input
+                            type="number" step="0.01"
+                            className="h-8 text-right text-sm border-amber-300"
+                            placeholder="€ prijs"
+                            value={e.unit_price}
+                            onChange={(ev) => { setLine(ln.id, { unit_price: ev.target.value }); setSavedToLib((p) => ({ ...p, [ln.id]: false })); }}
+                            data-testid={`missing-price-input-${ln.id}`}
+                          />
+                        </div>
+                        <div className="col-span-5 sm:col-span-2">
+                          {saved ? (
+                            <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                              <Check className="h-3.5 w-3.5" /> Opgeslagen
+                            </span>
+                          ) : (
+                            <Button
+                              size="sm" variant="outline"
+                              className="h-8 text-xs w-full border-amber-300 text-amber-700 hover:bg-amber-50"
+                              onClick={() => learnPrice({ ln, e })}
+                              disabled={savingLine === ln.id}
+                              data-testid={`save-to-lib-${ln.id}`}
+                            >
+                              {savingLine === ln.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+                              Bibliotheek
+                            </Button>
+                          )}
+                        </div>
+                        <div className="col-span-3 sm:col-span-2 flex items-center justify-end gap-1.5">
+                          <Checkbox
+                            checked={!!e.skip}
+                            onCheckedChange={(c) => setLine(ln.id, { skip: !!c })}
+                            data-testid={`skip-price-${ln.id}`}
+                          />
+                          <span className="text-[11px] text-slate-500">Overslaan</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {data.rooms.map((room) => (
               <div key={room.room_id} className="border rounded-xl overflow-hidden" data-testid={`gen-room-${room.room_id}`}>
                 <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-slate-50 border-b">
@@ -289,9 +403,9 @@ export default function OfferteGeneratorModal({ projectId, open, onClose }) {
             <span className="font-semibold text-slate-900">{totals.count}</span> regels ·
             excl. btw <span className="font-semibold">€ {totals.excl.toFixed(2)}</span> ·
             incl. btw <span className="font-semibold">€ {totals.incl.toFixed(2)}</span>
-            {totals.missingPrice > 0 && (
-              <span className="ml-2 text-amber-600 inline-flex items-center gap-1">
-                <AlertTriangle className="h-3.5 w-3.5" /> {totals.missingPrice} zonder prijs
+            {blockingLines.length > 0 && (
+              <span className="ml-2 text-amber-600 inline-flex items-center gap-1" data-testid="blocking-warning">
+                <AlertTriangle className="h-3.5 w-3.5" /> {blockingLines.length} noodzakelijke prijs/prijzen ontbreekt
               </span>
             )}
           </div>
@@ -299,7 +413,7 @@ export default function OfferteGeneratorModal({ projectId, open, onClose }) {
             <Button variant="outline" onClick={onClose}>Annuleren</Button>
             <Button
               onClick={createQuote}
-              disabled={creating || totals.count === 0}
+              disabled={creating || totals.count === 0 || blockingLines.length > 0}
               style={{ backgroundColor: '#500000', color: 'white' }}
               data-testid="gen-create-quote-btn"
             >

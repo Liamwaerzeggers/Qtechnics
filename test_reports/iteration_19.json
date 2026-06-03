@@ -1,0 +1,44 @@
+{
+  "summary": "Fase 1C 'Ontbrekende prijzen aanvullen' / zelflerende offertegenerator fully tested. 5/5 backend pytest cases pass, all 6 frontend acceptance criteria verified end-to-end including persistence to werkpost library. Found 1 pre-existing backend bug (GET /api/werkposten?search=... returns 500) that is unrelated to this iteration but should be fixed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "GET /api/werkposten?search=<term>",
+        "issue": "Returns 500 OperationFailure '$or/$and/$nor entries need to be full objects'. The search-filter query construction in werkposten.py (lines 178-189) wraps the existing $or list as an $and entry which is invalid Mongo syntax. Frontend Werkposten page does client-side filtering so production UX is not affected, but the public API contract is broken.",
+        "priority": "MEDIUM"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_offerte_learn_prices.py",
+    "/app/test_reports/pytest/pytest_results_learn_prices.xml"
+  ],
+  "action_items": [
+    "(Optional) Fix GET /api/werkposten?search query construction in /app/backend/werkposten.py (lines 178-189). Suggested fix: drop the broken conditional pop logic and build a clean $and list, e.g. and_clauses = []; if not include_inactive: and_clauses.append({'$or':[{'active':{'$ne':False}},{'active':{'$exists':False}}]}); if search: and_clauses.append({'$or':[{'name':{'$regex':search,'$options':'i'}},{'title':{'$regex':search,'$options':'i'}}]}); query = {'$and':and_clauses} if and_clauses else {}",
+    "(Optional) When the offerte-generator suggest endpoint pre-fills prices from the library (zelflerend), the row is no longer 'wasMissing' so the 'Ontbrekende prijzen' block hides it — verify this is the intended UX (currently it is, and works fine)."
+  ],
+  "critical_code_review_comments": [
+    "Pre-existing bug: list_werkposten search filter constructs an invalid Mongo $and query. The expression `query.pop('$or', {'$or': [{}]}) if '$or' in query else {}` evaluates to the LIST (e.g. [{'active':{'$ne':False}}, ...]) when $or exists, and Mongo rejects bare arrays inside $and. Trigger: GET /api/werkposten?search=anything with default include_inactive=false.",
+    "offerte_generator.py auto-create-werkpost block (lines 441-457) duplicates field-mapping logic that already lives in /werkposten/learn-price. Consider DRYing by calling learn-price internally instead of importing WorkItem + DISCIPLINE_ORDER directly.",
+    "OfferteGeneratorModal.js learnPrice() does not refresh data afterwards — if the user adds a price, then closes & reopens the modal, the suggest endpoint will repopulate from library and skip rendering of that row. Current behavior works, just worth noting for future template edits."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_offerte_learn_prices.py (new pytest suite — 5 tests)"
+  ],
+  "success_rate": {
+    "backend": "100% (5/5 pytest cases passed)",
+    "frontend": "100% (missing-prices-block render, button blocking, save-to-lib + persistence, fill+skip enables button, e2e quote creation + navigation to /quotes/{id} all verified)"
+  },
+  "test_credentials": "Admin /api/auth2/login {username:'liam', password:'Liammail123'}; token persisted to localStorage as both auth_token and session_token",
+  "seed_data_creation": "Tests create TEST_-prefixed werkposten and one transient 'Afbraak wandtegels' WP via the UI flow; all are hard-deleted at the end of the run (verified DELETE 200). UI test also created two real quotes in /api/quotes (OFF-2026-...) that remain in DB — no delete endpoint exposed for cleanup.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend pytest suite for zelflerende offertegenerator lives at /app/backend/tests/test_offerte_learn_prices.py. PROJ-60A4159C is the standing test project; its Badkamer meetstaat suggest call now returns ~8-9 lines, of which 1-2 may already have prices learned from prior runs (Tegelvloer ≈55, Afbraak vloer ≈73.42). The missing-prices block reactively recalculates from `wasMissing && !skip`, so adding prices in previous runs reduces the block size — this is expected zelflerend behavior. New backend bug to watch: GET /api/werkposten?search=... currently 500s; list+client-filter as a workaround.",
+  "rca of the issue": "GET /api/werkposten search-filter bug RCA: in werkposten.py list_werkposten, when search is provided AND include_inactive is false, the code attempts: query['$and']=[query.pop('$or', {'$or':[{}]}) if '$or' in query else {}, {'$or':[...search...]}]. The first element evaluates to the previously-set list value of query['$or'] (a Python list of full objects). Mongo's $and operator requires each entry to itself be an object expression, not an array. Resolution: rebuild the query as $and of two $or sub-objects (see action_items code snippet). Reproduction: curl '$BASE/api/werkposten?search=x' → 500. Not blocking iteration since UI uses client-side filter."
+}

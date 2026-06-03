@@ -413,29 +413,48 @@ async def create_quote_from_suggestions(project_id: str, payload: CreateQuoteReq
         }
         await db.line_items.insert_one(item_doc)
 
-        # Zelflerend: schrijf prijs terug naar werkpost indien onbekend of gewijzigd
-        if payload.learn_prices and ln.work_item_id and ln.unit_price and ln.unit_price > 0:
-            wp = await db.work_items.find_one({"id": ln.work_item_id}, {"_id": 0})
-            if wp is not None:
-                old = wp.get("standard_price")
-                if old is None and wp.get("price_per_m2") is not None:
-                    old = wp.get("price_per_m2")
-                if old is None or float(old) != float(ln.unit_price):
-                    history = wp.get("price_history") or []
-                    if old is not None:
-                        history.append({
-                            "old_price": float(old),
-                            "new_price": float(ln.unit_price),
-                            "changed_at": now.isoformat(),
-                            "changed_by": user_id,
-                            "note": f"Zelflerend via offerte {quote_id}",
-                        })
-                    await db.work_items.update_one(
-                        {"id": ln.work_item_id},
-                        {"$set": {"standard_price": float(ln.unit_price), "price_history": history,
-                                  "updated_at": now.isoformat()}},
-                    )
-                    learned += 1
+        # Zelflerend: schrijf prijs terug naar de werkpostbibliotheek
+        if payload.learn_prices and ln.unit_price and ln.unit_price > 0:
+            if ln.work_item_id:
+                # Bestaande werkpost: update prijs + log historiek
+                wp = await db.work_items.find_one({"id": ln.work_item_id}, {"_id": 0})
+                if wp is not None:
+                    old = wp.get("standard_price")
+                    if old is None and wp.get("price_per_m2") is not None:
+                        old = wp.get("price_per_m2")
+                    if old is None or float(old) != float(ln.unit_price):
+                        history = wp.get("price_history") or []
+                        if old is not None:
+                            history.append({
+                                "old_price": float(old),
+                                "new_price": float(ln.unit_price),
+                                "changed_at": now.isoformat(),
+                                "changed_by": user_id,
+                                "note": f"Zelflerend via offerte {quote_id}",
+                            })
+                        await db.work_items.update_one(
+                            {"id": ln.work_item_id},
+                            {"$set": {"standard_price": float(ln.unit_price), "price_history": history,
+                                      "updated_at": now.isoformat()}},
+                        )
+                        learned += 1
+            else:
+                # Geen gekoppelde werkpost: maak een nieuwe aan zodat de bibliotheek leert
+                from werkposten import WorkItem as _WorkItem, DISCIPLINE_ORDER as _DISC
+                cat = ln.category or "Algemeen"
+                new_wp = _WorkItem(
+                    name=ln.description,
+                    category=cat,
+                    unit=ln.unit or "stuk",
+                    standard_price=float(ln.unit_price),
+                    vat_rate=float(ln.vat_rate),
+                    discipline_order=_DISC.get(cat, 18),
+                    default_source=ln.source,
+                )
+                await db.work_items.insert_one(new_wp.model_dump())
+                # Koppel de nieuwe werkpost aan de offerteregel voor traceerbaarheid
+                await db.line_items.update_one({"id": item_doc["id"]}, {"$set": {"work_item_id": new_wp.id}})
+                learned += 1
 
     # Hertel offerte-totalen via bestaande logica
     try:

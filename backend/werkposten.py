@@ -122,6 +122,18 @@ class WorkItemUpdate(BaseModel):
     price_change_note: Optional[str] = None  # extra context als prijs wijzigt
 
 
+class LearnPriceRequest(BaseModel):
+    """Vul/leer een prijs voor een werkpost. Update bestaande of maak nieuwe aan."""
+    work_item_id: Optional[str] = None
+    name: str
+    category: Optional[str] = "Algemeen"
+    unit: Optional[str] = "m²"
+    vat_rate: Optional[float] = 6.0
+    default_source: Optional[str] = None
+    price: float
+    note: Optional[str] = None
+
+
 # ============= HELPERS =============
 
 async def _get_db():
@@ -198,6 +210,53 @@ async def get_werkpost(work_item_id: str):
     if not doc:
         raise HTTPException(status_code=404, detail="Werkpost niet gevonden")
     return _normalize_legacy(doc)
+
+
+@router.post("/learn-price")
+async def learn_price(payload: LearnPriceRequest):
+    """Vul een prijs in voor een werkpost: update bestaande (op id of naam) of maak een nieuwe aan.
+    Logt prijswijziging in de prijshistoriek. Zelflerend gebruikt door de offertegenerator."""
+    db = await _get_db()
+    now = datetime.now(timezone.utc).isoformat()
+    price = float(payload.price)
+
+    existing = None
+    if payload.work_item_id:
+        existing = await db.work_items.find_one({"id": payload.work_item_id}, {"_id": 0})
+    if existing is None and payload.name:
+        existing = await db.work_items.find_one(
+            {"$or": [
+                {"name": {"$regex": f"^{payload.name.strip()}$", "$options": "i"}},
+                {"title": {"$regex": f"^{payload.name.strip()}$", "$options": "i"}},
+            ]}, {"_id": 0})
+
+    if existing is not None:
+        existing = _normalize_legacy(existing)
+        old = existing.get("standard_price")
+        history = existing.get("price_history") or []
+        if old is not None and float(old) != price:
+            history.append(PriceHistoryEntry(old_price=float(old), new_price=price, note=payload.note or "Aangevuld via offertegenerator").model_dump())
+        update_data = {"standard_price": price, "price_history": history, "updated_at": now}
+        if payload.default_source and not existing.get("default_source"):
+            update_data["default_source"] = payload.default_source
+        await db.work_items.update_one({"id": existing["id"]}, {"$set": update_data})
+        updated = await db.work_items.find_one({"id": existing["id"]}, {"_id": 0})
+        return {"created": False, **_normalize_legacy(updated)}
+
+    # Nieuwe werkpost aanmaken
+    category = payload.category or "Algemeen"
+    disc = DISCIPLINE_ORDER.get(category, 18)
+    obj = WorkItem(
+        name=payload.name.strip(),
+        category=category,
+        unit=payload.unit or "m²",
+        standard_price=price,
+        vat_rate=payload.vat_rate if payload.vat_rate is not None else 6.0,
+        discipline_order=disc,
+        default_source=payload.default_source,
+    )
+    await db.work_items.insert_one(obj.model_dump())
+    return {"created": True, **obj.model_dump()}
 
 
 @router.post("")
