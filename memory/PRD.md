@@ -245,7 +245,24 @@ Onderdeel van het Max Q Project Intelligence Platform V3 — eerste fase van de 
 - Generator-modal heeft bovenaan een blok **"Ontbrekende prijzen aanvullen"**: per regel werkpost · eenheid · hoeveelheid · prijsveld · knop "Bibliotheek" (opslaan in werkpostbibliotheek) · checkbox "Overslaan". "Offerte aanmaken" blijft geblokkeerd tot alle noodzakelijke prijzen ingevuld/overgeslagen zijn.
 
 ## Backlog (volgende prioriteit per gebruiker: Fase 2/2B vóór 1.5)
-- **P1: Fase 2/2B — Materiaalbibliotheek + automatische bestellingen** (volgende taak)
+
+## Fase 2 + 2B — Materiaalbibliotheek + Automatische Materiaallijst (AFGEROND, getest iteratie 20 — 100%)
+**Materiaalbibliotheek** (`/app/backend/materiaal.py`, router `/api/materiaal`):
+- MateriaalItem: naam, categorie, eenheid, **aankoopprijs**, leverancier, sku, verpakkingseenheid, active, prijshistoriek.
+- CRUD + `/categories` (categorieën + leveranciers) + `/{id}/history` + `/learn-price` (zelflerend).
+- Frontend: `MateriaalBibliotheekPage.js` (sidebar "Materiaalbibliotheek" — **vervangt Bestelcatalogus** in het hoofdmenu; route /material-catalog blijft bestaan). CRUD + prijshistoriek-dialog.
+- Werkpost `material_profile`-rijen koppelen nu via datalist aan de bibliotheek (`material_id`).
+
+**Automatische Materiaallijst** (`/app/backend/materiaallijst.py`, project-tab "📦 Materiaallijst"):
+- `POST /api/projects/{id}/materiaallijst/generate` — aggregeert materiaalbehoefte uit alle offerteregels (werkpost.material_profile × hoeveelheid), gematcht aan de bibliotheek voor aankoopprijs + leverancier. Hergeneratie werkt te_bestellen-regels bij, **behoudt** reeds bestelde/geleverde + handmatige regels.
+- `GET /api/projects/{id}/materiaallijst` — gegroepeerd **per leverancier** + totalen (te bestellen/besteld/geleverd/totale aankoopkost).
+- Statusopvolging per regel: te_bestellen → besteld → geleverd (met ordered_at/delivered_at).
+- Handmatige regels toevoegen/bewerken/verwijderen.
+- `POST .../order` — "zet besteld": markeert regels + maakt optioneel **MaterialRequests** aan in het werfsysteem.
+- Afdrukbare lijst (print).
+- Pytest: `/app/backend/tests/test_materiaal_lijst.py` (17 tests groen).
+
+## Backlog (resterend)
 - P2: Fase 1.5 — AI plan-upload module (auto ruimtes invullen o.b.v. AI vision)
 - P2: Onderaannemers Module
 - P2: Investeerders Module
