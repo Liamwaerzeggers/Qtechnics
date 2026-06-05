@@ -34,6 +34,17 @@ export const SERVICES = {
   'maatkasten': { title: 'Maatkasten', h1: 'Maatkasten op Maat', description: 'Maatkasten perfect afgestemd op uw ruimte.', keywords: 'maatkasten, kasten op maat', category: 'maatwerk' },
   'inbouwkasten': { title: 'Inbouwkasten', h1: 'Inbouwkasten op Maat', description: 'Inbouwkasten die perfect passen met oog voor detail.', keywords: 'inbouwkasten, wandkast', category: 'maatwerk' },
   'dressing-op-maat': { title: 'Dressing op Maat', h1: 'Dressing op Maat', description: 'Luxe dressing op maat door ervaren vakmensen.', keywords: 'dressing op maat, inloopkast', category: 'maatwerk' },
+  'kasten-op-maat': { title: 'Kasten op Maat', h1: 'Kasten op Maat door Schrijnwerkers', description: 'Kasten op maat — dressing, inbouwkast of wandmeubel volledig naar uw woning.', keywords: 'kasten op maat, maatwerk kasten', category: 'maatwerk' },
+  // SEO-Discovered high-impression search patterns (Google Search Console data)
+  'badkamerspecialist': { title: 'Badkamerspecialist', h1: 'Erkend Badkamerspecialist met 35 Jaar Vakmanschap', description: 'Erkend badkamerspecialist uit Oostham. Compleet ontwerp, installatie en afwerking.', keywords: 'badkamerspecialist, erkende badkamer installateur', category: 'badkamer' },
+  'badkamermeubels': { title: 'Badkamermeubels op Maat', h1: 'Badkamermeubels op Maat Geplaatst', description: 'Maatwerk badkamermeubels met natuursteen of solid surface tabletten.', keywords: 'badkamermeubels, badmeubel op maat, wastafelmeubel', category: 'badkamer' },
+  'badkamerrenovatie': { title: 'Badkamerrenovatie', h1: 'Badkamerrenovatie van A tot Z', description: 'Volledige badkamerrenovatie inclusief sanitair, tegelwerk en elektriciteit.', keywords: 'badkamerrenovatie, badkamer renoveren', category: 'badkamer' },
+  'keukenrenovatie': { title: 'Keukenrenovatie', h1: 'Keukenrenovatie door Eigen Vakmensen', description: 'Complete keukenrenovatie met inbouwapparatuur, elektriciteit en werkblad.', keywords: 'keukenrenovatie, keuken vernieuwen', category: 'keuken' },
+  'interieurbouw': { title: 'Interieurbouw', h1: 'Interieurbouw op Maat', description: 'Maatwerk interieurbouw — schrijnwerk, wandmeubels, dressings en totaal interieur.', keywords: 'interieurbouw, schrijnwerk interieur', category: 'interieur' },
+  'interieurproject': { title: 'Interieurproject', h1: 'Uw Interieurproject van A tot Z', description: 'Compleet interieurproject met design, uitvoering en afwerking door één team.', keywords: 'interieurproject, total interieur', category: 'interieur' },
+  'traprenovatie': { title: 'Traprenovatie', h1: 'Traprenovatie met Behoud van Karakter', description: 'Traprenovatie — overzetten, vervangen of moderniseren met houten of stenen treden.', keywords: 'traprenovatie, trap renoveren', category: 'interieur' },
+  'binnendeuren-op-maat': { title: 'Binnendeuren op Maat', h1: 'Binnendeuren op Maat Geleverd & Geplaatst', description: 'Binnendeuren op maat met onzichtbare scharnieren en hoogwaardige afwerking.', keywords: 'binnendeuren op maat, deuren maatwerk', category: 'maatwerk' },
+  'leefruimte-op-maat': { title: 'Leefruimte op Maat', h1: 'Leefruimte op Maat Ingericht', description: 'Uw leefruimte op maat — TV-meubel, boekenkast en wandbekleding in één geheel.', keywords: 'leefruimte op maat, woonkamer maatwerk', category: 'interieur' },
 };
 
 const CATEGORY_IMAGES = {
