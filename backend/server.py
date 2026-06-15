@@ -622,6 +622,9 @@ class QuickTaskUpdate(BaseModel):
     completed: Optional[bool] = None
     completed_at: Optional[str] = None
 
+class PlanningTeamsUpdate(BaseModel):
+    teams: List[str] = []
+
 # ============= WORKER TASK MODELS =============
 
 class WorkerTask(BaseModel):
@@ -8448,8 +8451,8 @@ async def toggle_work_slip_customer_visibility(
 
 @api_router.get("/quick-tasks")
 async def get_quick_tasks(current_user: User = Depends(get_current_user)):
-    """Get all quick tasks for team planning"""
-    tasks = await db.quick_tasks.find({"user_id": current_user.id}, {"_id": 0}).to_list(1000)
+    """Get all quick tasks for team planning (shared across all admins/workers)"""
+    tasks = await db.quick_tasks.find({}, {"_id": 0}).to_list(1000)
     return tasks
 
 # ============= PROJECT ROOMS & RENOVATION CALCULATOR =============
@@ -9039,7 +9042,7 @@ async def update_quick_task(task_id: str, task_update: QuickTaskUpdate, current_
         raise HTTPException(status_code=400, detail="No data to update")
     
     result = await db.quick_tasks.update_one(
-        {"id": task_id, "user_id": current_user.id},
+        {"id": task_id},
         {"$set": update_data}
     )
     
@@ -9055,12 +9058,37 @@ async def delete_quick_task(task_id: str, current_user: User = Depends(get_curre
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can delete quick tasks")
     
-    result = await db.quick_tasks.delete_one({"id": task_id, "user_id": current_user.id})
+    result = await db.quick_tasks.delete_one({"id": task_id})
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Taak niet gevonden")
     
     return {"success": True}
+
+# ============= PLANNING TEAMS (shared across all admins) =============
+
+DEFAULT_PLANNING_TEAMS = ["Team 1", "Team 2", "Team 3"]
+
+@api_router.get("/planning-teams")
+async def get_planning_teams(current_user: User = Depends(get_current_user)):
+    """Get the shared planning team list (same for every admin/worker)."""
+    doc = await db.planning_config.find_one({"id": "teams"}, {"_id": 0})
+    if not doc or not doc.get("teams"):
+        return {"teams": DEFAULT_PLANNING_TEAMS, "is_default": True}
+    return {"teams": doc["teams"], "is_default": False}
+
+@api_router.put("/planning-teams")
+async def update_planning_teams(payload: PlanningTeamsUpdate, current_user: User = Depends(get_current_user)):
+    """Save the shared planning team list. Admin only."""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can manage teams")
+    teams = [t.strip() for t in (payload.teams or []) if t and t.strip()]
+    await db.planning_config.update_one(
+        {"id": "teams"},
+        {"$set": {"id": "teams", "teams": teams, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True,
+    )
+    return {"teams": teams}
 
 # Mount static files for uploads at /api/uploads BEFORE including router
 # Note: Kubernetes ingress routes /api/* to backend, so this will be accessible

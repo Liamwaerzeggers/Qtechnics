@@ -256,16 +256,42 @@ export default function CalendarPage() {
     loadTeams();
   }, []);
 
-  const loadTeams = () => {
-    const savedTeams = localStorage.getItem('planning_teams');
-    if (savedTeams) {
-      setTeams(JSON.parse(savedTeams));
+  const loadTeams = async () => {
+    try {
+      const response = await axios.get(`${API}/planning-teams`, { headers: getAuthHeaders() });
+      const serverTeams = response.data?.teams || [];
+      const isDefault = response.data?.is_default;
+      // Eenmalige migratie: als de server nog geen teams heeft maar deze browser
+      // lokaal teams had (oude opslag), zet die door naar de server zodat alle
+      // beheerders ze voortaan delen.
+      const legacy = localStorage.getItem('planning_teams');
+      if (isDefault && legacy) {
+        try {
+          const legacyTeams = JSON.parse(legacy);
+          if (Array.isArray(legacyTeams) && legacyTeams.length > 0) {
+            await axios.put(`${API}/planning-teams`, { teams: legacyTeams }, { headers: getAuthHeaders() });
+            setTeams(legacyTeams);
+            localStorage.removeItem('planning_teams');
+            return;
+          }
+        } catch (e) { /* negeer ongeldige legacy data */ }
+      }
+      if (serverTeams.length > 0) {
+        setTeams(serverTeams);
+      }
+    } catch (error) {
+      console.error('Failed to load teams:', error);
     }
   };
 
-  const saveTeams = (newTeams) => {
-    localStorage.setItem('planning_teams', JSON.stringify(newTeams));
+  const saveTeams = async (newTeams) => {
     setTeams(newTeams);
+    try {
+      await axios.put(`${API}/planning-teams`, { teams: newTeams }, { headers: getAuthHeaders() });
+    } catch (error) {
+      console.error('Failed to save teams:', error);
+      toast.error('Kon teams niet opslaan');
+    }
   };
 
   const fetchQuickTasks = async () => {
@@ -1041,6 +1067,7 @@ export default function CalendarPage() {
                 className={`${teamColor.light} border-2 ${teamColor.border} min-h-[200px]`}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDropOnTeam(e, teamName)}
+                data-testid={`team-card-${teamName}`}
               >
                 <CardHeader className={`${teamColor.bg} text-white py-2 rounded-t-lg`}>
                   <div className="flex items-center justify-between">
@@ -1159,9 +1186,10 @@ export default function CalendarPage() {
                   onKeyDown={(e) => e.key === 'Enter' && addTeam()}
                   className="mb-2 text-sm"
                   autoFocus
+                  data-testid="new-team-name-input"
                 />
                 <div className="flex gap-2">
-                  <Button size="sm" onClick={addTeam} className="flex-1 text-xs">Toevoegen</Button>
+                  <Button size="sm" onClick={addTeam} className="flex-1 text-xs" data-testid="confirm-add-team-btn">Toevoegen</Button>
                   <Button size="sm" variant="outline" onClick={() => setShowAddTeam(false)} className="text-xs">Annuleer</Button>
                 </div>
               </div>
@@ -1169,6 +1197,7 @@ export default function CalendarPage() {
               <button
                 onClick={() => setShowAddTeam(true)}
                 className="text-gray-400 hover:text-gray-600 transition-colors flex flex-col items-center gap-1"
+                data-testid="add-team-btn"
               >
                 <Plus className="w-8 h-8" />
                 <span className="text-xs font-medium">{isWorker ? 'Team toevoegen / Додати команду' : 'Team toevoegen'}</span>
