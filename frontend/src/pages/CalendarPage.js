@@ -258,26 +258,26 @@ export default function CalendarPage() {
 
   const loadTeams = async () => {
     try {
-      const response = await axios.get(`${API}/planning-teams`, { headers: getAuthHeaders() });
-      const serverTeams = response.data?.teams || [];
-      const isDefault = response.data?.is_default;
-      // Eenmalige migratie: als de server nog geen teams heeft maar deze browser
-      // lokaal teams had (oude opslag), zet die door naar de server zodat alle
-      // beheerders ze voortaan delen.
+      // Eenmalige migratie: als deze browser nog lokaal teams had (oude opslag),
+      // voeg die SAMEN met de gedeelde serverlijst (overschrijft niets, zodat
+      // teams van andere beheerders behouden blijven). Daarna lokaal opruimen.
       const legacy = localStorage.getItem('planning_teams');
-      if (isDefault && legacy) {
+      let legacyTeams = [];
+      if (legacy) {
         try {
-          const legacyTeams = JSON.parse(legacy);
-          if (Array.isArray(legacyTeams) && legacyTeams.length > 0) {
-            await axios.put(`${API}/planning-teams`, { teams: legacyTeams }, { headers: getAuthHeaders() });
-            setTeams(legacyTeams);
-            localStorage.removeItem('planning_teams');
-            return;
-          }
+          const parsed = JSON.parse(legacy);
+          if (Array.isArray(parsed)) legacyTeams = parsed.filter((t) => t && t.trim());
         } catch (e) { /* negeer ongeldige legacy data */ }
       }
-      if (serverTeams.length > 0) {
-        setTeams(serverTeams);
+      if (legacyTeams.length > 0) {
+        const resp = await axios.post(`${API}/planning-teams/merge`, { teams: legacyTeams }, { headers: getAuthHeaders() });
+        if (resp.data?.teams) setTeams(resp.data.teams);
+        localStorage.removeItem('planning_teams');
+        return;
+      }
+      const response = await axios.get(`${API}/planning-teams`, { headers: getAuthHeaders() });
+      if (response.data?.teams?.length > 0) {
+        setTeams(response.data.teams);
       }
     } catch (error) {
       console.error('Failed to load teams:', error);
@@ -287,7 +287,11 @@ export default function CalendarPage() {
   const saveTeams = async (newTeams) => {
     setTeams(newTeams);
     try {
-      await axios.put(`${API}/planning-teams`, { teams: newTeams }, { headers: getAuthHeaders() });
+      const resp = await axios.put(`${API}/planning-teams`, { teams: newTeams }, { headers: getAuthHeaders() });
+      // De server kan reeds-gebruikte teams terug toevoegen → houd UI in sync
+      if (resp.data?.teams && resp.data.teams.length !== newTeams.length) {
+        setTeams(resp.data.teams);
+      }
     } catch (error) {
       console.error('Failed to save teams:', error);
       toast.error('Kon teams niet opslaan');
@@ -383,24 +387,32 @@ export default function CalendarPage() {
     toast.success(`Team "${newTeamName}" toegevoegd`);
   };
 
-  const removeTeam = (teamName) => {
+  const removeTeam = async (teamName) => {
     if (!window.confirm(`Weet u zeker dat u "${teamName}" wilt verwijderen? Toegewezen werk wordt niet-toegewezen.`)) return;
-    
-    // Unassign all work from this team
-    projects.forEach(async (project) => {
+
+    // Werk eerst loskoppelen (await), anders ziet de server het team nog als 'in gebruik'
+    // en voegt het bij het opslaan automatisch terug toe.
+    for (const project of projects) {
       const hasTeamWork = project.scheduled_days?.some(p => p.team_name === teamName);
       if (hasTeamWork) {
-        const updatedScheduledDays = project.scheduled_days.map(p => 
+        const updatedScheduledDays = project.scheduled_days.map(p =>
           p.team_name === teamName ? { ...p, team_name: null } : p
         );
         await updateScheduledWork(project.id, updatedScheduledDays, false);
       }
-    });
-    
+    }
+    // Ook quick-tasks van dit team loskoppelen
+    for (const task of quickTasks) {
+      if (task.team_name === teamName) {
+        await updateQuickTask(task.id, { team_name: null });
+      }
+    }
+
     const newTeams = teams.filter(t => t !== teamName);
-    saveTeams(newTeams);
+    await saveTeams(newTeams);
     toast.success(`Team "${teamName}" verwijderd`);
     fetchProjects();
+    fetchQuickTasks();
   };
 
   const startEditingTeam = (teamName) => {

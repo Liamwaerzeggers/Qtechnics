@@ -9036,7 +9036,9 @@ async def update_quick_task(task_id: str, task_update: QuickTaskUpdate, current_
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can update quick tasks")
     
-    update_data = {k: v for k, v in task_update.model_dump().items() if v is not None}
+    # exclude_unset zodat enkel meegestuurde velden wijzigen, maar expliciete null
+    # (bv. team_name=null om los te koppelen, completed_at=null) wél doorgevoerd wordt.
+    update_data = task_update.model_dump(exclude_unset=True)
     
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
@@ -9069,30 +9071,85 @@ async def delete_quick_task(task_id: str, current_user: User = Depends(get_curre
 
 DEFAULT_PLANNING_TEAMS = ["Team 1", "Team 2", "Team 3"]
 
+async def _collect_used_team_names() -> set:
+    """Verzamel alle teamnamen die al in de planning gebruikt worden
+    (quick-tasks + project scheduled_days), zodat reeds ingeplande teams
+    altijd zichtbaar blijven als kolom — ook als ze niet (meer) in de config staan."""
+    used = set()
+    async for t in db.quick_tasks.find({"team_name": {"$nin": [None, ""]}}, {"_id": 0, "team_name": 1}):
+        tn = (t.get("team_name") or "").strip()
+        if tn:
+            used.add(tn)
+    async for p in db.projects.find({"scheduled_days": {"$exists": True, "$ne": []}}, {"_id": 0, "scheduled_days": 1}):
+        for sd in (p.get("scheduled_days") or []):
+            tn = (sd.get("team_name") or "").strip() if isinstance(sd, dict) else ""
+            if tn:
+                used.add(tn)
+    return used
+
+def _union_keep_order(base: list, extra) -> list:
+    """Union die de volgorde van base behoudt en nieuwe namen (gesorteerd) achteraan toevoegt."""
+    result = list(base)
+    for t in sorted(extra):
+        if t not in result:
+            result.append(t)
+    return result
+
 @api_router.get("/planning-teams")
 async def get_planning_teams(current_user: User = Depends(get_current_user)):
-    """Get the shared planning team list (same for every admin/worker)."""
+    """Get the shared planning team list (same for every admin/worker).
+    Bevat altijd ook teams die al werk toegewezen hebben, zodat bestaande planning niet verdwijnt."""
     doc = await db.planning_config.find_one({"id": "teams"}, {"_id": 0})
-    if not doc or not doc.get("teams"):
-        return {"teams": DEFAULT_PLANNING_TEAMS, "is_default": True}
-    return {"teams": doc["teams"], "is_default": False}
+    saved = doc["teams"] if (doc and doc.get("teams")) else list(DEFAULT_PLANNING_TEAMS)
+    is_default = not (doc and doc.get("teams"))
+    used = await _collect_used_team_names()
+    teams = _union_keep_order(saved, used)
+    return {"teams": teams, "is_default": is_default}
 
 @api_router.put("/planning-teams")
 async def update_planning_teams(payload: PlanningTeamsUpdate, current_user: User = Depends(get_current_user)):
-    """Save the shared planning team list. Admin only."""
+    """Save the shared planning team list. Admin only.
+    Reeds gebruikte teamnamen worden altijd behouden (geen verlies van bestaande planning)."""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can manage teams")
     teams = [t.strip() for t in (payload.teams or []) if t and t.strip()]
-    if not teams:
-        # Lege lijst → config wissen zodat we terugvallen op de standaardteams
+    used = await _collect_used_team_names()
+    if not teams and not used:
+        # Niets ingegeven en niets in gebruik → config wissen, terug naar standaard
         await db.planning_config.delete_one({"id": "teams"})
         return {"teams": DEFAULT_PLANNING_TEAMS, "is_default": True}
+    # Behoud teams die al werk toegewezen hebben
+    teams = _union_keep_order(teams, used)
     await db.planning_config.update_one(
         {"id": "teams"},
         {"$set": {"id": "teams", "teams": teams, "updated_at": datetime.now(timezone.utc).isoformat()}},
         upsert=True,
     )
     return {"teams": teams, "is_default": False}
+
+@api_router.post("/planning-teams/merge")
+async def merge_planning_teams(payload: PlanningTeamsUpdate, current_user: User = Depends(get_current_user)):
+    """Voeg teams samen met de bestaande gedeelde lijst (overschrijft niet).
+    Gebruikt om de teams die een beheerder lokaal in zijn browser had te migreren
+    zonder de teams van andere beheerders te verliezen."""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can manage teams")
+    incoming = [t.strip() for t in (payload.teams or []) if t and t.strip()]
+    doc = await db.planning_config.find_one({"id": "teams"}, {"_id": 0})
+    existing = doc["teams"] if (doc and doc.get("teams")) else list(DEFAULT_PLANNING_TEAMS)
+    # Behoud bestaande volgorde, voeg nieuwe (incoming + in gebruik) achteraan toe
+    merged = list(existing)
+    for t in incoming:
+        if t not in merged:
+            merged.append(t)
+    used = await _collect_used_team_names()
+    merged = _union_keep_order(merged, used)
+    await db.planning_config.update_one(
+        {"id": "teams"},
+        {"$set": {"id": "teams", "teams": merged, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True,
+    )
+    return {"teams": merged, "is_default": False}
 
 # Mount static files for uploads at /api/uploads BEFORE including router
 # Note: Kubernetes ingress routes /api/* to backend, so this will be accessible
