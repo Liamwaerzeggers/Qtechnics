@@ -9083,12 +9083,16 @@ async def update_planning_teams(payload: PlanningTeamsUpdate, current_user: User
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can manage teams")
     teams = [t.strip() for t in (payload.teams or []) if t and t.strip()]
+    if not teams:
+        # Lege lijst → config wissen zodat we terugvallen op de standaardteams
+        await db.planning_config.delete_one({"id": "teams"})
+        return {"teams": DEFAULT_PLANNING_TEAMS, "is_default": True}
     await db.planning_config.update_one(
         {"id": "teams"},
         {"$set": {"id": "teams", "teams": teams, "updated_at": datetime.now(timezone.utc).isoformat()}},
         upsert=True,
     )
-    return {"teams": teams}
+    return {"teams": teams, "is_default": False}
 
 # Mount static files for uploads at /api/uploads BEFORE including router
 # Note: Kubernetes ingress routes /api/* to backend, so this will be accessible

@@ -299,3 +299,10 @@ Onderdeel van het Max Q Project Intelligence Platform V3 — eerste fase van de 
 - P2: server.py refactoring (>12.000 regels) - technische schuld
 - P3: Legacy multi-tenant pytests opkuisen
 
+### Bugfix — Kalender: teams & taken nu gedeeld tussen beheerders (juni 2026, getest iteratie 24 — 100%)
+- **Oorzaak:** planning-teams werden enkel in browser-`localStorage` bewaard en quick-tasks waren gefilterd op `user_id` → elke beheerder zag een eigen, privé planbord.
+- **Fix backend** (`server.py`): nieuwe gedeelde opslag `planning_config` collectie + `GET/PUT /api/planning-teams` (admin-only write, `is_default`-vlag, lege lijst → terug naar standaardteams). `GET /api/quick-tasks` geeft nu ALLE taken terug (geen user_id-filter); `PUT/DELETE /api/quick-tasks/{id}` matchen op id alleen → elke beheerder ziet/bewerkt dezelfde taken.
+- **Fix frontend** (`CalendarPage.js`): teams laden/opslaan via de backend i.p.v. localStorage, met eenmalige migratie van bestaande localStorage-teams naar de server. data-testids toegevoegd (add-team-btn, new-team-name-input, confirm-add-team-btn, team-card-{name}).
+- Pytest: `/app/backend/tests/test_planning_teams_quick_tasks.py` (8 tests groen).
+
+
